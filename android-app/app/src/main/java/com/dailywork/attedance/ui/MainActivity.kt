@@ -122,11 +122,8 @@ fun DailyWorkApp(factory: ViewModelFactory) {
             SplashScreen(
                 onSplashFinished = {
                     val currentUser = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
-                    if (onboardingCompleted == false) {
-                        navController.navigate("onboarding") {
-                            popUpTo("splash") { inclusive = true }
-                        }
-                    } else if (languageState == null && settingsState.isLanguageEnabled) {
+                    // Skip onboarding, go directly to login/dashboard
+                    if (languageState == null && settingsState.isLanguageEnabled && settingsState.isLanguageActivityEnabled) {
                         navController.navigate("language_selection") {
                             popUpTo("splash") { inclusive = true }
                         }
@@ -141,22 +138,6 @@ fun DailyWorkApp(factory: ViewModelFactory) {
                     } else {
                         navController.navigate("dashboard") {
                             popUpTo("splash") { inclusive = true }
-                        }
-                    }
-                }
-            )
-        }
-        composable("onboarding") {
-            OnboardingScreen(
-                repository = authViewModel.repository,
-                onComplete = {
-                    if (languageState == null && settingsState.isLanguageEnabled) {
-                        navController.navigate("language_selection") {
-                            popUpTo("onboarding") { inclusive = true }
-                        }
-                    } else {
-                        navController.navigate("login") {
-                            popUpTo("onboarding") { inclusive = true }
                         }
                     }
                 }
