@@ -65,6 +65,7 @@
     <string name="theme">Theme</string>
     <string name="reminders">Reminders</string>
     <string name="daily_attendance_reminder">Daily attendance reminder</string>
+    <string name="enable_splash_screen">Enable Splash Screen</string>
     <string name="language_2">Language</string>
     <string name="role_management">Role Management</string>
     <string name="dailywork_premium">DailyWork Premium</string>

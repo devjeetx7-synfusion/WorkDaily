@@ -27,6 +27,7 @@ class UserPreferencesRepository(private val context: Context) {
         val EXPIRY_DATE_KEY = stringPreferencesKey("expiry_date")
         val LAST_VERIFIED_KEY = androidx.datastore.preferences.core.longPreferencesKey("last_verified")
         val ONBOARDING_COMPLETED_KEY = androidx.datastore.preferences.core.booleanPreferencesKey("onboarding_completed")
+        val SPLASH_ENABLED_KEY = androidx.datastore.preferences.core.booleanPreferencesKey("splash_enabled")
     }
 
     val userRoleFlow: Flow<String?> = context.dataStore.data.map { preferences ->
@@ -71,6 +72,10 @@ class UserPreferencesRepository(private val context: Context) {
 
     val isOnboardingCompletedFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
         preferences[ONBOARDING_COMPLETED_KEY] ?: false
+    }
+
+    val splashEnabledFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[SPLASH_ENABLED_KEY] ?: true
     }
 
     suspend fun savePremiumStatus(
@@ -122,6 +127,12 @@ class UserPreferencesRepository(private val context: Context) {
     suspend fun saveOnboardingCompleted(completed: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[ONBOARDING_COMPLETED_KEY] = completed
+        }
+    }
+
+    suspend fun saveSplashEnabledPreference(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[SPLASH_ENABLED_KEY] = enabled
         }
     }
 

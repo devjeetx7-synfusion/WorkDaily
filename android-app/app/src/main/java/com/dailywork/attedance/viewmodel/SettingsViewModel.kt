@@ -34,6 +34,7 @@ data class SettingsState(
     val isSaving: Boolean = false,
     val savedMessage: String? = null,
     val isPremium: Boolean = false,
+    val isSplashEnabled: Boolean = true,
     val triggerRestart: Boolean = false,
     val isLanguageEnabled: Boolean = true,
     val isLanguageActivityEnabled: Boolean = true,
@@ -71,6 +72,11 @@ class SettingsViewModel(
                 _state.value = _state.value.copy(isPremium = isPremium)
             }
         }
+        viewModelScope.launch {
+            repository.splashEnabledFlow.collect { enabled ->
+                _state.value = _state.value.copy(isSplashEnabled = enabled)
+            }
+        }
     }
 
     fun toggleTheme(isDark: Boolean) {
@@ -82,6 +88,12 @@ class SettingsViewModel(
     fun toggleReminders(enabled: Boolean) {
         viewModelScope.launch {
             repository.saveRemindersPreference(enabled)
+        }
+    }
+
+    fun toggleSplash(enabled: Boolean) {
+        viewModelScope.launch {
+            repository.saveSplashEnabledPreference(enabled)
         }
     }
 
