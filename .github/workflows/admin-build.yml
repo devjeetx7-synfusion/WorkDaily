@@ -1,7 +1,11 @@
-name: Admin Android Build (Test)
+name: Admin Android Build
 
 on:
   workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - 'android-admin-app/**'
 
 jobs:
   build:
@@ -23,29 +27,38 @@ jobs:
           cp android-app/gradlew android-admin-app/
           chmod +x android-admin-app/gradlew
 
-      - name: Generate temporary keystore
+      - name: Decode Keystore
         run: |
-          keytool -genkeypair -v \
-            -keystore temp.jks \
-            -alias temp-key \
-            -keyalg RSA \
-            -keysize 2048 \
-            -validity 100 \
-            -storepass temp-password \
-            -keypass temp-password \
-            -dname "CN=WorkDaily-Admin, OU=Dev, O=WorkDaily, L=City, S=State, C=US"
+          echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 --decode > android-admin-app/release.jks
 
       - name: Build Admin Release APK
         run: |
           cd android-admin-app
           ./gradlew assembleAdminRelease \
-            -Pandroid.injected.signing.store.file=$GITHUB_WORKSPACE/temp.jks \
-            -Pandroid.injected.signing.store.password=temp-password \
-            -Pandroid.injected.signing.key.alias=temp-key \
-            -Pandroid.injected.signing.key.password=temp-password
+            -PversionCodeProp=${{ github.run_number }} \
+            -PRELEASE_STORE_FILE=../release.jks \
+            -PRELEASE_STORE_PASSWORD="${{ secrets.RELEASE_KEYSTORE_PASSWORD }}" \
+            -PRELEASE_KEY_ALIAS="${{ secrets.RELEASE_KEY_ALIAS }}" \
+            -PRELEASE_KEY_PASSWORD="${{ secrets.RELEASE_KEY_PASSWORD }}"
+
+      - name: Build Admin Release AAB
+        run: |
+          cd android-admin-app
+          ./gradlew bundleAdminRelease \
+            -PversionCodeProp=${{ github.run_number }} \
+            -PRELEASE_STORE_FILE=../release.jks \
+            -PRELEASE_STORE_PASSWORD="${{ secrets.RELEASE_KEYSTORE_PASSWORD }}" \
+            -PRELEASE_KEY_ALIAS="${{ secrets.RELEASE_KEY_ALIAS }}" \
+            -PRELEASE_KEY_PASSWORD="${{ secrets.RELEASE_KEY_PASSWORD }}"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: admin-release-apk
           path: android-admin-app/app/build/outputs/apk/admin/release/app-admin-release.apk
+
+      - name: Upload AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: admin-release-aab
+          path: android-admin-app/app/build/outputs/bundle/adminRelease/app-admin-release.aab

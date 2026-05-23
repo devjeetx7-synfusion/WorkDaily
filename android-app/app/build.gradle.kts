@@ -14,8 +14,8 @@ android {
         applicationId = "com.dailywork.attedance"
         minSdk = 24
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = project.findProperty("versionCodeProp")?.toString()?.toInt() ?: 1
+        versionName = project.findProperty("versionNameProp")?.toString() ?: "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -25,16 +25,13 @@ android {
 
     signingConfigs {
         create("release") {
-            storeFile = file("../keystore/release.jks")
-            storePassword = "android"
-            keyAlias = "my-key-alias"
-            keyPassword = "android"
-        }
-        getByName("debug") {
-            storeFile = file("../keystore/release.jks")
-            storePassword = "android"
-            keyAlias = "my-key-alias"
-            keyPassword = "android"
+            val storeFilePath = project.findProperty("RELEASE_STORE_FILE")?.toString()
+            if (storeFilePath != null) {
+                storeFile = file(storeFilePath)
+                storePassword = project.findProperty("RELEASE_STORE_PASSWORD")?.toString()
+                keyAlias = project.findProperty("RELEASE_KEY_ALIAS")?.toString()
+                keyPassword = project.findProperty("RELEASE_KEY_PASSWORD")?.toString()
+            }
         }
     }
 
@@ -45,10 +42,12 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("release")
+            if (project.hasProperty("RELEASE_STORE_FILE")) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
         debug {
-            signingConfig = signingConfigs.getByName("debug")
+            // Default debug signing
         }
     }
     compileOptions {
