@@ -173,14 +173,6 @@ fun DailyWorkApp(factory: ViewModelFactory) {
             )
         }
         composable("login") {
-            val localLoginState by authViewModel.loginState.collectAsState()
-            LaunchedEffect(localLoginState) {
-                if (localLoginState is com.dailywork.attedance.viewmodel.LoginState.OtpSent) {
-                    navController.navigate("otp_verification")
-                    authViewModel.resetToIdle()
-                }
-            }
-
             LoginScreen(
                 authViewModel = authViewModel,
                 selectedLanguage = languageState ?: "en",
@@ -195,25 +187,6 @@ fun DailyWorkApp(factory: ViewModelFactory) {
                             popUpTo("login") { inclusive = true }
                         }
                     }
-                }
-            )
-        }
-        composable("otp_verification") {
-            OtpVerificationScreen(
-                authViewModel = authViewModel,
-                onVerificationSuccess = {
-                    if (roleState != null && roleState!!.isNotEmpty()) {
-                        navController.navigate("dashboard") {
-                            popUpTo("login") { inclusive = true }
-                        }
-                    } else {
-                        navController.navigate("role_selection") {
-                            popUpTo("login") { inclusive = true }
-                        }
-                    }
-                },
-                onBack = {
-                    navController.popBackStack()
                 }
             )
         }
