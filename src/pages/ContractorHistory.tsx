@@ -41,28 +41,25 @@ export const ContractorHistory = () => {
       const allRecords: any[] = [];
 
       if (wSnap.size > 0) {
-        const attQ = query(
-          collection(db, "attendance"),
-          where("contractorId", "==", user.uid),
-          where("date", ">=", yearMonth),
-          where("date", "<=", yearMonth + "\uf8ff")
-        );
+        const attQ = query(collection(db, "attendance"), where("contractorId", "==", user.uid));
         const attSnap = await getDocs(attQ);
 
         attSnap.docs.forEach((doc) => {
           const data = doc.data();
-          const workerData = workersMap[data.user_id] || { name: 'Unknown', workType: 'Unknown' };
-          allRecords.push({
-              id: doc.id,
-              workerName: workerData.name,
-              workerRole: workerData.workType || 'Labour',
-              date: data.date,
-              status: data.status,
-              type: data.type,
-              overtime_hours: data.overtime_hours,
-              advance_amount: data.advance_amount,
-              note: data.note
-          });
+          if (data.date.startsWith(yearMonth)) {
+             const workerData = workersMap[data.user_id] || { name: 'Unknown', workType: 'Unknown' };
+             allRecords.push({
+                 id: doc.id,
+                 workerName: workerData.name,
+                 workerRole: workerData.workType || 'Labour',
+                 date: data.date,
+                 status: data.status,
+                 type: data.type,
+                 overtime_hours: data.overtime_hours,
+                 advance_amount: data.advance_amount,
+                 note: data.note
+             });
+          }
         });
       }
 

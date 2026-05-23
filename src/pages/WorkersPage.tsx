@@ -18,7 +18,16 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useWorkTypes } from "@/hooks/useWorkTypes";
 import { useNavigate } from "react-router-dom";
-import { Worker } from "@/types";
+
+interface Worker {
+  id: string;
+  name: string;
+  phone: string;
+  aadhar: string;
+  age: number;
+  workType: string;
+  wage: number;
+}
 
 const emptyWorker = { name: "", phone: "", aadhar: "", age: "", workType: "Labour", wage: "500" };
 

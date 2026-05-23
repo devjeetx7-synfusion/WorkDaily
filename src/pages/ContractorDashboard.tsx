@@ -52,12 +52,8 @@ export const ContractorDashboard = () => {
       const monthStr = todayStr.substring(0, 7);
 
       if (workerCount > 0) {
-        // Fetch attendance for this month for this contractor
-        const attQ = query(
-          collection(db, "attendance"),
-          where("contractorId", "==", user.uid),
-          where("date", ">=", monthStr)
-        );
+        // Fetch all attendance for this contractor in one query
+        const attQ = query(collection(db, "attendance"), where("contractorId", "==", user.uid));
         const attSnap = await getDocs(attQ);
 
         attSnap.docs.forEach((doc) => {
