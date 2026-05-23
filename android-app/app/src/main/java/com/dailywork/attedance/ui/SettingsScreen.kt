@@ -1,6 +1,7 @@
 package com.dailywork.attedance.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -11,9 +12,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.Color
+import com.dailywork.attedance.ui.components.ShareBottomSheet
 
 @Composable
 fun SettingsScreen(onLogout: () -> Unit) {
+    var showShareSheet by remember { mutableStateOf(false) }
+
+    if (showShareSheet) {
+        ShareBottomSheet(onDismiss = { showShareSheet = false })
+    }
+
     Scaffold(
         topBar = {
             @OptIn(ExperimentalMaterial3Api::class)
@@ -37,6 +45,7 @@ fun SettingsScreen(onLogout: () -> Unit) {
             SettingsItem("Profile Details")
             SettingsItem("App Theme")
             SettingsItem("Data Export")
+            SettingsItem("Share Application with Users", onClick = { showShareSheet = true })
 
             Spacer(modifier = Modifier.weight(1f))
 
@@ -55,9 +64,17 @@ fun SettingsScreen(onLogout: () -> Unit) {
 }
 
 @Composable
-fun SettingsItem(title: String) {
+fun SettingsItem(title: String, onClick: (() -> Unit)? = null) {
+    val modifier = if (onClick != null) {
+        Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+    } else {
+        Modifier.fillMaxWidth()
+    }
+
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier,
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
