@@ -100,10 +100,11 @@ fun DailyWorkApp(factory: ViewModelFactory) {
     val languageState by authViewModel.repository.languageFlow.collectAsState(initial = "LOADING")
     val roleState by authViewModel.userRoleFlow.collectAsState(initial = "LOADING")
     val onboardingCompleted by authViewModel.repository.isOnboardingCompletedFlow.collectAsState(initial = "LOADING")
+    val splashEnabled by authViewModel.repository.splashEnabledFlow.collectAsState(initial = "LOADING")
     val loginState by authViewModel.loginState.collectAsState()
     val settingsState by settingsViewModel.state.collectAsState()
 
-    if (tokenState == "LOADING" || languageState == "LOADING" || roleState == "LOADING" || onboardingCompleted == "LOADING") {
+    if (tokenState == "LOADING" || languageState == "LOADING" || roleState == "LOADING" || onboardingCompleted == "LOADING" || splashEnabled == "LOADING") {
         return // Wait for datastore
     }
 
@@ -117,7 +118,17 @@ fun DailyWorkApp(factory: ViewModelFactory) {
         return
     }
 
-    NavHost(navController = navController, startDestination = "splash") {
+    val startDest = if (splashEnabled == false) {
+        val currentUser = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+        if (languageState == null && settingsState.isLanguageEnabled && settingsState.isLanguageActivityEnabled) "language_selection"
+        else if (currentUser == null) "login"
+        else if (roleState == null || roleState!!.isEmpty()) "role_selection"
+        else "dashboard"
+    } else {
+        "splash"
+    }
+
+    NavHost(navController = navController, startDestination = startDest) {
         composable("splash") {
             SplashScreen(
                 onSplashFinished = {
