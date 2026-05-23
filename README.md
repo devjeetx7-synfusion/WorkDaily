@@ -74,12 +74,14 @@ A fully native Android app matching the web application's UI and features is inc
 
 ### Android Build & Signing
 
-The Android project is pre-configured with a keystore for signing Release builds.
+The Android project is pre-configured with a stable keystore for signing Release builds to ensure update compatibility.
 
-- **Keystore Path**: `android-app/keystore/release.jks`
+- **Keystore Path**: `android-app/keystore/default-release.jks`
 - **Keystore Password**: `android`
-- **Key Alias**: `my-key-alias`
+- **Key Alias**: `androiddebugkey`
 - **Key Password**: `android`
+
+> **⚠️ WARNING:** The `default-release.jks` file is the permanent signing identity for this application. Changing or losing this keystore will break the app's ability to receive in-place updates. Users would be forced to uninstall the old version and lose their local data to install a build signed with a different key.
 
 To build a signed APK or AAB from the command line:
 
