@@ -42,8 +42,8 @@ class UserPreferencesRepository(private val context: Context) {
         preferences[LANGUAGE_KEY]
     }
 
-    val darkModeFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
-        preferences[THEME_KEY] ?: false
+    val darkModeFlow: Flow<Boolean?> = context.dataStore.data.map { preferences ->
+        preferences[THEME_KEY]
     }
 
     val remindersFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->

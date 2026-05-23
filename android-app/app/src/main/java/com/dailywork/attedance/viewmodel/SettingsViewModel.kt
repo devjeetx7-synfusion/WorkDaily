@@ -59,7 +59,7 @@ class SettingsViewModel(
         setupConfigListener()
         viewModelScope.launch {
             repository.darkModeFlow.collect { isDark ->
-                _state.value = _state.value.copy(isDarkMode = isDark)
+                _state.value = _state.value.copy(isDarkMode = isDark ?: false)
             }
         }
         viewModelScope.launch {

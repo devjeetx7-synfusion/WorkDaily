@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -68,7 +69,9 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            val isDarkMode by repository.darkModeFlow.collectAsState(initial = false)
+            val userThemePreference by repository.darkModeFlow.collectAsState(initial = null)
+            val isDarkMode = userThemePreference ?: isSystemInDarkTheme()
+
             DailyWorkTheme(darkTheme = isDarkMode) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
