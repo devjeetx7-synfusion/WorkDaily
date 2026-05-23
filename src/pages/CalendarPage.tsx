@@ -5,12 +5,8 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs, doc, setDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
 
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { ContractorCalendar } from "@/pages/ContractorCalendar";
+import { AttendanceEditDialog, AttendanceEditData } from "@/components/AttendanceEditDialog";
 
 interface DayData {
   status: string;
@@ -28,12 +24,7 @@ const CalendarPage = () => {
   const [dayMap, setDayMap] = useState<Record<number, DayData>>({});
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
-  const [editStatus, setEditStatus] = useState("present");
-  const [editType, setEditType] = useState("full");
-  const [editReason, setEditReason] = useState("sick");
-  const [editNote, setEditNote] = useState("");
-  const [editOT, setEditOT] = useState(0);
-  const [editAdvance, setEditAdvance] = useState(0);
+  const [initialDialogData, setInitialDialogData] = useState<Partial<AttendanceEditData>>({});
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -123,49 +114,46 @@ const CalendarPage = () => {
     const data = dayMap[day];
     setSelectedDay(day);
     if (data) {
-      setEditStatus(data.status === "advance" ? "present" : data.status);
-      setEditType(data.type || "full");
-      setEditReason(data.reason || "sick");
-      setEditNote(data.note || "");
-      setEditOT(data.overtime_hours || 0);
-      setEditAdvance(data.advance_amount || 0);
+      setInitialDialogData({
+        status: data.status,
+        type: data.type,
+        reason: data.reason,
+        overtime_hours: data.overtime_hours,
+        note: data.note,
+        advance_amount: data.advance_amount,
+      });
     } else {
-      setEditStatus("present");
-      setEditType("full");
-      setEditReason("sick");
-      setEditNote("");
-      setEditOT(0);
-      setEditAdvance(0);
+      setInitialDialogData({});
     }
     setShowEditDialog(true);
   };
 
-  const saveDay = async () => {
+  const saveDay = async (data: AttendanceEditData) => {
     if (!user || selectedDay === null) return;
     try {
       const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(selectedDay).padStart(2, "0")}`;
 
-      if (editStatus === "present" || editStatus === "absent") {
+      if (data.status === "present" || data.status === "absent") {
         const docId = `${user.uid}_${dateStr}`;
         await setDoc(doc(db, "attendance", docId), {
           user_id: user.uid,
           date: dateStr,
-          status: editStatus,
-          type: editStatus === "present" ? editType : null,
-          reason: editStatus === "absent" ? editReason : null,
-          overtime_hours: editStatus === "present" ? editOT : 0,
-          note: editNote || null,
+          status: data.status,
+          type: data.status === "present" ? data.type : null,
+          reason: data.status === "absent" ? data.reason : null,
+          overtime_hours: data.status === "present" ? data.overtime_hours : 0,
+          note: data.note || null,
           timestamp: serverTimestamp(),
         });
       }
 
-      if (editAdvance > 0) {
+      if (data.advance_amount > 0) {
          const advanceDocId = `${user.uid}_${dateStr}_advance`;
          await setDoc(doc(db, "attendance", advanceDocId), {
            user_id: user.uid,
            date: dateStr,
            status: "advance",
-           advance_amount: editAdvance,
+           advance_amount: data.advance_amount,
            note: "Advance Payment (Calendar)",
            timestamp: serverTimestamp(),
          });
@@ -312,109 +300,15 @@ const CalendarPage = () => {
       </div>
 
       {/* Edit Dialog */}
-      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="max-w-sm mx-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {selectedDay && `${selectedDay} ${monthNames[month]} ${year}`}
-            </DialogTitle>
-            <DialogDescription>{t("tapToEdit")}</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3">
-            {/* Status toggle */}
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                onClick={() => setEditStatus("present")}
-                className={`rounded-xl py-3 text-sm font-bold transition-all active:scale-95 ${
-                  editStatus === "present" ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
-                }`}
-              >
-                {t("present")}
-              </button>
-              <button
-                onClick={() => setEditStatus("absent")}
-                className={`rounded-xl py-3 text-sm font-bold transition-all active:scale-95 ${
-                  editStatus === "absent" ? "bg-destructive text-destructive-foreground" : "bg-muted text-foreground"
-                }`}
-              >
-                {t("absent")}
-              </button>
-            </div>
-
-            {editStatus === "present" && (
-              <>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={() => setEditType("full")}
-                    className={`rounded-xl py-2 text-xs font-bold ${editType === "full" ? "bg-accent border-2 border-primary" : "bg-muted"}`}
-                  >
-                    {t("fullDay")}
-                  </button>
-                  <button
-                    onClick={() => setEditType("half")}
-                    className={`rounded-xl py-2 text-xs font-bold ${editType === "half" ? "bg-accent border-2 border-primary" : "bg-muted"}`}
-                  >
-                    {t("halfDay")}
-                  </button>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">{t("overtime")}</span>
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => setEditOT(Math.max(0, editOT - 1))} className="h-7 w-7 rounded-full bg-muted flex items-center justify-center text-sm font-bold">-</button>
-                    <span className="font-bold w-4 text-center">{editOT}</span>
-                    <button onClick={() => setEditOT(editOT + 1)} className="h-7 w-7 rounded-full bg-muted flex items-center justify-center text-sm font-bold">+</button>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {editStatus === "absent" && (
-              <div className="grid grid-cols-2 gap-2">
-                {absenceReasons.map((r) => (
-                  <button
-                    key={r}
-                    onClick={() => setEditReason(r)}
-                    className={`rounded-xl px-2 py-2 text-xs font-semibold ${
-                      editReason === r ? "bg-destructive text-destructive-foreground" : "bg-muted"
-                    }`}
-                  >
-                    {t(r)}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            <div className="flex flex-col gap-1.5 pt-2">
-              <span className="text-sm font-medium">Advance Payment (₹)</span>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">₹</span>
-                <input
-                  type="number"
-                  value={editAdvance || ""}
-                  onChange={(e) => setEditAdvance(Math.max(0, parseInt(e.target.value) || 0))}
-                  placeholder="0"
-                  className="w-full rounded-xl border border-border bg-background px-8 py-2.5 text-base font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
-            </div>
-
-            <Textarea
-              value={editNote}
-              onChange={(e) => setEditNote(e.target.value)}
-              placeholder={t("addNote") + "..."}
-              className="min-h-[50px]"
-            />
-          </div>
-          <DialogFooter className="flex gap-2">
-            {dayMap[selectedDay!] && (
-              <Button variant="destructive" size="sm" onClick={deleteDay}>
-                {t("removeAttendance")}
-              </Button>
-            )}
-            <Button onClick={saveDay}>{t("save")}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <AttendanceEditDialog
+        open={showEditDialog}
+        onOpenChange={setShowEditDialog}
+        title={selectedDay ? `${selectedDay} ${monthNames[month]} ${year}` : "Edit Attendance"}
+        initialData={initialDialogData}
+        onSave={saveDay}
+        onDelete={deleteDay}
+        showDelete={selectedDay !== null && !!dayMap[selectedDay]}
+      />
 
 
     </div>

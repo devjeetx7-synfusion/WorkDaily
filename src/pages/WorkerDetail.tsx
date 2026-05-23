@@ -8,14 +8,15 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { Worker, AttendanceRecord } from "@/types";
 
 export const WorkerDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, userData } = useAuth();
 
-  const [worker, setWorker] = useState<any>(null);
-  const [records, setRecords] = useState<any[]>([]);
+  const [worker, setWorker] = useState<Worker | null>(null);
+  const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().substring(0, 7)); // YYYY-MM
   const [loading, setLoading] = useState(true);
 
@@ -32,7 +33,7 @@ export const WorkerDetail = () => {
       const wRef = doc(db, "workers", id);
       const wSnap = await getDoc(wRef);
       if (wSnap.exists()) {
-        setWorker({ id: wSnap.id, ...wSnap.data() });
+        setWorker({ id: wSnap.id, ...wSnap.data() } as Worker);
       }
 
       const attQ = query(
@@ -42,9 +43,9 @@ export const WorkerDetail = () => {
       );
       const attSnap = await getDocs(attQ);
 
-      const rList: any[] = [];
+      const rList: AttendanceRecord[] = [];
       attSnap.docs.forEach(doc => {
-        const data = doc.data();
+        const data = doc.data() as Omit<AttendanceRecord, 'id'>;
         if (data.date.startsWith(selectedMonth)) {
             rList.push({ id: doc.id, ...data });
         }

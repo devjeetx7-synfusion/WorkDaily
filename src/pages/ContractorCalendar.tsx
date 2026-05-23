@@ -1,17 +1,23 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { db } from "@/lib/firebase";
-import { collection, query, where, getDocs, doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, setDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
 import { Calendar, Check, X, Clock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Worker, AttendanceRecord } from "@/types";
+import { AttendanceEditDialog, AttendanceEditData } from "@/components/AttendanceEditDialog";
 
 export const ContractorCalendar = () => {
   const { user } = useAuth();
-  const [workers, setWorkers] = useState<any[]>([]);
-  const [attendance, setAttendance] = useState<any[]>([]);
+  const [workers, setWorkers] = useState<Worker[]>([]);
+  const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
   const [loading, setLoading] = useState(true);
+
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [selectedWorkerId, setSelectedWorkerId] = useState<string | null>(null);
+  const [initialDialogData, setInitialDialogData] = useState<Partial<AttendanceEditData>>({});
 
   useEffect(() => {
     if (user) loadData();
@@ -24,7 +30,7 @@ export const ContractorCalendar = () => {
       // 1. Get Workers
       const wQ = query(collection(db, "workers"), where("contractorId", "==", user.uid));
       const wSnap = await getDocs(wQ);
-      const wList = wSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const wList = wSnap.docs.map(d => ({ id: d.id, ...d.data() } as Worker));
       setWorkers(wList);
 
       // 2. Get Attendance for these workers on selected date
@@ -36,11 +42,10 @@ export const ContractorCalendar = () => {
         );
         const aSnap = await getDocs(aQ);
 
-        const aList: any[] = [];
+        const aList: AttendanceRecord[] = [];
         aSnap.docs.forEach(d => {
-          const data = d.data();
-          const workerId = data.user_id.replace("worker_", "");
-          aList.push({ id: d.id, workerId, ...data });
+          const data = d.data() as AttendanceRecord;
+          aList.push({ ...data, id: d.id });
         });
         setAttendance(aList);
       }
@@ -50,33 +55,93 @@ export const ContractorCalendar = () => {
     setLoading(false);
   };
 
-  const markAttendance = async (workerId: string, status: string, type: string = "full") => {
-    if (!user) return;
-    const existing = attendance.find(a => a.workerId === workerId && a.status !== 'advance');
+  const handleOpenDialog = (workerId: string, status: string, type: string = "full") => {
+    const existing = attendance.find(a => a.user_id === `worker_${workerId}` && a.status !== 'advance');
+    const advanceRecord = attendance.find(a => a.user_id === `worker_${workerId}` && a.status === 'advance');
+
+    setSelectedWorkerId(workerId);
+
+    if (existing) {
+       setInitialDialogData({
+         status: existing.status,
+         type: existing.type || "full",
+         reason: existing.reason || "sick",
+         overtime_hours: existing.overtime_hours || 0,
+         note: existing.note || "",
+         advance_amount: advanceRecord?.advance_amount || 0,
+       });
+    } else {
+       setInitialDialogData({
+         status: status,
+         type: type,
+         reason: "sick",
+         overtime_hours: 0,
+         note: "",
+         advance_amount: advanceRecord?.advance_amount || 0,
+       });
+    }
+    setShowEditDialog(true);
+  };
+
+  const saveDay = async (data: AttendanceEditData) => {
+    if (!user || !selectedWorkerId) return;
 
     try {
-      const docId = existing ? existing.id : `worker_${workerId}_${selectedDate}`;
+      if (data.status === "present" || data.status === "absent") {
+        const docId = `worker_${selectedWorkerId}_${selectedDate}`;
+        const newData = {
+          user_id: `worker_${selectedWorkerId}`,
+          contractorId: user.uid,
+          date: selectedDate,
+          status: data.status,
+          type: data.status === "present" ? data.type : null,
+          reason: data.status === "absent" ? data.reason : null,
+          overtime_hours: data.status === "present" ? data.overtime_hours : 0,
+          note: data.note || null,
+          timestamp: serverTimestamp(),
+        };
+        await setDoc(doc(db, "attendance", docId), newData, { merge: true });
+      }
 
-      const newData = {
-        user_id: `worker_${workerId}`,
-        contractorId: user.uid,
-        date: selectedDate,
-        status: status,
-        type: type,
-        timestamp: serverTimestamp(),
-      };
+      const advanceDocId = `worker_${selectedWorkerId}_${selectedDate}_advance`;
+      if (data.advance_amount > 0) {
+         await setDoc(doc(db, "attendance", advanceDocId), {
+           user_id: `worker_${selectedWorkerId}`,
+           contractorId: user.uid,
+           date: selectedDate,
+           status: "advance",
+           advance_amount: data.advance_amount,
+           note: "Advance Payment",
+           timestamp: serverTimestamp(),
+         }, { merge: true });
+      } else {
+         await deleteDoc(doc(db, "attendance", advanceDocId)).catch(() => {});
+      }
 
-      await setDoc(doc(db, "attendance", docId), newData, { merge: true });
-
-      // Optistic update
-      setAttendance(prev => {
-        const filtered = prev.filter(a => a.id !== docId);
-        return [...filtered, { id: docId, workerId, ...newData }];
-      });
+      setShowEditDialog(false);
+      loadData();
     } catch (err) {
-      console.error("Error marking worker attendance:", err);
+      console.error("Error saving worker attendance:", err);
     }
   };
+
+  const deleteDay = async () => {
+    if (!user || !selectedWorkerId) return;
+    try {
+      const docId = `worker_${selectedWorkerId}_${selectedDate}`;
+      await deleteDoc(doc(db, "attendance", docId)).catch(() => {});
+
+      const advanceDocId = `worker_${selectedWorkerId}_${selectedDate}_advance`;
+      await deleteDoc(doc(db, "attendance", advanceDocId)).catch(() => {});
+
+      setShowEditDialog(false);
+      loadData();
+    } catch (err) {
+      console.error("Error deleting worker attendance:", err);
+    }
+  };
+
+  const selectedWorkerName = workers.find(w => w.id === selectedWorkerId)?.name || "Worker";
 
   return (
     <div className="space-y-4 animate-in fade-in">
@@ -97,7 +162,7 @@ export const ContractorCalendar = () => {
       ) : (
         <div className="space-y-3">
           {workers.map(w => {
-            const att = attendance.find(a => a.workerId === w.id && a.status !== 'advance');
+          const att = attendance.find(a => a.user_id === `worker_${w.id}` && a.status !== 'advance');
             const currentStatus = att?.status;
             const currentType = att?.type;
 
@@ -109,21 +174,21 @@ export const ContractorCalendar = () => {
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   <button
-                    onClick={() => markAttendance(w.id, 'present', 'full')}
+                    onClick={() => handleOpenDialog(w.id, 'present', 'full')}
                     className={`flex flex-col items-center justify-center py-2 rounded-xl border transition-all active:scale-95 ${currentStatus === 'present' && currentType === 'full' ? 'bg-green-500 text-white border-green-500' : 'bg-muted text-foreground border-border'}`}
                   >
                     <Check size={16} className="mb-1" />
                     <span className="text-[10px] font-bold">Present</span>
                   </button>
                   <button
-                    onClick={() => markAttendance(w.id, 'present', 'half')}
+                    onClick={() => handleOpenDialog(w.id, 'present', 'half')}
                     className={`flex flex-col items-center justify-center py-2 rounded-xl border transition-all active:scale-95 ${currentStatus === 'present' && currentType === 'half' ? 'bg-orange-500 text-white border-orange-500' : 'bg-muted text-foreground border-border'}`}
                   >
                     <Clock size={16} className="mb-1" />
                     <span className="text-[10px] font-bold">Half Day</span>
                   </button>
                   <button
-                    onClick={() => markAttendance(w.id, 'absent')}
+                    onClick={() => handleOpenDialog(w.id, 'absent')}
                     className={`flex flex-col items-center justify-center py-2 rounded-xl border transition-all active:scale-95 ${currentStatus === 'absent' ? 'bg-red-500 text-white border-red-500' : 'bg-muted text-foreground border-border'}`}
                   >
                     <X size={16} className="mb-1" />
@@ -135,6 +200,17 @@ export const ContractorCalendar = () => {
           })}
         </div>
       )}
+
+      <AttendanceEditDialog
+        open={showEditDialog}
+        onOpenChange={setShowEditDialog}
+        title={`${selectedWorkerName} - ${selectedDate}`}
+        initialData={initialDialogData}
+        onSave={saveDay}
+        onDelete={deleteDay}
+        showDelete={selectedWorkerId !== null && !!attendance.find(a => a.user_id === `worker_${selectedWorkerId}` && a.status !== 'advance')}
+      />
+
     </div>
   );
 };
