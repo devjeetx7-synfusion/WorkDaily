@@ -14,8 +14,8 @@ android {
         applicationId = "com.dailywork.attedance"
         minSdk = 24
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = System.getenv("GITHUB_RUN_NUMBER")?.toInt() ?: 1
+        versionName = "1.0.${System.getenv("GITHUB_RUN_NUMBER") ?: "0"}"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -25,16 +25,16 @@ android {
 
     signingConfigs {
         create("release") {
-            storeFile = file("../keystore/release.jks")
-            storePassword = "android"
-            keyAlias = "my-key-alias"
-            keyPassword = "android"
+            storeFile = file(System.getenv("KEYSTORE_PATH") ?: "../keystore/release.jks")
+            storePassword = System.getenv("KEYSTORE_PASSWORD") ?: (project.findProperty("KEYSTORE_PASSWORD")?.toString() ?: "android")
+            keyAlias = System.getenv("KEY_ALIAS") ?: (project.findProperty("KEY_ALIAS")?.toString() ?: "my-key-alias")
+            keyPassword = System.getenv("KEY_PASSWORD") ?: (project.findProperty("KEY_PASSWORD")?.toString() ?: "android")
         }
         getByName("debug") {
-            storeFile = file("../keystore/release.jks")
-            storePassword = "android"
-            keyAlias = "my-key-alias"
-            keyPassword = "android"
+            storeFile = file(System.getenv("KEYSTORE_PATH") ?: "../keystore/release.jks")
+            storePassword = System.getenv("KEYSTORE_PASSWORD") ?: (project.findProperty("KEYSTORE_PASSWORD")?.toString() ?: "android")
+            keyAlias = System.getenv("KEY_ALIAS") ?: (project.findProperty("KEY_ALIAS")?.toString() ?: "my-key-alias")
+            keyPassword = System.getenv("KEY_PASSWORD") ?: (project.findProperty("KEY_PASSWORD")?.toString() ?: "android")
         }
     }
 

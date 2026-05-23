@@ -1,4 +1,4 @@
-name: User Android Build (Test)
+name: User Android Build
 
 on:
   workflow_dispatch:
@@ -17,29 +17,26 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      - name: Generate temporary keystore
-        run: |
-          keytool -genkeypair -v \
-            -keystore temp.jks \
-            -alias temp-key \
-            -keyalg RSA \
-            -keysize 2048 \
-            -validity 100 \
-            -storepass temp-password \
-            -keypass temp-password \
-            -dname "CN=WorkDaily, OU=Dev, O=WorkDaily, L=City, S=State, C=US"
+      - name: Grant execute permission for gradlew
+        run: chmod +x android-app/gradlew
 
-      - name: Build User Release APK
+      - name: Build User Release
         run: |
           cd android-app
-          ./gradlew assembleRelease \
-            -Pandroid.injected.signing.store.file=$GITHUB_WORKSPACE/temp.jks \
-            -Pandroid.injected.signing.store.password=temp-password \
-            -Pandroid.injected.signing.key.alias=temp-key \
-            -Pandroid.injected.signing.key.password=temp-password
+          ./gradlew assembleRelease bundleRelease
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: user-release-apk
           path: android-app/app/build/outputs/apk/release/app-release.apk
+
+      - name: Upload AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: user-release-aab
+          path: android-app/app/build/outputs/bundle/release/app-release.aab

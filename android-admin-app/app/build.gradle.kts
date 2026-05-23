@@ -14,8 +14,8 @@ android {
         applicationId = "com.dailywork.admin"
         minSdk = 24
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = System.getenv("GITHUB_RUN_NUMBER")?.toInt() ?: 1
+        versionName = "1.0.${System.getenv("GITHUB_RUN_NUMBER") ?: "0"}"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -32,6 +32,21 @@ android {
         }
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file(System.getenv("KEYSTORE_PATH") ?: "../../android-app/keystore/release.jks")
+            storePassword = System.getenv("KEYSTORE_PASSWORD") ?: (project.findProperty("KEYSTORE_PASSWORD")?.toString() ?: "android")
+            keyAlias = System.getenv("KEY_ALIAS") ?: (project.findProperty("KEY_ALIAS")?.toString() ?: "my-key-alias")
+            keyPassword = System.getenv("KEY_PASSWORD") ?: (project.findProperty("KEY_PASSWORD")?.toString() ?: "android")
+        }
+        getByName("debug") {
+            storeFile = file(System.getenv("KEYSTORE_PATH") ?: "../../android-app/keystore/release.jks")
+            storePassword = System.getenv("KEYSTORE_PASSWORD") ?: (project.findProperty("KEYSTORE_PASSWORD")?.toString() ?: "android")
+            keyAlias = System.getenv("KEY_ALIAS") ?: (project.findProperty("KEY_ALIAS")?.toString() ?: "my-key-alias")
+            keyPassword = System.getenv("KEY_PASSWORD") ?: (project.findProperty("KEY_PASSWORD")?.toString() ?: "android")
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -39,6 +54,10 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("release")
+        }
+        debug {
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
     compileOptions {
