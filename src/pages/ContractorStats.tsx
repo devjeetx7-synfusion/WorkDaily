@@ -40,17 +40,12 @@ export const ContractorStats = () => {
       const workerPerfMap: Record<string, { days: number, cost: number }> = {};
 
       if (wSnap.size > 0) {
-        const attQ = query(
-          collection(db, "attendance"),
-          where("contractorId", "==", user.uid),
-          where("date", ">=", yearMonth),
-          where("date", "<=", yearMonth + "\uf8ff")
-        );
+        const attQ = query(collection(db, "attendance"), where("contractorId", "==", user.uid));
         const attSnap = await getDocs(attQ);
 
         attSnap.docs.forEach((doc) => {
           const data = doc.data();
-          if (data.status === "present") {
+          if (data.date.startsWith(yearMonth) && data.status === "present") {
              const workerData = workersMap[data.user_id];
              if (workerData) {
                const dayVal = data.type === "half" ? 0.5 : 1;
