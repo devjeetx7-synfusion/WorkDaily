@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "811601656329",
+    "firebase_url": "https://crovian-2ae30-default-rtdb.firebaseio.com",
+    "project_id": "crovian-2ae30",
+    "storage_bucket": "crovian-2ae30.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:811601656329:android:bd78e41f033591c3a616d8",
+        "android_client_info": {
+          "package_name": "com.dailywork.attedance"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "811601656329-34jcddkdj70han4q8t6aadqm8sudvqoe.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.dailywork.attedance",
+            "certificate_hash": "d40f784145842fc6542c4bf541b94b789776acbe"
+          }
+        },
+        {
+          "client_id": "811601656329-mhd15hejhud1j4g7q08f77dk91crrcnu.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCN4mRgnpqR5oVh3o3HF0DjiADgllW3_mA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "811601656329-mhd15hejhud1j4g7q08f77dk91crrcnu.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
