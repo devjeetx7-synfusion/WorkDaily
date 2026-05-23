@@ -5,6 +5,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -15,23 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.draw.clip
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.border
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import coil.compose.AsyncImage
-import android.content.Intent
-import androidx.compose.ui.platform.LocalContext
-import com.dailywork.attedance.ui.MainActivity
 import com.dailywork.attedance.ui.components.ShareBottomSheet
-import com.dailywork.attedance.viewmodel.SettingsViewModel
-import com.google.firebase.auth.FirebaseAuth
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -422,6 +407,10 @@ fun SettingsScreenContent(
                     }
                 }
             }
+            SettingsItem("Profile Details")
+            SettingsItem("App Theme")
+            SettingsItem("Data Export")
+            SettingsItem("Share Application with Users", onClick = { showShareSheet = true })
 
             Spacer(modifier = Modifier.weight(1f))
 
@@ -452,212 +441,27 @@ fun SettingsScreenContent(
             }
         }
 
-        if (showLogoutDialog) {
-            AlertDialog(
-                onDismissRequest = { showLogoutDialog = false },
-                title = { Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.log_out), fontWeight = FontWeight.Bold) },
-                text = { Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.are_you_sure_you_want_to_log_out_of_your_msg)) },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            showLogoutDialog = false
-                            onLogout()
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                    ) {
-                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.log_out), fontWeight = FontWeight.Bold)
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showLogoutDialog = false }) {
-                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.cancel))
-                    }
-                }
-            )
-        }
+@Composable
+fun SettingsItem(title: String, onClick: (() -> Unit)? = null) {
+    val modifier = if (onClick != null) {
+        Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+    } else {
+        Modifier.fillMaxWidth()
+    }
 
-        if (showRoleConfirmationDialog) {
-            AlertDialog(
-                onDismissRequest = { showRoleConfirmationDialog = false },
-                title = { Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.change_role), fontWeight = FontWeight.Bold) },
-                text = { Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.changing_role_will_refresh_the_app_and_s_msg)) },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            showRoleConfirmationDialog = false
-                            viewModel.onRoleChange(pendingRole)
-                            viewModel.saveChanges()
-                        }
-                    ) {
-                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.confirm))
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showRoleConfirmationDialog = false }) {
-                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.cancel))
-                    }
-                }
-            )
-        }
-
-        if (showHowToUseBottomSheet) {
-            ModalBottomSheet(
-                onDismissRequest = { showHowToUseBottomSheet = false },
-                sheetState = sheetState
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                        .padding(bottom = 32.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.how_to_use_dailywork), fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.a_quick_guide_to_tracking_your_work_effe_msg), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-
-                    Divider(color = MaterialTheme.colorScheme.outline)
-
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.num_1_marking_attendance), fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
-                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.on_the_dashboard_click_full_day_or_half__msg), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.num_2_net_payable_earnings), fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
-                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.your_earnings_are_automatically_calculat_msg), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.num_3_advance_payments), fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
-                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.if_you_receive_money_ahead_of_time_click_msg), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.num_4_calendar_history), fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
-                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.use_the_calendar_to_edit_past_records_eg_msg), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
-            }
-        }
-
-        if (showPrivacyBottomSheet) {
-            ModalBottomSheet(
-                onDismissRequest = { showPrivacyBottomSheet = false },
-                sheetState = sheetState
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                        .padding(bottom = 32.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.data_privacy_policy), fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.stored_securely_in_the_cloud), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-
-                    Divider(color = MaterialTheme.colorScheme.outline)
-
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.data_collection), fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.we_collect_your_name_phone_number_and_at_msg), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.storage_method), fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.your_data_is_securely_stored_on_firebase_msg), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.security_practices), fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.access_to_your_data_is_restricted_to_you_msg), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.user_control), fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.you_can_delete_your_data_by_deleting_you_msg), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
-            }
-        }
-
-        if (showDeveloperBottomSheet) {
-            ModalBottomSheet(
-                onDismissRequest = { showDeveloperBottomSheet = false },
-                sheetState = sheetState
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                        .padding(bottom = 32.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.developer_contact), fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.reach_out_to_us_for_any_feedback_or_supp_msg), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-
-                    Divider(color = MaterialTheme.colorScheme.outline)
-
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
-                        Icon(Icons.Default.Email, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.supportdailyworkcom), fontSize = 16.sp, fontWeight = FontWeight.Medium)
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
-                        Icon(Icons.Default.Phone, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.num_91_98765_43210), fontSize = 16.sp, fontWeight = FontWeight.Medium)
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
-                        Icon(Icons.Default.Language, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.wwwdailyworkcom), fontSize = 16.sp, fontWeight = FontWeight.Medium)
-                    }
-                }
-            }
-        }
-
-        if (showRoleBottomSheet) {
-            ModalBottomSheet(
-                onDismissRequest = { showRoleBottomSheet = false },
-                sheetState = sheetState
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                        .padding(bottom = 32.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.role_management), fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.switch_between_contractor_and_personal_m_msg), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-
-                    Divider(color = MaterialTheme.colorScheme.outline)
-
-                    listOf("contractor", "personal").forEach { roleOption ->
-                        val isSelected = state.role == roleOption
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surface)
-                                .border(1.dp, if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline, RoundedCornerShape(12.dp))
-                                .clickable {
-                                    if (!isSelected) {
-                                        pendingRole = roleOption
-                                        showRoleConfirmationDialog = true
-                                    }
-                                    showRoleBottomSheet = false
-                                }
-                                .padding(16.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = roleOption.replaceFirstChar { if (it.isLowerCase()) it.titlecase(java.util.Locale.getDefault()) else it.toString() },
-                                fontWeight = FontWeight.Bold,
-                                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground
-                            )
-                            if (isSelected) {
-                                Icon(Icons.Default.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                            }
-                        }
-                    }
-                }
-            }
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(text = title, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
         }
     }
 }
