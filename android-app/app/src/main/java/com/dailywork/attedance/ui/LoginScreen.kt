@@ -117,7 +117,7 @@ fun LoginScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF8FAFB)) // SaaS clean white/grey background
+            .background(MaterialTheme.colorScheme.background)
     ) {
         Column(
             modifier = Modifier
@@ -180,7 +180,7 @@ fun LoginScreen(
                 Text(
                     text = "Professional Workforce Management",
                     style = MaterialTheme.typography.labelMedium,
-                    color = Color(0xFF94A3B8), // Slate 400
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontWeight = FontWeight.Medium
                 )
             }
@@ -206,13 +206,14 @@ fun SaaSFeatureShowcase() {
             .height(450.dp),
         contentAlignment = Alignment.Center
     ) {
-        // Ambient background glow (very subtle mint)
+        // Ambient background glow (theme aware)
+        val glowColor = MaterialTheme.colorScheme.primary
         Box(
             modifier = Modifier
                 .size(300.dp)
-                .alpha(0.3f)
+                .alpha(0.2f)
                 .blur(100.dp)
-                .background(Color(0xFF13B28A).copy(alpha = 0.1f), CircleShape)
+                .background(glowColor.copy(alpha = 0.15f), CircleShape)
         )
 
         AnimatedContent(
@@ -256,18 +257,19 @@ fun SaaSWidget(
             .graphicsLayer { this.translationY = translationY }
             .width(280.dp),
         shape = RoundedCornerShape(28.dp),
-        color = Color.White,
-        shadowElevation = 0.dp // Using custom soft shadow below
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 0.dp
     ) {
         Box(
             modifier = Modifier
-                .border(1.dp, Color(0xFFF1F5F9), RoundedCornerShape(28.dp)) // Slate 100 border
+                .background(MaterialTheme.colorScheme.surface)
+                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f), RoundedCornerShape(28.dp))
                 .shadow(
-                    elevation = 20.dp,
+                    elevation = if (MaterialTheme.colorScheme.background.luminance() > 0.5f) 20.dp else 0.dp,
                     shape = RoundedCornerShape(28.dp),
                     clip = false,
-                    spotColor = Color(0xFF000000).copy(alpha = 0.03f),
-                    ambientColor = Color(0xFF000000).copy(alpha = 0.03f)
+                    spotColor = Color.Black.copy(alpha = 0.05f),
+                    ambientColor = Color.Black.copy(alpha = 0.05f)
                 )
                 .padding(24.dp)
         ) {
@@ -281,21 +283,21 @@ fun PayoutsWidget() {
     SaaSWidget {
         Column {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(modifier = Modifier.size(40.dp).clip(CircleShape).background(Color(0xFFF0FDF4)), contentAlignment = Alignment.Center) {
-                    Icon(Icons.Default.Payments, null, tint = Color(0xFF13B28A), modifier = Modifier.size(20.dp))
+                Box(modifier = Modifier.size(40.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
+                    Icon(Icons.Default.Payments, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                 }
                 Spacer(modifier = Modifier.width(12.dp))
-                Text("Total Payouts", style = MaterialTheme.typography.titleSmall, color = Color(0xFF64748B), fontWeight = FontWeight.SemiBold)
+                Text("Total Payouts", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
             }
             Spacer(modifier = Modifier.height(24.dp))
-            CountingText("₹ 1,28,450", MaterialTheme.typography.headlineMedium, Color(0xFF1E293B))
+            CountingText("₹ 1,28,450", MaterialTheme.typography.headlineMedium, MaterialTheme.colorScheme.onSurface)
             Spacer(modifier = Modifier.height(16.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(modifier = Modifier.size(16.dp).clip(CircleShape).background(Color(0xFF13B28A).copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
-                    Icon(Icons.Default.TrendingUp, null, tint = Color(0xFF13B28A), modifier = Modifier.size(10.dp))
+                Box(modifier = Modifier.size(16.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
+                    Icon(Icons.Default.TrendingUp, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(10.dp))
                 }
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("12% increase from last month", style = MaterialTheme.typography.labelSmall, color = Color(0xFF13B28A), fontWeight = FontWeight.Bold)
+                Text("12% increase from last month", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -305,24 +307,24 @@ fun PayoutsWidget() {
 fun AttendanceStatsWidget() {
     SaaSWidget {
         Column {
-            Text("Attendance Stats", style = MaterialTheme.typography.titleSmall, color = Color(0xFF64748B), fontWeight = FontWeight.SemiBold)
+            Text("Attendance Stats", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
             Spacer(modifier = Modifier.height(24.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
                 val heights = listOf(0.4f, 0.7f, 0.5f, 0.9f, 0.6f, 0.8f, 0.75f)
                 heights.forEachIndexed { i, h ->
                     val animatedHeight = animateFloatAsState(targetValue = h, animationSpec = tween(1000, delayMillis = i * 100), label = "bar").value
-                    Box(modifier = Modifier.width(18.dp).fillMaxHeight(animatedHeight * 0.5f).clip(RoundedCornerShape(6.dp)).background(if (i == 3) Color(0xFF13B28A) else Color(0xFFF1F5F9)))
+                    Box(modifier = Modifier.width(18.dp).fillMaxHeight(animatedHeight * 0.5f).clip(RoundedCornerShape(6.dp)).background(if (i == 3) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant))
                 }
             }
             Spacer(modifier = Modifier.height(20.dp))
             Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
                 Column {
-                    Text("Present", style = MaterialTheme.typography.labelSmall, color = Color(0xFF94A3B8))
-                    Text("94%", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black, color = Color(0xFF1E293B))
+                    Text("Present", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("94%", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface)
                 }
                 Column(horizontalAlignment = Alignment.End) {
-                    Text("Absent", style = MaterialTheme.typography.labelSmall, color = Color(0xFF94A3B8))
-                    Text("6%", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black, color = Color(0xFFEF4444))
+                    Text("Absent", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("6%", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.error)
                 }
             }
         }
@@ -333,17 +335,17 @@ fun AttendanceStatsWidget() {
 fun WorkerAnalyticsWidget() {
     SaaSWidget {
         Column {
-            Text("Worker Analytics", style = MaterialTheme.typography.titleSmall, color = Color(0xFF64748B), fontWeight = FontWeight.SemiBold)
+            Text("Worker Analytics", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
             Spacer(modifier = Modifier.height(24.dp))
             repeat(3) { i ->
                 Column(modifier = Modifier.padding(vertical = 8.dp)) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text(listOf("Mistry", "Helper", "Carpenter")[i], style = MaterialTheme.typography.labelMedium, color = Color(0xFF475569), fontWeight = FontWeight.Bold)
-                        Text(listOf("85%", "92%", "78%")[i], style = MaterialTheme.typography.labelMedium, color = Color(0xFF13B28A), fontWeight = FontWeight.Black)
+                        Text(listOf("Mistry", "Helper", "Carpenter")[i], style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
+                        Text(listOf("85%", "92%", "78%")[i], style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Black)
                     }
                     Spacer(modifier = Modifier.height(8.dp))
-                    Box(modifier = Modifier.fillMaxWidth().height(6.dp).clip(CircleShape).background(Color(0xFFF1F5F9))) {
-                        Box(modifier = Modifier.fillMaxWidth(listOf(0.85f, 0.92f, 0.78f)[i]).fillMaxHeight().clip(CircleShape).background(Color(0xFF13B28A)))
+                    Box(modifier = Modifier.fillMaxWidth().height(6.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant)) {
+                        Box(modifier = Modifier.fillMaxWidth(listOf(0.85f, 0.92f, 0.78f)[i]).fillMaxHeight().clip(CircleShape).background(MaterialTheme.colorScheme.primary))
                     }
                 }
             }
@@ -355,18 +357,18 @@ fun WorkerAnalyticsWidget() {
 fun PdfReportWidget() {
     SaaSWidget {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Box(modifier = Modifier.size(64.dp).clip(RoundedCornerShape(16.dp)).background(Color(0xFFFEF2F2)), contentAlignment = Alignment.Center) {
-                Icon(Icons.Default.PictureAsPdf, null, tint = Color(0xFFEF4444), modifier = Modifier.size(32.dp))
+            Box(modifier = Modifier.size(64.dp).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.error.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
+                Icon(Icons.Default.PictureAsPdf, null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(32.dp))
             }
             Spacer(modifier = Modifier.height(20.dp))
-            Text("Monthly Passbook", style = MaterialTheme.typography.titleMedium, color = Color(0xFF1E293B), fontWeight = FontWeight.Bold)
-            Text("Ready to export", style = MaterialTheme.typography.bodySmall, color = Color(0xFF64748B))
+            Text("Monthly Passbook", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
+            Text("Ready to export", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(modifier = Modifier.height(24.dp))
             Button(
                 onClick = {},
                 modifier = Modifier.fillMaxWidth().height(44.dp),
                 shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E293B))
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.onSurface, contentColor = MaterialTheme.colorScheme.surface)
             ) {
                 Icon(Icons.Default.Download, null, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(8.dp))
@@ -380,21 +382,21 @@ fun PdfReportWidget() {
 fun AdvanceTrackWidget() {
     SaaSWidget {
         Column {
-            Text("Advance Tracking", style = MaterialTheme.typography.titleSmall, color = Color(0xFF64748B), fontWeight = FontWeight.SemiBold)
+            Text("Advance Tracking", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
             Spacer(modifier = Modifier.height(24.dp))
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Color(0xFFFFFBEB)).padding(12.dp)) {
-                Box(modifier = Modifier.size(32.dp).clip(CircleShape).background(Color(0xFFF59E0B)), contentAlignment = Alignment.Center) {
-                    Text("R", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f)).padding(12.dp)) {
+                Box(modifier = Modifier.size(32.dp).clip(CircleShape).background(MaterialTheme.colorScheme.secondary), contentAlignment = Alignment.Center) {
+                    Text("R", color = MaterialTheme.colorScheme.onSecondary, fontWeight = FontWeight.Bold, fontSize = 12.sp)
                 }
                 Spacer(modifier = Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Rahul Kumar", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = Color(0xFF92400E))
-                    Text("Pending Due", style = MaterialTheme.typography.labelSmall, color = Color(0xFFB45309))
+                    Text("Rahul Kumar", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                    Text("Pending Due", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                Text("₹ 2,400", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Black, color = Color(0xFFF59E0B))
+                Text("₹ 2,400", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.secondary)
             }
             Spacer(modifier = Modifier.height(16.dp))
-            Text("Manage credits with ease", style = MaterialTheme.typography.bodySmall, color = Color(0xFF94A3B8), textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+            Text("Manage credits with ease", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
         }
     }
 }
@@ -403,28 +405,28 @@ fun AdvanceTrackWidget() {
 fun ActiveWorkersWidget() {
     SaaSWidget {
         Column {
-            Text("Active Workers", style = MaterialTheme.typography.titleSmall, color = Color(0xFF64748B), fontWeight = FontWeight.SemiBold)
+            Text("Active Workers", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
             Spacer(modifier = Modifier.height(24.dp))
             Row(horizontalArrangement = Arrangement.spacedBy((-12).dp)) {
                 repeat(5) { i ->
-                    val color = listOf(Color(0xFF3B82F6), Color(0xFF10B981), Color(0xFFF59E0B), Color(0xFFEF4444), Color(0xFF8B5CF6))[i]
-                    Box(modifier = Modifier.size(44.dp).clip(CircleShape).border(3.dp, Color.White, CircleShape).background(color.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
+                    val colors = listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary, MaterialTheme.colorScheme.tertiary, MaterialTheme.colorScheme.error, MaterialTheme.colorScheme.primary)
+                    val color = colors[i % colors.size]
+                    Box(modifier = Modifier.size(44.dp).clip(CircleShape).border(3.dp, MaterialTheme.colorScheme.surface, CircleShape).background(color.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
                         Text(listOf("A", "B", "S", "M", "K")[i], color = color, fontWeight = FontWeight.Bold)
                     }
                 }
-                Box(modifier = Modifier.size(44.dp).clip(CircleShape).border(3.dp, Color.White, CircleShape).background(Color(0xFFF1F5F9)), contentAlignment = Alignment.Center) {
-                    Text("+12", color = Color(0xFF64748B), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Box(modifier = Modifier.size(44.dp).clip(CircleShape).border(3.dp, MaterialTheme.colorScheme.surface, CircleShape).background(MaterialTheme.colorScheme.surfaceVariant), contentAlignment = Alignment.Center) {
+                    Text("+12", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
             }
             Spacer(modifier = Modifier.height(20.dp))
-            Text("Currently on site", style = MaterialTheme.typography.labelMedium, color = Color(0xFF13B28A), fontWeight = FontWeight.Bold)
+            Text("Currently on site", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
         }
     }
 }
 
 @Composable
 fun CountingText(text: String, style: androidx.compose.ui.text.TextStyle, color: Color) {
-    // Simple static text for now as animation requires complex state management
     Text(text = text, style = style, color = color, fontWeight = FontWeight.Black)
 }
 
@@ -434,8 +436,6 @@ fun GoogleSignInButtonPremium(
     isLoading: Boolean,
     onClick: () -> Unit
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-
     Surface(
         onClick = onClick,
         enabled = !isLoading,
@@ -444,18 +444,18 @@ fun GoogleSignInButtonPremium(
             .height(58.dp)
             .pressScaleEffect(),
         shape = RoundedCornerShape(20.dp),
-        color = Color.White,
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFF1F5F9))
+        color = MaterialTheme.colorScheme.surface,
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .shadow(
-                    elevation = 12.dp,
+                    elevation = if (MaterialTheme.colorScheme.background.luminance() > 0.5f) 12.dp else 0.dp,
                     shape = RoundedCornerShape(20.dp),
                     clip = false,
-                    spotColor = Color(0xFF000000).copy(alpha = 0.05f),
-                    ambientColor = Color(0xFF000000).copy(alpha = 0.05f)
+                    spotColor = Color.Black.copy(alpha = 0.05f),
+                    ambientColor = Color.Black.copy(alpha = 0.05f)
                 ),
             contentAlignment = Alignment.Center
         ) {
@@ -463,7 +463,7 @@ fun GoogleSignInButtonPremium(
                 CircularProgressIndicator(
                     modifier = Modifier.size(24.dp),
                     strokeWidth = 2.5.dp,
-                    color = Color(0xFF13B28A)
+                    color = MaterialTheme.colorScheme.primary
                 )
             } else {
                 Row(
@@ -480,11 +480,15 @@ fun GoogleSignInButtonPremium(
                         text = text,
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF1E293B),
+                        color = MaterialTheme.colorScheme.onSurface,
                         letterSpacing = 0.2.sp
                     )
                 }
             }
         }
     }
+}
+
+private fun Color.luminance(): Float {
+    return 0.2126f * red + 0.7152f * green + 0.0722f * blue
 }
