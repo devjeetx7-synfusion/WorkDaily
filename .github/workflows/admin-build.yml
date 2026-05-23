@@ -1,4 +1,4 @@
-name: Admin Android Build (Test)
+name: Admin Android Build
 
 on:
   workflow_dispatch:
@@ -23,29 +23,23 @@ jobs:
           cp android-app/gradlew android-admin-app/
           chmod +x android-admin-app/gradlew
 
-      - name: Generate temporary keystore
-        run: |
-          keytool -genkeypair -v \
-            -keystore temp.jks \
-            -alias temp-key \
-            -keyalg RSA \
-            -keysize 2048 \
-            -validity 100 \
-            -storepass temp-password \
-            -keypass temp-password \
-            -dname "CN=WorkDaily-Admin, OU=Dev, O=WorkDaily, L=City, S=State, C=US"
-
-      - name: Build Admin Release APK
+      - name: Build Admin Release
         run: |
           cd android-admin-app
-          ./gradlew assembleAdminRelease \
-            -Pandroid.injected.signing.store.file=$GITHUB_WORKSPACE/temp.jks \
-            -Pandroid.injected.signing.store.password=temp-password \
-            -Pandroid.injected.signing.key.alias=temp-key \
-            -Pandroid.injected.signing.key.password=temp-password
+          ./gradlew assembleAdminRelease bundleAdminRelease
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: admin-release-apk
           path: android-admin-app/app/build/outputs/apk/admin/release/app-admin-release.apk
+
+      - name: Upload AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: admin-release-aab
+          path: android-admin-app/app/build/outputs/bundle/admin/release/app-admin-release.aab
