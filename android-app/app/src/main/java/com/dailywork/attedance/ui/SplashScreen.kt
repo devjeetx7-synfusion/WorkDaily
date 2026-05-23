@@ -72,7 +72,7 @@ fun SplashScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF8FAFB)),
+            .background(MaterialTheme.colorScheme.background),
         contentAlignment = Alignment.Center
     ) {
         // Subtle Background Particles
@@ -88,8 +88,9 @@ fun SplashScreen(
                 contentAlignment = Alignment.Center
             ) {
                 // Orbit Lines
+                val orbitColor = MaterialTheme.colorScheme.primary
                 Canvas(modifier = Modifier.size(240.dp).alpha(0.1f)) {
-                    drawCircle(color = Color(0xFF13B28A), style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.dp.toPx()))
+                    drawCircle(color = orbitColor, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.dp.toPx()))
                 }
 
                 // Center Card (Fintech/SaaS Dashboard style)
@@ -99,32 +100,32 @@ fun SplashScreen(
                         .offset(y = floatAnim.dp)
                         .scale(0.95f),
                     shape = RoundedCornerShape(24.dp),
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.surface,
                     shadowElevation = 0.dp
                 ) {
                     Box(
                         modifier = Modifier
-                            .background(Color.White)
-                            .border(1.dp, Color(0xFFF1F5F9), RoundedCornerShape(24.dp))
+                            .background(MaterialTheme.colorScheme.surface)
+                            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f), RoundedCornerShape(24.dp))
                             .padding(16.dp)
                     ) {
                         Column {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(modifier = Modifier.size(32.dp).clip(CircleShape).background(Color(0xFFF0FDF4)), contentAlignment = Alignment.Center) {
-                                    Icon(Icons.Default.Payments, null, tint = Color(0xFF13B28A), modifier = Modifier.size(16.dp))
+                                Box(modifier = Modifier.size(32.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
+                                    Icon(Icons.Default.Payments, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
                                 }
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Box(modifier = Modifier.width(60.dp).height(8.dp).clip(CircleShape).background(Color(0xFFF1F5F9)))
+                                Box(modifier = Modifier.width(60.dp).height(8.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant))
                             }
                             Spacer(modifier = Modifier.height(24.dp))
-                            Box(modifier = Modifier.fillMaxWidth().height(12.dp).clip(CircleShape).background(Color(0xFFF1F5F9)))
+                            Box(modifier = Modifier.fillMaxWidth().height(12.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant))
                             Spacer(modifier = Modifier.height(12.dp))
-                            Box(modifier = Modifier.fillMaxWidth(0.7f).height(12.dp).clip(CircleShape).background(Color(0xFFF1F5F9)))
+                            Box(modifier = Modifier.fillMaxWidth(0.7f).height(12.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant))
 
                             Spacer(modifier = Modifier.weight(1f))
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
                                 repeat(4) { i ->
-                                    Box(modifier = Modifier.width(14.dp).height((30 + i * 15).dp).clip(RoundedCornerShape(4.dp)).background(if(i==2) Color(0xFF13B28A) else Color(0xFFF1F5F9)))
+                                    Box(modifier = Modifier.width(14.dp).height((30 + i * 15).dp).clip(RoundedCornerShape(4.dp)).background(if(i==2) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant))
                                 }
                             }
                         }
@@ -145,13 +146,13 @@ fun SplashScreen(
                             .offset(x = x.dp, y = y.dp)
                             .size(40.dp)
                             .scale(pulseAnim)
+                            .shadow(if (MaterialTheme.colorScheme.background.luminance() > 0.5f) 8.dp else 0.dp, CircleShape)
                             .clip(CircleShape)
-                            .background(Color.White)
-                            .border(1.dp, Color(0xFFF1F5F9), CircleShape)
-                            .shadow(8.dp, CircleShape, ambientColor = Color.Black.copy(alpha = 0.05f), spotColor = Color.Black.copy(alpha = 0.05f)),
+                            .background(MaterialTheme.colorScheme.surface)
+                            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f), CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(icon, null, tint = if(index%2==0) Color(0xFF13B28A) else Color(0xFF3B82F6), modifier = Modifier.size(20.dp))
+                        Icon(icon, null, tint = if(index%2==0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary, modifier = Modifier.size(20.dp))
                     }
                 }
             }
@@ -169,14 +170,14 @@ fun SplashScreen(
                     .width(140.dp)
                     .height(3.dp)
                     .clip(CircleShape),
-                color = Color(0xFF13B28A),
-                trackColor = Color(0xFFF1F5F9)
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.surfaceVariant
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 "Preparing Workspace...",
                 style = MaterialTheme.typography.labelMedium,
-                color = Color(0xFF94A3B8),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.Medium,
                 letterSpacing = 0.5.sp
             )
@@ -197,10 +198,12 @@ fun SplashParticlesEffect() {
         label = "bgAnim"
     )
 
+    val particleColor = MaterialTheme.colorScheme.primary
+
     Canvas(modifier = Modifier.fillMaxSize().alpha(0.3f).blur(60.dp)) {
         drawCircle(
             brush = Brush.radialGradient(
-                colors = listOf(Color(0xFF13B28A).copy(alpha = 0.08f), Color.Transparent),
+                colors = listOf(particleColor.copy(alpha = 0.08f), Color.Transparent),
                 center = center.copy(x = center.x * (0.2f + animValue * 0.8f), y = center.y * (0.1f + animValue * 0.5f)),
                 radius = size.minDimension * 0.6f
             )
@@ -211,4 +214,8 @@ fun SplashParticlesEffect() {
 private val SineOverShootEasing = Easing { f ->
     val t = f - 1.0f
     t * t * ((2.0f + 1.0f) * t + 2.0f) + 1.0f
+}
+
+private fun Color.luminance(): Float {
+    return 0.2126f * red + 0.7152f * green + 0.0722f * blue
 }
