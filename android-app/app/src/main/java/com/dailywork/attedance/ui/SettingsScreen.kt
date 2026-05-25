@@ -16,6 +16,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.Color
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.ui.draw.clip
+import android.content.Intent
+import androidx.compose.foundation.border
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.KeyboardType
+import com.google.firebase.auth.FirebaseAuth
+import com.dailywork.attedance.viewmodel.SettingsViewModel
+import androidx.compose.material3.SnackbarHostState
 import com.dailywork.attedance.ui.components.ShareBottomSheet
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -439,7 +452,10 @@ fun SettingsScreenContent(
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(text = "Log Out", fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
-        }
+    }
+}        }
+    }
+
 
 @Composable
 fun SettingsItem(title: String, onClick: (() -> Unit)? = null) {
@@ -464,5 +480,6 @@ fun SettingsItem(title: String, onClick: (() -> Unit)? = null) {
             Text(text = title, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
         }
     }
-}
+
+
 }
