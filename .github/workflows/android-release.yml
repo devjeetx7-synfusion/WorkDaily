@@ -42,14 +42,27 @@ jobs:
           KEY_ALIAS: androiddebugkey
           KEY_PASSWORD: android
 
+      - name: Clean up old artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          artifacts=$(gh api repos/${{ github.repository }}/actions/artifacts -q '.artifacts[] | select(.name == "user-release-apk" or .name == "admin-release-apk") | .id')
+          for id in $artifacts; do
+            gh api -X DELETE repos/${{ github.repository }}/actions/artifacts/$id
+          done
+
       - name: Upload User APK
         uses: actions/upload-artifact@v4
         with:
           name: user-release-apk
           path: android-app/app/build/outputs/apk/release/app-release.apk
+          retention-days: 1
+          compression-level: 9
 
       - name: Upload Admin APK
         uses: actions/upload-artifact@v4
         with:
           name: admin-release-apk
           path: android-admin-app/app/build/outputs/apk/admin/release/app-admin-release.apk
+          retention-days: 1
+          compression-level: 9
