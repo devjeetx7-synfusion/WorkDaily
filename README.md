@@ -127,5 +127,5 @@ The `DataMigrationManager` handles the transition of legacy data. If a migration
 
 ## 📝 License & Author
 
-Copyright © 2024 **WorkDaily**. Licensed under the MIT License.
-Crafted with ❤️ by **Dharmjeet**.
+Copyright © 2026 **WorkDaily**. Licensed under the MIT License.
+Crafted with ❤️ by **Dharmjeet Singh**.
