@@ -57,6 +57,3 @@ The `DataMigrationManager` handles the transition of legacy data. If a migration
 - Manage UI updates within `LaunchedEffect` or `collectAsStateWithLifecycle` for lifecycle-aware execution.
 - Provide comprehensive loading, empty, and error states for all nested data operations.
 - Utilize `isRefreshing` flags to provide standard pull-to-refresh functionality.
-
----
-*Maintained by Jules - Software Engineer*

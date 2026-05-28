@@ -63,69 +63,119 @@ The `DataMigrationManager` handles the transition of legacy data. If a migration
 - **History Tracking:** Detailed month-by-month summary of work days and payments.
 
 ### 💎 Premium Features
-*Available via subscription models (Monthly, Yearly, etc.)*
-- **Enhanced Insights:** Deep dive into labor costs and earning trends.
-- **Advanced Exporting:** More granular control over report generation.
-- **Ad-Free Experience:** Focus on your work without distractions.
+- **Advanced Analytics:** In-depth insights into labor costs and earning trends.
+- **Enhanced Export:** Granular control over report generation and formats.
+- **Premium Insights:** Comparative data and productivity tracking.
+- **Ad-Free Experience:** A clean, focused interface for power users.
 
-### 📱 Integrated Experience
-- **PDF Generation:** Instantly generate professional PDF passbooks and work reports for sharing via WhatsApp or Email.
-- **Admin Panel:** A dedicated Android app for system-wide user management, notification broadcasting, and configuration control.
-- **Theming & Localization:** Supports multiple languages (including Hindi) and customizable UI preferences like splash screen toggles.
+### 🛡️ Admin Panel (Android)
+- **User Management:** Monitor, block, or modify user roles.
+- **Premium Control:** Manage subscriptions and activation statuses.
+- **App Configuration:** Toggle features like splash screens or maintenance modes remotely.
+- **Broadcast Notifications:** Send real-time updates via Firebase Cloud Messaging.
 
 ---
 
 ## 🛠️ Tech Stack
 
-**WorkDaily** utilizes a modern, robust tech stack to ensure performance and reliability.
+### Android (User & Admin)
+- **Language:** Kotlin
+- **UI:** Jetpack Compose (Material 3)
+- **DI:** Manual Injection (User) / Hilt (Admin)
+- **Local DB:** Room
+- **Networking:** Firebase SDK
+- **Image Loading:** Coil
+- **Billing:** Google Play Billing
 
-- **Android App:** Native Kotlin, Jetpack Compose (Material 3), Hilt (Admin App), Room (Local Cache), Coil.
-- **Web App:** React 18, TypeScript, Vite, Tailwind CSS, Framer Motion.
-- **Backend:** Firebase Firestore (NoSQL), Firebase Authentication (Google Sign-In), Firebase Cloud Functions.
-- **In-App Purchases:** Google Play Billing integration.
-- **CI/CD:** GitHub Actions for automated Android builds (APK/AAB) and Web deployment.
+### Web App
+- **Framework:** React 18
+- **Language:** TypeScript
+- **Bundler:** Vite
+- **Styling:** Tailwind CSS
+- **Animations:** Framer Motion
 
----
-
-## 📋 How It Works
-
-1.  **Authentication:** Securely sign in using Google Auth.
-2.  **Role Selection:** Choose between **Contractor** or **Personal** mode based on your needs.
-3.  **Setup:**
-    - *Contractors:* Add your workers and define work types.
-    - *Individuals:* Set your base daily wage and preferences.
-4.  **Daily Tracking:** Log attendance and any financial transactions (advances/dues).
-5.  **Review & Export:** Monitor stats through the dashboard and generate PDF reports for record-keeping or sharing.
-
----
-
-## ⚙️ Setup & Installation
-
-### Android Apps (`/android-app` & `/android-admin-app`)
-1.  **Clone the Repo:** `git clone <repository-url>`
-2.  **Open in Android Studio:** Open the desired app directory.
-3.  **Firebase Setup:**
-    - Create a project in the [Firebase Console](https://console.firebase.google.com/).
-    - Add an Android App with package name `com.dailywork.attedance` (User) or `com.dailywork.admin` (Admin).
-    - Download `google-services.json` and place it in the `app/` directory of the respective project.
-4.  **Build:** Sync Gradle and run the `debug` or `release` variant.
-
-### Web Application (`/src`)
-1.  **Install Dependencies:** `npm install --legacy-peer-deps`
-2.  **Environment Variables:** Create a `.env` file with your Firebase configuration (see `.env.example`).
-3.  **Run Development Server:** `npm run dev`
+### Backend
+- **Database:** Firebase Firestore (NoSQL)
+- **Auth:** Firebase Authentication (Google Sign-In)
+- **Serverless:** Firebase Cloud Functions
+- **Security:** Firebase App Check
 
 ---
 
-## 🛡️ Security & Configuration
+## 🏗️ Architecture
 
-- **Environment Secrets:** Never commit your production `.env` or `google-services.json` files.
-- **Firebase Rules:** Ensure the provided `firestore.rules` are deployed to protect user data isolation.
-- **Signing:** The Android app uses a repository-stored keystore for builds. Ensure `KEYSTORE_PASSWORD`, `KEY_ALIAS`, and `KEY_PASSWORD` are configured in your CI environment for release builds.
+**WorkDaily** uses a sophisticated, role-based nested Firestore structure to ensure strict data isolation and high performance:
+
+- `users/{userId}`: Root user document.
+  - `contractor/data/`: Isolated container for contractor-specific entities.
+    - `workers/{workerId}/attendance/{date}`: Nested worker history.
+  - `personal/data/`: Isolated container for individual tracking.
+    - `attendance/{date}`: Daily logs and overtime data.
+
+This architecture ensures that users only ever interact with their own data, reducing query complexity and improving security.
 
 ---
 
-## 📝 License & Author
+## 📂 Folder Structure
 
-Copyright © 2026 **WorkDaily**. Licensed under the MIT License.
-Crafted with ❤️ by **Dharmjeet Singh**.
+- `/android-app`: The primary native Android application for users.
+- `/android-admin-app`: The native Android management tool for administrators.
+- `/src`: The React-based web application source code.
+- `/functions`: Firebase Cloud Functions for backend logic.
+- `/docs`: Project documentation and refactor guides.
+- `/.github`: CI/CD workflows for automated builds and deployment.
+
+---
+
+## 🛡️ Security
+
+- **Firebase Rules:** Granular Firestore rules enforce user-level data isolation.
+- **App Check:** Protects backend resources from unauthorized traffic.
+- **Role-Based Access:** Admin-only collections (e.g., `admin_logs`) are protected by server-side checks.
+- **Secure Signing:** Automated GitHub Actions workflows use repository secrets for keystore management.
+
+---
+
+## ⚙️ Installation Guide
+
+### Android App
+1. Clone the repository.
+2. Add your `google-services.json` to the `app/` directory.
+3. Sync Gradle in Android Studio.
+4. Build and run on a physical device or emulator.
+
+### Web App
+1. Navigate to the root directory.
+2. Run `npm install --legacy-peer-deps`.
+3. Create a `.env` file based on `.env.example`.
+4. Run `npm run dev` to start the local server.
+
+---
+
+## 🗺️ Roadmap
+- [ ] Play Store official release.
+- [ ] Enhanced offline synchronization.
+- [ ] Multi-language localization expansion.
+- [ ] AI-driven labor cost predictions.
+- [ ] Advanced CSV/Excel report exports.
+
+---
+
+## 🤝 Contribution
+Contributions are welcome! Please follow these steps:
+1. Fork the project.
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`).
+3. Commit your changes.
+4. Push to the branch.
+5. Open a Pull Request.
+
+---
+
+## 📝 License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+> **GitHub Description:** Modern attendance & workforce management ecosystem with Android, Web & Admin Panel support.
+
+> **Topics:** `attendance-management`, `worker-management`, `kotlin`, `jetpack-compose`, `firebase`, `reactjs`, `vite`, `attendance-app`, `contractor-management`, `android`, `work-management`, `pdf-generation`, `premium-system`
