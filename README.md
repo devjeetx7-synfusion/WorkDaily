@@ -1,102 +1,174 @@
 # WorkDaily 🛠️
 
-**WorkDaily** is a professional, multi-platform workforce management solution designed for **Contractors** and **Individual Professionals**. It streamlines daily attendance tracking, financial management, and work history logging through a seamless experience on both Android and Web.
+<div align="center">
+  <img src="https://via.placeholder.com/150" alt="WorkDaily Logo" width="120" />
+  <h1>WorkDaily</h1>
+  <p><strong>Smart Attendance & Worker Management Ecosystem for Contractors and Individuals.</strong></p>
+
+  ![Kotlin](https://img.shields.io/badge/Kotlin-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)
+  ![Firebase](https://img.shields.io/badge/Firebase-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)
+  ![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-4285F4?style=for-the-badge&logo=jetpack-compose&logoColor=white)
+  ![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
+  ![MIT License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
+</div>
 
 ---
 
 ## 📸 Screenshots
 
-*(Placeholder image paths - update with actual project screenshots)*
-
-| Login & Onboarding | Contractor Dashboard | Personal Dashboard |
+| Login & Onboarding | Dashboard | Contractor Panel |
 | :---: | :---: | :---: |
-| <img src="https://via.placeholder.com/250x500.png?text=Login+Screen" alt="Login" width="200" /> | <img src="https://via.placeholder.com/250x500.png?text=Contractor+View" alt="Contractor" width="200" /> | <img src="https://via.placeholder.com/250x500.png?text=Personal+View" alt="Personal" width="200" /> |
+| <img src="https://via.placeholder.com/250x500.png?text=Login+Screen" width="200" /> | <img src="https://via.placeholder.com/250x500.png?text=Dashboard" width="200" /> | <img src="https://via.placeholder.com/250x500.png?text=Contractor+Panel" width="200" /> |
 
-| Worker History | PDF Reports | Admin App |
+| Passbook | Premium Screen | Admin App |
 | :---: | :---: | :---: |
-| <img src="https://via.placeholder.com/250x500.png?text=History+Logs" alt="History" width="200" /> | <img src="https://via.placeholder.com/250x500.png?text=PDF+Export" alt="Reports" width="200" /> | <img src="https://via.placeholder.com/250x500.png?text=Admin+Panel" alt="Admin" width="200" /> |
+| <img src="https://via.placeholder.com/250x500.png?text=Passbook" width="200" /> | <img src="https://via.placeholder.com/250x500.png?text=Premium+Screen" width="200" /> | <img src="https://via.placeholder.com/250x500.png?text=Admin+App" width="200" /> |
 
 ---
 
-## 🚀 Key Features
+## 🚀 About Project
 
-### 🏗️ Contractor Management
-Built for professionals managing teams of workers, helpers, and mistris.
-- **Worker Database:** Add and manage a complete list of laborers with specific work types.
-- **Bulk Attendance:** Mark attendance (Present, Absent, Half-day) for the entire team in seconds.
-- **Payment Tracking:** Log advances, partial payments, and full settlements.
-- **Due & Overtime Management:** Keep track of pending dues and overtime hours worked by each staff member.
+**WorkDaily** is a modern, full-stack attendance and workforce management ecosystem. It provides a robust set of tools for both individual professionals tracking their own work and contractors managing diverse teams of laborers.
+
+The ecosystem consists of:
+- **Android User App:** The primary interface for tracking attendance and finances.
+- **Android Admin App:** A dedicated tool for system administrators to manage the user base and platform.
+- **Web Dashboard:** A high-performance web interface matching the mobile experience.
+
+---
+
+## ✨ Main Features
 
 ### 👤 Personal Mode
-Tailored for individual workers and self-employed professionals.
-- **Daily Work Log:** Record your own attendance, overtime, and work notes.
-- **Personal Passbook:** A digital ledger to track your earnings, advances received, and remaining balances.
-- **History Tracking:** Detailed month-by-month summary of work days and payments.
+Tailored for individual tracking and self-employed professionals.
+- **Daily Attendance:** Log your presence with one tap.
+- **Overtime Tracking:** Record extra hours and notes for every workday.
+- **Financial Ledger:** Track advances received and pending dues.
+- **Personal Passbook:** View a detailed history of your work and earnings.
+- **Monthly Summaries:** Automated aggregation of work days and total payouts.
+
+### 🏗️ Contractor Mode
+Professional workforce management for teams (Workers, Helpers, Mistris).
+- **Worker Management:** Add and organize workers by specific work types.
+- **Batch Attendance:** Mark attendance for your entire team simultaneously.
+- **Payment Tracking:** Log full payments, half payments, and advances per worker.
+- **PDF Reports:** Generate and share professional worker passbooks as PDF documents.
+- **Work Type Management:** Customize roles and wage structures for your team.
 
 ### 💎 Premium Features
-*Available via subscription models (Monthly, Yearly, etc.)*
-- **Enhanced Insights:** Deep dive into labor costs and earning trends.
-- **Advanced Exporting:** More granular control over report generation.
-- **Ad-Free Experience:** Focus on your work without distractions.
+- **Advanced Analytics:** In-depth insights into labor costs and earning trends.
+- **Enhanced Export:** Granular control over report generation and formats.
+- **Premium Insights:** Comparative data and productivity tracking.
+- **Ad-Free Experience:** A clean, focused interface for power users.
 
-### 📱 Integrated Experience
-- **PDF Generation:** Instantly generate professional PDF passbooks and work reports for sharing via WhatsApp or Email.
-- **Admin Panel:** A dedicated Android app for system-wide user management, notification broadcasting, and configuration control.
-- **Theming & Localization:** Supports multiple languages (including Hindi) and customizable UI preferences like splash screen toggles.
+### 🛡️ Admin Panel (Android)
+- **User Management:** Monitor, block, or modify user roles.
+- **Premium Control:** Manage subscriptions and activation statuses.
+- **App Configuration:** Toggle features like splash screens or maintenance modes remotely.
+- **Broadcast Notifications:** Send real-time updates via Firebase Cloud Messaging.
 
 ---
 
 ## 🛠️ Tech Stack
 
-**WorkDaily** utilizes a modern, robust tech stack to ensure performance and reliability.
+### Android (User & Admin)
+- **Language:** Kotlin
+- **UI:** Jetpack Compose (Material 3)
+- **DI:** Manual Injection (User) / Hilt (Admin)
+- **Local DB:** Room
+- **Networking:** Firebase SDK
+- **Image Loading:** Coil
+- **Billing:** Google Play Billing
 
-- **Android App:** Native Kotlin, Jetpack Compose (Material 3), Hilt (Admin App), Room (Local Cache), Coil.
-- **Web App:** React 18, TypeScript, Vite, Tailwind CSS, Framer Motion.
-- **Backend:** Firebase Firestore (NoSQL), Firebase Authentication (Google Sign-In), Firebase Cloud Functions.
-- **In-App Purchases:** Google Play Billing integration.
-- **CI/CD:** GitHub Actions for automated Android builds (APK/AAB) and Web deployment.
+### Web App
+- **Framework:** React 18
+- **Language:** TypeScript
+- **Bundler:** Vite
+- **Styling:** Tailwind CSS
+- **Animations:** Framer Motion
 
----
-
-## 📋 How It Works
-
-1.  **Authentication:** Securely sign in using Google Auth.
-2.  **Role Selection:** Choose between **Contractor** or **Personal** mode based on your needs.
-3.  **Setup:**
-    - *Contractors:* Add your workers and define work types.
-    - *Individuals:* Set your base daily wage and preferences.
-4.  **Daily Tracking:** Log attendance and any financial transactions (advances/dues).
-5.  **Review & Export:** Monitor stats through the dashboard and generate PDF reports for record-keeping or sharing.
-
----
-
-## ⚙️ Setup & Installation
-
-### Android Apps (`/android-app` & `/android-admin-app`)
-1.  **Clone the Repo:** `git clone <repository-url>`
-2.  **Open in Android Studio:** Open the desired app directory.
-3.  **Firebase Setup:**
-    - Create a project in the [Firebase Console](https://console.firebase.google.com/).
-    - Add an Android App with package name `com.dailywork.attedance` (User) or `com.dailywork.admin` (Admin).
-    - Download `google-services.json` and place it in the `app/` directory of the respective project.
-4.  **Build:** Sync Gradle and run the `debug` or `release` variant.
-
-### Web Application (`/src`)
-1.  **Install Dependencies:** `npm install --legacy-peer-deps`
-2.  **Environment Variables:** Create a `.env` file with your Firebase configuration (see `.env.example`).
-3.  **Run Development Server:** `npm run dev`
+### Backend
+- **Database:** Firebase Firestore (NoSQL)
+- **Auth:** Firebase Authentication (Google Sign-In)
+- **Serverless:** Firebase Cloud Functions
+- **Security:** Firebase App Check
 
 ---
 
-## 🛡️ Security & Configuration
+## 🏗️ Architecture
 
-- **Environment Secrets:** Never commit your production `.env` or `google-services.json` files.
-- **Firebase Rules:** Ensure the provided `firestore.rules` are deployed to protect user data isolation.
-- **Signing:** The Android app uses a repository-stored keystore for builds. Ensure `KEYSTORE_PASSWORD`, `KEY_ALIAS`, and `KEY_PASSWORD` are configured in your CI environment for release builds.
+**WorkDaily** uses a sophisticated, role-based nested Firestore structure to ensure strict data isolation and high performance:
+
+- `users/{userId}`: Root user document.
+  - `contractor/data/`: Isolated container for contractor-specific entities.
+    - `workers/{workerId}/attendance/{date}`: Nested worker history.
+  - `personal/data/`: Isolated container for individual tracking.
+    - `attendance/{date}`: Daily logs and overtime data.
+
+This architecture ensures that users only ever interact with their own data, reducing query complexity and improving security.
 
 ---
 
-## 📝 License & Author
+## 📂 Folder Structure
 
-Copyright © 2024 **WorkDaily**. Licensed under the MIT License.
-Crafted with ❤️ by **Dharmjeet**.
+- `/android-app`: The primary native Android application for users.
+- `/android-admin-app`: The native Android management tool for administrators.
+- `/src`: The React-based web application source code.
+- `/functions`: Firebase Cloud Functions for backend logic.
+- `/docs`: Project documentation and refactor guides.
+- `/.github`: CI/CD workflows for automated builds and deployment.
+
+---
+
+## 🛡️ Security
+
+- **Firebase Rules:** Granular Firestore rules enforce user-level data isolation.
+- **App Check:** Protects backend resources from unauthorized traffic.
+- **Role-Based Access:** Admin-only collections (e.g., `admin_logs`) are protected by server-side checks.
+- **Secure Signing:** Automated GitHub Actions workflows use repository secrets for keystore management.
+
+---
+
+## ⚙️ Installation Guide
+
+### Android App
+1. Clone the repository.
+2. Add your `google-services.json` to the `app/` directory.
+3. Sync Gradle in Android Studio.
+4. Build and run on a physical device or emulator.
+
+### Web App
+1. Navigate to the root directory.
+2. Run `npm install --legacy-peer-deps`.
+3. Create a `.env` file based on `.env.example`.
+4. Run `npm run dev` to start the local server.
+
+---
+
+## 🗺️ Roadmap
+- [ ] Play Store official release.
+- [ ] Enhanced offline synchronization.
+- [ ] Multi-language localization expansion.
+- [ ] AI-driven labor cost predictions.
+- [ ] Advanced CSV/Excel report exports.
+
+---
+
+## 🤝 Contribution
+Contributions are welcome! Please follow these steps:
+1. Fork the project.
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`).
+3. Commit your changes.
+4. Push to the branch.
+5. Open a Pull Request.
+
+---
+
+## 📝 License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+> **GitHub Description:** Modern attendance & workforce management ecosystem with Android, Web & Admin Panel support.
+
+> **Topics:** `attendance-management`, `worker-management`, `kotlin`, `jetpack-compose`, `firebase`, `reactjs`, `vite`, `attendance-app`, `contractor-management`, `android`, `work-management`, `pdf-generation`, `premium-system`
