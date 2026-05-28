@@ -1,59 +1,66 @@
-# WorkDaily 🛠️
+# Firestore Architecture Refactor Guide
 
-<div align="center">
-  <img src="https://via.placeholder.com/150" alt="WorkDaily Logo" width="120" />
-  <h1>WorkDaily</h1>
-  <p><strong>Smart Attendance & Worker Management Ecosystem for Contractors and Individuals.</strong></p>
+This document outlines the architectural patterns and best practices implemented during the Firestore nested structure refactor for the **WorkDaily** ecosystem.
 
-  ![Kotlin](https://img.shields.io/badge/Kotlin-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)
-  ![Firebase](https://img.shields.io/badge/Firebase-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)
-  ![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-4285F4?style=for-the-badge&logo=jetpack-compose&logoColor=white)
-  ![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
-  ![MIT License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
-</div>
+## 🏗️ New Nested Structure
+
+The application has transitioned from a flat collection structure to a strictly isolated, role-based nested hierarchy under each user document. This ensures data privacy and simplifies security rules.
+
+- `users/{userId}`
+  - `contractor/data/`
+    - `workers/{workerId}`
+      - `attendance/{date}`
+    - `workTypes/{typeId}`
+    - `summaries/{YYYY-MM}`
+  - `personal/data/`
+    - `attendance/{date}`
+    - `summaries/{YYYY-MM}`
+
+## ✅ Key Benefits
+
+- **Strict Data Isolation:** Users have exclusive access to their own sub-collections, preventing unauthorized data exposure.
+- **Improved Performance:** Eliminates the need for complex `where` filters (e.g., `contractorId`) for basic ownership checks.
+- **Scalability:** Data is naturally partitioned by user, supporting large-scale usage without performance degradation.
+- **Summary Optimization:** Aggregated statistics are pre-calculated in the `summaries` collection, significantly reducing read costs and enhancing UI responsiveness.
+
+## 🛠️ Implementation Details
+
+### 1. Centralized Repository (`FirestoreRepository.kt`)
+All Firestore interactions must be routed through the `FirestoreRepository`. Key responsibilities include:
+- Resolving correct document paths for nested collections.
+- Managing automatic cascade deletions for worker-related records.
+- Handling monthly summary updates atomically during attendance operations.
+
+### 2. ViewModel Architecture
+ViewModels receive the `FirestoreRepository` via a `ViewModelFactory`. Standard practices include:
+- Utilizing path-based document access for precision.
+- Prioritizing `summaries` for high-level dashboard statistics.
+- Implementing optimistic UI updates to provide a responsive user experience.
+
+### 3. Data Models
+Redundant identification fields (e.g., `contractorId`, `user_id`) have been removed from data classes. Document paths now serve as the primary source of truth for ownership and relational context.
+
+## ⚠️ Edge Case Handling
+
+### 1. Partial Migration
+The `DataMigrationManager` handles the transition of legacy data. If a migration is interrupted:
+- The process is idempotent (using `set` operations), allowing for safe re-runs.
+- Legacy collections are retained until full verification of the new structure is confirmed.
+
+### 2. Data Integrity
+- Implement `snapshot.exists()` checks in all listeners.
+- Utilize default values (e.g., standard wage rates) when specific fields are absent in the database.
+
+## 🚀 Compose UI Best Practices
+
+- Observe data changes using `StateFlow` from ViewModels.
+- Manage UI updates within `LaunchedEffect` or `collectAsStateWithLifecycle` for lifecycle-aware execution.
+- Provide comprehensive loading, empty, and error states for all nested data operations.
+- Utilize `isRefreshing` flags to provide standard pull-to-refresh functionality.
 
 ---
-
-## 📸 Screenshots
-
-| Login & Onboarding | Dashboard | Contractor Panel |
-| :---: | :---: | :---: |
-| <img src="https://via.placeholder.com/250x500.png?text=Login+Screen" width="200" /> | <img src="https://via.placeholder.com/250x500.png?text=Dashboard" width="200" /> | <img src="https://via.placeholder.com/250x500.png?text=Contractor+Panel" width="200" /> |
-
-| Passbook | Premium Screen | Admin App |
-| :---: | :---: | :---: |
-| <img src="https://via.placeholder.com/250x500.png?text=Passbook" width="200" /> | <img src="https://via.placeholder.com/250x500.png?text=Premium+Screen" width="200" /> | <img src="https://via.placeholder.com/250x500.png?text=Admin+App" width="200" /> |
-
----
-
-## 🚀 About Project
-
-**WorkDaily** is a modern, full-stack attendance and workforce management ecosystem. It provides a robust set of tools for both individual professionals tracking their own work and contractors managing diverse teams of laborers.
-
-The ecosystem consists of:
-- **Android User App:** The primary interface for tracking attendance and finances.
-- **Android Admin App:** A dedicated tool for system administrators to manage the user base and platform.
-- **Web Dashboard:** A high-performance web interface matching the mobile experience.
-
----
-
-## ✨ Main Features
-
-### 👤 Personal Mode
-Tailored for individual tracking and self-employed professionals.
-- **Daily Attendance:** Log your presence with one tap.
-- **Overtime Tracking:** Record extra hours and notes for every workday.
-- **Financial Ledger:** Track advances received and pending dues.
-- **Personal Passbook:** View a detailed history of your work and earnings.
-- **Monthly Summaries:** Automated aggregation of work days and total payouts.
-
-### 🏗️ Contractor Mode
-Professional workforce management for teams (Workers, Helpers, Mistris).
-- **Worker Management:** Add and organize workers by specific work types.
-- **Batch Attendance:** Mark attendance for your entire team simultaneously.
-- **Payment Tracking:** Log full payments, half payments, and advances per worker.
-- **PDF Reports:** Generate and share professional worker passbooks as PDF documents.
-- **Work Type Management:** Customize roles and wage structures for your team.
+*Maintained by Jules - Software Engineer*- **Personal Passbook:** A digital ledger to track your earnings, advances received, and remaining balances.
+- **History Tracking:** Detailed month-by-month summary of work days and payments.
 
 ### 💎 Premium Features
 - **Advanced Analytics:** In-depth insights into labor costs and earning trends.
