@@ -48,6 +48,10 @@ fun SettingsScreenContent(
 
     val context = LocalContext.current
 
+    var showHowToUseSheet by remember { mutableStateOf(false) }
+    var showPrivacySheet by remember { mutableStateOf(false) }
+    var showTermsSheet by remember { mutableStateOf(false) }
+    var showDeveloperSheet by remember { mutableStateOf(false) }
     LaunchedEffect(state.savedMessage) {
         state.savedMessage?.let { msg ->
             snackbarHostState.showSnackbar(msg)
@@ -67,9 +71,6 @@ fun SettingsScreenContent(
         }
     }
     var showLogoutDialog by remember { mutableStateOf(false) }
-
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-
     var showRoleBottomSheet by remember { mutableStateOf(false) }
     var showRoleConfirmationDialog by remember { mutableStateOf(false) }
 
@@ -131,10 +132,7 @@ fun SettingsScreenContent(
                     }
                     Column(verticalArrangement = Arrangement.spacedBy(16.dp), horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(16.dp)) {
 
-                        // Profile Image (Role-Based Icon)
-                        val personalIcons = listOf(Icons.Default.Construction, Icons.Default.FormatPaint, Icons.Default.Build, Icons.Default.Plumbing)
-                        val randomPersonalIcon = remember(state.role) { personalIcons.random() }
-
+                        // Profile Image (App Logo)
                         Box(
                             modifier = Modifier
                                 .size(80.dp)
@@ -143,11 +141,11 @@ fun SettingsScreenContent(
                                 .border(1.dp, MaterialTheme.colorScheme.outline, androidx.compose.foundation.shape.CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
-                            if (state.role == "contractor") {
-                                Icon(Icons.Default.Business, contentDescription = null, modifier = Modifier.size(40.dp), tint = MaterialTheme.colorScheme.onSurface)
-                            } else {
-                                Icon(randomPersonalIcon, contentDescription = null, modifier = Modifier.size(40.dp), tint = MaterialTheme.colorScheme.onSurface)
-                            }
+                            androidx.compose.foundation.Image(
+                                painter = androidx.compose.ui.res.painterResource(id = com.dailywork.attedance.R.mipmap.ic_launcher),
+                                contentDescription = "App Logo",
+                                modifier = Modifier.size(60.dp).clip(androidx.compose.foundation.shape.CircleShape)
+                            )
                         }
 
                         // Name
@@ -401,7 +399,7 @@ fun SettingsScreenContent(
 
                 Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp))) {
                     Column(modifier = Modifier.fillMaxWidth()) {
-                        Row(modifier = Modifier.fillMaxWidth().clickable { try { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://dailywork.com/guide"))) } catch (e: ActivityNotFoundException) { Toast.makeText(context, "No app found to open link", Toast.LENGTH_SHORT).show() } }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Row(modifier = Modifier.fillMaxWidth().clickable { showHowToUseSheet = true }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.onSurface.copy(alpha=0.05f)), contentAlignment = Alignment.Center) {
                                     Icon(Icons.Default.Info, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface)
@@ -413,8 +411,8 @@ fun SettingsScreenContent(
                                 }
                             }
                         }
-                        Divider(color = MaterialTheme.colorScheme.outline)
-                        Row(modifier = Modifier.fillMaxWidth().clickable { try { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://dailywork.com/privacy"))) } catch (e: ActivityNotFoundException) { Toast.makeText(context, "No app found to open link", Toast.LENGTH_SHORT).show() } }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+                        Row(modifier = Modifier.fillMaxWidth().clickable { showPrivacySheet = true }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
                                     Icon(Icons.Default.Security, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
@@ -426,8 +424,21 @@ fun SettingsScreenContent(
                                 }
                             }
                         }
-                        Divider(color = MaterialTheme.colorScheme.outline)
-                        Row(modifier = Modifier.fillMaxWidth().clickable { try { context.startActivity(Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:support@dailywork.com"))) } catch (e: ActivityNotFoundException) { Toast.makeText(context, "No app found to handle email", Toast.LENGTH_SHORT).show() } }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+                        Row(modifier = Modifier.fillMaxWidth().clickable { showTermsSheet = true }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.secondary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
+                                    Icon(Icons.Default.Description, contentDescription = null, tint = MaterialTheme.colorScheme.secondary)
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column {
+                                    Text("Terms & Conditions", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                    Text("Rules and guidelines for using the app", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                        }
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+                        Row(modifier = Modifier.fillMaxWidth().clickable { showDeveloperSheet = true }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(Color(0xFF16A34A).copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
                                     Icon(Icons.Default.Code, contentDescription = null, tint = Color(0xFF16A34A))
@@ -472,6 +483,19 @@ fun SettingsScreenContent(
                 Text(text = "Log Out", fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
 
+
+            if (showHowToUseSheet) {
+                HowToUseBottomSheet(onDismiss = { showHowToUseSheet = false })
+            }
+            if (showPrivacySheet) {
+                PrivacyPolicyBottomSheet(onDismiss = { showPrivacySheet = false })
+            }
+            if (showTermsSheet) {
+                TermsConditionsBottomSheet(onDismiss = { showTermsSheet = false })
+            }
+            if (showDeveloperSheet) {
+                DeveloperContactBottomSheet(onDismiss = { showDeveloperSheet = false })
+            }
             if (showLogoutDialog) {
                 AlertDialog(
                     onDismissRequest = { showLogoutDialog = false },
@@ -501,3 +525,245 @@ fun SettingsScreenContent(
 
 
 
+
+
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun HowToUseBottomSheet(onDismiss: () -> Unit) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = MaterialTheme.colorScheme.surface,
+        dragHandle = { BottomSheetDefaults.DragHandle() }
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 16.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.onSurface.copy(alpha=0.05f)), contentAlignment = Alignment.Center) {
+                    Icon(Icons.Default.Info, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface)
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Text("How to Use DailyWork", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+            }
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+            Text(
+                text = "DailyWork helps users manage attendance, daily wages, advances, payments, dues, notes, and worker records.\n\n• Personal users can track their own attendance, work days, payments, and notes.\n• Contractors can manage workers/helpers/mistry records, attendance, advance, half payment, full payment, overtime, dues, and history.\n\nPassbook and reports help users review records clearly.\nPremium features may unlock advanced reports, PDF/share options, or extended worker history if enabled in the app.",
+                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                lineHeight = 20.sp
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth().height(50.dp),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text("Close", fontWeight = FontWeight.Bold)
+            }
+            Spacer(modifier = Modifier.height(32.dp))
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun PrivacyPolicyBottomSheet(onDismiss: () -> Unit) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = MaterialTheme.colorScheme.surface,
+        dragHandle = { BottomSheetDefaults.DragHandle() }
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 16.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
+                    Icon(Icons.Default.Security, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Text("Privacy Policy", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+            }
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+            Text(
+                text = "DailyWork respects your privacy and is designed to help users manage work attendance, worker records, payments, dues, notes, and reports securely.\n\nInformation We May Store:\n• Name, email, phone number, wage details, attendance records, worker details, payment records, advances, dues, notes, and app preferences.\n• Login/account information required for authentication.\n• Premium or subscription status if premium features are used.\n\nHow We Use Information:\n• To show your attendance, worker records, payment details, passbooks, and reports inside the app.\n• To sync your data across devices when cloud features are enabled.\n• To provide support, bug fixes, and app improvements.\n\nData Safety:\n• User data should not be sold.\n• Sensitive user records should only be used for app functionality.\n• Users are responsible for entering accurate worker/payment information.\n\nSupport & Bug Reports:\nFor help, bug reports, privacy questions, or account support, contact:\nworkdaily.synfusion@gmail.com\n\nBrand:\nSynFusion",
+                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                lineHeight = 20.sp
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth().height(50.dp),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text("Close", fontWeight = FontWeight.Bold)
+            }
+            Spacer(modifier = Modifier.height(32.dp))
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TermsConditionsBottomSheet(onDismiss: () -> Unit) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = MaterialTheme.colorScheme.surface,
+        dragHandle = { BottomSheetDefaults.DragHandle() }
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 16.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.secondary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
+                    Icon(Icons.Default.Description, contentDescription = null, tint = MaterialTheme.colorScheme.secondary)
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Text("Terms & Conditions", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+            }
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+            Text(
+                text = "By using DailyWork, you agree to use the app responsibly for managing attendance, wages, payments, worker details, notes, dues, passbooks, and related work records.\n\nUser Responsibility:\n• Users are responsible for the accuracy of attendance, wage, payment, worker, and due records entered in the app.\n• DailyWork is a record-management tool and does not verify real-world payments or worker attendance automatically.\n• Users should review records before sharing passbooks, reports, or PDFs.\n\nPremium Features:\n• Some features may require premium access.\n• Premium availability, pricing, and features may change depending on app configuration.\n• If Google Play Billing is used, purchases are handled through Google Play policies.\n\nLimitations:\n• The app is provided as a productivity and record-management tool.\n• SynFusion is not responsible for incorrect entries, payment disputes, business losses, or misuse of generated records.\n\nSupport:\nFor help, bug reports, or account-related questions, contact:\nworkdaily.synfusion@gmail.com\n\nBrand:\nSynFusion",
+                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                lineHeight = 20.sp
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth().height(50.dp),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text("Close", fontWeight = FontWeight.Bold)
+            }
+            Spacer(modifier = Modifier.height(32.dp))
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DeveloperContactBottomSheet(onDismiss: () -> Unit) {
+    val context = LocalContext.current
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = MaterialTheme.colorScheme.surface,
+        dragHandle = { BottomSheetDefaults.DragHandle() }
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 16.dp)
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(80.dp)
+                    .clip(androidx.compose.foundation.shape.CircleShape)
+                    .background(MaterialTheme.colorScheme.surface)
+                    .border(1.dp, MaterialTheme.colorScheme.outline, androidx.compose.foundation.shape.CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                androidx.compose.foundation.Image(
+                    painter = androidx.compose.ui.res.painterResource(id = com.dailywork.attedance.R.mipmap.ic_launcher),
+                    contentDescription = "App Logo",
+                    modifier = Modifier.size(60.dp).clip(androidx.compose.foundation.shape.CircleShape)
+                )
+            }
+
+            Text("SynFusion", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+            Text("workdaily.synfusion@gmail.com", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Instagram
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(androidx.compose.foundation.shape.CircleShape)
+                        .background(Color(0xFFE1306C).copy(alpha=0.1f))
+                        .clickable {
+                            try {
+                                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.instagram.com/devjeetx7")))
+                            } catch (e: ActivityNotFoundException) {
+                                Toast.makeText(context, "No app found to handle link", Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Default.CameraAlt, contentDescription = "Instagram", tint = Color(0xFFE1306C))
+                }
+
+                // Telegram
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(androidx.compose.foundation.shape.CircleShape)
+                        .background(Color(0xFF0088cc).copy(alpha=0.1f))
+                        .clickable {
+                            try {
+                                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/synfusion_coder")))
+                            } catch (e: ActivityNotFoundException) {
+                                Toast.makeText(context, "No app found to handle link", Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Default.Send, contentDescription = "Telegram", tint = Color(0xFF0088cc))
+                }
+
+                // Gmail
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(androidx.compose.foundation.shape.CircleShape)
+                        .background(Color(0xFFD44638).copy(alpha=0.1f))
+                        .clickable {
+                            try {
+                                context.startActivity(Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:devjeetx7@gmail.com")))
+                            } catch (e: ActivityNotFoundException) {
+                                Toast.makeText(context, "No app found to handle email", Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Default.Email, contentDescription = "Email", tint = Color(0xFFD44638))
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth().height(50.dp),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text("Close", fontWeight = FontWeight.Bold)
+            }
+            Spacer(modifier = Modifier.height(32.dp))
+        }
+    }
+}
