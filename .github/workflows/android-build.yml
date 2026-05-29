@@ -3,6 +3,10 @@ name: Android Build
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+  actions: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -30,13 +34,33 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
       - name: Clean up old artifacts
+        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
         run: |
-          artifacts=$(gh api repos/${{ github.repository }}/actions/artifacts -q '.artifacts[] | select(.name == "user-release-apk" or .name == "user-release-aab") | .id')
-          for id in $artifacts; do
-            gh api -X DELETE repos/${{ github.repository }}/actions/artifacts/$id
+          set -euo pipefail
+
+          echo "Checking old release APK artifacts..."
+
+          artifact_ids=$(gh api --paginate "repos/${REPO}/actions/artifacts" \
+            -q '.artifacts[] | select(.name == "user-release-apk" or .name == "user-release-aab") | .id' || true)
+
+          if [ -z "${artifact_ids}" ]; then
+            echo "No old release APK artifacts found."
+            exit 0
+          fi
+
+          echo "${artifact_ids}" | while read -r artifact_id; do
+            if [ -n "${artifact_id}" ]; then
+              echo "Deleting artifact ID: ${artifact_id}"
+              gh api \
+                --method DELETE \
+                "repos/${REPO}/actions/artifacts/${artifact_id}"
+            fi
           done
+
+          echo "Old release APK artifacts cleanup completed."
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
