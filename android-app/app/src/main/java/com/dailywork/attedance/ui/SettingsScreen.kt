@@ -1,6 +1,8 @@
 package com.dailywork.attedance.ui
 
 import android.net.Uri
+import android.widget.Toast
+import android.content.ActivityNotFoundException
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -26,6 +28,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import com.google.firebase.auth.FirebaseAuth
 import com.dailywork.attedance.viewmodel.SettingsViewModel
 import androidx.compose.material3.SnackbarHostState
@@ -62,19 +66,18 @@ fun SettingsScreenContent(
             (context as? android.app.Activity)?.finish()
         }
     }
-
-    var showHowToUseBottomSheet by remember { mutableStateOf(false) }
-    var showShareSheet by remember { mutableStateOf(false) }
-    var showPrivacyBottomSheet by remember { mutableStateOf(false) }
-    var showDeveloperBottomSheet by remember { mutableStateOf(false) }
     var showLogoutDialog by remember { mutableStateOf(false) }
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     var showRoleBottomSheet by remember { mutableStateOf(false) }
     var showRoleConfirmationDialog by remember { mutableStateOf(false) }
+
     var pendingRole by remember { mutableStateOf("") }
     val supportedLanguages = mapOf("en" to "English", "hi" to "हिंदी")
+
+    val nameFocusRequester = remember { FocusRequester() }
+
 
     val hasChanges = state.name != state.originalName ||
             state.dailyWage != state.originalWage ||
@@ -119,8 +122,14 @@ fun SettingsScreenContent(
                         }
                     }
 
-                Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp)) {
-                    Column(verticalArrangement = Arrangement.spacedBy(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp))) {
+                    IconButton(
+                        onClick = { nameFocusRequester.requestFocus() },
+                        modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)
+                    ) {
+                        Icon(Icons.Default.Edit, contentDescription = "Edit Profile", tint = MaterialTheme.colorScheme.primary)
+                    }
+                    Column(verticalArrangement = Arrangement.spacedBy(16.dp), horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(16.dp)) {
 
                         // Profile Image (Role-Based Icon)
                         val personalIcons = listOf(Icons.Default.Construction, Icons.Default.FormatPaint, Icons.Default.Build, Icons.Default.Plumbing)
@@ -145,7 +154,7 @@ fun SettingsScreenContent(
                         OutlinedTextField(
                             value = state.name,
                             onValueChange = { viewModel.onNameChange(it) },
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().focusRequester(nameFocusRequester),
                             label = { Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.full_name)) },
                             leadingIcon = { Icon(Icons.Default.Person, null) },
                             shape = RoundedCornerShape(12.dp),
@@ -342,7 +351,9 @@ fun SettingsScreenContent(
                                 Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                             Divider(color = MaterialTheme.colorScheme.outline)
-                            Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                            Row(modifier = Modifier.fillMaxWidth().clickable {
+                                Toast.makeText(context, "Generate PDF from worker views", Toast.LENGTH_SHORT).show()
+                            }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
                                         Icon(Icons.Default.PictureAsPdf, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
@@ -357,7 +368,18 @@ fun SettingsScreenContent(
                             Divider(color = MaterialTheme.colorScheme.outline)
                         }
 
-                        Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Row(modifier = Modifier.fillMaxWidth().clickable {
+                            try {
+                                val intent = Intent(Intent.ACTION_SEND).apply {
+                                    type = "text/plain"
+                                    putExtra(Intent.EXTRA_TEXT, "Download WorkDaily: https://play.google.com/store/apps/details?id=com.dailywork.attedance")
+                                    setPackage("com.whatsapp")
+                                }
+                                context.startActivity(intent)
+                            } catch (e: ActivityNotFoundException) {
+                                Toast.makeText(context, "WhatsApp not installed", Toast.LENGTH_SHORT).show()
+                            }
+                        }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(Color(0xFF25D366).copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
                                     Icon(Icons.Default.Share, contentDescription = null, tint = Color(0xFF25D366))
@@ -379,7 +401,7 @@ fun SettingsScreenContent(
 
                 Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp))) {
                     Column(modifier = Modifier.fillMaxWidth()) {
-                        Row(modifier = Modifier.fillMaxWidth().clickable { showHowToUseBottomSheet = true }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Row(modifier = Modifier.fillMaxWidth().clickable { try { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://dailywork.com/guide"))) } catch (e: ActivityNotFoundException) { Toast.makeText(context, "No app found to open link", Toast.LENGTH_SHORT).show() } }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.onSurface.copy(alpha=0.05f)), contentAlignment = Alignment.Center) {
                                     Icon(Icons.Default.Info, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface)
@@ -392,7 +414,7 @@ fun SettingsScreenContent(
                             }
                         }
                         Divider(color = MaterialTheme.colorScheme.outline)
-                        Row(modifier = Modifier.fillMaxWidth().clickable { showPrivacyBottomSheet = true }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Row(modifier = Modifier.fillMaxWidth().clickable { try { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://dailywork.com/privacy"))) } catch (e: ActivityNotFoundException) { Toast.makeText(context, "No app found to open link", Toast.LENGTH_SHORT).show() } }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
                                     Icon(Icons.Default.Security, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
@@ -405,7 +427,7 @@ fun SettingsScreenContent(
                             }
                         }
                         Divider(color = MaterialTheme.colorScheme.outline)
-                        Row(modifier = Modifier.fillMaxWidth().clickable { showDeveloperBottomSheet = true }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Row(modifier = Modifier.fillMaxWidth().clickable { try { context.startActivity(Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:support@dailywork.com"))) } catch (e: ActivityNotFoundException) { Toast.makeText(context, "No app found to handle email", Toast.LENGTH_SHORT).show() } }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(Color(0xFF16A34A).copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
                                     Icon(Icons.Default.Code, contentDescription = null, tint = Color(0xFF16A34A))
@@ -420,10 +442,7 @@ fun SettingsScreenContent(
                     }
                 }
             }
-            SettingsItem("Profile Details")
-            SettingsItem("App Theme")
-            SettingsItem("Data Export")
-            SettingsItem("Share Application with Users", onClick = { showShareSheet = true })
+
 
             Spacer(modifier = Modifier.weight(1f))
 
@@ -452,34 +471,33 @@ fun SettingsScreenContent(
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(text = "Log Out", fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
+
+            if (showLogoutDialog) {
+                AlertDialog(
+                    onDismissRequest = { showLogoutDialog = false },
+                    title = { Text(text = "Log Out?", fontWeight = FontWeight.Bold) },
+                    text = { Text(text = "Are you sure you want to log out?") },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                showLogoutDialog = false
+                                viewModel.logout()
+                                onLogout()
+                            }
+                        ) {
+                            Text("Log Out", color = MaterialTheme.colorScheme.error)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showLogoutDialog = false }) {
+                            Text("Cancel", color = MaterialTheme.colorScheme.onSurface)
+                        }
+                    }
+                )
+            }
     }
 }        }
     }
 
 
-@Composable
-fun SettingsItem(title: String, onClick: (() -> Unit)? = null) {
-    val modifier = if (onClick != null) {
-        Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-    } else {
-        Modifier.fillMaxWidth()
-    }
 
-    Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(text = title, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
-        }
-    }
-
-
-}
