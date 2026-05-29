@@ -138,7 +138,7 @@ fun SettingsScreenContent(
                             contentAlignment = Alignment.Center
                         ) {
                             androidx.compose.foundation.Image(
-                                painter = androidx.compose.ui.res.painterResource(id = com.dailywork.attedance.R.mipmap.ic_launcher),
+                                painter = androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Default.AccountCircle),
                                 contentDescription = "App Logo",
                                 modifier = Modifier.size(60.dp).clip(androidx.compose.foundation.shape.CircleShape)
                             )
@@ -627,7 +627,7 @@ fun DeveloperContactBottomSheet(onDismiss: () -> Unit) {
                 contentAlignment = Alignment.Center
             ) {
                 androidx.compose.foundation.Image(
-                    painter = androidx.compose.ui.res.painterResource(id = com.dailywork.attedance.R.mipmap.ic_launcher),
+                    painter = androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Default.AccountCircle),
                     contentDescription = "App Logo",
                     modifier = Modifier.size(60.dp).clip(androidx.compose.foundation.shape.CircleShape)
                 )

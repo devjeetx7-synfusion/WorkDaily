@@ -94,7 +94,7 @@ fun CrashScreen(errorTrace: String, appVersion: String, deviceInfo: String, cras
         verticalArrangement = Arrangement.Center
     ) {
         Image(
-            painter = painterResource(id = com.dailywork.attedance.R.mipmap.ic_launcher),
+            painter = androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Default.Warning),
             contentDescription = "App Logo",
             modifier = Modifier.size(64.dp)
         )
