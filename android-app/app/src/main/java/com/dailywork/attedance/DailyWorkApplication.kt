@@ -40,6 +40,7 @@ class DailyWorkApplication : Application() {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
             }
             startActivity(intent)
+            com.google.firebase.crashlytics.FirebaseCrashlytics.getInstance().recordException(throwable)
 
             // Allow Crashlytics to report the crash
             defaultExceptionHandler?.uncaughtException(thread, throwable)

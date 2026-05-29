@@ -16,6 +16,11 @@ import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import android.os.Build
+import java.text.SimpleDateFormat
+import java.util.Date
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -34,6 +39,10 @@ class CrashActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         val errorTrace = intent.getStringExtra(EXTRA_ERROR_INFO) ?: "Unknown Error"
+        val crashTime = intent.getStringExtra(EXTRA_CRASH_TIME) ?: SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(Date())
+        val appVersion = try { packageManager.getPackageInfo(packageName, 0).versionName } catch (e: Exception) { "Unknown" }
+        val deviceModel = "${Build.MANUFACTURER} ${Build.MODEL}"
+        val osVersion = "Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})"
 
         setContent {
             DailyWorkTheme {
@@ -43,6 +52,9 @@ class CrashActivity : ComponentActivity() {
                 ) {
                     CrashScreen(
                         errorTrace = errorTrace,
+                        appVersion = appVersion,
+                        deviceInfo = "$deviceModel, $osVersion",
+                        crashTime = crashTime,
                         onRestart = {
                             val intent = packageManager.getLaunchIntentForPackage(packageName)?.apply {
                                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
@@ -65,11 +77,12 @@ class CrashActivity : ComponentActivity() {
 
     companion object {
         const val EXTRA_ERROR_INFO = "EXTRA_ERROR_INFO"
+        const val EXTRA_CRASH_TIME = "EXTRA_CRASH_TIME"
     }
 }
 
 @Composable
-fun CrashScreen(errorTrace: String, onRestart: () -> Unit, onClose: () -> Unit) {
+fun CrashScreen(errorTrace: String, appVersion: String, deviceInfo: String, crashTime: String, onRestart: () -> Unit, onClose: () -> Unit) {
     val clipboardManager = LocalClipboardManager.current
     val context = LocalContext.current
 
@@ -80,25 +93,31 @@ fun CrashScreen(errorTrace: String, onRestart: () -> Unit, onClose: () -> Unit) 
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Icon(
-            imageVector = Icons.Default.Warning,
-            contentDescription = "Error",
-            tint = MaterialTheme.colorScheme.error,
+        Image(
+            painter = painterResource(id = com.dailywork.attedance.R.mipmap.ic_launcher),
+            contentDescription = "App Logo",
             modifier = Modifier.size(64.dp)
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "App Crashed",
-            fontSize = 24.sp,
+            text = "Oops! Something went wrong",
+            fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.error
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "An unexpected error occurred. Please restart the app.",
+            text = "An unexpected error occurred. We apologize for the inconvenience.",
             color = MaterialTheme.colorScheme.onBackground,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
             modifier = Modifier.padding(bottom = 16.dp)
         )
+
+        Column(modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)) {
+            Text(text = "App Version: $appVersion", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(text = "Device Info: $deviceInfo", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(text = "Crash Time: $crashTime", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
 
         Box(
             modifier = Modifier

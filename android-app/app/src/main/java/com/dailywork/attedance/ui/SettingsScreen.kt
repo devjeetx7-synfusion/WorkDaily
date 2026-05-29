@@ -35,6 +35,7 @@ import com.dailywork.attedance.viewmodel.SettingsViewModel
 import androidx.compose.material3.SnackbarHostState
 import com.dailywork.attedance.ui.components.ShareBottomSheet
 
+import com.dailywork.attedance.viewmodel.SettingsState
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreenContent(
@@ -72,6 +73,7 @@ fun SettingsScreenContent(
     }
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showRoleBottomSheet by remember { mutableStateOf(false) }
+    var showProfileEditSheet by remember { mutableStateOf(false) }
     var showRoleConfirmationDialog by remember { mutableStateOf(false) }
 
     var pendingRole by remember { mutableStateOf("") }
@@ -123,16 +125,10 @@ fun SettingsScreenContent(
                         }
                     }
 
-                Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp))) {
-                    IconButton(
-                        onClick = { nameFocusRequester.requestFocus() },
-                        modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)
-                    ) {
-                        Icon(Icons.Default.Edit, contentDescription = "Edit Profile", tint = MaterialTheme.colorScheme.primary)
-                    }
                     Column(verticalArrangement = Arrangement.spacedBy(16.dp), horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(16.dp)) {
 
                         // Profile Image (App Logo)
+                        Box(modifier = Modifier.padding(bottom = 8.dp)) {
                         Box(
                             modifier = Modifier
                                 .size(80.dp)
@@ -148,72 +144,17 @@ fun SettingsScreenContent(
                             )
                         }
 
+                            Box(modifier = Modifier.align(Alignment.BottomEnd).size(28.dp).offset(x = 4.dp, y = 4.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary).border(2.dp, MaterialTheme.colorScheme.surface, androidx.compose.foundation.shape.CircleShape).clickable { showProfileEditSheet = true }, contentAlignment = Alignment.Center) { Icon(Icons.Default.Edit, contentDescription = "Edit Profile", tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(14.dp)) }
+                        }
                         // Name
-                        OutlinedTextField(
-                            value = state.name,
-                            onValueChange = { viewModel.onNameChange(it) },
-                            modifier = Modifier.fillMaxWidth().focusRequester(nameFocusRequester),
-                            label = { Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.full_name)) },
-                            leadingIcon = { Icon(Icons.Default.Person, null) },
-                            shape = RoundedCornerShape(12.dp),
-                            singleLine = true,
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                            )
-                        )
-
-                        // Email
-                        OutlinedTextField(
-                            value = FirebaseAuth.getInstance().currentUser?.email ?: "",
-                            onValueChange = {},
-                            modifier = Modifier.fillMaxWidth(),
-                            readOnly = true,
-                            enabled = false,
-                            label = { Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.email)) },
-                            leadingIcon = { Icon(Icons.Default.Email, null) },
-                            shape = RoundedCornerShape(12.dp),
-                            singleLine = true,
-                            colors = OutlinedTextFieldDefaults.colors(
-                                disabledBorderColor = MaterialTheme.colorScheme.outline,
-                                disabledTextColor = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        )
-
-                        // Daily Wage
-                        OutlinedTextField(
-                            value = if (state.dailyWage > 0) state.dailyWage.toInt().toString() else "",
-                            onValueChange = { viewModel.onWageChange(it) },
-                            modifier = Modifier.fillMaxWidth(),
-                            label = { Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.daily_wage)) },
-                            leadingIcon = { Icon(Icons.Default.CurrencyRupee, null) },
-                            shape = RoundedCornerShape(12.dp),
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                            )
-                        )
-
-                        // Phone Number
-                        OutlinedTextField(
-                            value = state.phone,
-                            onValueChange = { newValue ->
-                                val digits = newValue.filter { it.isDigit() }.take(10)
-                                viewModel.onPhoneChange(digits)
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            label = { Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.phone_number)) },
-                            leadingIcon = { Text("+91 ", fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 12.dp)) },
-                            shape = RoundedCornerShape(12.dp),
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                            )
-                        )
+                        Text(text = state.name.ifEmpty { "User Name" }, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                        Text(text = FirebaseAuth.getInstance().currentUser?.email ?: "", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        if (state.dailyWage > 0) {
+                            Text(text = "Daily Wage: ₹${state.dailyWage.toInt()}", fontSize = 14.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
+                        }
+                        if (state.phone.isNotEmpty()) {
+                            Text(text = "+91 ${state.phone}", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
                     }
                 }
             }
@@ -294,10 +235,11 @@ fun SettingsScreenContent(
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column {
                                     Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.role_management), fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                    Text("Current: ${state.role.replaceFirstChar { if (it.isLowerCase()) it.titlecase(java.util.Locale.getDefault()) else it.toString() }}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text("Current: ${if (state.role.isNotEmpty()) state.role.replaceFirstChar { if (it.isLowerCase()) it.titlecase(java.util.Locale.getDefault()) else it.toString() } else ""}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
                             Icon(Icons.Default.ArrowForwardIos, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
+                        }
                         }
                         Divider(color = MaterialTheme.colorScheme.outline)
                         Row(modifier = Modifier.fillMaxWidth().clickable { if (!state.isPremium) onNavigateToPremium() }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
@@ -455,7 +397,6 @@ fun SettingsScreenContent(
             }
 
 
-            Spacer(modifier = Modifier.weight(1f))
 
             if (com.dailywork.attedance.BuildConfig.DEBUG) {
                 Button(
@@ -484,6 +425,9 @@ fun SettingsScreenContent(
             }
 
 
+            if (showProfileEditSheet) {
+                ProfileEditBottomSheet(state = state, viewModel = viewModel, onDismiss = { showProfileEditSheet = false })
+            }
             if (showHowToUseSheet) {
                 HowToUseBottomSheet(onDismiss = { showHowToUseSheet = false })
             }
@@ -520,7 +464,6 @@ fun SettingsScreenContent(
                 )
             }
     }
-}        }
     }
 
 
@@ -762,6 +705,134 @@ fun DeveloperContactBottomSheet(onDismiss: () -> Unit) {
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Text("Close", fontWeight = FontWeight.Bold)
+            }
+            Spacer(modifier = Modifier.height(32.dp))
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ProfileEditBottomSheet(
+    state: SettingsState,
+    viewModel: SettingsViewModel,
+    onDismiss: () -> Unit
+) {
+    val nameFocusRequester = remember { FocusRequester() }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = MaterialTheme.colorScheme.surface,
+        dragHandle = { BottomSheetDefaults.DragHandle() }
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 16.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
+                    Icon(Icons.Default.Edit, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Text("Edit Profile", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+            }
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+
+            OutlinedTextField(
+                value = state.name,
+                onValueChange = { viewModel.onNameChange(it) },
+                modifier = Modifier.fillMaxWidth().focusRequester(nameFocusRequester),
+                label = { Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.full_name)) },
+                leadingIcon = { Icon(Icons.Default.Person, null) },
+                shape = RoundedCornerShape(12.dp),
+                singleLine = true,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                )
+            )
+
+            OutlinedTextField(
+                value = FirebaseAuth.getInstance().currentUser?.email ?: "",
+                onValueChange = {},
+                modifier = Modifier.fillMaxWidth(),
+                readOnly = true,
+                enabled = false,
+                label = { Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.email)) },
+                leadingIcon = { Icon(Icons.Default.Email, null) },
+                shape = RoundedCornerShape(12.dp),
+                singleLine = true,
+                colors = OutlinedTextFieldDefaults.colors(
+                    disabledBorderColor = MaterialTheme.colorScheme.outline,
+                    disabledTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            )
+
+            OutlinedTextField(
+                value = if (state.dailyWage > 0) state.dailyWage.toInt().toString() else "",
+                onValueChange = { viewModel.onWageChange(it) },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.daily_wage)) },
+                leadingIcon = { Icon(Icons.Default.CurrencyRupee, null) },
+                shape = RoundedCornerShape(12.dp),
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                )
+            )
+
+            OutlinedTextField(
+                value = state.phone,
+                onValueChange = { newValue ->
+                    val digits = newValue.filter { it.isDigit() }.take(10)
+                    viewModel.onPhoneChange(digits)
+                },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.phone_number)) },
+                leadingIcon = { Text("+91 ", fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 12.dp)) },
+                shape = RoundedCornerShape(12.dp),
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                )
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                OutlinedButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.weight(1f).height(50.dp),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Cancel")
+                }
+                Button(
+                    onClick = {
+                        viewModel.saveChanges()
+                        onDismiss()
+                    },
+                    modifier = Modifier.weight(1f).height(50.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    enabled = !state.isSaving
+                ) {
+                    if (state.isSaving) {
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
+                    } else {
+                        Text("Save Changes", fontWeight = FontWeight.Bold)
+                    }
+                }
             }
             Spacer(modifier = Modifier.height(32.dp))
         }
