@@ -1,15 +1,24 @@
-name: Admin Android Build
+name: Admin APK Telegram Build
 
 on:
   workflow_dispatch:
 
 permissions:
   contents: read
-  actions: write
 
 jobs:
-  build:
+  build-admin-apk:
+    name: Build Admin APK and send to Telegram
     runs-on: ubuntu-latest
+
+    env:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN || secrets.TELEGRAM_BOT_ID || secrets.BOT_TOKEN || secrets.BOT_ID }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID || secrets.CHAT_ID }}
+      KEYSTORE_PATH: ../../android-app/keystore/default-release.jks
+      KEYSTORE_PASSWORD: android
+      KEY_ALIAS: androiddebugkey
+      KEY_PASSWORD: android
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -18,65 +27,105 @@ jobs:
         uses: actions/setup-java@v4
         with:
           java-version: '17'
-          distribution: 'temurin'
+          distribution: temurin
           cache: gradle
 
-      - name: Copy Gradle Wrapper
+      - name: Validate Telegram secrets
+        shell: bash
         run: |
+          set -euo pipefail
+
+          if [ -z "${TELEGRAM_BOT_TOKEN}" ]; then
+            echo "Missing Telegram bot token secret. Add TELEGRAM_BOT_TOKEN or TELEGRAM_BOT_ID."
+            exit 1
+          fi
+
+          if [[ "${TELEGRAM_BOT_TOKEN}" != *:* ]]; then
+            echo "Telegram bot secret must be the full bot token, not only numeric bot id."
+            exit 1
+          fi
+
+          if [ -z "${TELEGRAM_CHAT_ID}" ]; then
+            echo "Missing Telegram chat id secret. Add TELEGRAM_CHAT_ID or CHAT_ID."
+            exit 1
+          fi
+
+      - name: Copy Gradle Wrapper
+        shell: bash
+        run: |
+          set -euo pipefail
           cp -r android-app/gradle android-admin-app/
           cp android-app/gradlew android-admin-app/
           chmod +x android-admin-app/gradlew
 
-      - name: Build Admin Release
-        run: |
-          cd android-admin-app
-          ./gradlew assembleAdminRelease bundleAdminRelease
-        env:
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-
-      - name: Clean up old artifacts
+      - name: Verify stable signing keystore
         shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          test -f android-app/keystore/default-release.jks
+          keytool -list \
+            -keystore android-app/keystore/default-release.jks \
+            -storepass android \
+            -alias androiddebugkey >/dev/null
+
+      - name: Prepare stable upgrade version
+        shell: bash
         run: |
           set -euo pipefail
 
-          echo "Checking old release APK artifacts..."
+          VERSION_CODE="$(date -u +'%y%j%H%M')"
+          VERSION_NAME="1.0.${VERSION_CODE}"
 
-          artifact_ids=$(gh api --paginate "repos/${REPO}/actions/artifacts" \
-            -q '.artifacts[] | select(.name == "admin-release-apk" or .name == "admin-release-aab") | .id' || true)
+          echo "VERSION_CODE=${VERSION_CODE}" >> "${GITHUB_ENV}"
+          echo "VERSION_NAME=${VERSION_NAME}" >> "${GITHUB_ENV}"
 
-          if [ -z "${artifact_ids}" ]; then
-            echo "No old release APK artifacts found."
-            exit 0
-          fi
+          python3 - <<'PY'
+          from pathlib import Path
+          import os
+          import re
 
-          echo "${artifact_ids}" | while read -r artifact_id; do
-            if [ -n "${artifact_id}" ]; then
-              echo "Deleting artifact ID: ${artifact_id}"
-              gh api \
-                --method DELETE \
-                "repos/${REPO}/actions/artifacts/${artifact_id}"
-            fi
-          done
+          path = Path("android-admin-app/app/build.gradle.kts")
+          text = path.read_text()
+          text = re.sub(r'versionCode\s*=\s*.*', f'versionCode = {os.environ["VERSION_CODE"]}', text, count=1)
+          text = re.sub(r'versionName\s*=\s*.*', f'versionName = "{os.environ["VERSION_NAME"]}"', text, count=1)
+          path.write_text(text)
+          PY
 
-          echo "Old release APK artifacts cleanup completed."
+      - name: Build signed Admin release APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd android-admin-app
+          ./gradlew clean assembleAdminRelease --no-daemon
 
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: admin-release-apk
-          path: android-admin-app/app/build/outputs/apk/admin/release/app-admin-release.apk
-          retention-days: 1
-          compression-level: 9
+      - name: Prepare APK file
+        shell: bash
+        run: |
+          set -euo pipefail
 
-      - name: Upload AAB
-        uses: actions/upload-artifact@v4
-        with:
-          name: admin-release-aab
-          path: android-admin-app/app/build/outputs/bundle/admin/release/app-admin-release.aab
-          retention-days: 1
-          compression-level: 9
+          APK_SOURCE="android-admin-app/app/build/outputs/apk/admin/release/app-admin-release.apk"
+          APK_TARGET="WorkDaily-Admin-v${VERSION_NAME}.apk"
+
+          test -f "${APK_SOURCE}"
+          cp "${APK_SOURCE}" "${APK_TARGET}"
+          sha256sum "${APK_TARGET}" | tee admin-apk-sha256.txt
+
+          echo "APK_TARGET=${APK_TARGET}" >> "${GITHUB_ENV}"
+          echo "APK_SHA256=$(cut -d ' ' -f 1 admin-apk-sha256.txt)" >> "${GITHUB_ENV}"
+
+      - name: Send Admin APK to Telegram
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          CAPTION="WorkDaily Admin APK
+          Package: com.dailywork.admin.admin
+          Version: ${VERSION_NAME} (${VERSION_CODE})
+          Commit: ${GITHUB_SHA}
+          SHA256: ${APK_SHA256}"
+
+          curl --fail --show-error --silent \
+            -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument" \
+            -F chat_id="${TELEGRAM_CHAT_ID}" \
+            -F document=@"${APK_TARGET}" \
+            -F caption="${CAPTION}"
