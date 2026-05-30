@@ -3,8 +3,6 @@ package com.dailywork.attedance.ui
 import android.net.Uri
 import android.widget.Toast
 import android.content.ActivityNotFoundException
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -33,7 +31,6 @@ import androidx.compose.ui.focus.focusRequester
 import com.google.firebase.auth.FirebaseAuth
 import com.dailywork.attedance.viewmodel.SettingsViewModel
 import androidx.compose.material3.SnackbarHostState
-import com.dailywork.attedance.ui.components.ShareBottomSheet
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.safeDrawing
 
@@ -93,12 +90,12 @@ fun SettingsScreenContent(
                 .fillMaxSize()
                 .verticalScroll(scrollState)
                 .padding(paddingValues)
-                .padding(start = 16.dp, end = 16.dp, top = 20.dp, bottom = 120.dp),
+                .padding(start = 16.dp, end = 16.dp, top = 20.dp, bottom = 100.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
                 // Header Label & Settings Title
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.app_preferences), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp))
+                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.app_preferences), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 4.dp))
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                         Icon(Icons.Default.Settings, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
                         Spacer(modifier = Modifier.width(12.dp))
@@ -109,12 +106,12 @@ fun SettingsScreenContent(
                 // Profile Card
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(24.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
                 ) {
                     Column(
-                        modifier = Modifier.padding(16.dp),
+                        modifier = Modifier.padding(20.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
@@ -123,11 +120,11 @@ fun SettingsScreenContent(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.profile_settings), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.profile_settings), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                             AnimatedVisibility(visible = hasChanges) {
                                 IconButton(onClick = { viewModel.saveChanges() }, enabled = !state.isSaving) {
                                     if (state.isSaving) {
-                                        CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                                        CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
                                     } else {
                                         Icon(Icons.Default.Check, contentDescription = "Save Changes", tint = MaterialTheme.colorScheme.primary)
                                     }
@@ -139,31 +136,31 @@ fun SettingsScreenContent(
                         Box(modifier = Modifier.padding(bottom = 8.dp)) {
                             Box(
                                 modifier = Modifier
-                                    .size(80.dp)
+                                    .size(90.dp)
                                     .clip(androidx.compose.foundation.shape.CircleShape)
-                                    .background(MaterialTheme.colorScheme.surface)
-                                    .border(1.dp, MaterialTheme.colorScheme.outline, androidx.compose.foundation.shape.CircleShape),
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+                                    .border(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), androidx.compose.foundation.shape.CircleShape),
                                 contentAlignment = Alignment.Center
                             ) {
-                                androidx.compose.foundation.Image(
-                                    painter = androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Default.AccountCircle),
+                                Icon(
+                                    imageVector = Icons.Default.Person,
                                     contentDescription = "User Profile",
-                                    modifier = Modifier.size(60.dp).clip(androidx.compose.foundation.shape.CircleShape)
+                                    modifier = Modifier.size(50.dp),
+                                    tint = MaterialTheme.colorScheme.primary
                                 )
                             }
 
                             Box(
                                 modifier = Modifier
                                     .align(Alignment.BottomEnd)
-                                    .size(28.dp)
-                                    .offset(x = 4.dp, y = 4.dp)
+                                    .size(32.dp)
                                     .clip(androidx.compose.foundation.shape.CircleShape)
                                     .background(MaterialTheme.colorScheme.primary)
                                     .border(2.dp, MaterialTheme.colorScheme.surface, androidx.compose.foundation.shape.CircleShape)
                                     .clickable { showProfileEditSheet = true },
                                 contentAlignment = Alignment.Center
                             ) {
-                                Icon(Icons.Default.Edit, contentDescription = "Edit Profile", tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(14.dp))
+                                Icon(Icons.Default.Edit, contentDescription = "Edit Profile", tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(16.dp))
                             }
                         }
 
@@ -175,7 +172,7 @@ fun SettingsScreenContent(
                                     text = state.role.replaceFirstChar { if (it.isLowerCase()) it.titlecase(java.util.Locale.getDefault()) else it.toString() },
                                     fontSize = 14.sp,
                                     color = MaterialTheme.colorScheme.primary,
-                                    fontWeight = FontWeight.Medium
+                                    fontWeight = FontWeight.SemiBold
                                 )
                             }
                             if (state.phone.isNotEmpty()) {
@@ -187,7 +184,7 @@ fun SettingsScreenContent(
 
                 // General App Settings Card
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("General Settings", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp))
+                    Text("General Settings", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 4.dp))
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
@@ -207,7 +204,7 @@ fun SettingsScreenContent(
                                 }
                                 Switch(checked = state.isDarkMode, onCheckedChange = { viewModel.toggleTheme(it) })
                             }
-                            HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
                             Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
@@ -221,7 +218,7 @@ fun SettingsScreenContent(
                                 }
                                 Switch(checked = state.isRemindersEnabled, onCheckedChange = { viewModel.toggleReminders(it) })
                             }
-                            HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
                             Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
@@ -235,14 +232,14 @@ fun SettingsScreenContent(
                                 Switch(checked = state.isSplashEnabled, onCheckedChange = { viewModel.toggleSplash(it) })
                             }
                             if (state.isLanguageEnabled && state.isLanguageActivityEnabled) {
-                                HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+                                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
                                 Row(modifier = Modifier.fillMaxWidth().clickable {
                                     val intent = android.content.Intent(context, LanguageSelectorActivity::class.java)
                                     context.startActivity(intent)
                                 }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(Color.Blue.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
-                                            Icon(Icons.Default.Language, contentDescription = null, tint = Color.Blue)
+                                        Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
+                                            Icon(Icons.Default.Language, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                                         }
                                         Spacer(modifier = Modifier.width(12.dp))
                                         Column {
@@ -254,7 +251,7 @@ fun SettingsScreenContent(
                                 }
                             }
                             if (state.isRoleUiEnabled) {
-                                HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+                                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
                                 Row(modifier = Modifier.fillMaxWidth().clickable { showRoleBottomSheet = true }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
@@ -269,12 +266,12 @@ fun SettingsScreenContent(
                                     Icon(Icons.Default.ArrowForwardIos, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
                                 }
                             }
-                            HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
                             Row(modifier = Modifier.fillMaxWidth().clickable { if (!state.isPremium) onNavigateToPremium() }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(if (state.isPremium) Color(0xFF10B981).copy(alpha = 0.1f) else Color(0xFFEAB308).copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
+                                    Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(if (state.isPremium) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) else Color(0xFFEAB308).copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
                                         if (state.isPremium) {
-                                            Icon(Icons.Default.Favorite, contentDescription = null, tint = Color(0xFF10B981))
+                                            Icon(Icons.Default.Favorite, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                                         } else {
                                             Icon(Icons.Default.WorkspacePremium, contentDescription = null, tint = Color(0xFFEAB308))
                                         }
@@ -282,7 +279,7 @@ fun SettingsScreenContent(
                                     Spacer(modifier = Modifier.width(12.dp))
                                     Column {
                                         if (state.isPremium) {
-                                            Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.dailywork_premium), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFF10B981))
+                                            Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.dailywork_premium), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                                             Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.thank_you_for_your_purchase), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         } else {
                                             Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.upgrade_to_premium), fontSize = 16.sp, fontWeight = FontWeight.Bold)
@@ -300,7 +297,7 @@ fun SettingsScreenContent(
 
                 // Data & Export Card
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.data_export), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp))
+                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.data_export), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 4.dp))
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
@@ -322,7 +319,7 @@ fun SettingsScreenContent(
                                     }
                                     Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
-                                HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+                                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
                                 Row(modifier = Modifier.fillMaxWidth().clickable {
                                     Toast.makeText(context, "Generate PDF from worker views", Toast.LENGTH_SHORT).show()
                                 }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
@@ -337,29 +334,28 @@ fun SettingsScreenContent(
                                         }
                                     }
                                 }
-                                HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+                                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
                             }
 
                             Row(modifier = Modifier.fillMaxWidth().clickable {
                                 try {
-                                    val intent = Intent(Intent.ACTION_SEND).apply {
+                                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
                                         type = "text/plain"
-                                        putExtra(Intent.EXTRA_TEXT, "Download WorkDaily: https://play.google.com/store/apps/details?id=com.dailywork.attedance")
-                                        setPackage("com.whatsapp")
+                                        putExtra(Intent.EXTRA_TEXT, "Manage your daily work, attendance, and wages easily with WorkDaily app. Download now: https://play.google.com/store/apps/details?id=com.dailywork.attedance")
                                     }
-                                    context.startActivity(intent)
-                                } catch (e: ActivityNotFoundException) {
-                                    Toast.makeText(context, "WhatsApp not installed", Toast.LENGTH_SHORT).show()
+                                    context.startActivity(Intent.createChooser(shareIntent, "Share WorkDaily App"))
+                                } catch (e: Exception) {
+                                    Toast.makeText(context, "Unable to share app", Toast.LENGTH_SHORT).show()
                                 }
                             }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(Color(0xFF25D366).copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
-                                        Icon(Icons.Default.Share, contentDescription = null, tint = Color(0xFF25D366))
+                                    Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
+                                        Icon(Icons.Default.Share, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                                     }
                                     Spacer(modifier = Modifier.width(12.dp))
                                     Column {
-                                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.share_via_whatsapp), fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.send_digital_passbook), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        Text("Share WorkDaily App", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                        Text("Invite friends to manage daily work easily", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
                                 }
                             }
@@ -369,7 +365,7 @@ fun SettingsScreenContent(
 
                 // Support & Info Card
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.data_support), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp))
+                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.data_support), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 4.dp))
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
@@ -379,8 +375,8 @@ fun SettingsScreenContent(
                         Column(modifier = Modifier.fillMaxWidth()) {
                             Row(modifier = Modifier.fillMaxWidth().clickable { showHowToUseSheet = true }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.onSurface.copy(alpha=0.05f)), contentAlignment = Alignment.Center) {
-                                        Icon(Icons.Default.Info, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface)
+                                    Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
+                                        Icon(Icons.Default.Info, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                                     }
                                     Spacer(modifier = Modifier.width(12.dp))
                                     Column {
@@ -389,7 +385,7 @@ fun SettingsScreenContent(
                                     }
                                 }
                             }
-                            HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
                             Row(modifier = Modifier.fillMaxWidth().clickable { showPrivacySheet = true }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
@@ -402,11 +398,11 @@ fun SettingsScreenContent(
                                     }
                                 }
                             }
-                            HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
                             Row(modifier = Modifier.fillMaxWidth().clickable { showTermsSheet = true }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.secondary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
-                                        Icon(Icons.Default.Description, contentDescription = null, tint = MaterialTheme.colorScheme.secondary)
+                                    Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
+                                        Icon(Icons.Default.Description, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                                     }
                                     Spacer(modifier = Modifier.width(12.dp))
                                     Column {
@@ -415,11 +411,11 @@ fun SettingsScreenContent(
                                     }
                                 }
                             }
-                            HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
                             Row(modifier = Modifier.fillMaxWidth().clickable { showDeveloperSheet = true }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(Color(0xFF16A34A).copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
-                                        Icon(Icons.Default.Code, contentDescription = null, tint = Color(0xFF16A34A))
+                                    Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
+                                        Icon(Icons.Default.Code, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                                     }
                                     Spacer(modifier = Modifier.width(12.dp))
                                     Column {
@@ -518,8 +514,8 @@ fun HowToUseBottomSheet(onDismiss: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.onSurface.copy(alpha=0.05f)), contentAlignment = Alignment.Center) {
-                    Icon(Icons.Default.Info, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface)
+                Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
+                    Icon(Icons.Default.Info, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                 }
                 Spacer(modifier = Modifier.width(12.dp))
                 Text("How to Use DailyWork", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
@@ -604,8 +600,8 @@ fun TermsConditionsBottomSheet(onDismiss: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.secondary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
-                    Icon(Icons.Default.Description, contentDescription = null, tint = MaterialTheme.colorScheme.secondary)
+                Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
+                    Icon(Icons.Default.Description, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                 }
                 Spacer(modifier = Modifier.width(12.dp))
                 Text("Terms & Conditions", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
@@ -636,108 +632,122 @@ fun DeveloperContactBottomSheet(onDismiss: () -> Unit) {
     val context = LocalContext.current
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false),
         containerColor = MaterialTheme.colorScheme.surface,
         dragHandle = { BottomSheetDefaults.DragHandle() }
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 16.dp)
+                .padding(horizontal = 24.dp, vertical = 24.dp)
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             Box(
                 modifier = Modifier
-                    .size(80.dp)
+                    .size(90.dp)
                     .clip(androidx.compose.foundation.shape.CircleShape)
-                    .background(MaterialTheme.colorScheme.surface)
-                    .border(1.dp, MaterialTheme.colorScheme.outline, androidx.compose.foundation.shape.CircleShape),
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+                    .border(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), androidx.compose.foundation.shape.CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                androidx.compose.foundation.Image(
-                    painter = androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Default.AccountCircle),
-                    contentDescription = "App Logo",
-                    modifier = Modifier.size(60.dp).clip(androidx.compose.foundation.shape.CircleShape)
+                Icon(
+                    imageVector = Icons.Default.Person,
+                    contentDescription = "Developer Avatar",
+                    modifier = Modifier.size(50.dp),
+                    tint = MaterialTheme.colorScheme.primary
                 )
             }
 
-            Text("SynFusion", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-            Text("workdaily.synfusion@gmail.com", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-
-            Spacer(modifier = Modifier.height(8.dp))
+            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text("SynFusion", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                Text("workdaily.synfusion@gmail.com", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
 
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                // WhatsApp
+                ContactIconItem(
+                    icon = Icons.Default.Chat,
+                    contentDescription = "WhatsApp",
+                    onClick = {
+                        try {
+                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/918250000000")))
+                        } catch (e: Exception) {
+                            Toast.makeText(context, "No app found to handle WhatsApp", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                )
+
                 // Instagram
-                Box(
-                    modifier = Modifier
-                        .size(56.dp)
-                        .clip(androidx.compose.foundation.shape.CircleShape)
-                        .background(Color(0xFFE1306C).copy(alpha=0.1f))
-                        .clickable {
-                            try {
-                                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.instagram.com/devjeetx7")))
-                            } catch (e: ActivityNotFoundException) {
-                                Toast.makeText(context, "No app found to handle link", Toast.LENGTH_SHORT).show()
-                            }
-                        },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(Icons.Default.CameraAlt, contentDescription = "Instagram", tint = Color(0xFFE1306C))
-                }
+                ContactIconItem(
+                    icon = Icons.Default.CameraAlt,
+                    contentDescription = "Instagram",
+                    onClick = {
+                        try {
+                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.instagram.com/devjeetx7")))
+                        } catch (e: Exception) {
+                            Toast.makeText(context, "No app found to handle Instagram", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                )
 
                 // Telegram
-                Box(
-                    modifier = Modifier
-                        .size(56.dp)
-                        .clip(androidx.compose.foundation.shape.CircleShape)
-                        .background(Color(0xFF0088cc).copy(alpha=0.1f))
-                        .clickable {
-                            try {
-                                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/synfusion_coder")))
-                            } catch (e: ActivityNotFoundException) {
-                                Toast.makeText(context, "No app found to handle link", Toast.LENGTH_SHORT).show()
-                            }
-                        },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(Icons.Default.Send, contentDescription = "Telegram", tint = Color(0xFF0088cc))
-                }
+                ContactIconItem(
+                    icon = Icons.Default.Send,
+                    contentDescription = "Telegram",
+                    onClick = {
+                        try {
+                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/synfusion_coder")))
+                        } catch (e: Exception) {
+                            Toast.makeText(context, "No app found to handle Telegram", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                )
 
                 // Gmail
-                Box(
-                    modifier = Modifier
-                        .size(56.dp)
-                        .clip(androidx.compose.foundation.shape.CircleShape)
-                        .background(Color(0xFFD44638).copy(alpha=0.1f))
-                        .clickable {
-                            try {
-                                context.startActivity(Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:devjeetx7@gmail.com")))
-                            } catch (e: ActivityNotFoundException) {
-                                Toast.makeText(context, "No app found to handle email", Toast.LENGTH_SHORT).show()
-                            }
-                        },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(Icons.Default.Email, contentDescription = "Email", tint = Color(0xFFD44638))
-                }
+                ContactIconItem(
+                    icon = Icons.Default.Email,
+                    contentDescription = "Email",
+                    onClick = {
+                        try {
+                            context.startActivity(Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:devjeetx7@gmail.com")))
+                        } catch (e: Exception) {
+                            Toast.makeText(context, "No app found to handle Email", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-            Button(
-                onClick = onDismiss,
-                modifier = Modifier.fillMaxWidth().height(50.dp),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Text("Close", fontWeight = FontWeight.Bold)
-            }
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(8.dp))
         }
+    }
+}
+
+@Composable
+fun ContactIconItem(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .size(56.dp)
+            .clip(androidx.compose.foundation.shape.CircleShape)
+            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(28.dp)
+        )
     }
 }
 
