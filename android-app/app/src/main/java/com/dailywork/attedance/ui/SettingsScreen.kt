@@ -34,6 +34,8 @@ import com.google.firebase.auth.FirebaseAuth
 import com.dailywork.attedance.viewmodel.SettingsViewModel
 import androidx.compose.material3.SnackbarHostState
 import com.dailywork.attedance.ui.components.ShareBottomSheet
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.safeDrawing
 
 import com.dailywork.attedance.viewmodel.SettingsState
 @OptIn(ExperimentalMaterial3Api::class)
@@ -62,8 +64,6 @@ fun SettingsScreenContent(
 
     LaunchedEffect(state.triggerRestart) {
         if (state.triggerRestart) {
-            // Give a short delay for the Toast/Snackbar to be seen if desired,
-            // but the user wants immediate restart
             val intent = Intent(context, MainActivity::class.java).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
             }
@@ -74,13 +74,8 @@ fun SettingsScreenContent(
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showRoleBottomSheet by remember { mutableStateOf(false) }
     var showProfileEditSheet by remember { mutableStateOf(false) }
-    var showRoleConfirmationDialog by remember { mutableStateOf(false) }
 
-    var pendingRole by remember { mutableStateOf("") }
     val supportedLanguages = mapOf("en" to "English", "hi" to "हिंदी")
-
-    val nameFocusRequester = remember { FocusRequester() }
-
 
     val hasChanges = state.name != state.originalName ||
             state.dailyWage != state.originalWage ||
@@ -96,118 +91,151 @@ fun SettingsScreenContent(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .verticalScroll(scrollState)
                 .padding(paddingValues)
-                .padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 120.dp)
-                .verticalScroll(scrollState),
+                .padding(start = 16.dp, end = 16.dp, top = 20.dp, bottom = 120.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                    Icon(Icons.Default.Settings, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.settings), fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                // Header Label & Settings Title
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.app_preferences), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                        Icon(Icons.Default.Settings, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.settings), fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                    }
                 }
 
-                // Profile Settings
-                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                // Profile Card
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.profile_settings), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp))
-                        AnimatedVisibility(visible = hasChanges) {
-                            IconButton(onClick = { viewModel.saveChanges() }, enabled = !state.isSaving) {
-                                if (state.isSaving) {
-                                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                                } else {
-                                    Icon(Icons.Default.Check, contentDescription = "Save Changes", tint = MaterialTheme.colorScheme.primary)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.profile_settings), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            AnimatedVisibility(visible = hasChanges) {
+                                IconButton(onClick = { viewModel.saveChanges() }, enabled = !state.isSaving) {
+                                    if (state.isSaving) {
+                                        CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                                    } else {
+                                        Icon(Icons.Default.Check, contentDescription = "Save Changes", tint = MaterialTheme.colorScheme.primary)
+                                    }
                                 }
                             }
                         }
-                    }
 
-                    Column(verticalArrangement = Arrangement.spacedBy(16.dp), horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(16.dp)) {
-
-                        // Profile Image (App Logo)
+                        // Profile Image with Edit Icon
                         Box(modifier = Modifier.padding(bottom = 8.dp)) {
-                        Box(
-                            modifier = Modifier
-                                .size(80.dp)
-                                .clip(androidx.compose.foundation.shape.CircleShape)
-                                .background(MaterialTheme.colorScheme.surface)
-                                .border(1.dp, MaterialTheme.colorScheme.outline, androidx.compose.foundation.shape.CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            androidx.compose.foundation.Image(
-                                painter = androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Default.AccountCircle),
-                                contentDescription = "App Logo",
-                                modifier = Modifier.size(60.dp).clip(androidx.compose.foundation.shape.CircleShape)
-                            )
+                            Box(
+                                modifier = Modifier
+                                    .size(80.dp)
+                                    .clip(androidx.compose.foundation.shape.CircleShape)
+                                    .background(MaterialTheme.colorScheme.surface)
+                                    .border(1.dp, MaterialTheme.colorScheme.outline, androidx.compose.foundation.shape.CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                androidx.compose.foundation.Image(
+                                    painter = androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Default.AccountCircle),
+                                    contentDescription = "User Profile",
+                                    modifier = Modifier.size(60.dp).clip(androidx.compose.foundation.shape.CircleShape)
+                                )
+                            }
+
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.BottomEnd)
+                                    .size(28.dp)
+                                    .offset(x = 4.dp, y = 4.dp)
+                                    .clip(androidx.compose.foundation.shape.CircleShape)
+                                    .background(MaterialTheme.colorScheme.primary)
+                                    .border(2.dp, MaterialTheme.colorScheme.surface, androidx.compose.foundation.shape.CircleShape)
+                                    .clickable { showProfileEditSheet = true },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Default.Edit, contentDescription = "Edit Profile", tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(14.dp))
+                            }
                         }
 
-                            Box(modifier = Modifier.align(Alignment.BottomEnd).size(28.dp).offset(x = 4.dp, y = 4.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary).border(2.dp, MaterialTheme.colorScheme.surface, androidx.compose.foundation.shape.CircleShape).clickable { showProfileEditSheet = true }, contentAlignment = Alignment.Center) { Icon(Icons.Default.Edit, contentDescription = "Edit Profile", tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(14.dp)) }
-                        }
-                        // Name
-                        Text(text = state.name.ifEmpty { "User Name" }, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                        Text(text = FirebaseAuth.getInstance().currentUser?.email ?: "", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        if (state.dailyWage > 0) {
-                            Text(text = "Daily Wage: ₹${state.dailyWage.toInt()}", fontSize = 14.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
-                        }
-                        if (state.phone.isNotEmpty()) {
-                            Text(text = "+91 ${state.phone}", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        // Name, Role, Phone
+                        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(text = state.name.ifEmpty { "User Name" }, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                            if (state.role.isNotEmpty()) {
+                                Text(
+                                    text = state.role.replaceFirstChar { if (it.isLowerCase()) it.titlecase(java.util.Locale.getDefault()) else it.toString() },
+                                    fontSize = 14.sp,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                            if (state.phone.isNotEmpty()) {
+                                Text(text = "+91 ${state.phone}", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
                         }
                     }
                 }
-            }
 
-            // General App Settings
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.app_preferences), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp))
-
-                Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp))) {
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
-                                    Icon(if (state.isDarkMode) Icons.Default.DarkMode else Icons.Default.LightMode, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                // General App Settings Card
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("General Settings", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp))
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+                    ) {
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
+                                        Icon(if (state.isDarkMode) Icons.Default.DarkMode else Icons.Default.LightMode, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                    }
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column {
+                                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.theme), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                    }
                                 }
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column {
-                                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.theme), fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                }
+                                Switch(checked = state.isDarkMode, onCheckedChange = { viewModel.toggleTheme(it) })
                             }
-                            Switch(checked = state.isDarkMode, onCheckedChange = { viewModel.toggleTheme(it) })
-                        }
-                        Divider(color = MaterialTheme.colorScheme.outline)
-                        Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
-                                    Icon(Icons.Default.Notifications, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+                            Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
+                                        Icon(Icons.Default.Notifications, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                    }
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column {
+                                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.reminders), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.daily_attendance_reminder), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
                                 }
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column {
-                                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.reminders), fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.daily_attendance_reminder), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
+                                Switch(checked = state.isRemindersEnabled, onCheckedChange = { viewModel.toggleReminders(it) })
                             }
-                            Switch(checked = state.isRemindersEnabled, onCheckedChange = { viewModel.toggleReminders(it) })
-                        }
-                        Divider(color = MaterialTheme.colorScheme.outline)
-                        Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
-                                    Icon(Icons.Default.RocketLaunch, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+                            Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
+                                        Icon(Icons.Default.RocketLaunch, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                    }
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column {
+                                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.enable_splash_screen), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                    }
                                 }
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column {
-                                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.enable_splash_screen), fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                }
+                                Switch(checked = state.isSplashEnabled, onCheckedChange = { viewModel.toggleSplash(it) })
                             }
-                            Switch(checked = state.isSplashEnabled, onCheckedChange = { viewModel.toggleSplash(it) })
-                        }
-                        if (state.isLanguageEnabled && state.isLanguageActivityEnabled) {
-                            Divider(color = MaterialTheme.colorScheme.outline)
-                            Box(modifier = Modifier.fillMaxWidth()) {
+                            if (state.isLanguageEnabled && state.isLanguageActivityEnabled) {
+                                HorizontalDivider(color = MaterialTheme.colorScheme.outline)
                                 Row(modifier = Modifier.fillMaxWidth().clickable {
                                     val intent = android.content.Intent(context, LanguageSelectorActivity::class.java)
                                     context.startActivity(intent)
@@ -225,252 +253,253 @@ fun SettingsScreenContent(
                                     Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
-                        }
-                        if (state.isRoleUiEnabled) {
-                            Divider(color = MaterialTheme.colorScheme.outline)
-                            Row(modifier = Modifier.fillMaxWidth().clickable { showRoleBottomSheet = true }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                            if (state.isRoleUiEnabled) {
+                                HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+                                Row(modifier = Modifier.fillMaxWidth().clickable { showRoleBottomSheet = true }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
+                                            Icon(Icons.Default.Work, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                        }
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Column {
+                                            Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.role_management), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                            Text("Current: ${if (state.role.isNotEmpty()) state.role.replaceFirstChar { if (it.isLowerCase()) it.titlecase(java.util.Locale.getDefault()) else it.toString() } else ""}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
+                                    }
+                                    Icon(Icons.Default.ArrowForwardIos, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
+                                }
+                            }
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+                            Row(modifier = Modifier.fillMaxWidth().clickable { if (!state.isPremium) onNavigateToPremium() }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
-                                    Icon(Icons.Default.Work, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                                }
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column {
-                                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.role_management), fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                    Text("Current: ${if (state.role.isNotEmpty()) state.role.replaceFirstChar { if (it.isLowerCase()) it.titlecase(java.util.Locale.getDefault()) else it.toString() } else ""}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
-                            }
-                            Icon(Icons.Default.ArrowForwardIos, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
-                        }
-                        }
-                        Divider(color = MaterialTheme.colorScheme.outline)
-                        Row(modifier = Modifier.fillMaxWidth().clickable { if (!state.isPremium) onNavigateToPremium() }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(if (state.isPremium) Color(0xFF10B981).copy(alpha = 0.1f) else Color(0xFFEAB308).copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
-                                    if (state.isPremium) {
-                                        Icon(Icons.Default.Favorite, contentDescription = null, tint = Color(0xFF10B981))
-                                    } else {
-                                        Icon(Icons.Default.WorkspacePremium, contentDescription = null, tint = Color(0xFFEAB308))
+                                    Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(if (state.isPremium) Color(0xFF10B981).copy(alpha = 0.1f) else Color(0xFFEAB308).copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
+                                        if (state.isPremium) {
+                                            Icon(Icons.Default.Favorite, contentDescription = null, tint = Color(0xFF10B981))
+                                        } else {
+                                            Icon(Icons.Default.WorkspacePremium, contentDescription = null, tint = Color(0xFFEAB308))
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column {
+                                        if (state.isPremium) {
+                                            Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.dailywork_premium), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFF10B981))
+                                            Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.thank_you_for_your_purchase), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        } else {
+                                            Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.upgrade_to_premium), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                            Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.unlock_all_features), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
                                     }
                                 }
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column {
-                                    if (state.isPremium) {
-                                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.dailywork_premium), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFF10B981))
-                                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.thank_you_for_your_purchase), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    } else {
-                                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.upgrade_to_premium), fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.unlock_all_features), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    }
+                                if (!state.isPremium) {
+                                    Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
-                            }
-                            if (!state.isPremium) {
-                                Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
                     }
                 }
-            }
 
-            // Data & Export
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.data_export), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp))
-
-                Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp))) {
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        if (state.role == "contractor") {
-                            Row(modifier = Modifier.fillMaxWidth().clickable { onNavigateToWorkerHistory() }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
-                                        Icon(Icons.Default.History, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                // Data & Export Card
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.data_export), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp))
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+                    ) {
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            if (state.role == "contractor") {
+                                Row(modifier = Modifier.fillMaxWidth().clickable { onNavigateToWorkerHistory() }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
+                                            Icon(Icons.Default.History, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                        }
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Column {
+                                            Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.worker_history), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                            Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.attendance_payment_logs), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
                                     }
-                                    Spacer(modifier = Modifier.width(12.dp))
-                                    Column {
-                                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.worker_history), fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.attendance_payment_logs), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+                                Row(modifier = Modifier.fillMaxWidth().clickable {
+                                    Toast.makeText(context, "Generate PDF from worker views", Toast.LENGTH_SHORT).show()
+                                }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
+                                            Icon(Icons.Default.PictureAsPdf, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                        }
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Column {
+                                            Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.export_as_pdf), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                            Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.only_contractor_premium), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
                                     }
                                 }
-                                Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                HorizontalDivider(color = MaterialTheme.colorScheme.outline)
                             }
-                            Divider(color = MaterialTheme.colorScheme.outline)
+
                             Row(modifier = Modifier.fillMaxWidth().clickable {
-                                Toast.makeText(context, "Generate PDF from worker views", Toast.LENGTH_SHORT).show()
+                                try {
+                                    val intent = Intent(Intent.ACTION_SEND).apply {
+                                        type = "text/plain"
+                                        putExtra(Intent.EXTRA_TEXT, "Download WorkDaily: https://play.google.com/store/apps/details?id=com.dailywork.attedance")
+                                        setPackage("com.whatsapp")
+                                    }
+                                    context.startActivity(intent)
+                                } catch (e: ActivityNotFoundException) {
+                                    Toast.makeText(context, "WhatsApp not installed", Toast.LENGTH_SHORT).show()
+                                }
                             }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
-                                        Icon(Icons.Default.PictureAsPdf, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                    Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(Color(0xFF25D366).copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
+                                        Icon(Icons.Default.Share, contentDescription = null, tint = Color(0xFF25D366))
                                     }
                                     Spacer(modifier = Modifier.width(12.dp))
                                     Column {
-                                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.export_as_pdf), fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.only_contractor_premium), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.share_via_whatsapp), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.send_digital_passbook), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
                                 }
                             }
-                            Divider(color = MaterialTheme.colorScheme.outline)
                         }
+                    }
+                }
 
-                        Row(modifier = Modifier.fillMaxWidth().clickable {
-                            try {
-                                val intent = Intent(Intent.ACTION_SEND).apply {
-                                    type = "text/plain"
-                                    putExtra(Intent.EXTRA_TEXT, "Download WorkDaily: https://play.google.com/store/apps/details?id=com.dailywork.attedance")
-                                    setPackage("com.whatsapp")
+                // Support & Info Card
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.data_support), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp))
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+                    ) {
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Row(modifier = Modifier.fillMaxWidth().clickable { showHowToUseSheet = true }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.onSurface.copy(alpha=0.05f)), contentAlignment = Alignment.Center) {
+                                        Icon(Icons.Default.Info, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface)
+                                    }
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column {
+                                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.how_to_use_dailywork), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.quick_guide_tutorials), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
                                 }
-                                context.startActivity(intent)
-                            } catch (e: ActivityNotFoundException) {
-                                Toast.makeText(context, "WhatsApp not installed", Toast.LENGTH_SHORT).show()
                             }
-                        }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(Color(0xFF25D366).copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
-                                    Icon(Icons.Default.Share, contentDescription = null, tint = Color(0xFF25D366))
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+                            Row(modifier = Modifier.fillMaxWidth().clickable { showPrivacySheet = true }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
+                                        Icon(Icons.Default.Security, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                    }
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column {
+                                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.data_privacy_policy), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.stored_securely_in_cloud), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
                                 }
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column {
-                                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.share_via_whatsapp), fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.send_digital_passbook), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+                            Row(modifier = Modifier.fillMaxWidth().clickable { showTermsSheet = true }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.secondary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
+                                        Icon(Icons.Default.Description, contentDescription = null, tint = MaterialTheme.colorScheme.secondary)
+                                    }
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column {
+                                        Text("Terms & Conditions", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                        Text("Rules and guidelines for using the app", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                }
+                            }
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+                            Row(modifier = Modifier.fillMaxWidth().clickable { showDeveloperSheet = true }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(Color(0xFF16A34A).copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
+                                        Icon(Icons.Default.Code, contentDescription = null, tint = Color(0xFF16A34A))
+                                    }
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column {
+                                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.developer_contact), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                        Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.reach_out_for_feedback), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            }
 
-            // Data & Support
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.data_support), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp))
-
-                Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp))) {
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Row(modifier = Modifier.fillMaxWidth().clickable { showHowToUseSheet = true }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.onSurface.copy(alpha=0.05f)), contentAlignment = Alignment.Center) {
-                                    Icon(Icons.Default.Info, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface)
-                                }
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column {
-                                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.how_to_use_dailywork), fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.quick_guide_tutorials), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
-                            }
-                        }
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outline)
-                        Row(modifier = Modifier.fillMaxWidth().clickable { showPrivacySheet = true }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
-                                    Icon(Icons.Default.Security, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                                }
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column {
-                                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.data_privacy_policy), fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.stored_securely_in_cloud), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
-                            }
-                        }
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outline)
-                        Row(modifier = Modifier.fillMaxWidth().clickable { showTermsSheet = true }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.secondary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
-                                    Icon(Icons.Default.Description, contentDescription = null, tint = MaterialTheme.colorScheme.secondary)
-                                }
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column {
-                                    Text("Terms & Conditions", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                    Text("Rules and guidelines for using the app", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
-                            }
-                        }
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outline)
-                        Row(modifier = Modifier.fillMaxWidth().clickable { showDeveloperSheet = true }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(Color(0xFF16A34A).copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
-                                    Icon(Icons.Default.Code, contentDescription = null, tint = Color(0xFF16A34A))
-                                }
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column {
-                                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.developer_contact), fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                    Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.reach_out_for_feedback), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
-                            }
-                        }
+                if (com.dailywork.attedance.BuildConfig.DEBUG) {
+                    Button(
+                        onClick = { throw RuntimeException("Test Crash - Crashlytics Verification") },
+                        modifier = Modifier.fillMaxWidth().height(56.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary.copy(alpha=0.1f), contentColor = MaterialTheme.colorScheme.secondary)
+                    ) {
+                        Icon(Icons.Default.BugReport, contentDescription = null, modifier = Modifier.size(24.dp))
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(text = "Test Crash", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                     }
                 }
-            }
 
-
-
-            if (com.dailywork.attedance.BuildConfig.DEBUG) {
                 Button(
-                    onClick = { throw RuntimeException("Test Crash - Crashlytics Verification") },
-                    modifier = Modifier.fillMaxWidth().height(56.dp).padding(bottom = 8.dp),
+                    onClick = { showLogoutDialog = true },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp)
+                        .padding(top = 8.dp),
                     shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary.copy(alpha=0.1f), contentColor = MaterialTheme.colorScheme.secondary)
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error.copy(alpha=0.1f), contentColor = MaterialTheme.colorScheme.error)
                 ) {
-                    Icon(Icons.Default.BugReport, contentDescription = null, modifier = Modifier.size(24.dp))
+                    Icon(Icons.Default.Logout, contentDescription = null, modifier = Modifier.size(24.dp))
                     Spacer(modifier = Modifier.width(12.dp))
-                    Text(text = "Test Crash", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Text(text = "Log Out", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 }
-            }
+        }
 
-            Button(
-                onClick = { showLogoutDialog = true },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error.copy(alpha=0.1f), contentColor = MaterialTheme.colorScheme.error)
-            ) {
-                Icon(Icons.Default.Logout, contentDescription = null, modifier = Modifier.size(24.dp))
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(text = "Log Out", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-            }
-
-
-            if (showProfileEditSheet) {
-                ProfileEditBottomSheet(state = state, viewModel = viewModel, onDismiss = { showProfileEditSheet = false })
-            }
-            if (showHowToUseSheet) {
-                HowToUseBottomSheet(onDismiss = { showHowToUseSheet = false })
-            }
-            if (showPrivacySheet) {
-                PrivacyPolicyBottomSheet(onDismiss = { showPrivacySheet = false })
-            }
-            if (showTermsSheet) {
-                TermsConditionsBottomSheet(onDismiss = { showTermsSheet = false })
-            }
-            if (showDeveloperSheet) {
-                DeveloperContactBottomSheet(onDismiss = { showDeveloperSheet = false })
-            }
-            if (showLogoutDialog) {
-                AlertDialog(
-                    onDismissRequest = { showLogoutDialog = false },
-                    title = { Text(text = "Log Out?", fontWeight = FontWeight.Bold) },
-                    text = { Text(text = "Are you sure you want to log out?") },
-                    confirmButton = {
-                        TextButton(
-                            onClick = {
-                                showLogoutDialog = false
-                                viewModel.logout()
-                                onLogout()
-                            }
-                        ) {
-                            Text("Log Out", color = MaterialTheme.colorScheme.error)
+        if (showProfileEditSheet) {
+            ProfileEditBottomSheet(state = state, viewModel = viewModel, onDismiss = { showProfileEditSheet = false })
+        }
+        if (showHowToUseSheet) {
+            HowToUseBottomSheet(onDismiss = { showHowToUseSheet = false })
+        }
+        if (showPrivacySheet) {
+            PrivacyPolicyBottomSheet(onDismiss = { showPrivacySheet = false })
+        }
+        if (showTermsSheet) {
+            TermsConditionsBottomSheet(onDismiss = { showTermsSheet = false })
+        }
+        if (showDeveloperSheet) {
+            DeveloperContactBottomSheet(onDismiss = { showDeveloperSheet = false })
+        }
+        if (showLogoutDialog) {
+            AlertDialog(
+                onDismissRequest = { showLogoutDialog = false },
+                title = { Text(text = "Log Out?", fontWeight = FontWeight.Bold) },
+                text = { Text(text = "Are you sure you want to log out?") },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showLogoutDialog = false
+                            viewModel.logout()
+                            onLogout()
                         }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { showLogoutDialog = false }) {
-                            Text("Cancel", color = MaterialTheme.colorScheme.onSurface)
-                        }
+                    ) {
+                        Text("Log Out", color = MaterialTheme.colorScheme.error)
                     }
-                )
-            }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showLogoutDialog = false }) {
+                        Text("Cancel", color = MaterialTheme.colorScheme.onSurface)
+                    }
+                }
+            )
+        }
     }
-    }
-
-
-
-
-
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
