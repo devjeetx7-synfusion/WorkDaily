@@ -1,7 +1,5 @@
 package com.dailywork.attedance.ui
 
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
@@ -37,9 +35,13 @@ import androidx.compose.ui.unit.sp
 import com.dailywork.attedance.R
 import com.dailywork.attedance.viewmodel.AuthViewModel
 import com.dailywork.attedance.viewmodel.LoginState
-import com.google.android.gms.auth.api.signin.GoogleSignIn
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions
-import com.google.android.gms.common.api.ApiException
+import androidx.credentials.CredentialManager
+import androidx.credentials.GetCredentialRequest
+import androidx.credentials.exceptions.GetCredentialCancellationException
+import androidx.credentials.exceptions.GetCredentialException
+import androidx.credentials.exceptions.NoCredentialException
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.ui.composed
@@ -77,6 +79,7 @@ fun LoginScreen(
     val loginState by authViewModel.loginState.collectAsState()
     val isProcessing = loginState is LoginState.Loading
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     val googleText = when (selectedLanguage) {
         "hi" -> "Google के साथ जारी रखें"
@@ -85,27 +88,6 @@ fun LoginScreen(
         "ta" -> "Google உடன் தொடரவும்"
         "te" -> "Googleతో కొనసాగించండి"
         else -> "Continue with Google"
-    }
-
-    val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
-        try {
-            val account = task.getResult(ApiException::class.java)
-            account?.idToken?.let { token ->
-                authViewModel.loginWithGoogleCredential(token)
-            } ?: run {
-                authViewModel.setLoginError("Google Sign-In failed: No ID Token found")
-            }
-        } catch (e: ApiException) {
-            val errorMessage = when (e.statusCode) {
-                12501 -> "Sign-in cancelled"
-                7 -> "Network Error"
-                else -> "Google Sign-In failed: ${e.message}"
-            }
-            authViewModel.setLoginError(errorMessage)
-        }
     }
 
     LaunchedEffect(loginState) {
@@ -167,12 +149,57 @@ fun LoginScreen(
                     text = googleText,
                     isLoading = isProcessing,
                     onClick = {
-                        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                            .requestIdToken(context.getString(R.string.default_web_client_id))
-                            .requestEmail()
-                            .build()
-                        val googleSignInClient = GoogleSignIn.getClient(context, gso)
-                        launcher.launch(googleSignInClient.signInIntent)
+                        scope.launch {
+                            val credentialManager = CredentialManager.create(context)
+                            val googleIdOption = GetGoogleIdOption.Builder()
+                                .setFilterByAuthorizedAccounts(true)
+                                .setServerClientId(context.getString(R.string.default_web_client_id))
+                                .build()
+
+                            val request = GetCredentialRequest.Builder()
+                                .addCredentialOption(googleIdOption)
+                                .build()
+
+                            try {
+                                val result = credentialManager.getCredential(
+                                    context = context,
+                                    request = request
+                                )
+                                val credential = result.credential
+                                if (credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
+                                    val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
+                                    authViewModel.loginWithGoogleCredential(googleIdTokenCredential.idToken)
+                                }
+                            } catch (e: NoCredentialException) {
+                                // Retry with filterByAuthorizedAccounts = false
+                                val secondGoogleIdOption = GetGoogleIdOption.Builder()
+                                    .setFilterByAuthorizedAccounts(false)
+                                    .setServerClientId(context.getString(R.string.default_web_client_id))
+                                    .build()
+                                val secondRequest = GetCredentialRequest.Builder()
+                                    .addCredentialOption(secondGoogleIdOption)
+                                    .build()
+                                try {
+                                    val result = credentialManager.getCredential(
+                                        context = context,
+                                        request = secondRequest
+                                    )
+                                    val credential = result.credential
+                                    if (credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
+                                        val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
+                                        authViewModel.loginWithGoogleCredential(googleIdTokenCredential.idToken)
+                                    }
+                                } catch (e2: GetCredentialException) {
+                                    if (e2 !is GetCredentialCancellationException) {
+                                        authViewModel.setLoginError("Google Sign-In failed: ${e2.message}")
+                                    }
+                                }
+                            } catch (e: GetCredentialException) {
+                                if (e !is GetCredentialCancellationException) {
+                                    authViewModel.setLoginError("Google Sign-In failed: ${e.message}")
+                                }
+                            }
+                        }
                     }
                 )
 
