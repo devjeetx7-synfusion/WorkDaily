@@ -35,6 +35,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
@@ -95,12 +100,12 @@ fun MainScaffold(authViewModel: AuthViewModel) {
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
             modifier = Modifier.fillMaxSize(),
-            contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0)
+            contentWindowInsets = WindowInsets.systemBars
         ) { innerPadding ->
             NavHost(
                 navController,
                 startDestination = Screen.Dashboard.route,
-                Modifier.padding(innerPadding).padding(bottom = 90.dp) // Leave space for floating nav
+                Modifier.padding(innerPadding)
             ) {
             composable(Screen.Dashboard.route) {
                 LiveDashboardScreen()
@@ -166,19 +171,23 @@ fun MainScaffold(authViewModel: AuthViewModel) {
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
                     .padding(horizontal = 24.dp, vertical = 24.dp)
+                    .wrapContentWidth()
             ) {
                 Surface(
-                    modifier = Modifier.fillMaxWidth().height(64.dp),
+                    modifier = Modifier.wrapContentWidth().height(72.dp),
                     shape = CircleShape,
-                    color = MaterialTheme.colorScheme.surface,
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
                     tonalElevation = 8.dp,
-                    shadowElevation = 12.dp
+                    shadowElevation = 16.dp
                 ) {
                     Row(
-                        modifier = Modifier.fillMaxSize().selectableGroup().padding(horizontal = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier
+                            .wrapContentWidth()
+                            .fillMaxHeight()
+                            .selectableGroup()
+                            .padding(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         items.forEach { screen ->
@@ -213,9 +222,9 @@ fun MainScaffold(authViewModel: AuthViewModel) {
                                 if (selected) {
                                     Box(
                                         modifier = Modifier
-                                            .size(48.dp)
+                                            .size(52.dp)
                                             .background(
-                                                MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                                MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
                                                 CircleShape
                                             )
                                     )
