@@ -22,9 +22,11 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.dailywork.admin.data.model.User
 import com.dailywork.admin.ui.utils.formatTimestamp
+import com.dailywork.admin.ui.components.UserCard
 import com.dailywork.admin.viewmodel.SortOrder
 import com.dailywork.admin.viewmodel.UsersViewModel
 import java.util.*
+import androidx.compose.foundation.background
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -53,12 +55,16 @@ fun UsersScreen(
 
     Scaffold(
         topBar = {
-            LargeTopAppBar(
-                title = { Text("User Management", fontWeight = FontWeight.Bold) },
+            TopAppBar(
+                title = { Text("User Management", fontWeight = FontWeight.Black, fontSize = 28.sp) },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground
+                ),
                 actions = {
                     var showSortMenu by remember { mutableStateOf(false) }
                     IconButton(onClick = { showSortMenu = true }) {
-                        Icon(Icons.AutoMirrored.Filled.Sort, contentDescription = "Sort")
+                        Icon(Icons.AutoMirrored.Filled.Sort, contentDescription = "Sort", tint = MaterialTheme.colorScheme.onBackground)
                     }
                     DropdownMenu(expanded = showSortMenu, onDismissRequest = { showSortMenu = false }) {
                         DropdownMenuItem(
@@ -76,16 +82,16 @@ fun UsersScreen(
             )
         }
     ) { padding ->
-        Box(modifier = Modifier.fillMaxSize().padding(padding).pullRefresh(pullRefreshState)) {
+        Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(padding).pullRefresh(pullRefreshState)) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
         ) {
             // Search Bar
-            OutlinedTextField(
+            TextField(
                 value = searchQuery,
                 onValueChange = { viewModel.setSearchQuery(it) },
-                placeholder = { Text("Search by name or email...") },
+                placeholder = { Text("Search users...") },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
@@ -94,14 +100,21 @@ fun UsersScreen(
                     { IconButton(onClick = { viewModel.setSearchQuery("") }) { Icon(Icons.Default.Clear, null) } }
                 } else null,
                 singleLine = true,
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(16.dp),
+                colors = TextFieldDefaults.colors(
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                    disabledIndicatorColor = Color.Transparent,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    focusedContainerColor = MaterialTheme.colorScheme.surface
+                )
             )
 
             // Filters
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 var showRoleMenu by remember { mutableStateOf(false) }
@@ -169,119 +182,6 @@ fun UsersScreen(
             }
         }
         PullRefreshIndicator(refreshing, pullRefreshState, Modifier.align(Alignment.TopCenter))
-        }
-    }
-}
-
-@Composable
-fun UserCard(user: User, onClick: () -> Unit) {
-    val isOnline = System.currentTimeMillis() - user.lastActive < 5 * 60 * 1000
-
-    val cardColor = if (user.isPremium) {
-        MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.2f)
-    } else {
-        MaterialTheme.colorScheme.surface
-    }
-
-    ElevatedCard(
-        modifier = Modifier.fillMaxWidth().clickable { onClick() },
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.elevatedCardColors(containerColor = cardColor)
-    ) {
-        Row(
-            modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box {
-                if (user.photoUrl.isNotEmpty()) {
-                    AsyncImage(
-                        model = user.photoUrl,
-                        contentDescription = null,
-                        modifier = Modifier
-                            .size(48.dp)
-                            .clip(CircleShape),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    Surface(
-                        modifier = Modifier.size(48.dp),
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.primaryContainer
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Text(
-                                user.name.take(1).uppercase(),
-                                style = MaterialTheme.typography.titleLarge,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                        }
-                    }
-                }
-
-                // Online Indicator
-                if (isOnline) {
-                    Surface(
-                        modifier = Modifier
-                            .size(12.dp)
-                            .align(Alignment.BottomEnd)
-                            .offset(x = 2.dp, y = 2.dp),
-                        shape = CircleShape,
-                        color = Color.Green,
-                        border = androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.surface)
-                    ) {}
-                }
-            }
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = user.name.ifEmpty { "Unknown User" },
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = user.email,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Badge(
-                        containerColor = when(user.role) {
-                            "admin" -> MaterialTheme.colorScheme.errorContainer
-                            "contractor" -> MaterialTheme.colorScheme.primaryContainer
-                            else -> MaterialTheme.colorScheme.secondaryContainer
-                        }
-                    ) {
-                        Text(user.role.uppercase(), modifier = Modifier.padding(horizontal = 4.dp))
-                    }
-                    if (user.isPremium) {
-                        Badge(containerColor = MaterialTheme.colorScheme.tertiary, contentColor = MaterialTheme.colorScheme.onTertiary) {
-                            val expiry = user.premiumInfo?.expiryDate
-                            val text = if (expiry != null && expiry > 0) {
-                                "PREMIUM UNTIL ${formatTimestamp(expiry)}"
-                            } else "PREMIUM LIFETIME"
-                            Text(text, modifier = Modifier.padding(horizontal = 4.dp), fontSize = 10.sp)
-                        }
-                    }
-                    if (user.isBlocked) {
-                        Badge(containerColor = MaterialTheme.colorScheme.error) {
-                            Text("BLOCKED", modifier = Modifier.padding(horizontal = 4.dp))
-                        }
-                    }
-                }
-            }
-
-            Icon(
-                Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
         }
     }
 }

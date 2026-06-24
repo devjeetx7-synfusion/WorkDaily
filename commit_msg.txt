@@ -1,0 +1,7 @@
+UI/UX Redesign: Admin Dashboard Premium overhaul
+
+- Set up DailyWork SaaS purple theme and dark mode logic
+- Extracted and centralized UserCard, DashboardStatCard, ReportCard, and PremiumCard in ui/components/
+- Restyled Dashboard with Banner and List Layouts
+- Upgraded BottomNavigationBar to animated pill shape
+- Overhauled User and Premium settings to match modern guidelines

@@ -24,6 +24,8 @@ import com.dailywork.admin.data.model.User
 import coil.compose.AsyncImage
 import androidx.compose.ui.graphics.Color
 import com.dailywork.admin.ui.utils.formatTimestamp
+import com.dailywork.admin.ui.components.UserCard
+import androidx.compose.foundation.background
 import androidx.compose.ui.unit.sp
 
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -39,11 +41,17 @@ fun PremiumManagementScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Premium Users", fontWeight = FontWeight.Bold) })
+            TopAppBar(
+                title = { Text("Premium Subscriptions", fontWeight = FontWeight.Black, fontSize = 28.sp) },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground
+                )
+            )
         }
     ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            OutlinedTextField(
+        Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(padding)) {
+            TextField(
                 value = searchQuery,
                 onValueChange = { viewModel.setSearchQuery(it) },
                 placeholder = { Text("Search premium users...") },
@@ -53,7 +61,14 @@ fun PremiumManagementScreen(
                     { IconButton(onClick = { viewModel.setSearchQuery("") }) { Icon(Icons.Default.Clear, null) } }
                 } else null,
                 singleLine = true,
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(16.dp),
+                colors = TextFieldDefaults.colors(
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                    disabledIndicatorColor = Color.Transparent,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    focusedContainerColor = MaterialTheme.colorScheme.surface
+                )
             )
 
             if (users.isEmpty()) {
