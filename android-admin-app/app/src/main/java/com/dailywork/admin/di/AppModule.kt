@@ -30,7 +30,7 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideFCMRepository(): FCMRepository {
-        return FCMRepository()
+    fun provideFCMRepository(db: FirebaseFirestore, auth: FirebaseAuth): FCMRepository {
+        return FCMRepository(db, auth)
     }
 }

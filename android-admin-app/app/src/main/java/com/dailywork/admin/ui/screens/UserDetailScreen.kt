@@ -373,20 +373,56 @@ fun BlockUserDialog(isBlocked: Boolean, onDismiss: () -> Unit, onConfirm: (Strin
 @Composable
 fun PremiumDialog(isPremium: Boolean, onDismiss: () -> Unit, onConfirm: (Int) -> Unit) {
     var days by remember { mutableStateOf("30") }
+    val options = listOf(
+        "7 Days" to "7",
+        "30 Days" to "30",
+        "90 Days" to "90",
+        "365 Days" to "365",
+        "Lifetime" to "0",
+        "Custom" to ""
+    )
+    var selectedOption by remember { mutableStateOf("30") }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(if (isPremium) "Disable Premium" else "Enable Premium") },
         text = {
             if (!isPremium) {
                 Column {
-                    Text("Select duration (days):")
+                    Text("Select duration:")
                     Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = days,
-                        onValueChange = { days = it.filter { char -> char.isDigit() } },
-                        label = { Text("Days (0 for Lifetime)") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    options.forEach { (label, value) ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable {
+                                    selectedOption = value
+                                    if (value.isNotEmpty()) days = value
+                                }
+                                .padding(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = selectedOption == value,
+                                onClick = {
+                                    selectedOption = value
+                                    if (value.isNotEmpty()) days = value
+                                }
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(label)
+                        }
+                    }
+                    if (selectedOption == "") {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = days,
+                            onValueChange = { days = it.filter { char -> char.isDigit() } },
+                            label = { Text("Custom Days") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
                 }
             } else {
                 Text("Are you sure you want to disable premium for this user?")

@@ -172,6 +172,23 @@ class AdminFirestoreRepository(
         logAdminAction("UPDATE_REPORT", reportId, "New status: $status")
     }
 
+    fun getAdminLogs(): Flow<List<AdminLog>> = callbackFlow {
+        val subscription = db.collection("admin_logs")
+            .orderBy("timestamp", Query.Direction.DESCENDING)
+            .limit(100)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
+                }
+                val logs = snapshot?.documents?.mapNotNull { doc ->
+                    doc.toObject(AdminLog::class.java)?.copy(id = doc.id)
+                } ?: emptyList()
+                trySend(logs)
+            }
+        awaitClose { subscription.remove() }
+    }
+
     private suspend fun logAdminAction(action: String, targetId: String, details: String = "") {
         val adminId = auth.currentUser?.uid ?: "unknown"
         val log = AdminLog(

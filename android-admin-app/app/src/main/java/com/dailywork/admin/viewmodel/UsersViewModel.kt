@@ -40,6 +40,7 @@ class UsersViewModel @Inject constructor(
     private val _isPerformingAction = MutableStateFlow(false)
     val isPerformingAction: StateFlow<Boolean> = _isPerformingAction
 
+    @Suppress("UNCHECKED_CAST")
     val filteredUsers: StateFlow<List<User>> = combine(
         _allUsers,
         _searchQuery,

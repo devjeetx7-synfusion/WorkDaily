@@ -29,10 +29,19 @@ fun NotificationsScreen(
 
     val isSending by viewModel.isSending.collectAsState()
 
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(isSending) {
+        if (!isSending && title.isEmpty() && message.isEmpty()) {
+            // Assume success if text was cleared
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(title = { Text("Notifications") })
-        }
+        },
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
         Column(
             modifier = Modifier

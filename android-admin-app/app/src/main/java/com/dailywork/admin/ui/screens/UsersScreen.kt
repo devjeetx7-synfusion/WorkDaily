@@ -183,10 +183,6 @@ fun UserCard(user: User, onClick: () -> Unit) {
         MaterialTheme.colorScheme.surface
     }
 
-    val cardBorder = if (user.isPremium) {
-        androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.5f))
-    } else null
-
     ElevatedCard(
         modifier = Modifier.fillMaxWidth().clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
