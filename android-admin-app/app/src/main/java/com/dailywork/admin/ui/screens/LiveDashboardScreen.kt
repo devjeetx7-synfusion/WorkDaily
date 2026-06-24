@@ -42,18 +42,32 @@ fun LiveDashboardScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Live Dashboard", fontWeight = FontWeight.Bold) },
+                title = { Text("Overview", fontWeight = FontWeight.Black, fontSize = 28.sp) },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface
-                )
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground
+                ),
+                actions = {
+                    IconButton(onClick = {}) {
+                        Icon(Icons.Default.Notifications, contentDescription = "Notifications", tint = MaterialTheme.colorScheme.onBackground)
+                    }
+                    IconButton(onClick = {}) {
+                        Surface(
+                            modifier = Modifier.size(32.dp),
+                            shape = androidx.compose.foundation.shape.CircleShape,
+                            color = MaterialTheme.colorScheme.primaryContainer
+                        ) {
+                            Icon(Icons.Default.Person, contentDescription = "Profile", modifier = Modifier.padding(4.dp), tint = MaterialTheme.colorScheme.onPrimaryContainer)
+                        }
+                    }
+                }
             )
         }
     ) { padding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.surface)
+                .background(MaterialTheme.colorScheme.background)
                 .padding(padding)
                 .pullRefresh(pullRefreshState)
         ) {
@@ -64,6 +78,25 @@ fun LiveDashboardScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 modifier = Modifier.fillMaxSize()
             ) {
+                // Top Banner span
+                item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(2) }) {
+                    ElevatedCard(
+                        modifier = Modifier.fillMaxWidth().height(140.dp),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.elevatedCardColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        )
+                    ) {
+                        Box(modifier = Modifier.fillMaxSize().padding(24.dp)) {
+                            Column(modifier = Modifier.align(Alignment.CenterStart)) {
+                                Text("Welcome back, Admin!", color = MaterialTheme.colorScheme.onPrimary, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text("Here's what's happening today.", color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f), fontSize = 14.sp)
+                            }
+                        }
+                    }
+                }
+
                 item {
                     StatCard(
                         "Total Users",
@@ -132,24 +165,14 @@ fun StatCard(label: String, value: Int, icon: ImageVector, color: Color) {
     ElevatedCard(
         modifier = Modifier
             .fillMaxWidth()
-            .height(160.dp),
+            .height(140.dp),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-        )
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            // Background Icon
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier
-                    .size(80.dp)
-                    .align(Alignment.BottomEnd)
-                    .offset(x = 16.dp, y = 16.dp),
-                tint = color.copy(alpha = 0.1f)
-            )
-
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -157,18 +180,24 @@ fun StatCard(label: String, value: Int, icon: ImageVector, color: Color) {
                 horizontalAlignment = Alignment.Start,
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = color.copy(alpha = 0.2f)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Top
                 ) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        modifier = Modifier
-                            .padding(8.dp)
-                            .size(24.dp),
-                        tint = color
-                    )
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = color.copy(alpha = 0.15f)
+                    ) {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = null,
+                            modifier = Modifier
+                                .padding(8.dp)
+                                .size(24.dp),
+                            tint = color
+                        )
+                    }
                 }
 
                 Column {
@@ -180,8 +209,8 @@ fun StatCard(label: String, value: Int, icon: ImageVector, color: Color) {
                     )
                     Text(
                         text = label,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }

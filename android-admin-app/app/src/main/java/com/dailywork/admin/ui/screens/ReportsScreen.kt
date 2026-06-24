@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.dailywork.admin.data.model.Report
 import com.dailywork.admin.ui.utils.formatTimestamp
@@ -45,16 +46,26 @@ fun ReportsScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("User Reports", fontWeight = FontWeight.Bold) })
+            TopAppBar(
+                title = { Text("Reports Center", fontWeight = FontWeight.Black, fontSize = 28.sp) },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground
+                )
+            )
         }
     ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            TabRow(selectedTabIndex = selectedTabIndex) {
+        Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(padding)) {
+            TabRow(
+                selectedTabIndex = selectedTabIndex,
+                containerColor = MaterialTheme.colorScheme.background,
+                contentColor = MaterialTheme.colorScheme.primary
+            ) {
                 tabs.forEachIndexed { index, title ->
                     Tab(
                         selected = selectedTabIndex == index,
                         onClick = { selectedTabIndex = index },
-                        text = { Text(title.replaceFirstChar { it.uppercase() }) }
+                        text = { Text(title.replaceFirstChar { it.uppercase() }, fontWeight = FontWeight.Bold) }
                     )
                 }
             }
@@ -106,19 +117,28 @@ fun ReportCard(
 ) {
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp)
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(20.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = MaterialTheme.colorScheme.errorContainer,
-                    contentColor = MaterialTheme.colorScheme.onErrorContainer
+                    shape = RoundedCornerShape(12.dp),
+                    color = when(report.status) {
+                        "pending" -> MaterialTheme.colorScheme.errorContainer
+                        "resolved" -> Color(0xFF4CAF50).copy(alpha = 0.2f)
+                        else -> MaterialTheme.colorScheme.surfaceVariant
+                    },
+                    contentColor = when(report.status) {
+                        "pending" -> MaterialTheme.colorScheme.onErrorContainer
+                        "resolved" -> Color(0xFF2E7D32)
+                        else -> MaterialTheme.colorScheme.onSurfaceVariant
+                    }
                 ) {
                     Text(
                         report.status.uppercase(),
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                        style = MaterialTheme.typography.labelSmall,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -126,49 +146,50 @@ fun ReportCard(
                 Text(formatTimestamp(report.timestamp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
 
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text("Reported User: ${report.reportedUserId}", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+            Text("By: ${report.reportedBy}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
             Spacer(modifier = Modifier.height(12.dp))
-
-            Text("Reported User ID: ${report.reportedUserId}", fontWeight = FontWeight.Bold)
-            Text("Reported By: ${report.reportedBy}", style = MaterialTheme.typography.bodySmall)
-
-            Spacer(modifier = Modifier.height(8.dp))
 
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(8.dp),
+                shape = RoundedCornerShape(12.dp),
                 color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
             ) {
                 Text(
                     report.reason,
-                    modifier = Modifier.padding(12.dp),
+                    modifier = Modifier.padding(16.dp),
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedButton(
                     onClick = onUserClick,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f).height(48.dp),
                     enabled = !isPerformingAction,
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("View User")
+                    Text("Review Target")
                 }
 
                 if (report.status == "pending") {
                     FilledTonalIconButton(
                         onClick = onIgnore,
                         enabled = !isPerformingAction,
-                        shape = RoundedCornerShape(8.dp)
+                        modifier = Modifier.size(48.dp),
+                        shape = RoundedCornerShape(12.dp)
                     ) {
                         Icon(Icons.Default.VisibilityOff, null)
                     }
                     IconButton(
                         onClick = onResolve,
                         enabled = !isPerformingAction,
-                        modifier = Modifier.background(Color(0xFF4CAF50).copy(alpha = 0.1f), RoundedCornerShape(8.dp))
+                        modifier = Modifier.size(48.dp).background(Color(0xFF4CAF50).copy(alpha = 0.15f), RoundedCornerShape(12.dp))
                     ) {
                         Icon(Icons.Default.Check, null, tint = Color(0xFF4CAF50))
                     }
