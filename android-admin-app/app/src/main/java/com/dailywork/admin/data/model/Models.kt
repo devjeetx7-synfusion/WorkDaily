@@ -34,7 +34,17 @@ data class AppConfig(
     val roleUiEnabled: Boolean = true,
     val maintenanceMode: Boolean = false,
     val registrationEnabled: Boolean = true,
-    val premiumPurchaseEnabled: Boolean = true
+    val premiumPurchaseEnabled: Boolean = true,
+    val supportWhatsapp: String = "",
+    val supportEmail: String = "",
+    val shareTitle: String = "",
+    val shareText: String = "",
+    val shareLink: String = "",
+    val announcementTitle: String = "",
+    val announcementMessage: String = "",
+    val announcementEnabled: Boolean = false,
+    val minVersionCode: Int = 1,
+    val forceUpdateEnabled: Boolean = false
 )
 
 data class AdminStats(

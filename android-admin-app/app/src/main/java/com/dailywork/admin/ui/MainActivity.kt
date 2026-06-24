@@ -11,6 +11,9 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.filled.Dashboard
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -61,9 +64,10 @@ fun LoadingScreen() {
 fun MainScaffold(authViewModel: AuthViewModel) {
     val navController = rememberNavController()
     val items = listOf(
+        Screen.Dashboard,
         Screen.Users,
+        Screen.Premium,
         Screen.Reports,
-        Screen.Notifications,
         Screen.Settings
     )
 
@@ -91,9 +95,17 @@ fun MainScaffold(authViewModel: AuthViewModel) {
             }
         }
     ) { innerPadding ->
-        NavHost(navController, startDestination = Screen.Users.route, Modifier.padding(innerPadding)) {
+        NavHost(navController, startDestination = Screen.Dashboard.route, Modifier.padding(innerPadding)) {
+            composable(Screen.Dashboard.route) {
+                LiveDashboardScreen()
+            }
             composable(Screen.Users.route) {
                 UsersScreen(onUserClick = { userId ->
+                    navController.navigate("user_detail/$userId")
+                })
+            }
+            composable(Screen.Premium.route) {
+                PremiumManagementScreen(onUserClick = { userId ->
                     navController.navigate("user_detail/$userId")
                 })
             }
@@ -127,15 +139,26 @@ fun MainScaffold(authViewModel: AuthViewModel) {
                 val userId = backStackEntry.arguments?.getString("userId")
                 NotificationsScreen(targetUserId = userId)
             }
-            composable(Screen.Settings.route) { SettingsScreen(onLogout = { authViewModel.logout() }) }
+            composable(Screen.Settings.route) {
+                SettingsScreen(
+                    onLogout = { authViewModel.logout() },
+                    onNavigateToLogs = { navController.navigate(Screen.AdminLogs.route) }
+                )
+            }
+            composable(Screen.AdminLogs.route) {
+                AdminLogsScreen(onBack = { navController.popBackStack() })
+            }
         }
     }
 }
 
 sealed class Screen(val route: String, val title: String, val icon: androidx.compose.ui.graphics.vector.ImageVector) {
+    object Dashboard : Screen("dashboard", "Dashboard", Icons.Default.Dashboard)
     object Users : Screen("users", "Users", Icons.Default.People)
+    object Premium : Screen("premium", "Premium", Icons.Default.Star)
     object Reports : Screen("reports", "Reports", Icons.Default.Flag)
     object Notifications : Screen("notifications", "Notify", Icons.Default.Notifications)
     object Settings : Screen("settings", "Settings", Icons.Default.Settings)
     object UserDetail : Screen("user_detail/{userId}", "User Detail", Icons.Default.People)
+    object AdminLogs : Screen("admin_logs", "Logs", Icons.Default.History)
 }

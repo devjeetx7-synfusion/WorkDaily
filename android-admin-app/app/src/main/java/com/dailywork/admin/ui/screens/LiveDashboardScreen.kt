@@ -30,7 +30,6 @@ import com.dailywork.admin.viewmodel.DashboardViewModel
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
 @Composable
 fun LiveDashboardScreen(
-    onBack: () -> Unit,
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
     val stats by viewModel.stats.collectAsState()
@@ -44,11 +43,6 @@ fun LiveDashboardScreen(
         topBar = {
             TopAppBar(
                 title = { Text("Live Dashboard", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
                     titleContentColor = MaterialTheme.colorScheme.onSurface

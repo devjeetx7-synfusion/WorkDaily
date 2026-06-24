@@ -39,43 +39,59 @@ fun ReportsScreen(
     })
     val isPerformingAction by viewModel.isPerformingAction.collectAsState()
 
+    var selectedTabIndex by remember { mutableStateOf(0) }
+    val tabs = listOf("pending", "resolved", "ignored")
+    val filteredReports = reports.filter { it.status == tabs[selectedTabIndex] }
+
     Scaffold(
         topBar = {
             TopAppBar(title = { Text("User Reports", fontWeight = FontWeight.Bold) })
         }
     ) { padding ->
-        Box(modifier = Modifier.fillMaxSize().padding(padding).pullRefresh(pullRefreshState)) {
-        if (reports.isEmpty()) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        Icons.Default.Flag,
-                        null,
-                        modifier = Modifier.size(64.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text("No pending reports", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                items(reports) { report ->
-                    ReportCard(
-                        report = report,
-                        isPerformingAction = isPerformingAction,
-                        onUserClick = { onUserClick(report.reportedUserId) },
-                        onIgnore = { viewModel.ignoreReport(report.id) },
-                        onResolve = { viewModel.resolveReport(report.id) }
+        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            TabRow(selectedTabIndex = selectedTabIndex) {
+                tabs.forEachIndexed { index, title ->
+                    Tab(
+                        selected = selectedTabIndex == index,
+                        onClick = { selectedTabIndex = index },
+                        text = { Text(title.replaceFirstChar { it.uppercase() }) }
                     )
                 }
             }
-        }
-        PullRefreshIndicator(refreshing, pullRefreshState, Modifier.align(Alignment.TopCenter))
+
+            Box(modifier = Modifier.fillMaxSize().pullRefresh(pullRefreshState)) {
+                if (filteredReports.isEmpty()) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(
+                                Icons.Default.Flag,
+                                null,
+                                modifier = Modifier.size(64.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text("No ${tabs[selectedTabIndex]} reports", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        items(filteredReports) { report ->
+                            ReportCard(
+                                report = report,
+                                isPerformingAction = isPerformingAction,
+                                onUserClick = { onUserClick(report.reportedUserId) },
+                                onIgnore = { viewModel.ignoreReport(report.id) },
+                                onResolve = { viewModel.resolveReport(report.id) }
+                            )
+                        }
+                    }
+                }
+                PullRefreshIndicator(refreshing, pullRefreshState, Modifier.align(Alignment.TopCenter))
+            }
         }
     }
 }
