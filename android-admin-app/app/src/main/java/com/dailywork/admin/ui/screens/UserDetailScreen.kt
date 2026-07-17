@@ -38,7 +38,6 @@ fun UserDetailScreen(
     val user by viewModel.getUser(userId).collectAsState(initial = null)
     val isPerformingAction by viewModel.isPerformingAction.collectAsState()
     var showBlockDialog by remember { mutableStateOf(false) }
-    var showPremiumDialog by remember { mutableStateOf(false) }
     var showRoleDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
 
@@ -70,7 +69,6 @@ fun UserDetailScreen(
                     isPerformingAction = isPerformingAction,
                     onNotify = { onNotifyUser(u.uid) },
                     onBlockClick = { showBlockDialog = true },
-                    onPremiumClick = { showPremiumDialog = true },
                     onRoleClick = { showRoleDialog = true },
                     onDeleteClick = { showDeleteDialog = true }
                 )
@@ -85,17 +83,6 @@ fun UserDetailScreen(
                     onConfirm = { reason ->
                         viewModel.toggleBlockStatus(u.uid, !u.isBlocked, reason)
                         showBlockDialog = false
-                    }
-                )
-            }
-
-            if (showPremiumDialog) {
-                PremiumDialog(
-                    isPremium = u.isPremium,
-                    onDismiss = { showPremiumDialog = false },
-                    onConfirm = { days ->
-                        viewModel.togglePremiumStatus(u.uid, !u.isPremium, days)
-                        showPremiumDialog = false
                     }
                 )
             }
@@ -188,11 +175,6 @@ fun UserHeaderDetail(user: User) {
             Badge(containerColor = MaterialTheme.colorScheme.primaryContainer) {
                 Text(user.role.uppercase(), modifier = Modifier.padding(4.dp))
             }
-            if (user.isPremium) {
-                Badge(containerColor = MaterialTheme.colorScheme.tertiary, contentColor = MaterialTheme.colorScheme.onTertiary) {
-                    Text("PREMIUM", modifier = Modifier.padding(4.dp))
-                }
-            }
             if (user.isBlocked) {
                 Badge(containerColor = MaterialTheme.colorScheme.error) {
                     Text("BLOCKED", modifier = Modifier.padding(4.dp))
@@ -208,7 +190,6 @@ fun AdminActionsGrid(
     isPerformingAction: Boolean,
     onNotify: () -> Unit,
     onBlockClick: () -> Unit,
-    onPremiumClick: () -> Unit,
     onRoleClick: () -> Unit,
     onDeleteClick: () -> Unit
 ) {
@@ -242,19 +223,11 @@ fun AdminActionsGrid(
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 ActionButton(
-                    icon = if (user.isPremium) Icons.Default.StarOutline else Icons.Default.Star,
-                    label = if (user.isPremium) "Set Free" else "Set Premium",
-                    onClick = onPremiumClick,
-                    enabled = !isPerformingAction,
-                    color = MaterialTheme.colorScheme.tertiary,
-                    modifier = Modifier.weight(1f)
-                )
-                ActionButton(
                     icon = Icons.Default.AdminPanelSettings,
                     label = "Change Role",
                     onClick = onRoleClick,
                     enabled = !isPerformingAction,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1.5f)
                 )
             }
 
@@ -318,13 +291,6 @@ fun DetailedInfoCard(user: User) {
                 DetailRow(Icons.Default.Info, "Reason", user.blockInfo.reason)
                 DetailRow(Icons.Default.History, "Blocked At", formatTimestamp(user.blockInfo.blockedAt))
             }
-
-            if (user.isPremium && user.premiumInfo != null) {
-                HorizontalDivider()
-                Text("Premium Information", color = MaterialTheme.colorScheme.tertiary, fontWeight = FontWeight.Bold)
-                DetailRow(Icons.Default.Event, "Expiry Date", if (user.premiumInfo.expiryDate > 0) formatTimestamp(user.premiumInfo.expiryDate) else "Lifetime")
-                DetailRow(Icons.Default.History, "Activated At", formatTimestamp(user.premiumInfo.activatedAt))
-            }
         }
     }
 }
@@ -362,75 +328,6 @@ fun BlockUserDialog(isBlocked: Boolean, onDismiss: () -> Unit, onConfirm: (Strin
         confirmButton = {
             Button(onClick = { onConfirm(reason) }) {
                 Text(if (isBlocked) "Unblock" else "Block")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
-        }
-    )
-}
-
-@Composable
-fun PremiumDialog(isPremium: Boolean, onDismiss: () -> Unit, onConfirm: (Int) -> Unit) {
-    var days by remember { mutableStateOf("30") }
-    val options = listOf(
-        "7 Days" to "7",
-        "30 Days" to "30",
-        "90 Days" to "90",
-        "365 Days" to "365",
-        "Lifetime" to "0",
-        "Custom" to ""
-    )
-    var selectedOption by remember { mutableStateOf("30") }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(if (isPremium) "Disable Premium" else "Enable Premium") },
-        text = {
-            if (!isPremium) {
-                Column {
-                    Text("Select duration:")
-                    Spacer(modifier = Modifier.height(8.dp))
-                    options.forEach { (label, value) ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(8.dp))
-                                .clickable {
-                                    selectedOption = value
-                                    if (value.isNotEmpty()) days = value
-                                }
-                                .padding(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            RadioButton(
-                                selected = selectedOption == value,
-                                onClick = {
-                                    selectedOption = value
-                                    if (value.isNotEmpty()) days = value
-                                }
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(label)
-                        }
-                    }
-                    if (selectedOption == "") {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = days,
-                            onValueChange = { days = it.filter { char -> char.isDigit() } },
-                            label = { Text("Custom Days") },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                }
-            } else {
-                Text("Are you sure you want to disable premium for this user?")
-            }
-        },
-        confirmButton = {
-            Button(onClick = { onConfirm(days.toIntOrNull() ?: 0) }) {
-                Text("Confirm")
             }
         },
         dismissButton = {

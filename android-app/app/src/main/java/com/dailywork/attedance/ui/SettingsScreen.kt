@@ -52,8 +52,6 @@ fun SettingsScreenContent(
     var showUnlockSheet by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
 
-    val context = LocalContext.current
-
     var showHowToUseSheet by remember { mutableStateOf(false) }
     var showPrivacySheet by remember { mutableStateOf(false) }
     var showTermsSheet by remember { mutableStateOf(false) }

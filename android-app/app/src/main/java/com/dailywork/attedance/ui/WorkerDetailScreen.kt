@@ -4,6 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -14,40 +15,46 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.*
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.foundation.clickable
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
 import androidx.navigation.NavController
+import com.dailywork.attedance.access.RewardedFeature
 import com.dailywork.attedance.ui.components.RewardedAccessBottomSheet
 import com.dailywork.attedance.ui.components.RewardedLockedContent
-import com.dailywork.attedance.access.RewardedFeature
 import com.dailywork.attedance.utils.PassbookPdfGenerator
 import com.dailywork.attedance.utils.PdfData
 import com.dailywork.attedance.utils.PdfLog
 import com.dailywork.attedance.viewmodel.WorkerDetailViewModel
+import java.net.URLEncoder
+import java.text.SimpleDateFormat
+import java.util.Locale
 
-fun maskText(text: String, isUnlocked: Boolean, placeholder: String = "••••"): String {
+private fun maskText(text: String, isUnlocked: Boolean, placeholder: String = "••••"): String {
     return if (isUnlocked) text else placeholder
 }
 
 @Composable
-fun PremiumLockedIcon(modifier: Modifier = Modifier) {
+private fun LockedFeatureIcon(modifier: Modifier = Modifier) {
     Icon(
         imageVector = Icons.Default.Lock,
         contentDescription = "Locked",
@@ -55,13 +62,6 @@ fun PremiumLockedIcon(modifier: Modifier = Modifier) {
         modifier = modifier.size(16.dp)
     )
 }
-import java.net.URLEncoder
-import java.text.SimpleDateFormat
-import java.util.Locale
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -207,8 +207,6 @@ fun WorkerDetailScreenContent(
         context.startActivity(intent)
     }
 
-    var showPremiumBottomSheet by remember { mutableStateOf(false) }
-
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -333,7 +331,7 @@ fun WorkerDetailScreenContent(
                                 if (isReportUnlocked) {
                             Icon(Icons.Default.PictureAsPdf, contentDescription = null, modifier = Modifier.size(18.dp))
                         } else {
-                            PremiumLockedIcon(modifier = Modifier.size(18.dp))
+                            LockedFeatureIcon(modifier = Modifier.size(18.dp))
                         }
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.export_pdf), fontSize = 12.sp, fontWeight = FontWeight.Bold)
@@ -354,7 +352,7 @@ fun WorkerDetailScreenContent(
                                 if (isReportUnlocked) {
                             Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color.White)
                         } else {
-                            PremiumLockedIcon(modifier = Modifier.size(18.dp))
+                            LockedFeatureIcon(modifier = Modifier.size(18.dp))
                         }
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.whatsapp), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
