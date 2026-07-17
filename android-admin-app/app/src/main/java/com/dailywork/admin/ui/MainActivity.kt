@@ -92,7 +92,6 @@ fun MainScaffold(authViewModel: AuthViewModel) {
     val items = listOf(
         Screen.Dashboard,
         Screen.Users,
-        Screen.Premium,
         Screen.Reports,
         Screen.Settings
     )
@@ -112,11 +111,6 @@ fun MainScaffold(authViewModel: AuthViewModel) {
             }
             composable(Screen.Users.route) {
                 UsersScreen(onUserClick = { userId ->
-                    navController.navigate("user_detail/$userId")
-                })
-            }
-            composable(Screen.Premium.route) {
-                PremiumManagementScreen(onUserClick = { userId ->
                     navController.navigate("user_detail/$userId")
                 })
             }
@@ -247,7 +241,6 @@ fun MainScaffold(authViewModel: AuthViewModel) {
 sealed class Screen(val route: String, val title: String, val icon: androidx.compose.ui.graphics.vector.ImageVector) {
     object Dashboard : Screen("dashboard", "Dashboard", Icons.Default.Dashboard)
     object Users : Screen("users", "Users", Icons.Default.People)
-    object Premium : Screen("premium", "Premium", Icons.Default.Star)
     object Reports : Screen("reports", "Reports", Icons.Default.Flag)
     object Notifications : Screen("notifications", "Notify", Icons.Default.Notifications)
     object Settings : Screen("settings", "Settings", Icons.Default.Settings)

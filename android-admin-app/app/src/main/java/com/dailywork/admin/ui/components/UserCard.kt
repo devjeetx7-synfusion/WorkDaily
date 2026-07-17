@@ -24,16 +24,10 @@ import com.dailywork.admin.ui.utils.formatTimestamp
 fun UserCard(user: User, onClick: () -> Unit) {
     val isOnline = System.currentTimeMillis() - user.lastActive < 5 * 60 * 1000
 
-    val cardColor = if (user.isPremium) {
-        MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.2f)
-    } else {
-        MaterialTheme.colorScheme.surface
-    }
-
     ElevatedCard(
         modifier = Modifier.fillMaxWidth().clickable { onClick() },
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.elevatedCardColors(containerColor = cardColor),
+        colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.elevatedCardElevation(defaultElevation = 1.dp)
     ) {
         Row(
@@ -107,15 +101,6 @@ fun UserCard(user: User, onClick: () -> Unit) {
                         }
                     ) {
                         Text(user.role.uppercase(), modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp), fontWeight = FontWeight.SemiBold)
-                    }
-                    if (user.isPremium) {
-                        Badge(containerColor = MaterialTheme.colorScheme.tertiary, contentColor = MaterialTheme.colorScheme.onTertiary) {
-                            val expiry = user.premiumInfo?.expiryDate
-                            val text = if (expiry != null && expiry > 0) {
-                                "PREMIUM UNTIL ${formatTimestamp(expiry)}"
-                            } else "PREMIUM LIFETIME"
-                            Text(text, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp), fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
-                        }
                     }
                     if (user.isBlocked) {
                         Badge(containerColor = MaterialTheme.colorScheme.error) {

@@ -18,10 +18,13 @@ import java.util.Locale
 import com.dailywork.attedance.data.FirestoreRepository
 import com.dailywork.attedance.data.UserPreferencesRepository
 import com.dailywork.attedance.utils.OvertimeCalculator
+import com.dailywork.attedance.access.FeatureAccessController
+import com.dailywork.attedance.access.RewardedFeature
 
 class WorkerDetailViewModel(
     private val repository: UserPreferencesRepository,
-    private val firestoreRepository: FirestoreRepository
+    private val firestoreRepository: FirestoreRepository,
+    val accessController: FeatureAccessController
 ) : ViewModel() {
     private val auth = FirebaseAuth.getInstance()
     private val db = FirebaseFirestore.getInstance()
@@ -29,25 +32,26 @@ class WorkerDetailViewModel(
     private val _state = MutableStateFlow(PassbookState(role = "contractor"))
     val state: StateFlow<PassbookState> = _state
 
-    private var workerId: String? = null
+    var workerId: String? = null
+        private set
     private var workerListener: com.google.firebase.firestore.ListenerRegistration? = null
     private var userListener: com.google.firebase.firestore.ListenerRegistration? = null
     private var attendanceListener: com.google.firebase.firestore.ListenerRegistration? = null
+    private var accessJob: kotlinx.coroutines.Job? = null
 
     private var cachedDocs: List<com.google.firebase.firestore.DocumentSnapshot> = emptyList()
-
-    init {
-        viewModelScope.launch {
-            repository.isPremiumFlow.collect { isPremium ->
-                _state.update { it.copy(isPremium = isPremium) }
-            }
-        }
-    }
 
     fun initialize(id: String) {
         if (workerId == id) return
         workerId = id
         setupListeners()
+
+        accessJob?.cancel()
+        accessJob = viewModelScope.launch {
+            accessController.getAccessFlow(RewardedFeature.WORKER_DETAILS, id).collect { isUnlocked ->
+                _state.update { it.copy(isPremium = isUnlocked) }
+            }
+        }
     }
 
     fun refresh() {
@@ -280,5 +284,6 @@ class WorkerDetailViewModel(
         workerListener?.remove()
         attendanceListener?.remove()
         userListener?.remove()
+        accessJob?.cancel()
     }
 }

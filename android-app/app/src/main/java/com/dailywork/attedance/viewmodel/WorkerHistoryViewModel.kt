@@ -9,6 +9,8 @@ import android.util.Log
 import com.dailywork.attedance.utils.OvertimeCalculator
 import com.google.firebase.Timestamp
 import com.dailywork.attedance.data.UserPreferencesRepository
+import com.dailywork.attedance.access.FeatureAccessController
+import com.dailywork.attedance.access.RewardedFeature
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -40,7 +42,8 @@ data class WorkerHistoryState(
 
 class WorkerHistoryViewModel(
     private val repository: UserPreferencesRepository,
-    private val firestoreRepository: FirestoreRepository
+    private val firestoreRepository: FirestoreRepository,
+    private val accessController: FeatureAccessController
 ) : ViewModel() {
 
     private val auth = FirebaseAuth.getInstance()
@@ -54,8 +57,8 @@ class WorkerHistoryViewModel(
     init {
         setupWorkersListener()
         viewModelScope.launch {
-            repository.isPremiumFlow.collect { isPremium ->
-                _state.update { it.copy(isPremium = isPremium) }
+            accessController.getAccessFlow(RewardedFeature.WORKER_HISTORY).collect { isUnlocked ->
+                _state.update { it.copy(isPremium = isUnlocked) }
             }
         }
     }
@@ -90,7 +93,6 @@ class WorkerHistoryViewModel(
     }
 
     private fun setupAttendanceListeners(workerIds: List<String>) {
-        // Clear old listeners that are no longer needed
         val currentKeys = attendanceListeners.keys.toSet()
         val removedKeys = currentKeys - workerIds.toSet()
         removedKeys.forEach {
@@ -164,7 +166,6 @@ class WorkerHistoryViewModel(
         }
 
         _state.update { current ->
-            // Remove existing records for this worker and add new ones
             val filteredList = current.records.filter { it.workerId != workerId }
             val updatedList = (filteredList + newRecords).sortedByDescending {
                 if (it.timestamp > 0) it.timestamp else parseDateToLong(it.date)

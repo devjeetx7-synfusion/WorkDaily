@@ -34,11 +34,27 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
 import androidx.navigation.NavController
-import com.dailywork.attedance.ui.components.*
+import com.dailywork.attedance.ui.components.RewardedAccessBottomSheet
+import com.dailywork.attedance.ui.components.RewardedLockedContent
+import com.dailywork.attedance.access.RewardedFeature
 import com.dailywork.attedance.utils.PassbookPdfGenerator
 import com.dailywork.attedance.utils.PdfData
 import com.dailywork.attedance.utils.PdfLog
 import com.dailywork.attedance.viewmodel.WorkerDetailViewModel
+
+fun maskText(text: String, isUnlocked: Boolean, placeholder: String = "••••"): String {
+    return if (isUnlocked) text else placeholder
+}
+
+@Composable
+fun PremiumLockedIcon(modifier: Modifier = Modifier) {
+    Icon(
+        imageVector = Icons.Default.Lock,
+        contentDescription = "Locked",
+        tint = MaterialTheme.colorScheme.primary,
+        modifier = modifier.size(16.dp)
+    )
+}
 import java.net.URLEncoder
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -53,8 +69,7 @@ fun WorkerDetailScreenContent(
     workerId: String,
     viewModel: WorkerDetailViewModel,
     onNavigateBack: () -> Unit,
-    onNavigateToCalendar: () -> Unit,
-    onNavigateToPremium: () -> Unit
+    onNavigateToCalendar: () -> Unit
 ) {
     LaunchedEffect(workerId) {
         viewModel.initialize(workerId)
@@ -62,6 +77,18 @@ fun WorkerDetailScreenContent(
     }
 
     val state by viewModel.state.collectAsState()
+    var showWorkerDetailsBottomSheet by remember { mutableStateOf(false) }
+    var showReportToolsBottomSheet by remember { mutableStateOf(false) }
+
+    val selectedMonth = remember(state.selectedMonthDate) {
+        SimpleDateFormat("yyyy-MM", Locale.getDefault()).format(state.selectedMonthDate)
+    }
+
+    val reportSuffix = remember(workerId, selectedMonth) {
+        "${workerId}_$selectedMonth"
+    }
+
+    val isReportUnlocked by viewModel.accessController.getAccessFlow(RewardedFeature.WORKER_REPORT_TOOLS, reportSuffix).collectAsState(initial = false)
     val sdfMonth = SimpleDateFormat("MMMM yyyy", Locale.getDefault())
     val sdfMonthNumeric = SimpleDateFormat("MM", Locale.getDefault())
     val sdfYearNumeric = SimpleDateFormat("yyyy", Locale.getDefault())
@@ -292,10 +319,10 @@ fun WorkerDetailScreenContent(
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     OutlinedButton(
                         onClick = {
-                            if (state.isPremium) {
+                                    if (isReportUnlocked) {
                                 exportPDF()
                             } else {
-                                showPremiumBottomSheet = true
+                                        showReportToolsBottomSheet = true
                             }
                         },
                         modifier = Modifier.weight(1f).height(48.dp),
@@ -303,7 +330,7 @@ fun WorkerDetailScreenContent(
                         border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
                     ) {
-                        if (state.isPremium) {
+                                if (isReportUnlocked) {
                             Icon(Icons.Default.PictureAsPdf, contentDescription = null, modifier = Modifier.size(18.dp))
                         } else {
                             PremiumLockedIcon(modifier = Modifier.size(18.dp))
@@ -314,17 +341,17 @@ fun WorkerDetailScreenContent(
                     Spacer(modifier = Modifier.width(12.dp))
                     Button(
                         onClick = {
-                            if (state.isPremium) {
+                                    if (isReportUnlocked) {
                                 shareViaWhatsApp()
                             } else {
-                                showPremiumBottomSheet = true
+                                        showReportToolsBottomSheet = true
                             }
                         },
                         modifier = Modifier.weight(1f).height(48.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366))
                     ) {
-                        if (state.isPremium) {
+                                if (isReportUnlocked) {
                             Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color.White)
                         } else {
                             PremiumLockedIcon(modifier = Modifier.size(18.dp))
@@ -511,16 +538,40 @@ fun WorkerDetailScreenContent(
             )
         }
 
-        if (showPremiumBottomSheet) {
-            PremiumUpgradeBottomSheet(
-                onDismiss = { showPremiumBottomSheet = false },
-                onUpgrade = {
-                    showPremiumBottomSheet = false
-                    onNavigateToPremium()
-                },
-                titleRes = com.dailywork.attedance.R.string.premium_feature_title,
-                msgRes = com.dailywork.attedance.R.string.upgrade_to_access_all,
-                buttonRes = com.dailywork.attedance.R.string.upgrade_to_premium
+        if (!state.isPremium && state.logs.isNotEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                RewardedLockedContent(
+                    title = "Unlock Worker Ledger",
+                    message = "Watch an ad to unlock this worker's detailed ledger entries.",
+                    onClick = { showWorkerDetailsBottomSheet = true }
+                )
+            }
+        }
+
+        if (showWorkerDetailsBottomSheet) {
+            RewardedAccessBottomSheet(
+                feature = RewardedFeature.WORKER_DETAILS,
+                suffix = workerId,
+                onDismissRequest = { showWorkerDetailsBottomSheet = false },
+                onAccessGranted = {
+                    showWorkerDetailsBottomSheet = false
+                }
+            )
+        }
+
+        if (showReportToolsBottomSheet) {
+            RewardedAccessBottomSheet(
+                feature = RewardedFeature.WORKER_REPORT_TOOLS,
+                suffix = reportSuffix,
+                onDismissRequest = { showReportToolsBottomSheet = false },
+                onAccessGranted = {
+                    showReportToolsBottomSheet = false
+                }
             )
         }
     }

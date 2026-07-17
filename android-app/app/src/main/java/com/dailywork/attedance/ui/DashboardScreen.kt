@@ -169,8 +169,7 @@ val dashboardState by dashboardViewModel.dashboardState.collectAsState()
                                     ) {
                                         item {
                                         HeaderSection(
-                                            state = dashboardState,
-                                            onNavigateToPremium = { navController.navigate("premium") }
+                                            state = dashboardState
                                         )
                                     }
 
@@ -246,15 +245,13 @@ val dashboardState by dashboardViewModel.dashboardState.collectAsState()
                         coroutineScope.launch {
                             pagerState.animateScrollToPage(1)
                         }
-                    },
-                    onNavigateToPremium = { navController.navigate("premium") }
+                    }
                 )
             }
             composable("workers") {
                 WorkersScreenContent(
                     viewModel = workersViewModel,
-                    onNavigateToWorkerDetail = { bottomNavController.navigate("worker_detail/$it") },
-                    onNavigateToPremium = { navController.navigate("premium") }
+                    onNavigateToWorkerDetail = { bottomNavController.navigate("worker_detail/$it") }
                 )
             }
             composable("worker_detail/{workerId}") { backStackEntry ->
@@ -265,8 +262,7 @@ val dashboardState by dashboardViewModel.dashboardState.collectAsState()
                     onNavigateBack = { bottomNavController.navigateUp() },
                     onNavigateToCalendar = {
                         bottomNavController.navigate("worker_calendar/$workerId")
-                    },
-                    onNavigateToPremium = { navController.navigate("premium") }
+                    }
                 )
             }
             composable("worker_calendar/{workerId}") { backStackEntry ->
@@ -279,8 +275,7 @@ val dashboardState by dashboardViewModel.dashboardState.collectAsState()
             composable("worker_history") {
                 WorkerHistoryScreen(
                     viewModel = workerHistoryViewModel,
-                    onNavigateBack = { bottomNavController.navigateUp() },
-                    onNavigateToPremium = { navController.navigate("premium") }
+                    onNavigateBack = { bottomNavController.navigateUp() }
                 )
             }
         }
@@ -461,7 +456,7 @@ val dashboardState by dashboardViewModel.dashboardState.collectAsState()
 }
 
 @Composable
-fun HeaderSection(state: DashboardState, onNavigateToPremium: () -> Unit) {
+fun HeaderSection(state: DashboardState) {
     val todayFullDate = remember {
         SimpleDateFormat("EEEE, dd MMMM yyyy", Locale.getDefault()).format(Date())
     }
@@ -512,31 +507,6 @@ fun HeaderSection(state: DashboardState, onNavigateToPremium: () -> Unit) {
             }
         }
 
-        // Premium Crown Button
-        if (!state.isPremium) {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFFFEF3C7)) // amber-100
-                    .border(1.dp, Color(0xFFFDE68A), CircleShape) // amber-200
-                    .clickable { onNavigateToPremium() },
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(Icons.Default.WorkspacePremium, contentDescription = "Premium", tint = Color(0xFFD97706)) // amber-600
-            }
-        } else {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
-                    .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(Icons.Default.WorkspacePremium, contentDescription = "Premium Active", tint = MaterialTheme.colorScheme.primary)
-            }
-        }
     }
 }
 

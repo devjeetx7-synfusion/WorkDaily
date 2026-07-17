@@ -65,31 +65,6 @@ class AdminFirestoreRepository(
         )
     }
 
-    suspend fun setUserPremiumStatus(userId: String, isPremium: Boolean, expiryDays: Int = 0) {
-        val adminId = auth.currentUser?.uid ?: "unknown"
-        val premiumInfo = if (isPremium) {
-            PremiumInfo(
-                expiryDate = if (expiryDays > 0) System.currentTimeMillis() + (expiryDays * 24L * 60 * 60 * 1000) else 0L,
-                activatedAt = System.currentTimeMillis(),
-                activatedBy = adminId
-            )
-        } else null
-
-        db.collection("users").document(userId)
-            .update(
-                mapOf(
-                    "isPremium" to isPremium,
-                    "premiumInfo" to premiumInfo
-                )
-            ).await()
-
-        logAdminAction(
-            action = if (isPremium) "ENABLE_PREMIUM" else "DISABLE_PREMIUM",
-            targetId = userId,
-            details = if (isPremium) "Expiry: $expiryDays days" else ""
-        )
-    }
-
     suspend fun setUserRole(userId: String, role: String) {
         db.collection("users").document(userId).update("role", role).await()
         logAdminAction("CHANGE_ROLE", userId, "New role: $role")
@@ -114,9 +89,9 @@ class AdminFirestoreRepository(
                     contractorCount = users.count { it.role == "contractor" },
                     personalCount = users.count { it.role == "personal" },
                     blockedCount = users.count { it.isBlocked },
-                    premiumCount = users.count { it.isPremium },
+                    premiumCount = 0,
                     onlineCount = users.count { System.currentTimeMillis() - it.lastActive < 5 * 60 * 1000 },
-                    totalJobs = 0 // Will be updated separately or via counter
+                    totalJobs = 0
                 )
                 trySend(stats)
             }

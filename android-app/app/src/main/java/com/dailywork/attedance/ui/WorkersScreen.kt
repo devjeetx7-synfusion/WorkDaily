@@ -47,7 +47,8 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.dailywork.attedance.viewmodel.WorkerItem
 import com.dailywork.attedance.viewmodel.WorkersViewModel
-import com.dailywork.attedance.ui.components.PremiumUpgradeBottomSheet
+import com.dailywork.attedance.ui.components.RewardedAccessBottomSheet
+import com.dailywork.attedance.access.RewardedFeature
 import java.util.Locale
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
@@ -59,7 +60,6 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 fun WorkersScreenContent(
     viewModel: WorkersViewModel,
     onNavigateToWorkerDetail: (String) -> Unit,
-    onNavigateToPremium: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
@@ -90,7 +90,7 @@ fun WorkersScreenContent(
         }
     }
 
-    var showPremiumBottomSheet by remember { mutableStateOf(false) }
+    var showRewardedBottomSheet by remember { mutableStateOf(false) }
 
     Box(
         modifier = Modifier
@@ -140,8 +140,8 @@ fun WorkersScreenContent(
                                 if (state.workers.isEmpty()) {
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Button(onClick = {
-                                        if (!state.isPremium && state.workers.size >= 5) {
-                                            showPremiumBottomSheet = true
+                                        if (!state.hasAddWorkerGrant && state.workers.size >= 5) {
+                                            showRewardedBottomSheet = true
                                         } else {
                                             editingWorker = null
                                             showFormDialog = true
@@ -232,8 +232,8 @@ fun WorkersScreenContent(
 
         FloatingActionButton(
             onClick = {
-                if (!state.isPremium && state.workers.size >= 5) {
-                    showPremiumBottomSheet = true
+                if (!state.hasAddWorkerGrant && state.workers.size >= 5) {
+                    showRewardedBottomSheet = true
                 } else {
                     editingWorker = null
                     showFormDialog = true
@@ -276,12 +276,14 @@ fun WorkersScreenContent(
             )
         }
 
-        if (showPremiumBottomSheet) {
-            PremiumUpgradeBottomSheet(
-                onDismiss = { showPremiumBottomSheet = false },
-                onUpgrade = {
-                    showPremiumBottomSheet = false
-                    onNavigateToPremium()
+        if (showRewardedBottomSheet) {
+            RewardedAccessBottomSheet(
+                feature = RewardedFeature.ADD_WORKER,
+                onDismissRequest = { showRewardedBottomSheet = false },
+                onAccessGranted = {
+                    showRewardedBottomSheet = false
+                    editingWorker = null
+                    showFormDialog = true
                 }
             )
         }

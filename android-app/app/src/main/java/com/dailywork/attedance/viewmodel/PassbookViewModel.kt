@@ -16,6 +16,8 @@ import java.util.Date
 import java.util.Locale
 import com.dailywork.attedance.data.FirestoreRepository
 import com.dailywork.attedance.utils.OvertimeCalculator
+import com.dailywork.attedance.access.FeatureAccessController
+import com.dailywork.attedance.access.RewardedFeature
 
 data class PassbookLog(
     val date: String,
@@ -56,7 +58,8 @@ data class PassbookState(
 
 class PassbookViewModel(
     private val repository: UserPreferencesRepository,
-    private val firestoreRepository: FirestoreRepository
+    private val firestoreRepository: FirestoreRepository,
+    val accessController: FeatureAccessController
 ) : ViewModel() {
     private val auth = FirebaseAuth.getInstance()
     private val db = FirebaseFirestore.getInstance()
@@ -79,8 +82,8 @@ class PassbookViewModel(
             }
         }
         viewModelScope.launch {
-            repository.isPremiumFlow.collect { isPremium ->
-                _state.value = _state.value.copy(isPremium = isPremium)
+            accessController.getAccessFlow(RewardedFeature.PERSONAL_PASSBOOK_DETAILS).collect { isUnlocked ->
+                _state.value = _state.value.copy(isPremium = isUnlocked)
             }
         }
     }
@@ -111,7 +114,6 @@ class PassbookViewModel(
         userListener = db.collection("users").document(user.uid)
             .addSnapshotListener { snapshot, error ->
                 if (error != null || snapshot == null || !snapshot.exists()) {
-                    // Fallback to name if user doc is missing
                     _state.value = _state.value.copy(name = user.displayName ?: "User", isLoading = false, isRefreshing = false)
                     return@addSnapshotListener
                 }
@@ -123,10 +125,9 @@ class PassbookViewModel(
                     workType = snapshot.getString("workType") ?: "Labour",
                     dailyWage = snapshot.getDouble("daily_wage") ?: 500.0,
                     joinedDate = sdf.format(Date(joinedDateLong)),
-                    phone = snapshot.getString("phone") ?: "",
-                    isPremium = snapshot.getBoolean("isPremium") ?: false
+                    phone = snapshot.getString("phone") ?: ""
                 )
-                calculatePassbook(cachedDocs) // trigger update with current logs if any
+                calculatePassbook(cachedDocs)
             }
 
         val cal = Calendar.getInstance()
