@@ -15,6 +15,8 @@ import java.util.Date
 import java.util.Locale
 import com.dailywork.attedance.data.FirestoreRepository
 import com.dailywork.attedance.utils.OvertimeCalculator
+import com.dailywork.attedance.access.FeatureAccessController
+import com.dailywork.attedance.access.RewardedFeature
 import kotlinx.coroutines.tasks.await
 
 data class DailyRecord(
@@ -71,7 +73,8 @@ data class StatsState(
 
 class StatsViewModel(
     private val repository: UserPreferencesRepository,
-    private val firestoreRepository: FirestoreRepository
+    private val firestoreRepository: FirestoreRepository,
+    private val accessController: FeatureAccessController
 ) : ViewModel() {
     private val auth = FirebaseAuth.getInstance()
     private val db = FirebaseFirestore.getInstance()
@@ -98,8 +101,8 @@ class StatsViewModel(
             }
         }
         viewModelScope.launch {
-            repository.isPremiumFlow.collect { isPremium ->
-                _statsState.update { it.copy(isPremium = isPremium) }
+            accessController.getAccessFlow(RewardedFeature.ADVANCED_STATS).collect { isUnlocked ->
+                _statsState.update { it.copy(isPremium = isUnlocked) }
             }
         }
     }
@@ -159,7 +162,6 @@ class StatsViewModel(
                     cachedWorkers = snapshot.documents
                     setupTodayAttendanceListeners()
 
-                    // Fetch all summaries to calculate All-Time stats efficiently
                     attendanceListener?.remove()
                     attendanceListener = firestoreRepository.contractorSummariesCollection()
                         ?.addSnapshotListener { summariesSnapshot, _ ->
@@ -178,7 +180,6 @@ class StatsViewModel(
                         return@addSnapshotListener
                     }
 
-                    // Also need personal summaries for all-time
                     summaryListener?.remove()
                     summaryListener = firestoreRepository.personalSummariesCollection()
                         ?.addSnapshotListener { summariesSnapshot, _ ->
@@ -311,9 +312,6 @@ class StatsViewModel(
         summaries: List<com.google.firebase.firestore.DocumentSnapshot>,
         currentMonth: String
     ) {
-        // Calculate current month from docs (to maintain existing functionality if needed)
-        // or just use summaries for most things.
-
         var allTimeEarnings = 0.0
         var allTimeDays = 0
 
@@ -333,7 +331,6 @@ class StatsViewModel(
             if (summary.id == currentMonth) {
                 totalEarnings = wages
                 advanceTotal = summary.getDouble("total_advance") ?: 0.0
-                // For detailed breakdown (absent, half, overtime), we still need attendanceDocs
             }
         }
 
@@ -399,7 +396,6 @@ class StatsViewModel(
                     val dayVal = if (type == "half") 0.5 else 1.0
                     val costVal = if (type == "half") wage / 2 else wage
 
-                    // All time stats
                     val allTimeStats = allTimeWorkerPerfMap[userId] ?: WorkerStats(workerDoc.getString("name") ?: "Unknown", 0.0, 0.0)
                     allTimeWorkerPerfMap[userId] = allTimeStats.copy(
                         days = allTimeStats.days + dayVal,
@@ -408,7 +404,6 @@ class StatsViewModel(
                     allTimeDays += dayVal
                     allTimeCost += costVal
 
-                    // Current month stats
                     if (date.startsWith(yearMonth)) {
                         val currentStats = workerPerfMap[userId] ?: WorkerStats(workerDoc.getString("name") ?: "Unknown", 0.0, 0.0)
                         workerPerfMap[userId] = currentStats.copy(
@@ -477,13 +472,11 @@ class StatsViewModel(
             val otAmount = if (status == "present") OvertimeCalculator.calculateOvertimeAmount(cachedDefaultWage, ot, noteStr) else 0.0
             val totalCostVal = baseCostVal + otAmount
 
-            // All time
             if (status == "present") {
                 allTimeDays++
                 allTimeEarnings += totalCostVal
             }
 
-            // Current month
             if (date.startsWith(yearMonth)) {
                 var dayVal = 0.0
                 var dayEarn = 0.0

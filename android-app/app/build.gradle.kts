@@ -21,6 +21,8 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+        val admobRewardedId = project.findProperty("ADMOB_REWARDED_AD_UNIT_ID")?.toString() ?: ""
+        buildConfigField("String", "ADMOB_REWARDED_AD_UNIT_ID", "\"$admobRewardedId\"")
     }
 
     signingConfigs {
@@ -117,8 +119,9 @@ dependencies {
     // Icons
     implementation("androidx.compose.material:material-icons-extended:1.5.4")
 
-    // Google Play Billing
-    implementation("com.android.billingclient:billing-ktx:6.2.1")
+    // Google Mobile Ads (AdMob) & User Messaging Platform (UMP)
+    implementation("com.google.android.gms:play-services-ads:23.0.0")
+    implementation("com.google.android.ump:user-messaging-platform:2.2.0")
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")

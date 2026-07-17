@@ -31,6 +31,10 @@ import androidx.compose.ui.focus.focusRequester
 import com.google.firebase.auth.FirebaseAuth
 import com.dailywork.attedance.viewmodel.SettingsViewModel
 import androidx.compose.material3.SnackbarHostState
+import com.dailywork.attedance.ads.AdConsentManager
+import com.dailywork.attedance.access.FeatureAccessController
+import com.dailywork.attedance.access.RewardedFeature
+import com.dailywork.attedance.ui.components.RewardedAccessBottomSheet
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.safeDrawing
 
@@ -40,10 +44,12 @@ import com.dailywork.attedance.viewmodel.SettingsState
 fun SettingsScreenContent(
     viewModel: SettingsViewModel,
     onLogout: () -> Unit,
-    onNavigateToPremium: () -> Unit = {},
     onNavigateToWorkerHistory: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
+    val context = LocalContext.current
+    val consentManager = remember { AdConsentManager(context) }
+    var showUnlockSheet by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
 
     val context = LocalContext.current
@@ -267,29 +273,41 @@ fun SettingsScreenContent(
                                 }
                             }
                             HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
-                            Row(modifier = Modifier.fillMaxWidth().clickable { if (!state.isPremium) onNavigateToPremium() }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                            Row(modifier = Modifier.fillMaxWidth().clickable { showUnlockSheet = true }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(if (state.isPremium) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) else Color(0xFFEAB308).copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
-                                        if (state.isPremium) {
-                                            Icon(Icons.Default.Favorite, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                                        } else {
-                                            Icon(Icons.Default.WorkspacePremium, contentDescription = null, tint = Color(0xFFEAB308))
-                                        }
+                                    Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
+                                        Icon(Icons.Default.PlayArrow, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                                     }
                                     Spacer(modifier = Modifier.width(12.dp))
                                     Column {
-                                        if (state.isPremium) {
-                                            Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.dailywork_premium), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                                            Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.thank_you_for_your_purchase), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                        } else {
-                                            Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.upgrade_to_premium), fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                            Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.unlock_all_features), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                        }
+                                        Text("Unlock Advanced Tools", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                        Text("Watch an ad to access reports, history and analytics", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
                                 }
-                                if (!state.isPremium) {
-                                    Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+                            Row(modifier = Modifier.fillMaxWidth().clickable {
+                                val act = context as? android.app.Activity
+                                if (act != null) {
+                                    if (consentManager.isPrivacyOptionsRequired()) {
+                                        consentManager.showPrivacyOptionsForm(act) {}
+                                    } else {
+                                        android.widget.Toast.makeText(context, "Privacy consent settings not required in your region.", android.widget.Toast.LENGTH_SHORT).show()
+                                    }
                                 }
+                            }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
+                                        Icon(Icons.Default.PrivacyTip, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                    }
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column {
+                                        Text("Privacy Choices", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                        Text("Manage advertising and consent preferences", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                }
+                                Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
                     }
@@ -467,6 +485,16 @@ fun SettingsScreenContent(
         }
         if (showTermsSheet) {
             TermsConditionsBottomSheet(onDismiss = { showTermsSheet = false })
+        }
+        if (showUnlockSheet) {
+            RewardedAccessBottomSheet(
+                feature = RewardedFeature.ADVANCED_STATS,
+                onDismissRequest = { showUnlockSheet = false },
+                onAccessGranted = {
+                    showUnlockSheet = false
+                    android.widget.Toast.makeText(context, "Advanced tools temporarily unlocked!", android.widget.Toast.LENGTH_SHORT).show()
+                }
+            )
         }
         if (showDeveloperSheet) {
             DeveloperContactBottomSheet(onDismiss = { showDeveloperSheet = false })

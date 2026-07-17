@@ -16,6 +16,7 @@ import java.util.Date
 import java.util.Locale
 import com.dailywork.attedance.data.FirestoreRepository
 import com.dailywork.attedance.utils.OvertimeCalculator
+import com.dailywork.attedance.access.FeatureAccessController
 
 data class DashboardState(
     val role: String = "",
@@ -40,9 +41,6 @@ data class DashboardState(
     val overtimeHours: Int = 0,
     val todayNote: String? = null,
 
-    // Premium state
-    val isPremium: Boolean = false,
-
     // Offline Bottom Sheet State
     val showOfflineBottomSheet: Boolean = false,
     val hasShownOfflineSheet: Boolean = false
@@ -50,7 +48,8 @@ data class DashboardState(
 
 class DashboardViewModel(
     private val repository: UserPreferencesRepository,
-    private val firestoreRepository: FirestoreRepository
+    private val firestoreRepository: FirestoreRepository,
+    val accessController: FeatureAccessController
 ) : ViewModel() {
 
     private val auth = FirebaseAuth.getInstance()
@@ -64,7 +63,6 @@ class DashboardViewModel(
     private var attendanceListener: com.google.firebase.firestore.ListenerRegistration? = null
     private val workerAttendanceListeners = mutableMapOf<String, com.google.firebase.firestore.ListenerRegistration>()
 
-    // Cache locally to recalculate efficiently on either snapshot change
     private var cachedWorkers: List<com.google.firebase.firestore.DocumentSnapshot> = emptyList()
     private var cachedAttendance: List<com.google.firebase.firestore.DocumentSnapshot> = emptyList()
     private var cachedDefaultWage: Double = 500.0
@@ -76,11 +74,6 @@ class DashboardViewModel(
                     _dashboardState.value = _dashboardState.value.copy(role = role)
                     setupListeners(role)
                 }
-            }
-        }
-        viewModelScope.launch {
-            repository.isPremiumFlow.collect { isPremium ->
-                _dashboardState.update { it.copy(isPremium = isPremium) }
             }
         }
     }
@@ -125,7 +118,6 @@ class DashboardViewModel(
                     recalculateStats()
                 }
 
-            // For general month stats, we'll fetch from summaries
             val sdfMonth = SimpleDateFormat("yyyy-MM", Locale.getDefault())
             val currentMonthStr = sdfMonth.format(java.util.Date())
             attendanceListener?.remove()
@@ -142,7 +134,6 @@ class DashboardViewModel(
                          val todayAbsent = snapshot.getDouble("today.absent_count") ?: 0.0
                          val pending = totalWages - totalPaid
 
-                         // We can update monthly stats here
                          _dashboardState.update { it.copy(
                              totalPaidMonth = totalPaid.toInt().toString(),
                              todayPresent = todayPresent.toInt().toString(),
@@ -182,7 +173,6 @@ class DashboardViewModel(
                     val status = snapshot?.getString("status")
                     workerTodayStatus[workerId] = status
 
-                    // Aggregate and update state
                     val presentCount = workerTodayStatus.values.count { it == "present" }
                     val absentCount = workerTodayStatus.values.count { it == "absent" }
 
@@ -359,7 +349,6 @@ class DashboardViewModel(
         }
     }
 
-
     override fun onCleared() {
         super.onCleared()
         userListener?.remove()
@@ -385,5 +374,4 @@ class DashboardViewModel(
             _dashboardState.update { it.copy(showOfflineBottomSheet = false) }
         }
     }
-
 }

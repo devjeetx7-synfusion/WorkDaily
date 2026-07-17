@@ -48,9 +48,23 @@ import androidx.compose.material3.TabRow
 import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import com.dailywork.attedance.ui.components.CustomToggleTab
-import com.dailywork.attedance.ui.components.PremiumLockedIcon
-import com.dailywork.attedance.ui.components.InlinePremiumCard
-import com.dailywork.attedance.ui.components.maskText
+import com.dailywork.attedance.ui.components.RewardedLockedContent
+import com.dailywork.attedance.ui.components.RewardedAccessBottomSheet
+import com.dailywork.attedance.access.RewardedFeature
+
+fun maskText(text: String, isUnlocked: Boolean, placeholder: String = "••••"): String {
+    return if (isUnlocked) text else placeholder
+}
+
+@Composable
+fun PremiumLockedIcon(modifier: Modifier = Modifier) {
+    Icon(
+        imageVector = Icons.Default.Lock,
+        contentDescription = "Locked",
+        tint = MaterialTheme.colorScheme.primary,
+        modifier = modifier.size(16.dp)
+    )
+}
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
 import androidx.compose.animation.core.animateFloatAsState
@@ -90,10 +104,10 @@ fun AnimatedCounter(targetValue: Int, prefix: String = "", suffix: String = "") 
 @Composable
 fun StatsScreenContent(
     viewModel: StatsViewModel,
-    onNavigateToPremium: () -> Unit = {},
     onNavigateToWorkerHistory: () -> Unit = {}
 ) {
     val state by viewModel.statsState.collectAsState()
+    var showRewardedBottomSheet by remember { mutableStateOf(false) }
 
     val pullRefreshState = rememberPullToRefreshState()
     if (pullRefreshState.isRefreshing) {
@@ -153,13 +167,12 @@ fun StatsScreenContent(
                             )
                         }
                         if (state.role == "contractor") {
-                            ContractorStatsView(viewModel = viewModel, state = state, isAllTime = selectedTabIndex == 1, onNavigateToPremium = onNavigateToPremium)
+                            ContractorStatsView(viewModel = viewModel, state = state, isAllTime = selectedTabIndex == 1, onUnlockClick = { showRewardedBottomSheet = true })
                         } else {
-                            PersonalStatsView(viewModel = viewModel, state = state, isAllTime = selectedTabIndex == 1, onNavigateToPremium = onNavigateToPremium)
+                            PersonalStatsView(viewModel = viewModel, state = state, isAllTime = selectedTabIndex == 1, onUnlockClick = { showRewardedBottomSheet = true })
                         }
                     }
 
-                    // Both views already use LazyColumn internally
                     Column(modifier = Modifier.fillMaxSize()) {
                         statsContent()
                     }
@@ -169,12 +182,22 @@ fun StatsScreenContent(
                     modifier = Modifier.align(Alignment.TopCenter),
                     contentColor = MaterialTheme.colorScheme.primary
                 )
+
+                if (showRewardedBottomSheet) {
+                    RewardedAccessBottomSheet(
+                        feature = RewardedFeature.ADVANCED_STATS,
+                        onDismissRequest = { showRewardedBottomSheet = false },
+                        onAccessGranted = {
+                            showRewardedBottomSheet = false
+                        }
+                    )
+                }
             }
         }
     }
 
 @Composable
-fun ContractorStatsView(viewModel: StatsViewModel, state: com.dailywork.attedance.viewmodel.StatsState, isAllTime: Boolean, onNavigateToPremium: () -> Unit = {}) {
+fun ContractorStatsView(viewModel: StatsViewModel, state: com.dailywork.attedance.viewmodel.StatsState, isAllTime: Boolean, onUnlockClick: () -> Unit = {}) {
     val sdfMonth = SimpleDateFormat("MMMM yyyy", Locale.getDefault())
     val monthYearStr = sdfMonth.format(state.selectedMonthDate)
 
@@ -355,7 +378,7 @@ fun ContractorStatsView(viewModel: StatsViewModel, state: com.dailywork.attedanc
 
         if (!state.isPremium) {
             item {
-                InlinePremiumCard(onUpgrade = onNavigateToPremium)
+                RewardedLockedContent(onClick = onUnlockClick)
             }
         }
     }
@@ -398,7 +421,7 @@ fun StatBox(
 }
 
 @Composable
-fun PersonalStatsView(viewModel: StatsViewModel, state: com.dailywork.attedance.viewmodel.StatsState, isAllTime: Boolean, onNavigateToPremium: () -> Unit = {}) {
+fun PersonalStatsView(viewModel: StatsViewModel, state: com.dailywork.attedance.viewmodel.StatsState, isAllTime: Boolean, onUnlockClick: () -> Unit = {}) {
     val sdfMonth = SimpleDateFormat("MMMM yyyy", Locale.getDefault())
     val monthYearStr = sdfMonth.format(state.selectedMonthDate)
 
@@ -616,7 +639,7 @@ fun PersonalStatsView(viewModel: StatsViewModel, state: com.dailywork.attedance.
         if (!isAllTime) {
             if (!state.isPremium) {
                 item {
-                    InlinePremiumCard(onUpgrade = onNavigateToPremium)
+                    RewardedLockedContent(onClick = onUnlockClick)
                 }
             }
 

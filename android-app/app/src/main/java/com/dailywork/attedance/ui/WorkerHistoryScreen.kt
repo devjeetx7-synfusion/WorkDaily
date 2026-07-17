@@ -25,8 +25,24 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.dailywork.attedance.viewmodel.HistoryRecord
-import com.dailywork.attedance.ui.components.*
+import com.dailywork.attedance.ui.components.RewardedAccessBottomSheet
+import com.dailywork.attedance.ui.components.RewardedLockedContent
+import com.dailywork.attedance.access.RewardedFeature
 import com.dailywork.attedance.viewmodel.WorkerHistoryViewModel
+
+fun maskText(text: String, isUnlocked: Boolean, placeholder: String = "••••"): String {
+    return if (isUnlocked) text else placeholder
+}
+
+@Composable
+fun PremiumLockedIcon(modifier: Modifier = Modifier) {
+    Icon(
+        imageVector = Icons.Default.Work,
+        contentDescription = "Locked",
+        tint = MaterialTheme.colorScheme.primary,
+        modifier = modifier.size(14.dp)
+    )
+}
 import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -35,10 +51,10 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 @Composable
 fun WorkerHistoryScreen(
     viewModel: WorkerHistoryViewModel,
-    onNavigateBack: () -> Unit,
-    onNavigateToPremium: () -> Unit
+    onNavigateBack: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
+    var showRewardedBottomSheet by remember { mutableStateOf(false) }
     var expandedFilterMenu by remember { mutableStateOf(false) }
 
     // Auto-refresh
@@ -170,7 +186,7 @@ fun WorkerHistoryScreen(
                     if (!state.isPremium) {
                         item {
                             Box(modifier = Modifier.padding(16.dp)) {
-                                InlinePremiumCard(onUpgrade = onNavigateToPremium)
+                                RewardedLockedContent(onClick = { showRewardedBottomSheet = true })
                             }
                         }
                     }
@@ -182,6 +198,16 @@ fun WorkerHistoryScreen(
                     modifier = Modifier.align(Alignment.TopCenter),
                     contentColor = MaterialTheme.colorScheme.primary
                 )
+
+                if (showRewardedBottomSheet) {
+                    RewardedAccessBottomSheet(
+                        feature = RewardedFeature.WORKER_HISTORY,
+                        onDismissRequest = { showRewardedBottomSheet = false },
+                        onAccessGranted = {
+                            showRewardedBottomSheet = false
+                        }
+                    )
+                }
             }
         }
     }

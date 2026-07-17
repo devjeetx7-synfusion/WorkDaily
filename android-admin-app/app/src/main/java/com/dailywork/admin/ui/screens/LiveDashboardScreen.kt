@@ -107,10 +107,10 @@ fun LiveDashboardScreen(
                 }
                 item {
                     StatCard(
-                        "Premium",
-                        stats.premiumCount,
-                        Icons.Default.Star,
-                        Color(0xFFFFD700)
+                        "Personal Users",
+                        stats.personalCount,
+                        Icons.Default.Person,
+                        Color(0xFF8B5CF6)
                     )
                 }
                 item {

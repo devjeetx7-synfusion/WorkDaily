@@ -49,7 +49,6 @@ fun UsersScreen(
     })
     val searchQuery by viewModel.searchQuery.collectAsState()
     val roleFilter by viewModel.roleFilter.collectAsState()
-    val premiumFilter by viewModel.premiumFilter.collectAsState()
     val blockedFilter by viewModel.blockedFilter.collectAsState()
     val sortOrder by viewModel.sortOrder.collectAsState()
 
@@ -131,11 +130,6 @@ fun UsersScreen(
                     DropdownMenuItem(text = { Text("Personal") }, onClick = { viewModel.setRoleFilter("personal"); showRoleMenu = false })
                 }
 
-                FilterChip(
-                    selected = premiumFilter == true,
-                    onClick = { viewModel.setPremiumFilter(if (premiumFilter == true) null else true) },
-                    label = { Text("Premium") }
-                )
                 FilterChip(
                     selected = blockedFilter == true,
                     onClick = { viewModel.setBlockedFilter(if (blockedFilter == true) null else true) },

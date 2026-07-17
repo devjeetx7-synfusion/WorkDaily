@@ -20,12 +20,6 @@ class UserPreferencesRepository(private val context: Context) {
         val REMINDERS_KEY = androidx.datastore.preferences.core.booleanPreferencesKey("reminders_enabled")
         val LANGUAGE_KEY = stringPreferencesKey("app_language")
 
-        // Premium Keys
-        val IS_PREMIUM_KEY = androidx.datastore.preferences.core.booleanPreferencesKey("is_premium")
-        val PREMIUM_TYPE_KEY = stringPreferencesKey("premium_type")
-        val PURCHASE_TOKEN_KEY = stringPreferencesKey("purchase_token")
-        val EXPIRY_DATE_KEY = stringPreferencesKey("expiry_date")
-        val LAST_VERIFIED_KEY = androidx.datastore.preferences.core.longPreferencesKey("last_verified")
         val ONBOARDING_COMPLETED_KEY = androidx.datastore.preferences.core.booleanPreferencesKey("onboarding_completed")
         val SPLASH_ENABLED_KEY = androidx.datastore.preferences.core.booleanPreferencesKey("splash_enabled")
     }
@@ -50,26 +44,6 @@ class UserPreferencesRepository(private val context: Context) {
         preferences[REMINDERS_KEY] ?: false
     }
 
-    val isPremiumFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
-        preferences[IS_PREMIUM_KEY] ?: false
-    }
-
-    val premiumTypeFlow: Flow<String?> = context.dataStore.data.map { preferences ->
-        preferences[PREMIUM_TYPE_KEY]
-    }
-
-    val purchaseTokenFlow: Flow<String?> = context.dataStore.data.map { preferences ->
-        preferences[PURCHASE_TOKEN_KEY]
-    }
-
-    val expiryDateFlow: Flow<String?> = context.dataStore.data.map { preferences ->
-        preferences[EXPIRY_DATE_KEY]
-    }
-
-    val lastVerifiedFlow: Flow<Long?> = context.dataStore.data.map { preferences ->
-        preferences[LAST_VERIFIED_KEY]
-    }
-
     val isOnboardingCompletedFlow: Flow<Boolean> = context.dataStore.data.map { preferences ->
         preferences[ONBOARDING_COMPLETED_KEY] ?: false
     }
@@ -78,21 +52,8 @@ class UserPreferencesRepository(private val context: Context) {
         preferences[SPLASH_ENABLED_KEY] ?: true
     }
 
-    suspend fun savePremiumStatus(
-        isPremium: Boolean,
-        type: String? = null,
-        token: String? = null,
-        expiry: String? = null,
-        lastVerified: Long? = null
-    ) {
-        context.dataStore.edit { preferences ->
-            preferences[IS_PREMIUM_KEY] = isPremium
-            if (type != null) preferences[PREMIUM_TYPE_KEY] = type else preferences.remove(PREMIUM_TYPE_KEY)
-            if (token != null) preferences[PURCHASE_TOKEN_KEY] = token else preferences.remove(PURCHASE_TOKEN_KEY)
-            if (expiry != null) preferences[EXPIRY_DATE_KEY] = expiry else preferences.remove(EXPIRY_DATE_KEY)
-            if (lastVerified != null) preferences[LAST_VERIFIED_KEY] = lastVerified else preferences.remove(LAST_VERIFIED_KEY)
-        }
-    }
+    // Expose DataStore reference for feature-access repository
+    val dataStore = context.dataStore
 
     suspend fun saveUserRole(role: String) {
         context.dataStore.edit { preferences ->

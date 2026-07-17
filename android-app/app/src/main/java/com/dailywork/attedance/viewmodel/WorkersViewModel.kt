@@ -11,6 +11,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import com.dailywork.attedance.data.FirestoreRepository
+import com.dailywork.attedance.access.FeatureAccessController
+import com.dailywork.attedance.access.RewardedFeature
 
 data class WorkerItem(
     val id: String,
@@ -29,12 +31,13 @@ data class WorkersState(
     val workers: List<WorkerItem> = emptyList(),
     val isSaving: Boolean = false,
     val errorMessage: String? = null,
-    val isPremium: Boolean = false
+    val hasAddWorkerGrant: Boolean = false
 )
 
 class WorkersViewModel(
     private val repository: UserPreferencesRepository,
-    private val firestoreRepository: FirestoreRepository
+    private val firestoreRepository: FirestoreRepository,
+    private val accessController: FeatureAccessController
 ) : ViewModel() {
     private val auth = FirebaseAuth.getInstance()
     private val db = FirebaseFirestore.getInstance()
@@ -57,8 +60,8 @@ class WorkersViewModel(
             }
         }
         viewModelScope.launch {
-            repository.isPremiumFlow.collect { isPremium ->
-                _state.value = _state.value.copy(isPremium = isPremium)
+            accessController.getAccessFlow(RewardedFeature.ADD_WORKER).collect { hasGrant ->
+                _state.value = _state.value.copy(hasAddWorkerGrant = hasGrant)
             }
         }
     }
@@ -75,7 +78,7 @@ class WorkersViewModel(
         workersListener?.remove()
 
         workersListener = firestoreRepository.getContractorWorkers()
-            ?.limit(50) // Basic pagination limit
+            ?.limit(50)
             ?.addSnapshotListener { snapshot, error ->
                 if (error != null || snapshot == null) {
                     _state.value = _state.value.copy(isLoading = false,
@@ -107,9 +110,14 @@ class WorkersViewModel(
         viewModelScope.launch {
             auth.currentUser ?: return@launch
 
-            if (!_state.value.isPremium && _state.value.workers.size >= 5 && worker.id.isEmpty()) {
-                _state.value = _state.value.copy(errorMessage = "Worker limit reached. Please upgrade to Premium for unlimited workers.")
-                return@launch
+            val limit = accessController.freeWorkerLimit
+            val hasLegacy = accessController.hasLegacyAccess()
+            if (!hasLegacy && _state.value.workers.size >= limit && worker.id.isEmpty()) {
+                val hasGrant = accessController.hasAccess(RewardedFeature.ADD_WORKER)
+                if (!hasGrant) {
+                    _state.value = _state.value.copy(errorMessage = "Worker limit reached. Watch an ad to add more workers.")
+                    return@launch
+                }
             }
 
             _state.value = _state.value.copy(isSaving = true, errorMessage = null)
@@ -127,6 +135,9 @@ class WorkersViewModel(
                 if (worker.id.isEmpty()) {
                     data["created_at"] = com.google.firebase.firestore.FieldValue.serverTimestamp()
                     firestoreRepository.saveWorker(null, data)
+                    if (!hasLegacy && _state.value.workers.size >= limit) {
+                        accessController.consumeToken(RewardedFeature.ADD_WORKER)
+                    }
                 } else {
                     firestoreRepository.saveWorker(worker.id, data)
                 }
