@@ -10,6 +10,29 @@ android {
     namespace = "com.dailywork.attedance"
     compileSdk = 34
 
+    val admobAppId = project.findProperty("ADMOB_APP_ID")?.toString() ?: System.getenv("ADMOB_APP_ID") ?: ""
+    val admobAppOpenAdUnitId = project.findProperty("ADMOB_APP_OPEN_AD_UNIT_ID")?.toString() ?: System.getenv("ADMOB_APP_OPEN_AD_UNIT_ID") ?: ""
+    val admobAdaptiveBannerAdUnitId = project.findProperty("ADMOB_ADAPTIVE_BANNER_AD_UNIT_ID")?.toString() ?: System.getenv("ADMOB_ADAPTIVE_BANNER_AD_UNIT_ID") ?: ""
+    val admobFixedBannerAdUnitId = project.findProperty("ADMOB_FIXED_BANNER_AD_UNIT_ID")?.toString() ?: System.getenv("ADMOB_FIXED_BANNER_AD_UNIT_ID") ?: ""
+    val admobInterstitialAdUnitId = project.findProperty("ADMOB_INTERSTITIAL_AD_UNIT_ID")?.toString() ?: System.getenv("ADMOB_INTERSTITIAL_AD_UNIT_ID") ?: ""
+    val admobRewardedAdUnitId = project.findProperty("ADMOB_REWARDED_AD_UNIT_ID")?.toString() ?: System.getenv("ADMOB_REWARDED_AD_UNIT_ID") ?: ""
+    val admobRewardedInterstitialAdUnitId = project.findProperty("ADMOB_REWARDED_INTERSTITIAL_AD_UNIT_ID")?.toString() ?: System.getenv("ADMOB_REWARDED_INTERSTITIAL_AD_UNIT_ID") ?: ""
+    val admobNativeAdUnitId = project.findProperty("ADMOB_NATIVE_AD_UNIT_ID")?.toString() ?: System.getenv("ADMOB_NATIVE_AD_UNIT_ID") ?: ""
+    val admobNativeVideoAdUnitId = project.findProperty("ADMOB_NATIVE_VIDEO_AD_UNIT_ID")?.toString() ?: System.getenv("ADMOB_NATIVE_VIDEO_AD_UNIT_ID") ?: ""
+    val admobTestDeviceIds = project.findProperty("ADMOB_TEST_DEVICE_IDS")?.toString() ?: System.getenv("ADMOB_TEST_DEVICE_IDS") ?: ""
+
+    tasks.register("verifyAdmobConfig") {
+        doFirst {
+            if (admobAppId.isBlank()) {
+                throw GradleException("Production ADMOB_APP_ID is missing! Please configure ADMOB_APP_ID in gradle.properties or environment variables for release builds.")
+            }
+        }
+    }
+
+    tasks.matching { it.name.startsWith("assembleRelease") || it.name.startsWith("bundleRelease") || it.name.startsWith("compileReleaseKotlin") }.configureEach {
+        dependsOn("verifyAdmobConfig")
+    }
+
     defaultConfig {
         applicationId = "com.dailywork.attedance"
         minSdk = 24
@@ -21,8 +44,8 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
-        val admobRewardedId = project.findProperty("ADMOB_REWARDED_AD_UNIT_ID")?.toString() ?: ""
-        buildConfigField("String", "ADMOB_REWARDED_AD_UNIT_ID", "\"$admobRewardedId\"")
+
+        buildConfigField("String", "ADMOB_TEST_DEVICE_IDS", "\"$admobTestDeviceIds\"")
     }
 
     signingConfigs {
@@ -48,9 +71,30 @@ android {
                 "proguard-rules.pro"
             )
             signingConfig = signingConfigs.getByName("release")
+
+            manifestPlaceholders["ADMOB_APP_ID"] = admobAppId
+            buildConfigField("Boolean", "ADS_TEST_MODE", "false")
+            buildConfigField("String", "ADMOB_APP_OPEN_AD_UNIT_ID", "\"$admobAppOpenAdUnitId\"")
+            buildConfigField("String", "ADMOB_ADAPTIVE_BANNER_AD_UNIT_ID", "\"$admobAdaptiveBannerAdUnitId\"")
+            buildConfigField("String", "ADMOB_FIXED_BANNER_AD_UNIT_ID", "\"$admobFixedBannerAdUnitId\"")
+            buildConfigField("String", "ADMOB_INTERSTITIAL_AD_UNIT_ID", "\"$admobInterstitialAdUnitId\"")
+            buildConfigField("String", "ADMOB_REWARDED_AD_UNIT_ID", "\"$admobRewardedAdUnitId\"")
+            buildConfigField("String", "ADMOB_REWARDED_INTERSTITIAL_AD_UNIT_ID", "\"$admobRewardedInterstitialAdUnitId\"")
+            buildConfigField("String", "ADMOB_NATIVE_AD_UNIT_ID", "\"$admobNativeAdUnitId\"")
+            buildConfigField("String", "ADMOB_NATIVE_VIDEO_AD_UNIT_ID", "\"$admobNativeVideoAdUnitId\"")
         }
         debug {
             signingConfig = signingConfigs.getByName("debug")
+            manifestPlaceholders["ADMOB_APP_ID"] = "ca-app-pub-3940256099942544~3347511713"
+            buildConfigField("Boolean", "ADS_TEST_MODE", "true")
+            buildConfigField("String", "ADMOB_APP_OPEN_AD_UNIT_ID", "\"\"")
+            buildConfigField("String", "ADMOB_ADAPTIVE_BANNER_AD_UNIT_ID", "\"\"")
+            buildConfigField("String", "ADMOB_FIXED_BANNER_AD_UNIT_ID", "\"\"")
+            buildConfigField("String", "ADMOB_INTERSTITIAL_AD_UNIT_ID", "\"\"")
+            buildConfigField("String", "ADMOB_REWARDED_AD_UNIT_ID", "\"\"")
+            buildConfigField("String", "ADMOB_REWARDED_INTERSTITIAL_AD_UNIT_ID", "\"\"")
+            buildConfigField("String", "ADMOB_NATIVE_AD_UNIT_ID", "\"\"")
+            buildConfigField("String", "ADMOB_NATIVE_VIDEO_AD_UNIT_ID", "\"\"")
         }
     }
     compileOptions {

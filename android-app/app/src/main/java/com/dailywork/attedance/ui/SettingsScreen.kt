@@ -44,7 +44,8 @@ import com.dailywork.attedance.viewmodel.SettingsState
 fun SettingsScreenContent(
     viewModel: SettingsViewModel,
     onLogout: () -> Unit,
-    onNavigateToWorkerHistory: () -> Unit = {}
+    onNavigateToWorkerHistory: () -> Unit = {},
+    onNavigateToAdTestCenter: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
@@ -373,6 +374,24 @@ fun SettingsScreenContent(
                                         Text("Share WorkDaily App", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                                         Text("Invite friends to manage daily work easily", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
+                                }
+                            }
+                            if (com.dailywork.attedance.BuildConfig.DEBUG || com.dailywork.attedance.BuildConfig.ADS_TEST_MODE) {
+                                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+                                Row(modifier = Modifier.fillMaxWidth().clickable {
+                                    onNavigateToAdTestCenter()
+                                }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
+                                            Icon(Icons.Default.BugReport, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                        }
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Column {
+                                            Text("Ad Test Center", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                            Text("Preview all Google test ad formats", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
+                                    }
+                                    Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
                         }
