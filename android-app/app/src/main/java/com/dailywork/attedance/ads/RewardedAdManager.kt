@@ -31,15 +31,11 @@ class RewardedAdManager private constructor(private val context: Context) {
 
     private val adUnitId: String
         get() {
-            return if (BuildConfig.DEBUG) {
-                "ca-app-pub-3940256099942544/5224354917" // Official AdMob Test Rewarded ID
-            } else {
-                val prodId = BuildConfig.ADMOB_REWARDED_AD_UNIT_ID
-                if (prodId.isBlank()) {
-                    Log.e("RewardedAdManager", "Missing AdMob Rewarded Ad Unit ID in production!")
-                }
-                prodId
+            val unitId = AdConfiguration.rewardedAdUnitId
+            if (unitId.isBlank()) {
+                Log.e("RewardedAdManager", "Missing AdMob Rewarded Ad Unit ID!")
             }
+            return unitId
         }
 
     fun initialize(onComplete: () -> Unit = {}) {

@@ -228,6 +228,9 @@ val dashboardState by dashboardViewModel.dashboardState.collectAsState()
                                 onLogout = onLogout,
                                 onNavigateToWorkerHistory = {
                                     bottomNavController.navigate("worker_history")
+                                },
+                                onNavigateToAdTestCenter = {
+                                    bottomNavController.navigate("ad_test_center")
                                 }
                             )
                         }
@@ -275,6 +278,13 @@ val dashboardState by dashboardViewModel.dashboardState.collectAsState()
                     viewModel = workerHistoryViewModel,
                     onNavigateBack = { bottomNavController.navigateUp() }
                 )
+            }
+            if (com.dailywork.attedance.BuildConfig.DEBUG || com.dailywork.attedance.BuildConfig.ADS_TEST_MODE) {
+                composable("ad_test_center") {
+                    com.dailywork.attedance.ui.debug.AdTestScreen(
+                        onNavigateBack = { bottomNavController.navigateUp() }
+                    )
+                }
             }
         }
 
