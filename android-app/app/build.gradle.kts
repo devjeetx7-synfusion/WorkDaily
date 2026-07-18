@@ -26,11 +26,36 @@ android {
             if (admobAppId.isBlank()) {
                 throw GradleException("Production ADMOB_APP_ID is missing! Please configure ADMOB_APP_ID in gradle.properties or environment variables for release builds.")
             }
+            val units = listOf(
+                "ADMOB_APP_OPEN_AD_UNIT_ID" to admobAppOpenAdUnitId,
+                "ADMOB_ADAPTIVE_BANNER_AD_UNIT_ID" to admobAdaptiveBannerAdUnitId,
+                "ADMOB_FIXED_BANNER_AD_UNIT_ID" to admobFixedBannerAdUnitId,
+                "ADMOB_INTERSTITIAL_AD_UNIT_ID" to admobInterstitialAdUnitId,
+                "ADMOB_REWARDED_AD_UNIT_ID" to admobRewardedAdUnitId,
+                "ADMOB_REWARDED_INTERSTITIAL_AD_UNIT_ID" to admobRewardedInterstitialAdUnitId,
+                "ADMOB_NATIVE_AD_UNIT_ID" to admobNativeAdUnitId,
+                "ADMOB_NATIVE_VIDEO_AD_UNIT_ID" to admobNativeVideoAdUnitId
+            )
+            for ((name, value) in units) {
+                if (value.isBlank()) {
+                    throw GradleException("Production $name is missing! Please configure it in gradle.properties or environment variables for release builds.")
+                }
+            }
         }
     }
 
-    tasks.matching { it.name.startsWith("assembleRelease") || it.name.startsWith("bundleRelease") || it.name.startsWith("compileReleaseKotlin") }.configureEach {
-        dependsOn("verifyAdmobConfig")
+    val androidComponents = extensions.findByType(com.android.build.api.variant.ApplicationAndroidComponentsExtension::class.java)
+    androidComponents?.onVariants { variant ->
+        if (variant.name == "release") {
+            tasks.matching {
+                it.name.startsWith("assembleRelease") ||
+                it.name.startsWith("bundleRelease") ||
+                it.name.startsWith("compileRelease") ||
+                it.name.startsWith("packageRelease")
+            }.configureEach {
+                dependsOn("verifyAdmobConfig")
+            }
+        }
     }
 
     defaultConfig {
@@ -82,6 +107,24 @@ android {
             buildConfigField("String", "ADMOB_REWARDED_INTERSTITIAL_AD_UNIT_ID", "\"$admobRewardedInterstitialAdUnitId\"")
             buildConfigField("String", "ADMOB_NATIVE_AD_UNIT_ID", "\"$admobNativeAdUnitId\"")
             buildConfigField("String", "ADMOB_NATIVE_VIDEO_AD_UNIT_ID", "\"$admobNativeVideoAdUnitId\"")
+        }
+        create("internal") {
+            initWith(getByName("release"))
+            isDebuggable = true
+            matchingFallbacks += listOf("release", "debug")
+
+            buildConfigField("Boolean", "ADS_TEST_MODE", "true")
+            manifestPlaceholders["ADMOB_APP_ID"] = "ca-app-pub-3940256099942544~3347511713"
+            versionNameSuffix = "-internal"
+
+            buildConfigField("String", "ADMOB_APP_OPEN_AD_UNIT_ID", "\"\"")
+            buildConfigField("String", "ADMOB_ADAPTIVE_BANNER_AD_UNIT_ID", "\"\"")
+            buildConfigField("String", "ADMOB_FIXED_BANNER_AD_UNIT_ID", "\"\"")
+            buildConfigField("String", "ADMOB_INTERSTITIAL_AD_UNIT_ID", "\"\"")
+            buildConfigField("String", "ADMOB_REWARDED_AD_UNIT_ID", "\"\"")
+            buildConfigField("String", "ADMOB_REWARDED_INTERSTITIAL_AD_UNIT_ID", "\"\"")
+            buildConfigField("String", "ADMOB_NATIVE_AD_UNIT_ID", "\"\"")
+            buildConfigField("String", "ADMOB_NATIVE_VIDEO_AD_UNIT_ID", "\"\"")
         }
         debug {
             signingConfig = signingConfigs.getByName("debug")
