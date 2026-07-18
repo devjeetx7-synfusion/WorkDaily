@@ -1,78 +1,49 @@
 package com.dailywork.attedance.ui
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateIntAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material3.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.navigation.NavController
-import com.dailywork.attedance.viewmodel.StatsViewModel
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.ui.graphics.vector.ImageVector
-import java.text.SimpleDateFormat
-import java.util.Locale
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
-import com.dailywork.attedance.ui.components.CustomToggleTab
-import com.dailywork.attedance.ui.components.RewardedLockedContent
-import com.dailywork.attedance.ui.components.RewardedAccessBottomSheet
-import com.dailywork.attedance.access.RewardedFeature
-
-fun maskText(text: String, isUnlocked: Boolean, placeholder: String = "••••"): String {
-    return if (isUnlocked) text else placeholder
-}
-
-@Composable
-fun PremiumLockedIcon(modifier: Modifier = Modifier) {
-    Icon(
-        imageVector = Icons.Default.Lock,
-        contentDescription = "Locked",
-        tint = MaterialTheme.colorScheme.primary,
-        modifier = modifier.size(16.dp)
-    )
-}
-import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.launch
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
@@ -80,8 +51,37 @@ import androidx.compose.ui.graphics.asAndroidPath
 import androidx.compose.ui.graphics.asComposePath
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.animation.core.animateIntAsState
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewModelScope
+import androidx.navigation.NavController
+import com.dailywork.attedance.access.RewardedFeature
+import com.dailywork.attedance.ui.components.CustomToggleTab
+import com.dailywork.attedance.ui.components.RewardedAccessBottomSheet
+import com.dailywork.attedance.ui.components.RewardedLockedContent
+import com.dailywork.attedance.viewmodel.StatsViewModel
+import java.text.SimpleDateFormat
+import java.util.Locale
+import kotlinx.coroutines.launch
+
+private fun maskText(text: String, isUnlocked: Boolean, placeholder: String = "••••"): String {
+    return if (isUnlocked) text else placeholder
+}
+
+@Composable
+private fun LockedFeatureIcon(modifier: Modifier = Modifier) {
+    Icon(
+        imageVector = Icons.Default.Lock,
+        contentDescription = "Locked",
+        tint = MaterialTheme.colorScheme.primary,
+        modifier = modifier.size(16.dp)
+    )
+}
 
 @Composable
 fun AnimatedCounter(targetValue: Int, prefix: String = "", suffix: String = "") {
@@ -242,7 +242,7 @@ fun ContractorStatsView(viewModel: StatsViewModel, state: com.dailywork.attedanc
                         Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.system_overview), fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.primary)
                         if (!state.isPremium) {
                             Spacer(modifier = Modifier.width(8.dp))
-                            PremiumLockedIcon()
+                            LockedFeatureIcon()
                         }
                     }
                     Spacer(modifier = Modifier.height(16.dp))
@@ -320,7 +320,7 @@ fun ContractorStatsView(viewModel: StatsViewModel, state: com.dailywork.attedanc
                             Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.daily_costs), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                             if (!state.isPremium) {
                                 Spacer(modifier = Modifier.width(8.dp))
-                                PremiumLockedIcon()
+                                LockedFeatureIcon()
                             }
                         }
                         Spacer(modifier = Modifier.height(16.dp))
@@ -341,7 +341,7 @@ fun ContractorStatsView(viewModel: StatsViewModel, state: com.dailywork.attedanc
                         Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.cost_breakdown), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                         if (!state.isPremium) {
                             Spacer(modifier = Modifier.width(8.dp))
-                            PremiumLockedIcon()
+                            LockedFeatureIcon()
                         }
                     }
                     Spacer(modifier = Modifier.height(16.dp))
@@ -407,7 +407,7 @@ fun StatBox(
                 Text(label, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (!isPremium) {
                     Spacer(modifier = Modifier.width(4.dp))
-                    PremiumLockedIcon(modifier = Modifier.size(12.dp))
+                    LockedFeatureIcon(modifier = Modifier.size(12.dp))
                 }
             }
             Spacer(modifier = Modifier.height(4.dp))
@@ -458,7 +458,7 @@ fun PersonalStatsView(viewModel: StatsViewModel, state: com.dailywork.attedance.
                             Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.earnings), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             if (!state.isPremium) {
                                 Spacer(modifier = Modifier.width(4.dp))
-                                PremiumLockedIcon(modifier = Modifier.size(12.dp))
+                                LockedFeatureIcon(modifier = Modifier.size(12.dp))
                             }
                         }
                         Spacer(modifier = Modifier.height(4.dp))
@@ -475,7 +475,7 @@ fun PersonalStatsView(viewModel: StatsViewModel, state: com.dailywork.attedance.
                             Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.total_days), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             if (!state.isPremium) {
                                 Spacer(modifier = Modifier.width(4.dp))
-                                PremiumLockedIcon(modifier = Modifier.size(12.dp))
+                                LockedFeatureIcon(modifier = Modifier.size(12.dp))
                             }
                         }
                         Spacer(modifier = Modifier.height(4.dp))
@@ -516,7 +516,7 @@ fun PersonalStatsView(viewModel: StatsViewModel, state: com.dailywork.attedance.
                             Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.daily_earnings), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                             if (!state.isPremium) {
                                 Spacer(modifier = Modifier.width(8.dp))
-                                PremiumLockedIcon()
+                                LockedFeatureIcon()
                             }
                         }
                         Spacer(modifier = Modifier.height(16.dp))
@@ -536,7 +536,7 @@ fun PersonalStatsView(viewModel: StatsViewModel, state: com.dailywork.attedance.
                             Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.attendance_breakdown), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                             if (!state.isPremium) {
                                 Spacer(modifier = Modifier.width(8.dp))
-                                PremiumLockedIcon()
+                                LockedFeatureIcon()
                             }
                         }
                         Spacer(modifier = Modifier.height(24.dp))

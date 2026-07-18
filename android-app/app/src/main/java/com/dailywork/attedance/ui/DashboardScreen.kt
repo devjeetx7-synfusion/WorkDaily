@@ -215,7 +215,6 @@ val dashboardState by dashboardViewModel.dashboardState.collectAsState()
                         2 -> {
                             StatsScreenContent(
                                 viewModel = statsViewModel,
-                                onNavigateToPremium = { navController.navigate("premium") },
                                 onNavigateToWorkerHistory = {
                                     coroutineScope.launch {
                                         bottomNavController.navigate("worker_history")
@@ -227,7 +226,6 @@ val dashboardState by dashboardViewModel.dashboardState.collectAsState()
                             SettingsScreenContent(
                                 viewModel = settingsViewModel,
                                 onLogout = onLogout,
-                                onNavigateToPremium = { navController.navigate("premium") },
                                 onNavigateToWorkerHistory = {
                                     bottomNavController.navigate("worker_history")
                                 }

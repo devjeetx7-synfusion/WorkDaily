@@ -31,7 +31,6 @@ import com.dailywork.attedance.viewmodel.WorkersViewModel
 import com.dailywork.attedance.viewmodel.WorkerDetailViewModel
 import com.dailywork.attedance.viewmodel.WorkerHistoryViewModel
 import com.dailywork.attedance.viewmodel.ViewModelFactory
-import com.dailywork.attedance.ui.premium.PremiumViewModel
 import com.dailywork.attedance.data.DataMigrationManager
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
@@ -63,11 +62,6 @@ class MainActivity : ComponentActivity() {
             // migrationManager.cleanupOldCollections() // Safe cleanup after verification
         }
 
-        // Initialize Billing and check for active purchases
-        lifecycleScope.launch {
-            factory.billingManager.startConnection()
-        }
-
         setContent {
             val userThemePreference by repository.darkModeFlow.collectAsState(initial = null)
             val isDarkMode = userThemePreference ?: isSystemInDarkTheme()
@@ -96,7 +90,6 @@ fun DailyWorkApp(factory: ViewModelFactory) {
     val workersViewModel: WorkersViewModel = viewModel(factory = factory)
     val workerDetailViewModel: WorkerDetailViewModel = viewModel(factory = factory)
     val workerHistoryViewModel: WorkerHistoryViewModel = viewModel(factory = factory)
-    val premiumViewModel: PremiumViewModel = viewModel(factory = factory)
 
     // Using null for loading state, empty string for not set, actual value for set
     val tokenState by authViewModel.authTokenFlow.collectAsState(initial = "LOADING")
@@ -212,13 +205,6 @@ fun DailyWorkApp(factory: ViewModelFactory) {
                         popUpTo(0) { inclusive = true }
                     }
                 }
-            )
-        }
-        composable("premium") {
-            PremiumScreen(
-                navController = navController,
-                premiumViewModel = premiumViewModel,
-                dashboardViewModel = dashboardViewModel
             )
         }
     }

@@ -16,26 +16,29 @@ import androidx.compose.material.icons.filled.Payment
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.dailywork.attedance.viewmodel.HistoryRecord
+import com.dailywork.attedance.access.RewardedFeature
 import com.dailywork.attedance.ui.components.RewardedAccessBottomSheet
 import com.dailywork.attedance.ui.components.RewardedLockedContent
-import com.dailywork.attedance.access.RewardedFeature
+import com.dailywork.attedance.viewmodel.HistoryRecord
 import com.dailywork.attedance.viewmodel.WorkerHistoryViewModel
 
-fun maskText(text: String, isUnlocked: Boolean, placeholder: String = "••••"): String {
+private fun maskText(text: String, isUnlocked: Boolean, placeholder: String = "••••"): String {
     return if (isUnlocked) text else placeholder
 }
 
 @Composable
-fun PremiumLockedIcon(modifier: Modifier = Modifier) {
+private fun LockedFeatureIcon(modifier: Modifier = Modifier) {
     Icon(
         imageVector = Icons.Default.Work,
         contentDescription = "Locked",
@@ -43,9 +46,6 @@ fun PremiumLockedIcon(modifier: Modifier = Modifier) {
         modifier = modifier.size(14.dp)
     )
 }
-import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -268,7 +268,7 @@ fun HistoryItemCard(record: HistoryRecord, isPremium: Boolean = true) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text("Locked", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Spacer(modifier = Modifier.width(4.dp))
-                            PremiumLockedIcon(modifier = Modifier.size(14.dp))
+                            LockedFeatureIcon(modifier = Modifier.size(14.dp))
                         }
                     }
                 }

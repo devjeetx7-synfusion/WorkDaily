@@ -54,7 +54,7 @@ class AdConsentManager(private val context: Context) {
 
     fun showPrivacyOptionsForm(
         activity: Activity,
-        onConsentFormDismissedListener: UserMessagingPlatform.OnConsentFormDismissedListener
+        onConsentFormDismissedListener: com.google.android.ump.ConsentForm.OnConsentFormDismissedListener
     ) {
         UserMessagingPlatform.showPrivacyOptionsForm(activity, onConsentFormDismissedListener)
     }

@@ -122,14 +122,6 @@ class UsersViewModel @Inject constructor(
         }
     }
 
-    fun togglePremiumStatus(userId: String, isPremium: Boolean, expiryDays: Int = 0) {
-        viewModelScope.launch {
-            _isPerformingAction.value = true
-            repository.setUserPremiumStatus(userId, isPremium, expiryDays)
-            _isPerformingAction.value = false
-        }
-    }
-
     fun changeRole(userId: String, role: String) {
         viewModelScope.launch {
             _isPerformingAction.value = true
