@@ -61,7 +61,6 @@ class DashboardViewModel(
     private var userListener: com.google.firebase.firestore.ListenerRegistration? = null
     private var workersListener: com.google.firebase.firestore.ListenerRegistration? = null
     private var attendanceListener: com.google.firebase.firestore.ListenerRegistration? = null
-    private val workerAttendanceListeners = mutableMapOf<String, com.google.firebase.firestore.ListenerRegistration>()
 
     private var cachedWorkers: List<com.google.firebase.firestore.DocumentSnapshot> = emptyList()
     private var cachedAttendance: List<com.google.firebase.firestore.DocumentSnapshot> = emptyList()
@@ -114,7 +113,6 @@ class DashboardViewModel(
                 ?.addSnapshotListener { snapshot, error ->
                     if (error != null || snapshot == null) return@addSnapshotListener
                     cachedWorkers = snapshot.documents
-                    setupTodayAttendanceListeners()
                     recalculateStats()
                 }
 
@@ -155,37 +153,6 @@ class DashboardViewModel(
         }
     }
 
-    private val workerTodayStatus = mutableMapOf<String, String?>()
-
-    private fun setupTodayAttendanceListeners() {
-        workerAttendanceListeners.values.forEach { it.remove() }
-        workerAttendanceListeners.clear()
-        workerTodayStatus.clear()
-
-        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-        val todayStr = sdf.format(Date())
-
-        cachedWorkers.forEach { workerDoc ->
-            val workerId = workerDoc.id
-            val listener = firestoreRepository.getContractorAttendance(workerId)
-                ?.document(todayStr)
-                ?.addSnapshotListener { snapshot, _ ->
-                    val status = snapshot?.getString("status")
-                    workerTodayStatus[workerId] = status
-
-                    val presentCount = workerTodayStatus.values.count { it == "present" }
-                    val absentCount = workerTodayStatus.values.count { it == "absent" }
-
-                    _dashboardState.update { it.copy(
-                        todayPresent = presentCount.toString(),
-                        todayAbsent = absentCount.toString()
-                    ) }
-                }
-            if (listener != null) {
-                workerAttendanceListeners[workerId] = listener
-            }
-        }
-    }
 
     private fun recalculateStats() {
         val role = _dashboardState.value.role
@@ -354,7 +321,6 @@ class DashboardViewModel(
         userListener?.remove()
         workersListener?.remove()
         attendanceListener?.remove()
-        workerAttendanceListeners.values.forEach { it.remove() }
     }
 
     fun onNetworkStateChanged(isConnected: Boolean) {

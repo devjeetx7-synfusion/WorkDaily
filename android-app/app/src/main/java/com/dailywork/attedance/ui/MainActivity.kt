@@ -22,20 +22,12 @@ import androidx.navigation.compose.rememberNavController
 import com.dailywork.attedance.data.UserPreferencesRepository
 import com.dailywork.attedance.ui.theme.DailyWorkTheme
 import com.dailywork.attedance.viewmodel.AuthViewModel
-import com.dailywork.attedance.viewmodel.CalendarViewModel
-import com.dailywork.attedance.viewmodel.StatsViewModel
-import com.dailywork.attedance.viewmodel.DashboardViewModel
-import com.dailywork.attedance.viewmodel.PassbookViewModel
 import com.dailywork.attedance.viewmodel.SettingsViewModel
-import com.dailywork.attedance.viewmodel.WorkersViewModel
-import com.dailywork.attedance.viewmodel.WorkerDetailViewModel
-import com.dailywork.attedance.viewmodel.WorkerHistoryViewModel
 import com.dailywork.attedance.viewmodel.ViewModelFactory
 import com.dailywork.attedance.data.DataMigrationManager
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
 import com.dailywork.attedance.utils.LocaleHelper
 
 class MainActivity : ComponentActivity() {
@@ -45,33 +37,29 @@ class MainActivity : ComponentActivity() {
         val repository = UserPreferencesRepository(applicationContext)
         val factory = ViewModelFactory(repository, applicationContext)
 
-        // Apply locale before UI renders to avoid flashing and ensure correctness
-        runBlocking {
+        // Asynchronously boots, applies locale, processes migration, and renders UI
+        lifecycleScope.launch {
             val savedLanguage = repository.languageFlow.first()
             if (savedLanguage != null) {
                 LocaleHelper.setLocale(this@MainActivity, savedLanguage)
             }
-        }
 
-        // Trigger Migration
-        lifecycleScope.launch {
             val migrationManager = DataMigrationManager()
             if (!migrationManager.isMigrationCompleted()) {
                 migrationManager.migrate()
             }
-            // migrationManager.cleanupOldCollections() // Safe cleanup after verification
-        }
 
-        setContent {
-            val userThemePreference by repository.darkModeFlow.collectAsState(initial = null)
-            val isDarkMode = userThemePreference ?: isSystemInDarkTheme()
+            setContent {
+                val userThemePreference by repository.darkModeFlow.collectAsState(initial = null)
+                val isDarkMode = userThemePreference ?: isSystemInDarkTheme()
 
-            DailyWorkTheme(darkTheme = isDarkMode) {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    DailyWorkApp(factory)
+                DailyWorkTheme(darkTheme = isDarkMode) {
+                    Surface(
+                        modifier = Modifier.fillMaxSize(),
+                        color = MaterialTheme.colorScheme.background
+                    ) {
+                        DailyWorkApp(factory)
+                    }
                 }
             }
         }
@@ -82,14 +70,7 @@ class MainActivity : ComponentActivity() {
 fun DailyWorkApp(factory: ViewModelFactory) {
     val navController = rememberNavController()
     val authViewModel: AuthViewModel = viewModel(factory = factory)
-    val dashboardViewModel: DashboardViewModel = viewModel(factory = factory)
-    val calendarViewModel: CalendarViewModel = viewModel(factory = factory)
-    val statsViewModel: StatsViewModel = viewModel(factory = factory)
-    val passbookViewModel: PassbookViewModel = viewModel(factory = factory)
     val settingsViewModel: SettingsViewModel = viewModel(factory = factory)
-    val workersViewModel: WorkersViewModel = viewModel(factory = factory)
-    val workerDetailViewModel: WorkerDetailViewModel = viewModel(factory = factory)
-    val workerHistoryViewModel: WorkerHistoryViewModel = viewModel(factory = factory)
 
     // Using null for loading state, empty string for not set, actual value for set
     val tokenState by authViewModel.authTokenFlow.collectAsState(initial = "LOADING")
@@ -190,15 +171,8 @@ fun DailyWorkApp(factory: ViewModelFactory) {
         }
         composable("dashboard") {
             DashboardScreen(
-                navController = navController,
-                dashboardViewModel = dashboardViewModel,
-                calendarViewModel = calendarViewModel,
-                statsViewModel = statsViewModel,
-                passbookViewModel = passbookViewModel,
+                factory = factory,
                 settingsViewModel = settingsViewModel,
-                workersViewModel = workersViewModel,
-                workerDetailViewModel = workerDetailViewModel,
-                workerHistoryViewModel = workerHistoryViewModel,
                 onLogout = {
                     authViewModel.logout()
                     navController.navigate("login") {

@@ -274,6 +274,34 @@ class FirestoreRepository(
         if (updates.isNotEmpty()) {
             summaryDoc.set(updates, SetOptions.merge()).await()
         }
+
+        // Denormalize daily attendance for the selected date to a single daily_summary document
+        val dailySummaryDoc = contractorSummariesCollection()?.document("daily_$date")
+        if (dailySummaryDoc != null) {
+            val dailyUpdates = mutableMapOf<String, Any?>()
+            if (newData == null) {
+                if (workerId != null) {
+                    dailyUpdates["workers.$workerId"] = FieldValue.delete()
+                }
+            } else {
+                if (workerId != null) {
+                    val attendanceMap = mapOf(
+                        "status" to newData["status"],
+                        "type" to newData["type"],
+                        "reason" to newData["reason"],
+                        "overtime_hours" to newData["overtime_hours"],
+                        "note" to newData["note"],
+                        "advance_amount" to newData["advance_amount"],
+                        "wage" to newData["wage"]
+                    )
+                    dailyUpdates["workers.$workerId"] = attendanceMap
+                    dailyUpdates["date"] = date
+                }
+            }
+            if (dailyUpdates.isNotEmpty()) {
+                dailySummaryDoc.set(dailyUpdates, SetOptions.merge()).await()
+            }
+        }
     }
 
     private suspend fun updatePersonalSummary(date: String, oldData: Map<String, Any?>?, newData: Map<String, Any?>?) {

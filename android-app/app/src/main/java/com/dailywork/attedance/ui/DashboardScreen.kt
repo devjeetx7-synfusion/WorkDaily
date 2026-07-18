@@ -48,6 +48,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.NavController
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 import com.dailywork.attedance.viewmodel.CalendarViewModel
 import com.dailywork.attedance.viewmodel.StatsViewModel
@@ -56,6 +57,7 @@ import com.dailywork.attedance.viewmodel.SettingsViewModel
 import com.dailywork.attedance.viewmodel.WorkersViewModel
 import com.dailywork.attedance.viewmodel.WorkerDetailViewModel
 import com.dailywork.attedance.viewmodel.WorkerHistoryViewModel
+import com.dailywork.attedance.viewmodel.ViewModelFactory
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -64,27 +66,25 @@ import java.util.Locale
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
-    navController: NavController,
-    dashboardViewModel: DashboardViewModel,
-    calendarViewModel: CalendarViewModel,
-    statsViewModel: StatsViewModel,
-    passbookViewModel: PassbookViewModel,
+    factory: ViewModelFactory,
     settingsViewModel: SettingsViewModel,
-    workersViewModel: WorkersViewModel,
-    workerDetailViewModel: WorkerDetailViewModel,
-    workerHistoryViewModel: WorkerHistoryViewModel,
     onLogout: () -> Unit
 ) {
-        val context = LocalContext.current
+    val context = LocalContext.current
     val networkMonitor = remember { NetworkMonitor(context) }
     val isConnected by networkMonitor.isConnected.collectAsState(initial = networkMonitor.checkCurrentState())
     val snackbarHostState = remember { SnackbarHostState() }
+
+    // Lazy instantiate the ViewModels needed for DashboardScreen tabs
+    val dashboardViewModel: DashboardViewModel = viewModel(factory = factory)
+    val calendarViewModel: CalendarViewModel = viewModel(factory = factory)
+    val statsViewModel: StatsViewModel = viewModel(factory = factory)
 
     LaunchedEffect(isConnected) {
         dashboardViewModel.onNetworkStateChanged(isConnected)
     }
 
-val dashboardState by dashboardViewModel.dashboardState.collectAsState()
+    val dashboardState by dashboardViewModel.dashboardState.collectAsState()
     val calendarState by calendarViewModel.calendarState.collectAsState()
     val bottomNavController = rememberNavController()
     val navBackStackEntry by bottomNavController.currentBackStackEntryAsState()
@@ -96,11 +96,13 @@ val dashboardState by dashboardViewModel.dashboardState.collectAsState()
     val pagerState = rememberPagerState(pageCount = { 4 })
     val coroutineScope = rememberCoroutineScope()
 
-    // Auto-refresh on resume/open
-    LaunchedEffect(Unit) {
-        dashboardViewModel.refresh()
-        calendarViewModel.refresh()
-        statsViewModel.refresh()
+    // Lazy tab-refresh based on active page selection
+    LaunchedEffect(pagerState.currentPage) {
+        when (pagerState.currentPage) {
+            0 -> dashboardViewModel.refresh()
+            1 -> calendarViewModel.refresh()
+            2 -> statsViewModel.refresh()
+        }
     }
 
     Scaffold(
@@ -168,10 +170,10 @@ val dashboardState by dashboardViewModel.dashboardState.collectAsState()
                                         verticalArrangement = Arrangement.spacedBy(16.dp)
                                     ) {
                                         item {
-                                        HeaderSection(
-                                            state = dashboardState
-                                        )
-                                    }
+                                            HeaderSection(
+                                                state = dashboardState
+                                            )
+                                        }
 
                                         if (dashboardState.role == "contractor") {
                                             item {
@@ -238,6 +240,7 @@ val dashboardState by dashboardViewModel.dashboardState.collectAsState()
                 }
             }
             composable("passbook") {
+                val passbookViewModel: PassbookViewModel = viewModel(factory = factory)
                 PassbookScreenContent(
                     viewModel = passbookViewModel,
                     onNavigateBack = { bottomNavController.navigateUp() },
@@ -250,6 +253,7 @@ val dashboardState by dashboardViewModel.dashboardState.collectAsState()
                 )
             }
             composable("workers") {
+                val workersViewModel: WorkersViewModel = viewModel(factory = factory)
                 WorkersScreenContent(
                     viewModel = workersViewModel,
                     onNavigateToWorkerDetail = { bottomNavController.navigate("worker_detail/$it") }
@@ -257,6 +261,7 @@ val dashboardState by dashboardViewModel.dashboardState.collectAsState()
             }
             composable("worker_detail/{workerId}") { backStackEntry ->
                 val workerId = backStackEntry.arguments?.getString("workerId") ?: ""
+                val workerDetailViewModel: WorkerDetailViewModel = viewModel(factory = factory)
                 WorkerDetailScreenContent(
                     workerId = workerId,
                     viewModel = workerDetailViewModel,
@@ -267,13 +272,16 @@ val dashboardState by dashboardViewModel.dashboardState.collectAsState()
                 )
             }
             composable("worker_calendar/{workerId}") { backStackEntry ->
+                val workerId = backStackEntry.arguments?.getString("workerId") ?: ""
+                val workerDetailViewModel: WorkerDetailViewModel = viewModel(factory = factory)
                 WorkerCalendarScreen(
-                    workerId = backStackEntry.arguments?.getString("workerId") ?: "",
+                    workerId = workerId,
                     viewModel = workerDetailViewModel,
                     onNavigateBack = { bottomNavController.navigateUp() }
                 )
             }
             composable("worker_history") {
+                val workerHistoryViewModel: WorkerHistoryViewModel = viewModel(factory = factory)
                 WorkerHistoryScreen(
                     viewModel = workerHistoryViewModel,
                     onNavigateBack = { bottomNavController.navigateUp() }
@@ -460,7 +468,6 @@ val dashboardState by dashboardViewModel.dashboardState.collectAsState()
             }
         }
     }
-
 }
 
 @Composable
@@ -514,7 +521,6 @@ fun HeaderSection(state: DashboardState) {
                 )
             }
         }
-
     }
 }
 
@@ -800,35 +806,35 @@ fun PersonalDailyLog(state: DashboardState, dashboardViewModel: DashboardViewMod
                 Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.mark_absent), fontWeight = FontWeight.Bold, fontSize = 14.sp)
             }
         } else {
-             val isPresent = state.todayStatus == "present"
-             val bgColor = if (isPresent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+            val isPresent = state.todayStatus == "present"
+            val bgColor = if (isPresent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
 
-             Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(bgColor.copy(alpha = 0.1f)).border(2.dp, bgColor, RoundedCornerShape(16.dp)).padding(24.dp), contentAlignment = Alignment.Center) {
-                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                     Box(modifier = Modifier.size(56.dp).clip(CircleShape).background(bgColor), contentAlignment = Alignment.Center) {
+            Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(bgColor.copy(alpha = 0.1f)).border(2.dp, bgColor, RoundedCornerShape(16.dp)).padding(24.dp), contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Box(modifier = Modifier.size(56.dp).clip(CircleShape).background(bgColor), contentAlignment = Alignment.Center) {
                         if (isPresent) {
                             Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(32.dp))
                         } else {
                             Icon(Icons.Default.Close, contentDescription = null, tint = Color.White, modifier = Modifier.size(32.dp))
                         }
-                     }
-                     Spacer(modifier = Modifier.height(12.dp))
-                     Text(if (isPresent) "Marked Present" else "Marked Absent", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = bgColor)
-                     if (note.isNotEmpty()) {
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(if (isPresent) "Marked Present" else "Marked Absent", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = bgColor)
+                    if (note.isNotEmpty()) {
                         Spacer(modifier = Modifier.height(8.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Description, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(note, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
-                     }
-                 }
-             }
+                    }
+                }
+            }
 
-             Spacer(modifier = Modifier.height(12.dp))
-             OutlinedButton(onClick = { dashboardViewModel.removeAttendance() }, modifier = Modifier.fillMaxWidth().height(50.dp), shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error, containerColor = MaterialTheme.colorScheme.background), border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.error)) {
+            Spacer(modifier = Modifier.height(12.dp))
+            OutlinedButton(onClick = { dashboardViewModel.removeAttendance() }, modifier = Modifier.fillMaxWidth().height(50.dp), shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error, containerColor = MaterialTheme.colorScheme.background), border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.error)) {
                 Text(androidx.compose.ui.res.stringResource(com.dailywork.attedance.R.string.remove_attendance), fontWeight = FontWeight.Bold, fontSize = 14.sp)
-             }
+            }
         }
 
         if (showAbsentDialog) {

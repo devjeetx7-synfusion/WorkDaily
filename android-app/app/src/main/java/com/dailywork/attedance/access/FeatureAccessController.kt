@@ -27,13 +27,18 @@ class FeatureAccessController private constructor(context: Context) {
     private val _legacyLifetimeAccess = MutableStateFlow(false)
     private val _legacyAccessUntil = MutableStateFlow(0L)
 
+    private var configListener: com.google.firebase.firestore.ListenerRegistration? = null
+    private var userLegacyListener: com.google.firebase.firestore.ListenerRegistration? = null
+    private var authListener: FirebaseAuth.AuthStateListener? = null
+
     init {
         setupConfigListener()
         setupUserLegacyListener()
     }
 
     private fun setupConfigListener() {
-        db.collection("config").document("settings")
+        configListener?.remove()
+        configListener = db.collection("config").document("settings")
             .addSnapshotListener { snapshot, _ ->
                 if (snapshot != null && snapshot.exists()) {
                     statsUnlockMinutes = (snapshot.getLong("statsUnlockMinutes") ?: 30).toInt()
@@ -48,10 +53,14 @@ class FeatureAccessController private constructor(context: Context) {
     }
 
     private fun setupUserLegacyListener() {
-        auth.addAuthStateListener { firebaseAuth ->
+        if (authListener != null) {
+            auth.removeAuthStateListener(authListener!!)
+        }
+        authListener = FirebaseAuth.AuthStateListener { firebaseAuth ->
             val user = firebaseAuth.currentUser
+            userLegacyListener?.remove()
             if (user != null) {
-                db.collection("users").document(user.uid)
+                userLegacyListener = db.collection("users").document(user.uid)
                     .addSnapshotListener { snapshot, _ ->
                         if (snapshot != null && snapshot.exists()) {
                             val lifetime = snapshot.getBoolean("legacyLifetimeAccess") ?: snapshot.getBoolean("isPremium") ?: false
@@ -65,6 +74,7 @@ class FeatureAccessController private constructor(context: Context) {
                 _legacyAccessUntil.value = 0L
             }
         }
+        auth.addAuthStateListener(authListener!!)
     }
 
     fun hasLegacyAccess(): Boolean {
@@ -124,6 +134,15 @@ class FeatureAccessController private constructor(context: Context) {
 
     suspend fun clearSession() {
         repository.clearAllGrants()
+    }
+
+    fun reset() {
+        configListener?.remove()
+        userLegacyListener?.remove()
+        if (authListener != null) {
+            auth.removeAuthStateListener(authListener!!)
+            authListener = null
+        }
     }
 
     companion object {
