@@ -2,6 +2,15 @@ name: User APK Telegram Build
 
 on:
   workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Choose build type (internal or release)'
+        required: true
+        type: choice
+        options:
+          - internal
+          - release
+        default: internal
 
 permissions:
   contents: read
@@ -92,20 +101,32 @@ jobs:
       - name: Grant execute permission for Gradle
         run: chmod +x android-app/gradlew
 
-      - name: Build signed User release APK
+      - name: Build signed User APK
         shell: bash
         run: |
           set -euo pipefail
+          BUILD_TYPE="${{ github.event.inputs.build_type || 'internal' }}"
+          echo "Building variant: ${BUILD_TYPE}"
           cd android-app
-          ./gradlew clean assembleRelease --no-daemon
+          if [ "${BUILD_TYPE}" = "internal" ]; then
+            ./gradlew clean :app:assembleInternal --no-daemon
+          else
+            ./gradlew clean assembleRelease --no-daemon
+          fi
 
       - name: Prepare APK file
         shell: bash
         run: |
           set -euo pipefail
+          BUILD_TYPE="${{ github.event.inputs.build_type || 'internal' }}"
 
-          APK_SOURCE="android-app/app/build/outputs/apk/release/app-release.apk"
-          APK_TARGET="WorkDaily-User-v${VERSION_NAME}.apk"
+          if [ "${BUILD_TYPE}" = "internal" ]; then
+            APK_SOURCE="android-app/app/build/outputs/apk/internal/app-internal.apk"
+            APK_TARGET="WorkDaily-User-Internal-v${VERSION_NAME}.apk"
+          else
+            APK_SOURCE="android-app/app/build/outputs/apk/release/app-release.apk"
+            APK_TARGET="WorkDaily-User-v${VERSION_NAME}.apk"
+          fi
 
           test -f "${APK_SOURCE}"
           cp "${APK_SOURCE}" "${APK_TARGET}"
@@ -113,6 +134,13 @@ jobs:
 
           echo "APK_TARGET=${APK_TARGET}" >> "${GITHUB_ENV}"
           echo "APK_SHA256=$(cut -d ' ' -f 1 user-apk-sha256.txt)" >> "${GITHUB_ENV}"
+
+      - name: Upload Internal APK as Artifact
+        if: ${{ (github.event.inputs.build_type || 'internal') == 'internal' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: workdaily-internal-test-ads-apk
+          path: WorkDaily-User-Internal-v${{ env.VERSION_NAME }}.apk
 
       - name: Send User APK to Telegram
         shell: bash
