@@ -63,6 +63,7 @@ class CalendarViewModel(
 
     private var workersListener: com.google.firebase.firestore.ListenerRegistration? = null
     private var personalAttendanceListener: com.google.firebase.firestore.ListenerRegistration? = null
+    private var dailySummaryListener: com.google.firebase.firestore.ListenerRegistration? = null
     private val workerAttendanceListeners = mutableMapOf<String, com.google.firebase.firestore.ListenerRegistration>()
 
     private val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
@@ -126,15 +127,51 @@ class CalendarViewModel(
     private fun updateContractorAttendanceListener() {
         val date = _calendarState.value.selectedDate
 
+        dailySummaryListener?.remove()
         workerAttendanceListeners.values.forEach { it.remove() }
         workerAttendanceListeners.clear()
 
         _calendarState.value = _calendarState.value.copy(contractorAttendance = emptyList())
-        val workers = _calendarState.value.workers
 
+        // Try single collection-wide daily summary document listener first
+        dailySummaryListener = firestoreRepository.contractorSummariesCollection()?.document("daily_$date")
+            ?.addSnapshotListener { snapshot, error ->
+                if (error == null && snapshot != null && snapshot.exists()) {
+                    @Suppress("UNCHECKED_CAST")
+                    val workersMap = snapshot.get("workers") as? Map<String, Map<String, Any?>>
+                    val newList = mutableListOf<AttendanceRecord>()
+                    workersMap?.forEach { (wId, data) ->
+                        newList.add(
+                            AttendanceRecord(
+                                id = "${wId}_$date",
+                                date = date,
+                                status = data["status"] as? String ?: "",
+                                type = data["type"] as? String,
+                                reason = data["reason"] as? String,
+                                overtimeHours = (data["overtime_hours"] as? Number)?.toInt(),
+                                note = data["note"] as? String,
+                                advanceAmount = (data["advance_amount"] as? Number)?.toDouble()
+                            )
+                        )
+                    }
+                    _calendarState.update { current ->
+                        current.copy(contractorAttendance = newList, isLoading = false)
+                    }
+                } else {
+                    // Backwards compatible fallback: load individual worker documents
+                    loadContractorAttendanceIndividually(date)
+                }
+            }
+    }
+
+    private fun loadContractorAttendanceIndividually(date: String) {
+        workerAttendanceListeners.values.forEach { it.remove() }
+        workerAttendanceListeners.clear()
+
+        val workers = _calendarState.value.workers
         workers.forEach { worker ->
             val listener = firestoreRepository.getContractorAttendance(worker.id)
-                ?.document(date) // Assuming attendanceId is the date
+                ?.document(date)
                 ?.addSnapshotListener { snapshot, error ->
                     if (error == null && snapshot != null) {
                          if (snapshot.exists()) {
@@ -152,12 +189,6 @@ class CalendarViewModel(
                                 val newList = current.contractorAttendance.filter { it.id != record.id } + record
                                 current.copy(contractorAttendance = newList)
                             }
-                         } else {
-                             // Handle deletion/missing
-                             _calendarState.update { current ->
-                                val newList = current.contractorAttendance.filter { it.id != "${worker.id}_${snapshot.id}" }
-                                current.copy(contractorAttendance = newList)
-                             }
                          }
                     }
                 }
@@ -340,6 +371,7 @@ class CalendarViewModel(
         super.onCleared()
         workersListener?.remove()
         personalAttendanceListener?.remove()
+        dailySummaryListener?.remove()
         workerAttendanceListeners.values.forEach { it.remove() }
         workerAttendanceListeners.clear()
     }

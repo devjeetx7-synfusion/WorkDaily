@@ -68,6 +68,18 @@ fun RewardedAccessBottomSheet(
                 buttonLabel = buttonText
                 isEnabled = true
             }
+            RewardedAdState.WAITING_FOR_CONSENT -> {
+                buttonLabel = "Waiting for consent..."
+                isEnabled = false
+            }
+            RewardedAdState.INITIALIZING -> {
+                buttonLabel = "Initializing ads..."
+                isEnabled = false
+            }
+            RewardedAdState.TEMPORARILY_UNAVAILABLE -> {
+                buttonLabel = "Temporarily unavailable"
+                isEnabled = true
+            }
         }
     }
 
@@ -106,7 +118,7 @@ fun RewardedAccessBottomSheet(
 
             Button(
                 onClick = {
-                    if (adState == RewardedAdState.FAILED) {
+                    if (adState == RewardedAdState.FAILED || adState == RewardedAdState.TEMPORARILY_UNAVAILABLE) {
                         if (accessController.fallbackUnlockEnabled && feature != RewardedFeature.ADD_WORKER) {
                             coroutineScope.launch {
                                 accessController.grantAccess(feature, suffix)
@@ -115,7 +127,11 @@ fun RewardedAccessBottomSheet(
                                 onDismissRequest()
                             }
                         } else {
-                            adManager.preloadAd()
+                            if (adState == RewardedAdState.TEMPORARILY_UNAVAILABLE) {
+                                adManager.resetCircuitBreaker()
+                            } else {
+                                adManager.preloadAd()
+                            }
                         }
                     } else if (adState == RewardedAdState.READY) {
                         val activity = context as? Activity
@@ -151,10 +167,10 @@ fun RewardedAccessBottomSheet(
                 },
                 modifier = Modifier.fillMaxWidth().height(50.dp),
                 shape = RoundedCornerShape(12.dp),
-                enabled = isEnabled || adState == RewardedAdState.FAILED
+                enabled = isEnabled || adState == RewardedAdState.FAILED || adState == RewardedAdState.TEMPORARILY_UNAVAILABLE
             ) {
                 Text(
-                    text = if (adState == RewardedAdState.FAILED) "Ad unavailable (Retry)" else buttonLabel,
+                    text = if (adState == RewardedAdState.FAILED || adState == RewardedAdState.TEMPORARILY_UNAVAILABLE) "Ad unavailable (Retry)" else buttonLabel,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold
                 )

@@ -84,7 +84,6 @@ class StatsViewModel(
 
     private var workersListener: com.google.firebase.firestore.ListenerRegistration? = null
     private var attendanceListener: com.google.firebase.firestore.ListenerRegistration? = null
-    private val workerAttendanceListeners = mutableMapOf<String, com.google.firebase.firestore.ListenerRegistration>()
     private var userListener: com.google.firebase.firestore.ListenerRegistration? = null
     private var summaryListener: com.google.firebase.firestore.ListenerRegistration? = null
 
@@ -160,7 +159,6 @@ class StatsViewModel(
                         return@addSnapshotListener
                     }
                     cachedWorkers = snapshot.documents
-                    setupTodayAttendanceListeners()
 
                     attendanceListener?.remove()
                     attendanceListener = firestoreRepository.contractorSummariesCollection()
@@ -189,41 +187,6 @@ class StatsViewModel(
         }
     }
 
-    private val workerTodayStatus = mutableMapOf<String, String?>()
-
-    private fun setupTodayAttendanceListeners() {
-        workerAttendanceListeners.values.forEach { it.remove() }
-        workerAttendanceListeners.clear()
-        workerTodayStatus.clear()
-
-        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-        val todayStr = sdf.format(Date())
-
-        cachedWorkers.forEach { workerDoc ->
-            val workerId = workerDoc.id
-            val listener = firestoreRepository.getContractorAttendance(workerId)
-                ?.document(todayStr)
-                ?.addSnapshotListener { snapshot, _ ->
-                    val status = snapshot?.getString("status")
-                    workerTodayStatus[workerId] = status
-
-                    val presentCount = workerTodayStatus.values.count { it == "present" }
-                    val absentCount = workerTodayStatus.values.count { it == "absent" }
-
-                    _statsState.update { current ->
-                        current.copy(
-                            contractorStats = current.contractorStats.copy(
-                                todayPresent = presentCount,
-                                todayAbsent = absentCount
-                            )
-                        )
-                    }
-                }
-            if (listener != null) {
-                workerAttendanceListeners[workerId] = listener
-            }
-        }
-    }
 
     private fun calculateContractorStatsFromSummaries(summaries: List<com.google.firebase.firestore.DocumentSnapshot>, currentMonth: String) {
         var totalCost = 0.0
@@ -534,6 +497,5 @@ class StatsViewModel(
         workersListener?.remove()
         attendanceListener?.remove()
         summaryListener?.remove()
-        workerAttendanceListeners.values.forEach { it.remove() }
     }
 }
