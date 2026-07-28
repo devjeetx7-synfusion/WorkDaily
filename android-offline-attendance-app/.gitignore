@@ -1,0 +1,14 @@
+# Gradle
+.gradle
+**/build/
+!src/**/build/
+
+# IDEA
+.idea
+*.iml
+
+# Local properties
+local.properties
+
+# Log files
+*.log

@@ -7,7 +7,7 @@ This report outlines the complete structural and technical layout of the newly d
 ## 1. Repository Analysis Report
 The existing WorkDaily User App was scanned to identify how data, settings, navigation, and user states are handled.
 - **Core Observation:** The original application heavily relies on Firebase (Auth, Firestore, Cloud Storage) and Google AdMob (AdCoordinator, RewardedAdManager) for online persistence and point-of-use feature gating.
-- **Offline Adaptation Strategy:** We are creating a fully native offline Gradle module `:attendance` under the `android-app/` directory. All Firebase services are replaced with an isolated **Room Database** and **DataStore** preferences. The AdMob dependency is completely stripped out, and previously gated screens/features are permanently unlocked for seamless offline execution.
+- **Offline Adaptation Strategy:** We are creating a fully native offline Android application under the `android-offline-attendance-app/` directory (module name `:app`). All Firebase services are replaced with an isolated **Room Database** and **DataStore** preferences. The AdMob dependency is completely stripped out, and previously gated screens/features are permanently unlocked for seamless offline execution.
 
 ---
 
@@ -118,9 +118,9 @@ Pre-calculated statistics per month to ensure instantaneous, responsive loads.
 ---
 
 ## 6. Folder Structure
-The implementation resides inside `android-app/attendance` and follows MVVM Clean Architecture:
+The implementation resides inside `android-offline-attendance-app/app` and follows MVVM Clean Architecture:
 ```
-attendance/
+app/
 ├── build.gradle.kts
 └── src/
     └── main/
@@ -150,7 +150,7 @@ Since this is a brand new, completely separate offline package/module, there is 
 ---
 
 ## 8. Development Roadmap
-- **Step 1:** Configure the isolated gradle module `:attendance`.
+- **Step 1:** Configure the isolated Android application project `android-offline-attendance-app`.
 - **Step 2:** Write Room Database, Entities, DAOs, and the Repository.
 - **Step 3:** Implement local Preferences DataStore.
 - **Step 4:** Build local ViewModels and factory.
