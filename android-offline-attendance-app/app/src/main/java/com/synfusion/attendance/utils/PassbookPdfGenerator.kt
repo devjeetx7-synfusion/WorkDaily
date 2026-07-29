@@ -52,15 +52,15 @@ object PassbookPdfGenerator {
     private const val MARGIN = 40f
 
     // Theme colors
-    private val colorHeaderBg = Color.parseColor("#0f172a") // Deep slate
+    private val colorHeaderBg = Color.parseColor("#13B28A") // Green Primary
     private val colorHeaderText = Color.WHITE
-    private val colorHeaderSubText = Color.parseColor("#94a3b8")
-    private val colorSummaryTitle = Color.parseColor("#0f172a")
-    private val colorTableHeadBg = Color.parseColor("#1e40af") // Blue
+    private val colorHeaderSubText = Color.parseColor("#F8FAFB") // Light for contrast
+    private val colorSummaryTitle = Color.parseColor("#1E293B") // TextPrimary
+    private val colorTableHeadBg = Color.parseColor("#13B28A") // Green Primary
     private val colorPositive = Color.parseColor("#16a34a") // Green
     private val colorNegative = Color.parseColor("#dc2626") // Red
-    private val colorStripedRow = Color.parseColor("#f8fafc")
-    private val colorBorder = Color.parseColor("#cbd5e1")
+    private val colorStripedRow = Color.parseColor("#F8FAFB") // Background theme color
+    private val colorBorder = Color.parseColor("#F1F5F9") // Border theme color
 
     fun generatePdf(context: Context, data: PdfData): File? {
         val document = PdfDocument()
@@ -76,31 +76,21 @@ object PassbookPdfGenerator {
         val textPaint = TextPaint().apply { typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL); isAntiAlias = true; textSize = 9f }
 
         fun drawHeader(canvas: Canvas) {
-            val headerHeight = 100f
+            val headerHeight = 80f
             canvas.drawRect(0f, 0f, PAGE_WIDTH.toFloat(), headerHeight, paintHeaderBg)
 
             paintTextBold.color = colorHeaderText
             paintTextBold.textSize = 24f
             paintTextBold.textAlign = Paint.Align.LEFT
-            canvas.drawText("DailyWork Pro", MARGIN, 40f, paintTextBold)
+            canvas.drawText("DailyWork Pro", MARGIN, 45f, paintTextBold)
 
             paintTextNormal.color = colorHeaderSubText
             paintTextNormal.textSize = 10f
-            canvas.drawText(data.subtitle, MARGIN, 58f, paintTextNormal)
-
-            // Info Section
-            paintTextBold.color = Color.WHITE
-            paintTextBold.textSize = 11f
-            canvas.drawText("Worker: ${data.name}", MARGIN, 85f, paintTextBold)
-            canvas.drawText("Role: ${data.role}", MARGIN + 250f, 85f, paintTextBold)
+            canvas.drawText(data.subtitle, MARGIN, 63f, paintTextNormal)
 
             val rightAlign = PAGE_WIDTH - MARGIN
             paintTextBold.textAlign = Paint.Align.RIGHT
-            canvas.drawText("Month: ${data.monthYearStr}", rightAlign, 40f, paintTextBold)
-
-            paintTextNormal.color = colorHeaderSubText
-            paintTextNormal.textAlign = Paint.Align.RIGHT
-            canvas.drawText("Contractor: ${data.contractorName}", rightAlign, 58f, paintTextNormal)
+            canvas.drawText("Month: ${data.monthYearStr}", rightAlign, 45f, paintTextBold)
         }
 
         fun drawTableHeaders(canvas: Canvas, y: Float, colWidths: FloatArray, headers: Array<String>) {
@@ -123,7 +113,7 @@ object PassbookPdfGenerator {
         var page = document.startPage(PdfDocument.PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, pageNumber).create())
         var canvas = page.canvas
         drawHeader(canvas)
-        yPos = 120f
+        yPos = 100f
 
         // Financial Summary Section
         paintTextBold.color = colorSummaryTitle
@@ -211,7 +201,7 @@ object PassbookPdfGenerator {
                 page = document.startPage(PdfDocument.PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, pageNumber).create())
                 canvas = page.canvas
                 drawHeader(canvas)
-                yPos = 120f
+                yPos = 100f
                 drawTableHeaders(canvas, yPos, logCols, logHeaders)
                 yPos += 25f
             }
