@@ -14,4 +14,3 @@ dependencyResolutionManagement {
 }
 rootProject.name = "DailyWork"
 include(":app")
-include(":attendance")
