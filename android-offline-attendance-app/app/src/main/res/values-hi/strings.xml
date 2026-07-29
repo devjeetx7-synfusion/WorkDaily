@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">DailyWork</string>
+    <string name="app_name">WorkDaily</string>
     <string name="select_language">भाषा चुनें</string>
     <string name="choose_your_preferred_language_to_continue">जारी रखने के लिए अपनी पसंदीदा भाषा चुनें।</string>
     <string name="continue_btn">जारी रखें</string>
@@ -25,7 +25,7 @@
     <string name="no_data">No data.</string>
     <string name="all_time_stats">All Time Stats</string>
     <string name="total_earnings">TOTAL EARNINGS</string>
-    <string name="dailywork">DailyWork</string>
+    <string name="dailywork">WorkDaily</string>
     <string name="manage_your_daily_labor_earnings">Manage your daily labor &amp; earnings</string>
     <string name="copy_error">Copy Error</string>
     <string name="close_app">Close App</string>
@@ -66,7 +66,7 @@
     <string name="daily_attendance_reminder">Daily attendance reminder</string>
     <string name="language_2">Language</string>
     <string name="role_management">Role Management</string>
-    <string name="dailywork_premium">DailyWork Premium</string>
+    <string name="dailywork_premium">WorkDaily Premium</string>
     <string name="thank_you_for_your_purchase">Thank you for your purchase ❤️</string>
     <string name="upgrade_to_premium">Upgrade to Premium</string>
     <string name="unlock_all_features">Unlock all features</string>
@@ -77,7 +77,7 @@
     <string name="share_via_whatsapp">Share via WhatsApp</string>
     <string name="send_digital_passbook">Send digital passbook</string>
     <string name="data_support">Data &amp; Support</string>
-    <string name="how_to_use_dailywork">How to Use DailyWork</string>
+    <string name="how_to_use_dailywork">How to Use WorkDaily</string>
     <string name="quick_guide_tutorials">Quick guide &amp; tutorials</string>
     <string name="data_privacy_policy">Data &amp; Privacy Policy</string>
     <string name="stored_securely_in_cloud">Stored securely in cloud</string>

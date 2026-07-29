@@ -2,6 +2,8 @@ package com.synfusion.attendance.ui
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -150,12 +152,16 @@ fun LoginScreen(
 
                 OutlinedTextField(
                     value = phone,
-                    onValueChange = { phone = it },
+                    onValueChange = { newValue ->
+                        val digits = newValue.filter { it.isDigit() }.take(10)
+                        phone = digits
+                    },
                     placeholder = { Text("Phone Number (10 digits) *") },
                     modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)),
                     shape = RoundedCornerShape(12.dp),
                     leadingIcon = { Icon(Icons.Default.Phone, null, tint = MaterialTheme.colorScheme.primary) },
-                    singleLine = true
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
                 Spacer(modifier = Modifier.height(20.dp))
 

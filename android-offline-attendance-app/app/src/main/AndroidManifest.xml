@@ -6,7 +6,7 @@
         android:name=".DailyWorkApplication"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
-        android:label="Offline WorkDaily"
+        android:label="WorkDaily"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.DailyWork">
@@ -20,6 +20,21 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".ui.LanguageSelectorActivity"
+            android:exported="false"
+            android:theme="@style/Theme.DailyWork" />
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="com.synfusion.attendance.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
     </application>
 
 </manifest>

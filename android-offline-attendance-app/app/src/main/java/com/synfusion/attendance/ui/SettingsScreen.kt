@@ -57,6 +57,10 @@ fun SettingsScreen(
         }
     }
 
+    LaunchedEffect(Unit) {
+        viewModel.loadSettings()
+    }
+
     LaunchedEffect(state.triggerRestart) {
         if (state.triggerRestart) {
             val intent = Intent(context, MainActivity::class.java).apply {
@@ -87,7 +91,7 @@ fun SettingsScreen(
                 .fillMaxSize()
                 .verticalScroll(scrollState)
                 .padding(paddingValues)
-                .padding(start = 16.dp, end = 16.dp, top = 20.dp, bottom = 120.dp),
+                .padding(start = 16.dp, end = 16.dp, top = 20.dp, bottom = 16.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -171,6 +175,9 @@ fun SettingsScreen(
                         if (state.phone.isNotEmpty()) {
                             Text(text = "+91 ${state.phone}", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
+                        if (state.dailyWage > 0) {
+                            Text(text = "₹${state.dailyWage.toInt()} / day", fontSize = 14.sp, color = Color(0xFF16A34A), fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
             }
@@ -200,20 +207,6 @@ fun SettingsScreen(
                         Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
-                                    Icon(Icons.Default.Notifications, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                                }
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column {
-                                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.reminders), fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.daily_attendance_reminder), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
-                            }
-                            Switch(checked = state.isRemindersEnabled, onCheckedChange = { viewModel.toggleReminders(it) })
-                        }
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
-                        Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
                                     Icon(Icons.Default.RocketLaunch, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                                 }
                                 Spacer(modifier = Modifier.width(12.dp))
@@ -223,19 +216,24 @@ fun SettingsScreen(
                             }
                             Switch(checked = state.isSplashEnabled, onCheckedChange = { viewModel.toggleSplash(it) })
                         }
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
-                        Row(modifier = Modifier.fillMaxWidth().clickable { showProfileEditSheet = true }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
-                                    Icon(Icons.Default.Work, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        if (state.isLanguageEnabled && state.isLanguageActivityEnabled) {
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+                            Row(modifier = Modifier.fillMaxWidth().clickable {
+                                val intent = android.content.Intent(context, LanguageSelectorActivity::class.java)
+                                context.startActivity(intent)
+                            }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
+                                        Icon(Icons.Default.Language, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                    }
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column {
+                                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.language_2), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                        Text(supportedLanguages[state.language] ?: "English", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
                                 }
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column {
-                                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.role_management), fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                    Text("Current: ${if (state.role.isNotEmpty()) state.role.replaceFirstChar { if (it.isLowerCase()) it.titlecase(java.util.Locale.getDefault()) else it.toString() } else ""}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
+                                Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
-                            Icon(Icons.Default.ArrowForwardIos, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
                         }
                     }
                 }
@@ -349,7 +347,21 @@ fun SettingsScreen(
         }
 
         if (showProfileEditSheet) {
-            OfflineProfileEditBottomSheet(state = state, viewModel = viewModel, onDismiss = { showProfileEditSheet = false })
+            var wasSaved by remember { mutableStateOf(false) }
+            OfflineProfileEditBottomSheet(
+                state = state,
+                viewModel = viewModel,
+                onDismiss = {
+                    if (!wasSaved) {
+                        viewModel.discardChanges()
+                    }
+                    showProfileEditSheet = false
+                },
+                onSave = {
+                    wasSaved = true
+                    viewModel.saveChanges()
+                }
+            )
         }
         if (showHowToUseSheet) {
             HowToUseBottomSheet(onDismiss = { showHowToUseSheet = false })
@@ -410,11 +422,11 @@ fun HowToUseBottomSheet(onDismiss: () -> Unit) {
                     Icon(Icons.Default.Info, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                 }
                 Spacer(modifier = Modifier.width(12.dp))
-                Text("How to Use DailyWork", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                Text("How to Use WorkDaily", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
             }
             HorizontalDivider(color = MaterialTheme.colorScheme.outline)
             Text(
-                text = "DailyWork helps users manage attendance, daily wages, advances, payments, dues, notes, and worker records.\n\n• Personal users can track their own attendance, work days, payments, and notes.\n• Contractors can manage workers/helpers/mistry records, attendance, advance, half payment, full payment, overtime, dues, and history.\n\nPassbook and reports help users review records clearly.\nPremium features are fully unlocked by default in this offline version.",
+                text = "WorkDaily helps users manage attendance, daily wages, advances, payments, dues, notes, and worker records.\n\n• Personal users can track their own attendance, work days, payments, and notes.\n• Contractors can manage workers/helpers/mistry records, attendance, advance, half payment, full payment, overtime, dues, and history.\n\nPassbook and reports help users review records clearly.\nPremium features are fully unlocked by default in this offline version.",
                 fontSize = 14.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 lineHeight = 20.sp
@@ -457,7 +469,7 @@ fun PrivacyPolicyBottomSheet(onDismiss: () -> Unit) {
             }
             HorizontalDivider(color = MaterialTheme.colorScheme.outline)
             Text(
-                text = "DailyWork respects your privacy and is designed to help users manage work attendance, worker records, payments, dues, notes, and reports securely.\n\nInformation We May Store:\n• Name, phone number, wage details, attendance records, worker details, payment records, advances, dues, notes, and app preferences.\n\nHow We Use Information:\n• To show your attendance, worker records, payment details, passbooks, and reports inside the app.\n\nData Safety:\n• User data should not be sold.\n• Sensitive user records should only be used for app functionality.\n• Users are responsible for entering accurate worker/payment information.\n\nBrand:\nSynFusion",
+                text = "WorkDaily respects your privacy and is designed to help users manage work attendance, worker records, payments, dues, notes, and reports securely.\n\nInformation We May Store:\n• Name, phone number, wage details, attendance records, worker details, payment records, advances, dues, notes, and app preferences.\n\nHow We Use Information:\n• To show your attendance, worker records, payment details, passbooks, and reports inside the app.\n\nData Safety:\n• User data should not be sold.\n• Sensitive user records should only be used for app functionality.\n• Users are responsible for entering accurate worker/payment information.\n\nBrand:\nSynFusion",
                 fontSize = 14.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 lineHeight = 20.sp
@@ -500,7 +512,7 @@ fun TermsConditionsBottomSheet(onDismiss: () -> Unit) {
             }
             HorizontalDivider(color = MaterialTheme.colorScheme.outline)
             Text(
-                text = "By using DailyWork, you agree to use the app responsibly for managing attendance, wages, payments, worker details, notes, dues, passbooks, and related work records.\n\nUser Responsibility:\n• Users are responsible for the accuracy of attendance, wage, payment, worker, and due records entered in the app.\n• DailyWork is a record-management tool and does not verify real-world payments or worker attendance automatically.\n\nBrand:\nSynFusion",
+                text = "By using WorkDaily, you agree to use the app responsibly for managing attendance, wages, payments, worker details, notes, dues, passbooks, and related work records.\n\nUser Responsibility:\n• Users are responsible for the accuracy of attendance, wage, payment, worker, and due records entered in the app.\n• WorkDaily is a record-management tool and does not verify real-world payments or worker attendance automatically.\n\nBrand:\nSynFusion",
                 fontSize = 14.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 lineHeight = 20.sp
@@ -644,7 +656,8 @@ fun ContactIconItem(
 fun OfflineProfileEditBottomSheet(
     state: OfflineSettingsState,
     viewModel: OfflineSettingsViewModel,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onSave: () -> Unit
 ) {
     val nameFocusRequester = remember { FocusRequester() }
 
@@ -720,7 +733,7 @@ fun OfflineProfileEditBottomSheet(
                 }
                 Button(
                     onClick = {
-                        viewModel.saveChanges()
+                        onSave()
                         onDismiss()
                     },
                     modifier = Modifier.weight(1f).height(50.dp),

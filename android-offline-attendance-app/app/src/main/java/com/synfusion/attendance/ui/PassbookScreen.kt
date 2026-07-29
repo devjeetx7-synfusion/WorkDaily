@@ -34,6 +34,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.synfusion.attendance.viewmodel.OfflinePassbookViewModel
 import com.synfusion.attendance.viewmodel.OfflinePassbookLog
+import com.synfusion.attendance.utils.PassbookPdfGenerator
+import com.synfusion.attendance.utils.PdfData
+import com.synfusion.attendance.utils.PdfLog
+import androidx.core.content.FileProvider
 import java.net.URLEncoder
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -47,11 +51,141 @@ fun PassbookScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val sdfMonth = SimpleDateFormat("MMMM yyyy", Locale.getDefault())
+    val sdfMonthNumeric = SimpleDateFormat("MM", Locale.getDefault())
+    val sdfYearNumeric = SimpleDateFormat("yyyy", Locale.getDefault())
     val monthYearStr = sdfMonth.format(state.selectedMonthDate)
+    val monthNumericStr = sdfMonthNumeric.format(state.selectedMonthDate)
+    val yearNumericStr = sdfYearNumeric.format(state.selectedMonthDate)
     val context = LocalContext.current
 
     LaunchedEffect(Unit) {
         viewModel.refresh()
+    }
+
+    fun generatePdfData(): PdfData {
+        var currentRunningBalance = 0.0
+        var totalOTHours = 0
+        var totalOTEarnings = 0.0
+
+        val sortedLogs = state.logs.sortedBy { it.date }.map { log ->
+            val dailyEarned = log.baseEarnings
+            val advanceAmt = log.advanceAmount ?: 0.0
+            val otAmt = log.overtimeAmount
+
+            totalOTHours += log.overtimeHours
+            totalOTEarnings += otAmt
+
+            currentRunningBalance += (dailyEarned + otAmt) - advanceAmt
+
+            val otPdfText = if (log.overtimeAmount > 0) {
+                if (log.overtimeHours > 0) "${log.overtimeHours} hrs / Rs.${log.overtimeAmount.toInt()}"
+                else "Rs.${log.overtimeAmount.toInt()}"
+            } else "-"
+
+            PdfLog(
+                date = log.date.split("-").reversed().joinToString("/"),
+                status = if (log.status == "present") if (log.type == "half") "Half Day" else "Present" else if (log.status == "absent") "Absent" else "-",
+                workType = state.workType,
+                dailyWage = "Rs. ${state.dailyWage.toInt()}",
+                overtime = otPdfText,
+                advanceAmount = if (log.status == "advance" || advanceAmt > 0) "Rs. ${advanceAmt.toInt()}" else "-",
+                runningBalance = "Rs. ${currentRunningBalance.toInt()}",
+                note = log.note ?: ""
+            )
+        }
+
+        return PdfData(
+            title = "WorkDaily",
+            subtitle = "Official Worker Passbook",
+            name = state.name,
+            userId = "personal",
+            role = state.workType,
+            monthYearStr = monthYearStr,
+            monthNumericStr = monthNumericStr,
+            yearNumericStr = yearNumericStr,
+            contractorName = "Admin",
+            dailyWage = state.dailyWage,
+            totalManDays = state.totalDailyWorks,
+            totalPresent = state.presentDays,
+            totalHalfDays = state.halfDays,
+            totalOvertimeHours = totalOTHours,
+            totalOvertimeEarnings = totalOTEarnings,
+            grossEarned = state.grossEarned,
+            advanceDeducted = state.totalAdvance,
+            netPayable = state.finalBalance,
+            logs = sortedLogs
+        )
+    }
+
+    fun exportPDF() {
+        val file = PassbookPdfGenerator.generatePdf(context, generatePdfData())
+        if (file != null) {
+            val uri = FileProvider.getUriForFile(context, "com.synfusion.attendance.fileprovider", file)
+            val intent = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(uri, "application/pdf")
+                flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+            }
+            try {
+                context.startActivity(Intent.createChooser(intent, "Open PDF"))
+            } catch (e: Exception) {
+                android.widget.Toast.makeText(context, "No PDF viewer found", android.widget.Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    fun shareViaWhatsApp() {
+        val text = """
+            👷 *Official Worker Passbook*
+
+            👤 *Name:* ${state.name}
+            🛠️ *Role:* ${state.workType}
+            📅 *Month:* $monthYearStr
+            📊 *Attendance Summary:*
+            ✅ Present: ${state.presentDays} days
+            🕒 Half Days: ${state.halfDays} days
+            ❌ Absent: ${state.absentDays} days
+            📈 *Total Man Days:* ${state.totalDailyWorks}
+
+            💰 *Financial Summary:*
+            💵 Daily Wage: ₹${state.dailyWage.toInt()}
+            💸 Gross Earned: ₹${state.grossEarned.toInt()}
+            📉 Advance Deducted: ₹${state.totalAdvance.toInt()}
+            ━━━━━━━━━━━━━━━━━━
+            🏆 *Net Payable: ₹${state.finalBalance.toInt()}*
+            ━━━━━━━━━━━━━━━━━━
+
+            _Generated automatically via WorkDaily App_ 📱
+        """.trimIndent()
+
+        val file = PassbookPdfGenerator.generatePdf(context, generatePdfData())
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "application/pdf"
+            if (file != null) {
+                val uri = FileProvider.getUriForFile(context, "com.synfusion.attendance.fileprovider", file)
+                putExtra(Intent.EXTRA_STREAM, uri)
+                flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+            }
+            putExtra(Intent.EXTRA_TEXT, text)
+            setPackage("com.whatsapp")
+        }
+        try {
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            val fallbackIntent = Intent(Intent.ACTION_SEND).apply {
+                type = "application/pdf"
+                if (file != null) {
+                    val uri = FileProvider.getUriForFile(context, "com.synfusion.attendance.fileprovider", file)
+                    putExtra(Intent.EXTRA_STREAM, uri)
+                    flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                }
+                putExtra(Intent.EXTRA_TEXT, text)
+            }
+            try {
+                context.startActivity(Intent.createChooser(fallbackIntent, "Share PDF"))
+            } catch (ex: Exception) {
+                android.widget.Toast.makeText(context, "No app found to share PDF", android.widget.Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     Box(
@@ -119,6 +253,33 @@ fun PassbookScreen(
                             Icon(Icons.Default.Add, contentDescription = null, tint = Color(0xFFF97316), modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.advance), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+
+                item {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        OutlinedButton(
+                            onClick = { exportPDF() },
+                            modifier = Modifier.weight(1f).height(48.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
+                        ) {
+                            Icon(Icons.Default.PictureAsPdf, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.export_pdf), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Button(
+                            onClick = { shareViaWhatsApp() },
+                            modifier = Modifier.weight(1f).height(48.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366))
+                        ) {
+                            Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color.White)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.whatsapp), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
                         }
                     }
                 }
