@@ -1,0 +1,164 @@
+name: Offline Attendance APK Telegram Build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-offline-apk:
+    name: Build Offline Attendance APK and send to Telegram
+    runs-on: ubuntu-latest
+
+    env:
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: temurin
+          cache: gradle
+
+      - name: Validate Telegram secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Validating Telegram secrets..."
+
+          if [ -z "${TELEGRAM_BOT_TOKEN}" ]; then
+            echo "::error::Missing TELEGRAM_BOT_TOKEN secret."
+            exit 1
+          fi
+
+          if [[ "${TELEGRAM_BOT_TOKEN}" != *:* ]]; then
+            echo "::error::Telegram bot secret must be the full bot token, not only numeric bot id."
+            exit 1
+          fi
+
+          if [ -z "${TELEGRAM_CHAT_ID}" ]; then
+            echo "::error::Missing TELEGRAM_CHAT_ID secret."
+            exit 1
+          fi
+          echo "Telegram secrets are present and valid."
+
+      - name: Prepare stable upgrade version
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Preparing stable upgrade version..."
+
+          VERSION_CODE="$(date -u +'%y%j%H%M')"
+          VERSION_NAME="1.0.${VERSION_CODE}"
+
+          export VERSION_CODE
+          export VERSION_NAME
+
+          echo "VERSION_CODE=${VERSION_CODE}" >> "${GITHUB_ENV}"
+          echo "VERSION_NAME=${VERSION_NAME}" >> "${GITHUB_ENV}"
+
+          echo "Generated VERSION_CODE: ${VERSION_CODE}"
+          echo "Generated VERSION_NAME: ${VERSION_NAME}"
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import os
+          import re
+
+          path = Path("android-offline-attendance-app/app/build.gradle.kts")
+          text = path.read_text()
+          text = re.sub(r'versionCode\s*=\s*.*', f'versionCode = {os.environ["VERSION_CODE"]}', text, count=1)
+          text = re.sub(r'versionName\s*=\s*.*', f'versionName = "{os.environ["VERSION_NAME"]}"', text, count=1)
+          path.write_text(text)
+          PY
+          echo "Successfully updated build.gradle.kts with the monotonic version code and name."
+
+      - name: Grant execute permission for Gradle
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Granting executable permissions to Offline App gradlew wrapper..."
+          chmod +x android-offline-attendance-app/gradlew
+          echo "Execution permissions granted."
+
+      - name: Build signed Offline Attendance release APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Building signed Offline Attendance Release APK..."
+          cd android-offline-attendance-app
+          ./gradlew clean assembleRelease --no-daemon
+          echo "Build completed successfully."
+
+      - name: Locate and Prepare APK file
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Locating the generated APK file..."
+
+          APK_SOURCE=$(find android-offline-attendance-app/app/build/outputs/apk/ -name "*.apk" | head -n 1)
+          if [ -z "${APK_SOURCE}" ]; then
+            echo "::error::APK was not found after compilation."
+            exit 1
+          fi
+          echo "Found APK at: ${APK_SOURCE}"
+
+          APK_TARGET="WorkDaily-OfflineAttendance-v${VERSION_NAME}.apk"
+          cp "${APK_SOURCE}" "${APK_TARGET}"
+          sha256sum "${APK_TARGET}" | tee offline-apk-sha256.txt
+
+          APK_SIZE=$(du -sh "${APK_TARGET}" | cut -f1)
+          echo "APK Size: ${APK_SIZE}"
+
+          COMMIT_SHA_SHORT=$(git rev-parse --short HEAD)
+
+          if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
+            BRANCH="${GITHUB_HEAD_REF}"
+          else
+            BRANCH="${GITHUB_REF_NAME}"
+          fi
+
+          COMMIT_MSG=$(git log -1 --pretty=%B | head -n 1)
+          BUILD_TIME=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+
+          echo "APK_TARGET=${APK_TARGET}" >> "${GITHUB_ENV}"
+          echo "APK_SIZE=${APK_SIZE}" >> "${GITHUB_ENV}"
+          echo "COMMIT_SHA_SHORT=${COMMIT_SHA_SHORT}" >> "${GITHUB_ENV}"
+          echo "BRANCH=${BRANCH}" >> "${GITHUB_ENV}"
+          echo "COMMIT_MSG=${COMMIT_MSG}" >> "${GITHUB_ENV}"
+          echo "BUILD_TIME=${BUILD_TIME}" >> "${GITHUB_ENV}"
+
+          echo "APK details successfully prepared and loaded into GITHUB_ENV."
+
+      - name: Send Offline Attendance APK to Telegram
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Uploading APK to Telegram..."
+
+          CAPTION="Project Name: WorkDaily-OfflineAttendance
+          Branch: ${BRANCH}
+          Commit SHA: ${COMMIT_SHA_SHORT}
+          Commit Message: ${COMMIT_MSG}
+          Build Time: ${BUILD_TIME}
+          APK Name: ${APK_TARGET}
+          APK Size: ${APK_SIZE}"
+
+          echo "Telegram message caption:"
+          echo "${CAPTION}"
+
+          curl --fail --show-error --silent \
+            -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument" \
+            -F chat_id="${TELEGRAM_CHAT_ID}" \
+            -F document=@"${APK_TARGET}" \
+            -F caption="${CAPTION}"
+
+          echo "APK successfully uploaded and sent to Telegram."
