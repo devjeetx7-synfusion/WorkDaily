@@ -48,7 +48,7 @@ fun WorkerHistoryScreen(
 
     val pullRefreshState = rememberPullToRefreshState()
     if (pullRefreshState.isRefreshing) {
-        LaunchedEffect(true) {
+        LaunchedEffect(pullRefreshState.isRefreshing) {
             viewModel.refresh()
         }
     }
@@ -215,7 +215,7 @@ fun HistoryItemCard(record: OfflineHistoryRecord) {
 
             Column(horizontalAlignment = Alignment.End) {
                 if (isPayment) {
-                    Text("₹${record.amount?.toInt() ?: 0}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = iconColor)
+                    Text("₹${com.synfusion.attendance.ui.components.CurrencyAmountVisualTransformation.formatIndianCurrency(record.amount)}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = iconColor)
                     Text(record.description, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = androidx.compose.ui.text.style.TextAlign.End)
                 } else {
                     val statusColor = when (record.status) {

@@ -67,7 +67,7 @@ fun WorkersScreen(
 
     val pullRefreshState = rememberPullToRefreshState()
     if (pullRefreshState.isRefreshing) {
-        LaunchedEffect(true) {
+        LaunchedEffect(pullRefreshState.isRefreshing) {
             viewModel.refresh()
         }
     }
@@ -166,7 +166,7 @@ fun WorkersScreen(
                                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                     Column {
                                         Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.daily_wage), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
-                                        Text("₹${worker.wage.toInt()}", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF16A34A))
+                                        Text("₹${com.synfusion.attendance.ui.components.CurrencyAmountVisualTransformation.formatIndianCurrency(worker.wage)}", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF16A34A))
                                     }
                                     if (worker.phone.isNotEmpty()) {
                                         Column(horizontalAlignment = Alignment.End) {
@@ -364,7 +364,7 @@ fun OfflineWorkerFormDialog(
                         value = wage,
                         onValueChange = { wage = it.filter { ch -> ch.isDigit() } },
                         label = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.daily_wage_1)) },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), visualTransformation = com.synfusion.attendance.ui.components.CurrencyAmountVisualTransformation(),
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true,

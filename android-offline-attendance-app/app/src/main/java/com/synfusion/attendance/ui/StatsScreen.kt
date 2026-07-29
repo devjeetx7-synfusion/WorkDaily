@@ -60,19 +60,19 @@ private fun LockedFeatureIcon(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun AnimatedCounter(targetValue: Int, prefix: String = "", suffix: String = "") {
-    var animatedValue by remember { mutableStateOf(0) }
+fun AnimatedCounter(targetValue: Number, prefix: String = "", suffix: String = "") {
+    var animatedValue by remember { mutableStateOf(0f) }
 
     LaunchedEffect(targetValue) {
-        animatedValue = targetValue
+        animatedValue = targetValue.toFloat()
     }
 
-    val count by animateIntAsState(targetValue = animatedValue, animationSpec = tween(1500), label = "counter")
+    val count by androidx.compose.animation.core.animateFloatAsState(targetValue = animatedValue, animationSpec = androidx.compose.animation.core.tween(1500), label = "counter")
     Text(
-        text = "$prefix$count$suffix",
+        text = "$prefix${com.synfusion.attendance.ui.components.CurrencyAmountVisualTransformation.formatIndianCurrency(count.toLong())}$suffix",
         fontSize = 24.sp,
-        fontWeight = FontWeight.Bold,
-        color = MaterialTheme.colorScheme.primary
+        fontWeight = FontWeight.Black,
+        color = MaterialTheme.colorScheme.onSurface
     )
 }
 
@@ -279,7 +279,7 @@ fun ContractorStatsView(viewModel: OfflineStatsViewModel, state: OfflineStatsSta
                             Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
                                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                     Text(worker.name, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                    Text("₹${worker.cost.toInt()}", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.primary)
+                                    Text("₹${com.synfusion.attendance.ui.components.CurrencyAmountVisualTransformation.formatIndianCurrency(worker.cost)}", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.primary)
                                 }
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Row(verticalAlignment = Alignment.CenterVertically) {

@@ -96,7 +96,7 @@ fun WorkerDetailScreen(
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Icon(Icons.Default.CurrencyRupee, contentDescription = null, tint = Color(0xFF16A34A), modifier = Modifier.size(16.dp))
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text("₹${state.dailyWage.toInt()} / day", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFF16A34A))
+                                    Text("₹${com.synfusion.attendance.ui.components.CurrencyAmountVisualTransformation.formatIndianCurrency(state.dailyWage)} / day", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFF16A34A))
                                 }
                             }
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp), horizontalAlignment = Alignment.End) {
@@ -223,19 +223,19 @@ fun WorkerDetailScreen(
 
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                 Text("Gross Earned", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
-                                Text("₹${state.grossEarned.toInt()}", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                Text("₹${com.synfusion.attendance.ui.components.CurrencyAmountVisualTransformation.formatIndianCurrency(state.grossEarned)}", fontSize = 14.sp, fontWeight = FontWeight.Bold)
                             }
                             Spacer(modifier = Modifier.height(12.dp))
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                 Text("Total Advance", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
-                                Text("- ₹${state.totalAdvance.toInt()}", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFFF97316))
+                                Text("- ₹${com.synfusion.attendance.ui.components.CurrencyAmountVisualTransformation.formatIndianCurrency(state.totalAdvance)}", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFFF97316))
                             }
                             Spacer(modifier = Modifier.height(12.dp))
                             Divider(color = MaterialTheme.colorScheme.outline)
                             Spacer(modifier = Modifier.height(12.dp))
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                 Text("Net Payable", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                                Text("₹${state.finalBalance.toInt()}", fontSize = 20.sp, fontWeight = FontWeight.Black, color = if (state.finalBalance >= 0) MaterialTheme.colorScheme.primary else Color(0xFFDC2626))
+                                Text("₹${com.synfusion.attendance.ui.components.CurrencyAmountVisualTransformation.formatIndianCurrency(state.finalBalance)}", fontSize = 20.sp, fontWeight = FontWeight.Black, color = if (state.finalBalance >= 0) MaterialTheme.colorScheme.primary else Color(0xFFDC2626))
                             }
                         }
                     }
@@ -273,7 +273,7 @@ fun WorkerDetailScreen(
                                     Text(displayDate, fontSize = 14.sp, fontWeight = FontWeight.Bold)
 
                                     if (log.overtimeAmount > 0) {
-                                        val otText = if (log.overtimeHours > 0) "+ ₹${log.overtimeAmount.toInt()} (${log.overtimeHours} hrs OT)" else "+ ₹${log.overtimeAmount.toInt()} (OT)"
+                                        val otText = if (log.overtimeHours > 0) "+ ₹${com.synfusion.attendance.ui.components.CurrencyAmountVisualTransformation.formatIndianCurrency(log.overtimeAmount)} (${log.overtimeHours} hrs OT)" else "+ ₹${com.synfusion.attendance.ui.components.CurrencyAmountVisualTransformation.formatIndianCurrency(log.overtimeAmount)} (OT)"
                                         Spacer(modifier = Modifier.height(4.dp))
                                         Text(otText, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF8B5CF6))
                                     }
@@ -288,7 +288,7 @@ fun WorkerDetailScreen(
                                         }
 
                                         if (log.advanceAmount != null && log.advanceAmount > 0) {
-                                            Text("₹${log.advanceAmount.toInt()} Advance", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFFEA580C))
+                                            Text("₹${com.synfusion.attendance.ui.components.CurrencyAmountVisualTransformation.formatIndianCurrency(log.advanceAmount)} Advance", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFFEA580C))
                                         }
                                     }
 

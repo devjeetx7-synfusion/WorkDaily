@@ -144,13 +144,13 @@ object PassbookPdfGenerator {
         val summaryRowHeight = 30f
 
         val summaryValues = arrayOf(
-            "Rs. ${data.dailyWage.toInt()}",
+            "Rs. ${com.synfusion.attendance.ui.components.CurrencyAmountVisualTransformation.formatIndianCurrency(data.dailyWage)}",
             "${data.totalManDays}",
             "${data.totalPresent}P / ${data.totalHalfDays}H",
             "${data.totalOvertimeHours} hrs",
-            "Rs. ${data.totalOvertimeEarnings.toInt()}",
-            "Rs. ${data.grossEarned.toInt()}",
-            "Rs. ${data.netPayable.toInt()}"
+            "Rs. ${com.synfusion.attendance.ui.components.CurrencyAmountVisualTransformation.formatIndianCurrency(data.totalOvertimeEarnings)}",
+            "Rs. ${com.synfusion.attendance.ui.components.CurrencyAmountVisualTransformation.formatIndianCurrency(data.grossEarned)}",
+            "Rs. ${com.synfusion.attendance.ui.components.CurrencyAmountVisualTransformation.formatIndianCurrency(data.netPayable)}"
         )
 
         var curX = MARGIN
