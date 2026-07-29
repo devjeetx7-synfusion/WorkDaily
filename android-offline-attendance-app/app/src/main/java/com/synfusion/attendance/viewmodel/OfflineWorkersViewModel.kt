@@ -8,6 +8,7 @@ import com.synfusion.attendance.data.entities.WorkerEntity
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
 import java.util.UUID
 
 data class OfflineWorkerItem(
@@ -57,8 +58,11 @@ class OfflineWorkersViewModel(
         setupListener()
     }
 
+    private var listenerJob: Job? = null
+
     private fun setupListener() {
-        viewModelScope.launch {
+        listenerJob?.cancel()
+        listenerJob = viewModelScope.launch {
             localAttendanceRepository.getAllWorkersFlow().collect { list ->
                 val mapped = list.map { doc ->
                     OfflineWorkerItem(

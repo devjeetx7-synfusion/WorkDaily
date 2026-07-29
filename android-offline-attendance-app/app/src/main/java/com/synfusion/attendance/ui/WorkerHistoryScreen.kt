@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.History
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import com.synfusion.attendance.utils.AmountFormatter
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,8 +48,8 @@ fun WorkerHistoryScreen(
     }
 
     val pullRefreshState = rememberPullToRefreshState()
-    if (pullRefreshState.isRefreshing) {
-        LaunchedEffect(true) {
+    LaunchedEffect(pullRefreshState.isRefreshing) {
+        if (pullRefreshState.isRefreshing) {
             viewModel.refresh()
         }
     }
@@ -215,7 +216,7 @@ fun HistoryItemCard(record: OfflineHistoryRecord) {
 
             Column(horizontalAlignment = Alignment.End) {
                 if (isPayment) {
-                    Text("₹${record.amount?.toInt() ?: 0}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = iconColor)
+                    Text("₹${AmountFormatter.format(record.amount ?: 0.0)}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = iconColor)
                     Text(record.description, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = androidx.compose.ui.text.style.TextAlign.End)
                 } else {
                     val statusColor = when (record.status) {

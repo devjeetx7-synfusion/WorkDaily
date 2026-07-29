@@ -11,6 +11,7 @@ import android.text.TextPaint
 import android.text.Layout
 import java.io.File
 import java.io.FileOutputStream
+import com.synfusion.attendance.utils.AmountFormatter
 
 data class PdfData(
     val title: String,
@@ -144,13 +145,13 @@ object PassbookPdfGenerator {
         val summaryRowHeight = 30f
 
         val summaryValues = arrayOf(
-            "Rs. ${data.dailyWage.toInt()}",
+            "Rs. ${AmountFormatter.format(data.dailyWage)}",
             "${data.totalManDays}",
             "${data.totalPresent}P / ${data.totalHalfDays}H",
             "${data.totalOvertimeHours} hrs",
-            "Rs. ${data.totalOvertimeEarnings.toInt()}",
-            "Rs. ${data.grossEarned.toInt()}",
-            "Rs. ${data.netPayable.toInt()}"
+            "Rs. ${AmountFormatter.format(data.totalOvertimeEarnings)}",
+            "Rs. ${AmountFormatter.format(data.grossEarned)}",
+            "Rs. ${AmountFormatter.format(data.netPayable)}"
         )
 
         var curX = MARGIN

@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -53,8 +54,11 @@ class OfflineWorkerHistoryViewModel(
         loadHistory()
     }
 
+    private var loadJob: Job? = null
+
     private fun loadHistory() {
-        viewModelScope.launch {
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
             localAttendanceRepository.getAllWorkersFlow().collect { workers ->
                 workerNames.clear()
                 workers.forEach { worker ->

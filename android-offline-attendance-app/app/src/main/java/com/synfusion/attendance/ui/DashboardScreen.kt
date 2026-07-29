@@ -30,6 +30,8 @@ import androidx.compose.material3.ModalBottomSheet
 
 import com.synfusion.attendance.viewmodel.OfflineDashboardViewModel
 import com.synfusion.attendance.viewmodel.OfflineDashboardState
+import com.synfusion.attendance.utils.AmountFormatter
+import com.synfusion.attendance.utils.IndianCurrencyVisualTransformation
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
@@ -137,8 +139,8 @@ fun DashboardScreen(
                                 }
                             } else {
                                 val pullRefreshState = rememberPullToRefreshState()
-                                if (pullRefreshState.isRefreshing) {
-                                    LaunchedEffect(true) {
+                                LaunchedEffect(pullRefreshState.isRefreshing) {
+                                    if (pullRefreshState.isRefreshing) {
                                         dashboardViewModel.refresh()
                                     }
                                 }
@@ -321,12 +323,13 @@ fun DashboardScreen(
 
                         OutlinedTextField(
                             value = advanceAmount,
-                            onValueChange = { advanceAmount = it },
+                            onValueChange = { advanceAmount = it.filter { ch -> ch.isDigit() } },
                             placeholder = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.amount)) },
                             modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)),
                             shape = RoundedCornerShape(12.dp),
                             leadingIcon = { Text("₹", modifier = Modifier.padding(start = 8.dp), fontWeight = FontWeight.Bold) },
-                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number)
+                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
+                            visualTransformation = IndianCurrencyVisualTransformation()
                         )
                     }
                 },
@@ -428,8 +431,8 @@ fun ContractorStatsGrid(state: OfflineDashboardState) {
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             StatCardSmall("Today Absent", state.todayAbsent, Icons.Default.Cancel, Color(0xFFEF4444), Modifier.weight(1f))
-            StatCardSmall("Total Paid", "₹${state.totalPaidMonth}", Icons.Default.AccountBalanceWallet, Color(0xFF3B82F6), Modifier.weight(1f))
-            StatCardSmall("Pending", "₹${state.pendingAmount}", Icons.Default.AccountBalanceWallet, Color(0xFFF97316), Modifier.weight(1f))
+            StatCardSmall("Total Paid", "₹${AmountFormatter.format(state.totalPaidMonth)}", Icons.Default.AccountBalanceWallet, Color(0xFF3B82F6), Modifier.weight(1f))
+            StatCardSmall("Pending", "₹${AmountFormatter.format(state.pendingAmount)}", Icons.Default.AccountBalanceWallet, Color(0xFFF97316), Modifier.weight(1f))
         }
     }
 }
@@ -453,8 +456,8 @@ fun StatCard(title: String, value: String, icon: ImageVector, color: Color, modi
             ) {
                 Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(24.dp))
                 Spacer(modifier = Modifier.height(8.dp))
-                Text(value, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-                Text(title, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(value, fontSize = 22.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                Text(title, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
             }
         }
     }
@@ -480,8 +483,8 @@ fun StatCardSmall(title: String, value: String, icon: ImageVector, color: Color,
             ) {
                 Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(value, fontSize = 14.sp, fontWeight = FontWeight.Bold, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-                Text(title, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                Text(value, fontSize = 14.sp, fontWeight = FontWeight.Bold, textAlign = androidx.compose.ui.text.style.TextAlign.Center, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                Text(title, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = androidx.compose.ui.text.style.TextAlign.Center, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
             }
         }
     }
@@ -539,16 +542,16 @@ fun PersonalStatsGrid(state: OfflineDashboardState, onNavigatePassbook: () -> Un
             Column(
                 modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(20.dp)
             ) {
-                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.todays_earnings), fontSize = 12.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.todays_earnings), fontSize = 12.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("₹${state.todayEarned}", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                Text("₹${AmountFormatter.format(state.todayEarned)}", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
             }
             Column(
                 modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(20.dp)
             ) {
-                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.monthly_earnings), fontSize = 12.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.monthly_earnings), fontSize = 12.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("₹${state.monthEarned}", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color(0xFF10B981))
+                Text("₹${AmountFormatter.format(state.monthEarned)}", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color(0xFF10B981), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
             }
         }
 
@@ -608,12 +611,13 @@ fun PersonalDailyLog(state: OfflineDashboardState, dashboardViewModel: OfflineDa
 
             OutlinedTextField(
                 value = otAmount,
-                onValueChange = { otAmount = it },
+                onValueChange = { otAmount = it.filter { ch -> ch.isDigit() } },
                 placeholder = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.ot_amount)) },
                 modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)),
                 shape = RoundedCornerShape(12.dp),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                singleLine = true
+                singleLine = true,
+                visualTransformation = IndianCurrencyVisualTransformation()
             )
             Spacer(modifier = Modifier.height(12.dp))
 

@@ -37,6 +37,7 @@ import com.synfusion.attendance.viewmodel.OfflinePassbookLog
 import com.synfusion.attendance.utils.PassbookPdfGenerator
 import com.synfusion.attendance.utils.PdfData
 import com.synfusion.attendance.utils.PdfLog
+import com.synfusion.attendance.utils.AmountFormatter
 import androidx.core.content.FileProvider
 import java.net.URLEncoder
 import java.text.SimpleDateFormat
@@ -78,18 +79,18 @@ fun PassbookScreen(
             currentRunningBalance += (dailyEarned + otAmt) - advanceAmt
 
             val otPdfText = if (log.overtimeAmount > 0) {
-                if (log.overtimeHours > 0) "${log.overtimeHours} hrs / Rs.${log.overtimeAmount.toInt()}"
-                else "Rs.${log.overtimeAmount.toInt()}"
+                if (log.overtimeHours > 0) "${log.overtimeHours} hrs / Rs.${AmountFormatter.format(log.overtimeAmount)}"
+                else "Rs.${AmountFormatter.format(log.overtimeAmount)}"
             } else "-"
 
             PdfLog(
                 date = log.date.split("-").reversed().joinToString("/"),
                 status = if (log.status == "present") if (log.type == "half") "Half Day" else "Present" else if (log.status == "absent") "Absent" else "-",
                 workType = state.workType,
-                dailyWage = "Rs. ${state.dailyWage.toInt()}",
+                dailyWage = "Rs. ${AmountFormatter.format(state.dailyWage)}",
                 overtime = otPdfText,
-                advanceAmount = if (log.status == "advance" || advanceAmt > 0) "Rs. ${advanceAmt.toInt()}" else "-",
-                runningBalance = "Rs. ${currentRunningBalance.toInt()}",
+                advanceAmount = if (log.status == "advance" || advanceAmt > 0) "Rs. ${AmountFormatter.format(advanceAmt)}" else "-",
+                runningBalance = "Rs. ${AmountFormatter.format(currentRunningBalance)}",
                 note = log.note ?: ""
             )
         }
@@ -147,11 +148,11 @@ fun PassbookScreen(
             📈 *Total Man Days:* ${state.totalDailyWorks}
 
             💰 *Financial Summary:*
-            💵 Daily Wage: ₹${state.dailyWage.toInt()}
-            💸 Gross Earned: ₹${state.grossEarned.toInt()}
-            📉 Advance Deducted: ₹${state.totalAdvance.toInt()}
+            💵 Daily Wage: ₹${AmountFormatter.format(state.dailyWage)}
+            💸 Gross Earned: ₹${AmountFormatter.format(state.grossEarned)}
+            📉 Advance Deducted: ₹${AmountFormatter.format(state.totalAdvance)}
             ━━━━━━━━━━━━━━━━━━
-            🏆 *Net Payable: ₹${state.finalBalance.toInt()}*
+            🏆 *Net Payable: ₹${AmountFormatter.format(state.finalBalance)}*
             ━━━━━━━━━━━━━━━━━━
 
             _Generated automatically via WorkDaily App_ 📱
@@ -227,7 +228,7 @@ fun PassbookScreen(
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Icon(Icons.Default.CurrencyRupee, contentDescription = null, tint = Color(0xFF16A34A), modifier = Modifier.size(16.dp))
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text("₹${state.dailyWage.toInt()} / day", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFF16A34A))
+                                    Text("₹${AmountFormatter.format(state.dailyWage)} / day", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFF16A34A))
                                 }
                             }
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp), horizontalAlignment = Alignment.End) {
@@ -362,19 +363,19 @@ fun PassbookScreen(
 
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                 Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.gross_earned), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
-                                Text("₹${state.grossEarned.toInt()}", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                Text("₹${AmountFormatter.format(state.grossEarned)}", fontSize = 14.sp, fontWeight = FontWeight.Bold)
                             }
                             Spacer(modifier = Modifier.height(12.dp))
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                 Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.total_advance), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
-                                Text("- ₹${state.totalAdvance.toInt()}", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFFF97316))
+                                Text("- ₹${AmountFormatter.format(state.totalAdvance)}", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFFF97316))
                             }
                             Spacer(modifier = Modifier.height(12.dp))
                             Divider(color = MaterialTheme.colorScheme.outline)
                             Spacer(modifier = Modifier.height(12.dp))
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                 Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.net_payable), fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                                Text("₹${state.finalBalance.toInt()}", fontSize = 20.sp, fontWeight = FontWeight.Black, color = if (state.finalBalance >= 0) MaterialTheme.colorScheme.primary else Color(0xFFDC2626))
+                                Text("₹${AmountFormatter.format(state.finalBalance)}", fontSize = 20.sp, fontWeight = FontWeight.Black, color = if (state.finalBalance >= 0) MaterialTheme.colorScheme.primary else Color(0xFFDC2626))
                             }
                         }
                     }
@@ -412,7 +413,7 @@ fun PassbookScreen(
                                     Text(displayDate, fontSize = 14.sp, fontWeight = FontWeight.Bold)
 
                                     if (log.overtimeAmount > 0) {
-                                        val otText = if (log.overtimeHours > 0) "+ ₹${log.overtimeAmount.toInt()} (${log.overtimeHours} hrs OT)" else "+ ₹${log.overtimeAmount.toInt()} (OT)"
+                                        val otText = if (log.overtimeHours > 0) "+ ₹${AmountFormatter.format(log.overtimeAmount)} (${log.overtimeHours} hrs OT)" else "+ ₹${AmountFormatter.format(log.overtimeAmount)} (OT)"
                                         Spacer(modifier = Modifier.height(4.dp))
                                         Text(otText, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF8B5CF6))
                                     }
@@ -427,7 +428,7 @@ fun PassbookScreen(
                                         }
 
                                         if (log.advanceAmount != null && log.advanceAmount > 0) {
-                                            Text("₹${log.advanceAmount.toInt()} Advance", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFFEA580C))
+                                            Text("₹${AmountFormatter.format(log.advanceAmount)} Advance", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFFEA580C))
                                         }
                                     }
 
