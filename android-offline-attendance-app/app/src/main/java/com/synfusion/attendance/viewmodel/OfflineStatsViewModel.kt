@@ -89,6 +89,7 @@ class OfflineStatsViewModel(
     }
 
     fun refresh() {
+        if (_statsState.value.isRefreshing) return
         _statsState.update { it.copy(isRefreshing = true) }
         loadStats(_statsState.value.role)
     }

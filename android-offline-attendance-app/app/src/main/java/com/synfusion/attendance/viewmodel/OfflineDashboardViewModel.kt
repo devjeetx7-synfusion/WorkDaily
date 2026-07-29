@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -64,12 +65,16 @@ class OfflineDashboardViewModel(
     }
 
     fun refresh() {
+        if (_dashboardState.value.isRefreshing) return
         _dashboardState.update { it.copy(isRefreshing = true) }
         loadLocalData(_dashboardState.value.role)
     }
 
+    private var loadJob: Job? = null
+
     private fun loadLocalData(role: String) {
-        viewModelScope.launch {
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
             val user = localAttendanceRepository.getUser()
             val name = user?.name ?: "User"
             cachedDefaultWage = user?.dailyWage ?: 500.0

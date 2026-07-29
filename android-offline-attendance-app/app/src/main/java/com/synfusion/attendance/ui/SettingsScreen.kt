@@ -30,6 +30,8 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import com.synfusion.attendance.viewmodel.OfflineSettingsViewModel
 import com.synfusion.attendance.viewmodel.OfflineSettingsState
+import com.synfusion.attendance.utils.AmountFormatter
+import com.synfusion.attendance.utils.IndianCurrencyVisualTransformation
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.safeDrawing
@@ -176,7 +178,7 @@ fun SettingsScreen(
                             Text(text = "+91 ${state.phone}", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         if (state.dailyWage > 0) {
-                            Text(text = "₹${state.dailyWage.toInt()} / day", fontSize = 14.sp, color = Color(0xFF16A34A), fontWeight = FontWeight.Bold)
+                            Text(text = "₹${AmountFormatter.format(state.dailyWage)} / day", fontSize = 14.sp, color = Color(0xFF16A34A), fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -695,13 +697,14 @@ fun OfflineProfileEditBottomSheet(
 
             OutlinedTextField(
                 value = if (state.dailyWage > 0) state.dailyWage.toInt().toString() else "",
-                onValueChange = { viewModel.onWageChange(it) },
+                onValueChange = { viewModel.onWageChange(it.filter { ch -> ch.isDigit() }) },
                 modifier = Modifier.fillMaxWidth(),
                 label = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.daily_wage)) },
                 leadingIcon = { Icon(Icons.Default.CurrencyRupee, null) },
                 shape = RoundedCornerShape(12.dp),
                 singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                visualTransformation = IndianCurrencyVisualTransformation()
             )
 
             OutlinedTextField(

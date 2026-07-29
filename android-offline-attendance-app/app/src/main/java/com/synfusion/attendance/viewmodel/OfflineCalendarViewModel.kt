@@ -73,6 +73,7 @@ class OfflineCalendarViewModel(
     }
 
     fun refresh() {
+        if (_calendarState.value.isRefreshing) return
         _calendarState.update { it.copy(isRefreshing = true) }
         loadData(_calendarState.value.role)
     }

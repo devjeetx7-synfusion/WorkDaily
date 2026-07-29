@@ -36,6 +36,8 @@ import androidx.navigation.NavController
 import com.synfusion.attendance.viewmodel.OfflineAttendanceRecord
 import com.synfusion.attendance.viewmodel.OfflineCalendarViewModel
 import com.synfusion.attendance.viewmodel.OfflineWorker
+import com.synfusion.attendance.utils.AmountFormatter
+import com.synfusion.attendance.utils.IndianCurrencyVisualTransformation
 import java.text.SimpleDateFormat
 import java.util.*
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -51,8 +53,8 @@ fun CalendarScreen(
     val state by viewModel.calendarState.collectAsState()
 
     val pullRefreshState = rememberPullToRefreshState()
-    if (pullRefreshState.isRefreshing) {
-        LaunchedEffect(true) {
+    LaunchedEffect(pullRefreshState.isRefreshing) {
+        if (pullRefreshState.isRefreshing) {
             viewModel.refresh()
         }
     }
@@ -661,12 +663,13 @@ fun PersonalAttendanceDialog(
                     Spacer(modifier = Modifier.height(12.dp))
                     OutlinedTextField(
                         value = editOTAmount,
-                        onValueChange = { editOTAmount = it },
+                        onValueChange = { editOTAmount = it.filter { ch -> ch.isDigit() } },
                         placeholder = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.ot_amount)) },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        singleLine = true
+                        singleLine = true,
+                        visualTransformation = IndianCurrencyVisualTransformation()
                     )
                 } else if (editStatus == "absent") {
                     LazyVerticalGrid(
@@ -697,12 +700,13 @@ fun PersonalAttendanceDialog(
                 Spacer(modifier = Modifier.height(4.dp))
                 OutlinedTextField(
                     value = editAdvance,
-                    onValueChange = { editAdvance = it },
+                    onValueChange = { editAdvance = it.filter { ch -> ch.isDigit() } },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     leadingIcon = { Text("₹", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant) },
-                    singleLine = true
+                    singleLine = true,
+                    visualTransformation = IndianCurrencyVisualTransformation()
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))

@@ -23,6 +23,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import com.synfusion.attendance.utils.AmountFormatter
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.asAndroidPath
@@ -68,8 +69,13 @@ fun AnimatedCounter(targetValue: Int, prefix: String = "", suffix: String = "") 
     }
 
     val count by animateIntAsState(targetValue = animatedValue, animationSpec = tween(1500), label = "counter")
+    val formattedCount = if (prefix == "₹" || prefix == "Rs.") {
+        AmountFormatter.format(count)
+    } else {
+        count.toString()
+    }
     Text(
-        text = "$prefix$count$suffix",
+        text = if (prefix == "₹" || prefix == "Rs.") "₹$formattedCount$suffix" else "$prefix$count$suffix",
         fontSize = 24.sp,
         fontWeight = FontWeight.Bold,
         color = MaterialTheme.colorScheme.primary
@@ -279,7 +285,7 @@ fun ContractorStatsView(viewModel: OfflineStatsViewModel, state: OfflineStatsSta
                             Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
                                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                     Text(worker.name, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                    Text("₹${worker.cost.toInt()}", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.primary)
+                                    Text("₹${AmountFormatter.format(worker.cost)}", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.primary)
                                 }
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Row(verticalAlignment = Alignment.CenterVertically) {

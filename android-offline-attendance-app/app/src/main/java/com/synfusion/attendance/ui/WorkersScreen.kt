@@ -39,6 +39,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.synfusion.attendance.viewmodel.OfflineWorkerItem
 import com.synfusion.attendance.viewmodel.OfflineWorkersViewModel
+import com.synfusion.attendance.utils.AmountFormatter
+import com.synfusion.attendance.utils.IndianCurrencyVisualTransformation
 import java.util.Locale
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
@@ -66,8 +68,8 @@ fun WorkersScreen(
     }
 
     val pullRefreshState = rememberPullToRefreshState()
-    if (pullRefreshState.isRefreshing) {
-        LaunchedEffect(true) {
+    LaunchedEffect(pullRefreshState.isRefreshing) {
+        if (pullRefreshState.isRefreshing) {
             viewModel.refresh()
         }
     }
@@ -166,7 +168,7 @@ fun WorkersScreen(
                                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                     Column {
                                         Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.daily_wage), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
-                                        Text("₹${worker.wage.toInt()}", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF16A34A))
+                                        Text("₹${AmountFormatter.format(worker.wage)}", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF16A34A))
                                     }
                                     if (worker.phone.isNotEmpty()) {
                                         Column(horizontalAlignment = Alignment.End) {
@@ -368,7 +370,8 @@ fun OfflineWorkerFormDialog(
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true,
-                        leadingIcon = { Text("₹") }
+                        leadingIcon = { Text("₹") },
+                        visualTransformation = IndianCurrencyVisualTransformation()
                     )
 
                     OutlinedTextField(
