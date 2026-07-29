@@ -62,9 +62,14 @@ class OfflineSettingsViewModel(
                 _state.update { it.copy(isSplashEnabled = enabled) }
             }
         }
+        viewModelScope.launch {
+            repository.languageFlow.collect { lang ->
+                _state.update { it.copy(language = lang ?: "en") }
+            }
+        }
     }
 
-    private fun loadSettings() {
+    fun loadSettings() {
         viewModelScope.launch {
             val user = localAttendanceRepository.getUser()
             if (user != null) {
@@ -119,6 +124,15 @@ class OfflineSettingsViewModel(
 
     fun onProfileImageSelected(uri: Uri?) {
         _state.update { it.copy(profileImageUri = uri) }
+    }
+
+    fun discardChanges() {
+        _state.update { it.copy(
+            name = it.originalName,
+            dailyWage = it.originalWage,
+            phone = it.originalPhone,
+            role = it.originalRole
+        ) }
     }
 
     fun saveChanges() {
