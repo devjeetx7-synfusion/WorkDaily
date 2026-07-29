@@ -52,7 +52,7 @@ fun CalendarScreen(
 
     val pullRefreshState = rememberPullToRefreshState()
     if (pullRefreshState.isRefreshing) {
-        LaunchedEffect(true) {
+        LaunchedEffect(pullRefreshState.isRefreshing) {
             viewModel.refresh()
         }
     }
@@ -665,7 +665,7 @@ fun PersonalAttendanceDialog(
                         placeholder = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.ot_amount)) },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), visualTransformation = com.synfusion.attendance.ui.components.CurrencyAmountVisualTransformation(),
                         singleLine = true
                     )
                 } else if (editStatus == "absent") {
@@ -698,7 +698,7 @@ fun PersonalAttendanceDialog(
                 OutlinedTextField(
                     value = editAdvance,
                     onValueChange = { editAdvance = it },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), visualTransformation = com.synfusion.attendance.ui.components.CurrencyAmountVisualTransformation(),
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     leadingIcon = { Text("₹", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant) },

@@ -176,7 +176,7 @@ fun SettingsScreen(
                             Text(text = "+91 ${state.phone}", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         if (state.dailyWage > 0) {
-                            Text(text = "₹${state.dailyWage.toInt()} / day", fontSize = 14.sp, color = Color(0xFF16A34A), fontWeight = FontWeight.Bold)
+                            Text(text = "₹${com.synfusion.attendance.ui.components.CurrencyAmountVisualTransformation.formatIndianCurrency(state.dailyWage)} / day", fontSize = 14.sp, color = Color(0xFF16A34A), fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -701,7 +701,7 @@ fun OfflineProfileEditBottomSheet(
                 leadingIcon = { Icon(Icons.Default.CurrencyRupee, null) },
                 shape = RoundedCornerShape(12.dp),
                 singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), visualTransformation = com.synfusion.attendance.ui.components.CurrencyAmountVisualTransformation()
             )
 
             OutlinedTextField(

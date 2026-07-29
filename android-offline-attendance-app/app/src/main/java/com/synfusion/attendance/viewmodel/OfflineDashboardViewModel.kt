@@ -64,6 +64,7 @@ class OfflineDashboardViewModel(
     }
 
     fun refresh() {
+        if (_dashboardState.value.isRefreshing) return
         _dashboardState.update { it.copy(isRefreshing = true) }
         loadLocalData(_dashboardState.value.role)
     }
