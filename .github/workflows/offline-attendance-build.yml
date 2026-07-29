@@ -1,8 +1,6 @@
 name: Offline Attendance APK Telegram Build
 
 on:
-  push:
-  pull_request:
   workflow_dispatch:
 
 permissions:
