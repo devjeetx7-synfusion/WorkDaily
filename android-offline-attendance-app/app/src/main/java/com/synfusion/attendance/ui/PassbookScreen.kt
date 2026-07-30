@@ -139,7 +139,6 @@ fun PassbookScreen(
             👷 *Official Worker Passbook*
 
             👤 *Name:* ${state.name}
-            🛠️ *Role:* ${state.workType}
             📅 *Month:* $monthYearStr
             📊 *Attendance Summary:*
             ✅ Present: ${state.presentDays} days
@@ -211,7 +210,6 @@ fun PassbookScreen(
                         Spacer(modifier = Modifier.width(8.dp))
                         Column {
                             Text(state.name, fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-                            Text(state.workType, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }
@@ -220,11 +218,6 @@ fun PassbookScreen(
                     Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp)) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(Icons.Default.Work, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(state.workType, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                }
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Icon(Icons.Default.CurrencyRupee, contentDescription = null, tint = Color(0xFF16A34A), modifier = Modifier.size(16.dp))
                                     Spacer(modifier = Modifier.width(8.dp))

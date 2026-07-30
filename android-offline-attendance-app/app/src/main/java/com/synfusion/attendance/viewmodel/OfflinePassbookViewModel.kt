@@ -32,7 +32,7 @@ data class OfflinePassbookState(
     val isRefreshing: Boolean = false,
     val selectedMonthDate: Date = Date(),
     val name: String = "",
-    val workType: String = "Labour",
+    val workType: String = "Worker",
     val dailyWage: Double = 500.0,
     val joinedDate: String = "",
 

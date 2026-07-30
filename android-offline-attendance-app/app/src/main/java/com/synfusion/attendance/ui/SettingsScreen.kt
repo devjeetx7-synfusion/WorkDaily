@@ -428,7 +428,7 @@ fun HowToUseBottomSheet(onDismiss: () -> Unit) {
             }
             HorizontalDivider(color = MaterialTheme.colorScheme.outline)
             Text(
-                text = "WorkDaily helps users manage attendance, daily wages, advances, payments, dues, notes, and worker records.\n\n• Personal users can track their own attendance, work days, payments, and notes.\n• Contractors can manage workers/helpers/mistry records, attendance, advance, half payment, full payment, overtime, dues, and history.\n\nPassbook and reports help users review records clearly.\nPremium features are fully unlocked by default in this offline version.",
+                text = "WorkDaily helps users manage attendance, daily wages, advances, payments, dues, notes, and worker records.\n\n• Personal users can track their own attendance, work days, payments, and notes.\n• Contractors can manage worker records, attendance, advance, half payment, full payment, overtime, dues, and history.\n\nPassbook and reports help users review records clearly.\nPremium features are fully unlocked by default in this offline version.",
                 fontSize = 14.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 lineHeight = 20.sp

@@ -39,7 +39,7 @@ data class OfflineRoleOption(val id: String, val title: String, val desc: String
 
 val offlineRoles = listOf(
     OfflineRoleOption("contractor", "Contractor", "Manages multiple workers", Icons.Default.Business, Color(0xFFF97316)), // orange-500
-    OfflineRoleOption("personal", "Worker / Labour", "Personal daily wage tracker", Icons.Default.PersonOutline, Color(0xFF3B82F6)) // blue-500
+    OfflineRoleOption("personal", "Worker", "Personal daily wage tracker", Icons.Default.PersonOutline, Color(0xFF3B82F6)) // blue-500
 )
 
 @Composable

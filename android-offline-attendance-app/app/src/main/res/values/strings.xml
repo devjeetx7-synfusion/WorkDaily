@@ -158,7 +158,7 @@
     <string name="add_note">Add Note...</string>
     <string name="remove">Remove</string>
     <string name="manage_workers">Manage Workers</string>
-    <string name="search_by_name_phone_or_role">Search by name, phone or role...</string>
+    <string name="search_by_name_phone_or_role">Search by name or phone...</string>
     <string name="add_worker">Add Worker</string>
     <string name="phone">Phone</string>
     <string name="edit">Edit</string>

@@ -60,7 +60,7 @@ fun WorkersScreen(
     var editingWorker by remember { mutableStateOf<OfflineWorkerItem?>(null) }
 
     val filteredWorkers = state.workers.filter {
-        it.name.contains(searchQuery, ignoreCase = true) || it.phone.contains(searchQuery) || it.workType.contains(searchQuery, ignoreCase = true)
+        it.name.contains(searchQuery, ignoreCase = true) || it.phone.contains(searchQuery)
     }
 
     LaunchedEffect(Unit) {
@@ -155,7 +155,6 @@ fun WorkersScreen(
                                         Spacer(modifier = Modifier.width(12.dp))
                                         Column {
                                             Text(worker.name, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                                            Text(worker.workType, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         }
                                     }
                                     IconButton(onClick = { onNavigateToWorkerDetail(worker.id) }) {
@@ -300,13 +299,8 @@ fun OfflineWorkerFormDialog(
     var phone by remember { mutableStateOf(worker?.phone ?: "") }
     var aadhar by remember { mutableStateOf(worker?.aadhar ?: "") }
     var age by remember { mutableStateOf(worker?.age ?: "") }
-    var workType by remember { mutableStateOf(worker?.workType ?: "Labour") }
+    val workType = "Worker"
     var wage by remember { mutableStateOf(worker?.wage?.toInt()?.toString() ?: "500") }
-
-    val defaultWorkTypes = listOf("Labour", "Helper", "Mistry", "Custom")
-    var expandedMenu by remember { mutableStateOf(false) }
-    var isCustomType by remember { mutableStateOf(false) }
-    var customTypeStr by remember { mutableStateOf("") }
 
     val isPhoneError = phone.isNotEmpty() && phone.length < 10
     val isAadhaarError = aadhar.isNotEmpty() && aadhar.length < 12
@@ -389,52 +383,11 @@ fun OfflineWorkerFormDialog(
                         supportingText = if (isAgeError) { { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.must_be_14)) } } else null
                     )
                 }
-
-                Box(modifier = Modifier.fillMaxWidth()) {
-                    OutlinedButton(
-                        onClick = { expandedMenu = true },
-                        modifier = Modifier.fillMaxWidth().height(56.dp),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Text(if (isCustomType) "Custom Type" else workType, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                            Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface)
-                        }
-                    }
-                    DropdownMenu(expanded = expandedMenu, onDismissRequest = { expandedMenu = false }, modifier = Modifier.background(MaterialTheme.colorScheme.surface)) {
-                        defaultWorkTypes.forEach { type ->
-                            DropdownMenuItem(
-                                text = { Text(type, fontWeight = FontWeight.Bold) },
-                                onClick = {
-                                    expandedMenu = false
-                                    if (type == "Custom") {
-                                        isCustomType = true
-                                    } else {
-                                        workType = type
-                                        isCustomType = false
-                                    }
-                                }
-                            )
-                        }
-                    }
-                }
-
-                if (isCustomType) {
-                    OutlinedTextField(
-                        value = customTypeStr,
-                        onValueChange = { customTypeStr = it },
-                        label = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.custom_work_type)) },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        singleLine = true
-                    )
-                }
             }
         },
         confirmButton = {
             Button(
                 onClick = {
-                    val finalWorkType = if (isCustomType) customTypeStr else workType
                     val finalWage = wage.toDoubleOrNull() ?: 500.0
                     onSave(
                         OfflineWorkerItem(
@@ -443,7 +396,7 @@ fun OfflineWorkerFormDialog(
                             phone = phone.trim(),
                             aadhar = aadhar.trim(),
                             age = age.trim(),
-                            workType = finalWorkType.trim(),
+                            workType = workType,
                             wage = finalWage
                         )
                     )

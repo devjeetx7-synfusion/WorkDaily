@@ -179,19 +179,6 @@ fun WorkerAttendanceCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(text = worker.name, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                        .padding(horizontal = 8.dp, vertical = 2.dp)
-                ) {
-                    Text(
-                        text = worker.workType,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
             }
             Spacer(modifier = Modifier.height(12.dp))
             Row(

@@ -12,6 +12,6 @@ data class WorkerEntity(
     val aadhaar: String = "",
     val dailyWage: Double = 500.0,
     val age: Int = 18,
-    val workType: String = "Helper",
+    val workType: String = "Worker",
     val createdAt: Long = System.currentTimeMillis()
 )
