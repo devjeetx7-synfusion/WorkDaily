@@ -42,7 +42,8 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CalendarScreen(
-    viewModel: OfflineCalendarViewModel
+    viewModel: OfflineCalendarViewModel,
+    scrollState: androidx.compose.foundation.lazy.LazyListState = androidx.compose.foundation.lazy.rememberLazyListState()
 ) {
     val state by viewModel.calendarState.collectAsStateWithLifecycle(initialValue = com.synfusion.attendance.viewmodel.OfflineCalendarState(isLoading = true))
 
@@ -78,7 +79,7 @@ fun CalendarScreen(
                 }
             }
         } else {
-            PersonalCalendarView(viewModel = viewModel, state = state)
+            PersonalCalendarView(viewModel = viewModel, state = state, scrollState = scrollState)
         }
         PullToRefreshContainer(
             state = pullRefreshState,
@@ -89,7 +90,11 @@ fun CalendarScreen(
 }
 
 @Composable
-fun PersonalCalendarView(viewModel: OfflineCalendarViewModel, state: com.synfusion.attendance.viewmodel.OfflineCalendarState) {
+fun PersonalCalendarView(
+    viewModel: OfflineCalendarViewModel,
+    state: com.synfusion.attendance.viewmodel.OfflineCalendarState,
+    scrollState: androidx.compose.foundation.lazy.LazyListState
+) {
     var showDialog by remember { mutableStateOf(false) }
     var selectedDay by remember { mutableStateOf<Int?>(null) }
 
@@ -151,6 +156,7 @@ fun PersonalCalendarView(viewModel: OfflineCalendarViewModel, state: com.synfusi
     val absentCount = dayMap.values.count { it.status == "absent" }
 
     LazyColumn(
+        state = scrollState,
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)

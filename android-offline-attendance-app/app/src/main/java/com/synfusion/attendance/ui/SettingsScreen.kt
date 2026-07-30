@@ -41,7 +41,8 @@ import androidx.compose.foundation.layout.safeDrawing
 @Composable
 fun SettingsScreen(
     viewModel: OfflineSettingsViewModel,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    scrollState: androidx.compose.foundation.ScrollState = androidx.compose.foundation.rememberScrollState()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle(initialValue = OfflineSettingsState())
     val context = LocalContext.current
@@ -87,7 +88,6 @@ fun SettingsScreen(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         contentWindowInsets = WindowInsets.safeDrawing
     ) { paddingValues ->
-        val scrollState = rememberScrollState()
         Column(
             modifier = Modifier
                 .fillMaxSize()

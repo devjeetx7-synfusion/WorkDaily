@@ -38,6 +38,10 @@ import com.synfusion.attendance.viewmodel.OfflineStatsState
 import com.synfusion.attendance.viewmodel.OfflineDailyRecord
 import com.synfusion.attendance.utils.collectAsStateWithLifecycle
 import java.text.SimpleDateFormat
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import java.util.Locale
 
 @Composable
@@ -68,12 +72,27 @@ fun AnimatedCounter(targetValue: Int, prefix: String = "", suffix: String = "") 
 @Composable
 fun StatsScreen(
     viewModel: OfflineStatsViewModel,
-    onNavigatePassbook: () -> Unit = {}
+    onNavigatePassbook: () -> Unit = {},
+    scrollState: androidx.compose.foundation.lazy.LazyListState = androidx.compose.foundation.lazy.rememberLazyListState()
 ) {
     val state by viewModel.statsState.collectAsStateWithLifecycle(initialValue = OfflineStatsState(isLoading = true))
 
     var selectedTabIndex by remember { mutableStateOf(0) }
     val tabs = listOf("Monthly", "All-Time")
+
+    val pullRefreshState = rememberPullToRefreshState()
+    LaunchedEffect(pullRefreshState.isRefreshing) {
+        if (pullRefreshState.isRefreshing) {
+            viewModel.refresh()
+        }
+    }
+    LaunchedEffect(state.isRefreshing) {
+        if (state.isRefreshing) {
+            pullRefreshState.startRefresh()
+        } else {
+            pullRefreshState.endRefresh()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -91,6 +110,7 @@ fun StatsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .nestedScroll(pullRefreshState.nestedScrollConnection)
         ) {
             if (state.isLoading) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
@@ -118,15 +138,27 @@ fun StatsScreen(
                         )
                     }
 
-                    PersonalStatsView(viewModel = viewModel, state = state, isAllTime = selectedTabIndex == 1, onNavigatePassbook = onNavigatePassbook)
+                    PersonalStatsView(viewModel = viewModel, state = state, isAllTime = selectedTabIndex == 1, onNavigatePassbook = onNavigatePassbook, scrollState = scrollState)
                 }
             }
+
+            PullToRefreshContainer(
+                state = pullRefreshState,
+                modifier = Modifier.align(Alignment.TopCenter),
+                contentColor = MaterialTheme.colorScheme.primary
+            )
         }
     }
 }
 
 @Composable
-fun PersonalStatsView(viewModel: OfflineStatsViewModel, state: OfflineStatsState, isAllTime: Boolean, onNavigatePassbook: () -> Unit = {}) {
+fun PersonalStatsView(
+    viewModel: OfflineStatsViewModel,
+    state: OfflineStatsState,
+    isAllTime: Boolean,
+    onNavigatePassbook: () -> Unit = {},
+    scrollState: androidx.compose.foundation.lazy.LazyListState
+) {
     val sdfMonth = SimpleDateFormat("MMMM yyyy", Locale.getDefault())
     val monthYearStr = sdfMonth.format(state.selectedMonthDate)
 
@@ -135,6 +167,7 @@ fun PersonalStatsView(viewModel: OfflineStatsViewModel, state: OfflineStatsState
     val dailyRecords = if (isAllTime) emptyList() else state.personalStats.dailyRecords
 
     LazyColumn(
+        state = scrollState,
         modifier = Modifier.fillMaxSize().padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {

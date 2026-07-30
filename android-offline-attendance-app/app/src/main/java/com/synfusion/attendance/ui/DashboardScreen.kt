@@ -25,17 +25,19 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import com.synfusion.attendance.utils.OvertimeCalculator
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
 
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 import com.synfusion.attendance.viewmodel.OfflineCalendarViewModel
@@ -76,12 +78,17 @@ fun DashboardScreen(
     var advanceAmount by remember { mutableStateOf("") }
     var showPassbookBottomSheet by remember { mutableStateOf(false) }
 
-    val pagerState = rememberPagerState(pageCount = { 4 })
+    var selectedTab by remember { mutableStateOf(0) }
     val coroutineScope = rememberCoroutineScope()
 
+    val dashboardScrollState = rememberLazyListState()
+    val calendarScrollState = rememberLazyListState()
+    val statsScrollState = rememberLazyListState()
+    val settingsScrollState = rememberScrollState()
+
     // Lazy tab-refresh based on active page selection
-    LaunchedEffect(pagerState.currentPage) {
-        when (pagerState.currentPage) {
+    LaunchedEffect(selectedTab) {
+        when (selectedTab) {
             0 -> dashboardViewModel.refresh()
             1 -> calendarViewModel.refresh()
             2 -> statsViewModel.refresh()
@@ -93,7 +100,7 @@ fun DashboardScreen(
         bottomBar = {
             if (currentRoute == "main_pager") {
                 BottomNavigationBar(
-                    currentRoute = when (pagerState.currentPage) {
+                    currentRoute = when (selectedTab) {
                         0 -> "dashboard"
                         1 -> "calendar"
                         2 -> "stats"
@@ -101,24 +108,62 @@ fun DashboardScreen(
                         else -> "dashboard"
                     },
                     onNavigate = { route ->
-                        val page = when (route) {
+                        selectedTab = when (route) {
                             "dashboard" -> 0
                             "calendar" -> 1
                             "stats" -> 2
                             "settings" -> 3
                             else -> 0
                         }
-                        coroutineScope.launch {
-                            pagerState.animateScrollToPage(page)
-                        }
                     }
                 )
             }
         }
     ) { padding ->
-        NavHost(navController = bottomNavController, startDestination = "main_pager", modifier = Modifier.fillMaxSize().padding(padding)) {
+        NavHost(
+            navController = bottomNavController,
+            startDestination = "main_pager",
+            modifier = Modifier.fillMaxSize().padding(padding),
+            enterTransition = {
+                slideIntoContainer(
+                    AnimatedContentTransitionScope.SlideDirection.Up,
+                    animationSpec = tween(300)
+                ) + fadeIn(animationSpec = tween(300))
+            },
+            exitTransition = {
+                slideOutOfContainer(
+                    AnimatedContentTransitionScope.SlideDirection.Down,
+                    animationSpec = tween(300)
+                ) + fadeOut(animationSpec = tween(300))
+            },
+            popEnterTransition = {
+                slideIntoContainer(
+                    AnimatedContentTransitionScope.SlideDirection.Up,
+                    animationSpec = tween(300)
+                ) + fadeIn(animationSpec = tween(300))
+            },
+            popExitTransition = {
+                slideOutOfContainer(
+                    AnimatedContentTransitionScope.SlideDirection.Down,
+                    animationSpec = tween(300)
+                ) + fadeOut(animationSpec = tween(300))
+            }
+        ) {
             composable("main_pager") {
-                HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
+                AnimatedContent(
+                    targetState = selectedTab,
+                    transitionSpec = {
+                        if (targetState > initialState) {
+                            (slideInHorizontally(animationSpec = tween(220), initialOffsetX = { it / 10 }) + fadeIn(animationSpec = tween(220)))
+                                .togetherWith(slideOutHorizontally(animationSpec = tween(220), targetOffsetX = { -it / 10 }) + fadeOut(animationSpec = tween(220)))
+                        } else {
+                            (slideInHorizontally(animationSpec = tween(220), initialOffsetX = { -it / 10 }) + fadeIn(animationSpec = tween(220)))
+                                .togetherWith(slideOutHorizontally(animationSpec = tween(220), targetOffsetX = { it / 10 }) + fadeOut(animationSpec = tween(220)))
+                        }
+                    },
+                    label = "tabTransition",
+                    modifier = Modifier.fillMaxSize()
+                ) { page ->
                     when (page) {
                         0 -> {
                             if (dashboardState.isLoading) {
@@ -157,6 +202,7 @@ fun DashboardScreen(
                                         .background(MaterialTheme.colorScheme.background)
                                 ) {
                                     LazyColumn(
+                                        state = dashboardScrollState,
                                         modifier = Modifier
                                             .fillMaxSize()
                                             .padding(16.dp),
@@ -188,20 +234,22 @@ fun DashboardScreen(
                             }
                         }
                         1 -> {
-                            CalendarScreen(viewModel = calendarViewModel)
+                            CalendarScreen(viewModel = calendarViewModel, scrollState = calendarScrollState)
                         }
                         2 -> {
                             StatsScreen(
                                 viewModel = statsViewModel,
                                 onNavigatePassbook = {
                                     showPassbookBottomSheet = true
-                                }
+                                },
+                                scrollState = statsScrollState
                             )
                         }
                         3 -> {
                             SettingsScreen(
                                 viewModel = settingsViewModel,
-                                onLogout = onLogout
+                                onLogout = onLogout,
+                                scrollState = settingsScrollState
                             )
                         }
                     }
@@ -214,9 +262,7 @@ fun DashboardScreen(
                     onNavigateBack = { bottomNavController.navigateUp() },
                     onNavigateToCalendar = {
                         bottomNavController.navigateUp()
-                        coroutineScope.launch {
-                            pagerState.animateScrollToPage(1)
-                        }
+                        selectedTab = 1
                     }
                 )
             }
@@ -274,9 +320,7 @@ fun DashboardScreen(
                     onNavigateBack = { showPassbookBottomSheet = false },
                     onNavigateToCalendar = {
                         showPassbookBottomSheet = false
-                        coroutineScope.launch {
-                            pagerState.animateScrollToPage(1)
-                        }
+                        selectedTab = 1
                     }
                 )
             }

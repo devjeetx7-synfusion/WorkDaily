@@ -11,6 +11,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -57,23 +60,29 @@ class OfflineDashboardViewModel(
     fun refresh() {
         if (_dashboardState.value.isRefreshing) return
         _dashboardState.update { it.copy(isRefreshing = true) }
-        loadLocalData()
+        loadLocalData(showLoadingIndicator = false)
     }
 
     private var loadJob: Job? = null
 
-    private fun loadLocalData() {
+    private fun loadLocalData(showLoadingIndicator: Boolean = true) {
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
+            val isRefreshing = _dashboardState.value.isRefreshing
+            val startTime = System.currentTimeMillis()
             try {
-                val user = localAttendanceRepository.getUser()
+                if (showLoadingIndicator) {
+                    _dashboardState.update { it.copy(isLoading = true) }
+                }
+
+                val user = withContext(Dispatchers.IO) { localAttendanceRepository.getUser() }
                 val name = user?.name ?: "User"
                 cachedDefaultWage = user?.dailyWage ?: 500.0
 
-                _dashboardState.update { it.copy(name = name, isRefreshing = false, isLoading = false, errorMessage = null) }
+                _dashboardState.update { it.copy(name = name) }
 
                 // Personal role
-                val personalAttendance = localAttendanceRepository.getPersonalAttendance()
+                val personalAttendance = withContext(Dispatchers.IO) { localAttendanceRepository.getPersonalAttendance() }
                 val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
                 val currentMonthStr = SimpleDateFormat("yyyy-MM", Locale.getDefault()).format(Date())
 
@@ -110,12 +119,21 @@ class OfflineDashboardViewModel(
                     }
                 }
 
+                if (isRefreshing) {
+                    val elapsed = System.currentTimeMillis() - startTime
+                    if (elapsed < 400) {
+                        delay(400 - elapsed)
+                    }
+                }
+
                 _dashboardState.update { it.copy(
                     todayEarned = todayEarned.toInt().toString(),
                     monthEarned = monthEarned.toInt().toString(),
                     todayStatus = currentTodayStatus,
                     overtimeHours = currentOvertime,
                     todayNote = currentNote,
+                    isLoading = false,
+                    isRefreshing = false,
                     errorMessage = null
                 ) }
             } catch (e: Exception) {
@@ -152,8 +170,10 @@ class OfflineDashboardViewModel(
                     todayNote = note
                 ) }
 
-                localAttendanceRepository.saveAttendance(attendance)
-                loadLocalData()
+                withContext(Dispatchers.IO) {
+                    localAttendanceRepository.saveAttendance(attendance)
+                }
+                loadLocalData(showLoadingIndicator = false)
             } catch (e: Exception) {
                 android.util.Log.e("OfflineDashboardVM", "Error marking attendance", e)
                 _dashboardState.update { it.copy(errorMessage = "Failed to mark attendance.") }
@@ -184,8 +204,10 @@ class OfflineDashboardViewModel(
                     todayNote = note
                 ) }
 
-                localAttendanceRepository.saveAttendance(attendance)
-                loadLocalData()
+                withContext(Dispatchers.IO) {
+                    localAttendanceRepository.saveAttendance(attendance)
+                }
+                loadLocalData(showLoadingIndicator = false)
             } catch (e: Exception) {
                 android.util.Log.e("OfflineDashboardVM", "Error marking absent", e)
                 _dashboardState.update { it.copy(errorMessage = "Failed to record absence.") }
@@ -209,8 +231,10 @@ class OfflineDashboardViewModel(
                     wage = 0.0
                 )
 
-                localAttendanceRepository.saveAttendance(attendance)
-                loadLocalData()
+                withContext(Dispatchers.IO) {
+                    localAttendanceRepository.saveAttendance(attendance)
+                }
+                loadLocalData(showLoadingIndicator = false)
             } catch (e: Exception) {
                 android.util.Log.e("OfflineDashboardVM", "Error adding advance", e)
                 _dashboardState.update { it.copy(errorMessage = "Failed to record advance.") }
@@ -230,8 +254,10 @@ class OfflineDashboardViewModel(
                     todayNote = null
                 ) }
 
-                localAttendanceRepository.deleteAttendance(docId, todayStr)
-                loadLocalData()
+                withContext(Dispatchers.IO) {
+                    localAttendanceRepository.deleteAttendance(docId, todayStr)
+                }
+                loadLocalData(showLoadingIndicator = false)
             } catch (e: Exception) {
                 android.util.Log.e("OfflineDashboardVM", "Error removing attendance", e)
                 _dashboardState.update { it.copy(errorMessage = "Failed to remove attendance.") }
