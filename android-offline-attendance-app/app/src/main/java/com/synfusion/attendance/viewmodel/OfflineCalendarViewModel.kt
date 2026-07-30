@@ -9,6 +9,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -54,13 +58,20 @@ class OfflineCalendarViewModel(
     fun refresh() {
         if (_calendarState.value.isRefreshing) return
         _calendarState.update { it.copy(isRefreshing = true) }
-        loadData()
+        loadData(showLoadingIndicator = false)
     }
 
-    private fun loadData() {
-        viewModelScope.launch {
+    private var loadJob: Job? = null
+
+    private fun loadData(showLoadingIndicator: Boolean = true) {
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
+            val isRefreshing = _calendarState.value.isRefreshing
+            val startTime = System.currentTimeMillis()
             try {
-                _calendarState.update { it.copy(isLoading = true) }
+                if (showLoadingIndicator) {
+                    _calendarState.update { it.copy(isLoading = true) }
+                }
 
                 // Personal
                 val currentMonthDate = _calendarState.value.currentMonthDate
@@ -70,7 +81,9 @@ class OfflineCalendarViewModel(
                 val sdfMonth = SimpleDateFormat("yyyy-MM", Locale.getDefault())
                 val monthPrefix = sdfMonth.format(cal.time)
 
-                val personal = localAttendanceRepository.getPersonalAttendance()
+                val personal = withContext(Dispatchers.IO) {
+                    localAttendanceRepository.getPersonalAttendance()
+                }
                 val filtered = personal.filter { it.date.startsWith(monthPrefix) }
                 val mappedRecords = filtered.map { rec ->
                     OfflineAttendanceRecord(
@@ -83,6 +96,13 @@ class OfflineCalendarViewModel(
                         note = rec.note,
                         advanceAmount = rec.advanceAmount
                     )
+                }
+
+                if (isRefreshing) {
+                    val elapsed = System.currentTimeMillis() - startTime
+                    if (elapsed < 400) {
+                        delay(400 - elapsed)
+                    }
                 }
 
                 _calendarState.update { it.copy(
@@ -107,10 +127,9 @@ class OfflineCalendarViewModel(
         cal.time = _calendarState.value.currentMonthDate
         cal.add(Calendar.MONTH, offsetMonths)
         _calendarState.update { it.copy(
-            currentMonthDate = cal.time,
-            isLoading = true
+            currentMonthDate = cal.time
         ) }
-        loadData()
+        loadData(showLoadingIndicator = true)
     }
 
     fun markPersonalAttendance(

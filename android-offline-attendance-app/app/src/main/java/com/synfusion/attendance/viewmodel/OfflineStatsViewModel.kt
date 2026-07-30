@@ -10,6 +10,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -56,7 +60,6 @@ class OfflineStatsViewModel(
 
     init {
         viewModelScope.launch {
-            _statsState.update { it.copy(isLoading = true) }
             loadStats()
         }
     }
@@ -64,7 +67,7 @@ class OfflineStatsViewModel(
     fun refresh() {
         if (_statsState.value.isRefreshing) return
         _statsState.update { it.copy(isRefreshing = true) }
-        loadStats()
+        loadStats(showLoadingIndicator = false)
     }
 
     fun changeMonth(offset: Int) {
@@ -72,24 +75,33 @@ class OfflineStatsViewModel(
         cal.time = _statsState.value.selectedMonthDate
         cal.add(Calendar.MONTH, offset)
         _statsState.update { it.copy(
-            selectedMonthDate = cal.time,
-            isLoading = true
+            selectedMonthDate = cal.time
         ) }
-        loadStats()
+        loadStats(showLoadingIndicator = true)
     }
 
     fun setMonth(date: Date) {
         _statsState.update { it.copy(
-            selectedMonthDate = date,
-            isLoading = true
+            selectedMonthDate = date
         ) }
-        loadStats()
+        loadStats(showLoadingIndicator = true)
     }
 
-    private fun loadStats() {
-        viewModelScope.launch {
+    private var loadJob: Job? = null
+
+    private fun loadStats(showLoadingIndicator: Boolean = true) {
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
+            val isRefreshing = _statsState.value.isRefreshing
+            val startTime = System.currentTimeMillis()
             try {
-                val user = localAttendanceRepository.getUser()
+                if (showLoadingIndicator) {
+                    _statsState.update { it.copy(isLoading = true) }
+                }
+
+                val user = withContext(Dispatchers.IO) {
+                    localAttendanceRepository.getUser()
+                }
                 cachedDefaultWage = user?.dailyWage ?: 500.0
 
                 val cal = Calendar.getInstance()
@@ -98,7 +110,9 @@ class OfflineStatsViewModel(
                 val currentMonth = sdfMonth.format(cal.time)
 
                 // Personal
-                val personal = localAttendanceRepository.getPersonalAttendance()
+                val personal = withContext(Dispatchers.IO) {
+                    localAttendanceRepository.getPersonalAttendance()
+                }
 
                 var allTimeEarnings = 0.0
                 var allTimeDays = 0
@@ -136,6 +150,13 @@ class OfflineStatsViewModel(
                         } else if (rec.status == "advance") {
                             advanceTotal += rec.advanceAmount
                         }
+                    }
+                }
+
+                if (isRefreshing) {
+                    val elapsed = System.currentTimeMillis() - startTime
+                    if (elapsed < 400) {
+                        delay(400 - elapsed)
                     }
                 }
 

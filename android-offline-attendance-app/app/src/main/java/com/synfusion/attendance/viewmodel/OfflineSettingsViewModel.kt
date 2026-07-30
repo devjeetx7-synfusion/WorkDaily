@@ -10,6 +10,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
 
 data class OfflineSettingsState(
     val name: String = "",
@@ -71,7 +73,9 @@ class OfflineSettingsViewModel(
 
     fun loadSettings() {
         viewModelScope.launch {
-            val user = localAttendanceRepository.getUser()
+            val user = withContext(Dispatchers.IO) {
+                localAttendanceRepository.getUser()
+            }
             if (user != null) {
                 _state.update { it.copy(
                     name = user.name,
@@ -136,7 +140,9 @@ class OfflineSettingsViewModel(
             _state.update { it.copy(isSaving = true) }
 
             try {
-                val user = localAttendanceRepository.getUser()
+                val user = withContext(Dispatchers.IO) {
+                    localAttendanceRepository.getUser()
+                }
                 if (user != null) {
                     val updated = user.copy(
                         name = currentState.name,
@@ -144,7 +150,9 @@ class OfflineSettingsViewModel(
                         role = "personal",
                         phoneNumber = currentState.phone
                     )
-                    localAttendanceRepository.saveUser(updated)
+                    withContext(Dispatchers.IO) {
+                        localAttendanceRepository.saveUser(updated)
+                    }
 
                     _state.update { it.copy(
                         originalName = it.name,
@@ -196,7 +204,9 @@ class OfflineSettingsViewModel(
 
     fun logout() {
         viewModelScope.launch {
-            localAttendanceRepository.clearSession()
+            withContext(Dispatchers.IO) {
+                localAttendanceRepository.clearSession()
+            }
             repository.clearSession()
         }
     }

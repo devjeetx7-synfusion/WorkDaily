@@ -10,6 +10,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -62,7 +66,6 @@ class OfflinePassbookViewModel(
 
     init {
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true) }
             setupListeners()
         }
     }
@@ -70,7 +73,7 @@ class OfflinePassbookViewModel(
     fun refresh() {
         if (_state.value.isRefreshing) return
         _state.update { it.copy(isRefreshing = true) }
-        setupListeners()
+        setupListeners(showLoadingIndicator = false)
     }
 
     fun changeMonth(offset: Int) {
@@ -78,16 +81,26 @@ class OfflinePassbookViewModel(
         cal.time = _state.value.selectedMonthDate
         cal.add(Calendar.MONTH, offset)
         _state.update { it.copy(
-            selectedMonthDate = cal.time,
-            isLoading = true
+            selectedMonthDate = cal.time
         ) }
-        setupListeners()
+        setupListeners(showLoadingIndicator = true)
     }
 
-    private fun setupListeners() {
-        viewModelScope.launch {
+    private var loadJob: Job? = null
+
+    private fun setupListeners(showLoadingIndicator: Boolean = true) {
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
+            val isRefreshing = _state.value.isRefreshing
+            val startTime = System.currentTimeMillis()
             try {
-                val user = localAttendanceRepository.getUser()
+                if (showLoadingIndicator) {
+                    _state.update { it.copy(isLoading = true) }
+                }
+
+                val user = withContext(Dispatchers.IO) {
+                    localAttendanceRepository.getUser()
+                }
                 val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
 
                 if (user != null) {
@@ -104,9 +117,19 @@ class OfflinePassbookViewModel(
                     val sdfMonth = SimpleDateFormat("yyyy-MM", Locale.getDefault())
                     val yearMonth = sdfMonth.format(cal.time)
 
-                    val personal = localAttendanceRepository.getPersonalAttendance()
+                    val personal = withContext(Dispatchers.IO) {
+                        localAttendanceRepository.getPersonalAttendance()
+                    }
                     val filtered = personal.filter { it.date.startsWith(yearMonth) }
                     calculatePassbook(filtered)
+
+                    if (isRefreshing) {
+                        val elapsed = System.currentTimeMillis() - startTime
+                        if (elapsed < 400) {
+                            delay(400 - elapsed)
+                        }
+                    }
+                    _state.update { it.copy(isRefreshing = false) }
                 } else {
                     _state.update { it.copy(
                         isLoading = false,
