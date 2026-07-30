@@ -3,23 +3,18 @@ package com.synfusion.attendance.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -32,11 +27,8 @@ import com.synfusion.attendance.utils.OvertimeCalculator
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavController
 import com.synfusion.attendance.viewmodel.OfflineAttendanceRecord
 import com.synfusion.attendance.viewmodel.OfflineCalendarViewModel
-import com.synfusion.attendance.viewmodel.OfflineWorker
-import com.synfusion.attendance.utils.AmountFormatter
 import com.synfusion.attendance.utils.IndianCurrencyVisualTransformation
 import java.text.SimpleDateFormat
 import java.util.*
@@ -71,178 +63,16 @@ fun CalendarScreen(
             .fillMaxSize()
             .nestedScroll(pullRefreshState.nestedScrollConnection)
     ) {
-        if (state.isLoading && state.role.isEmpty()) {
+        if (state.isLoading) {
             CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
         } else {
-            if (state.role == "contractor") {
-                ContractorCalendarView(viewModel = viewModel, state = state)
-            } else {
-                PersonalCalendarView(viewModel = viewModel, state = state)
-            }
+            PersonalCalendarView(viewModel = viewModel, state = state)
         }
         PullToRefreshContainer(
             state = pullRefreshState,
             modifier = Modifier.align(Alignment.TopCenter),
             contentColor = MaterialTheme.colorScheme.primary
         )
-    }
-}
-
-@Composable
-fun ContractorCalendarView(viewModel: OfflineCalendarViewModel, state: com.synfusion.attendance.viewmodel.OfflineCalendarState) {
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        item {
-            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.mark_attendance), fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.daily_attendance_for_all_workers), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(modifier = Modifier.height(16.dp))
-        }
-
-        item {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(MaterialTheme.colorScheme.surface)
-                    .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp))
-                    .padding(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                IconButton(onClick = { viewModel.changeContractorDate(-1) }) {
-                    Icon(Icons.Default.ChevronLeft, contentDescription = "Previous Day")
-                }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.CalendarMonth, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = state.selectedDate,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-                IconButton(onClick = { viewModel.changeContractorDate(1) }) {
-                    Icon(Icons.Default.ChevronRight, contentDescription = "Next Day")
-                }
-            }
-        }
-
-        if (state.isLoading) {
-            item {
-                Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
-            }
-        } else if (state.workers.isEmpty()) {
-            item {
-                Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
-                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.no_workers_found_add_workers_first), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            }
-        } else {
-            items(state.workers) { worker ->
-                WorkerAttendanceCard(
-                    worker = worker,
-                    attendance = state.contractorAttendance.find { it.id == "${worker.id}_${state.selectedDate}" && it.status != "advance" },
-                    onMarkAttendance = { status, type ->
-                        viewModel.markContractorAttendance(worker.id, status, type)
-                    }
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun WorkerAttendanceCard(
-    worker: OfflineWorker,
-    attendance: OfflineAttendanceRecord?,
-    onMarkAttendance: (String, String) -> Unit
-) {
-    val currentStatus = attendance?.status
-    val currentType = attendance?.type
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(text = worker.name, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-            }
-            Spacer(modifier = Modifier.height(12.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                val isPresentFull = currentStatus == "present" && currentType == "full"
-                OutlinedButton(
-                    onClick = { onMarkAttendance("present", "full") },
-                    modifier = Modifier.weight(1f).height(60.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        containerColor = if (isPresentFull) Color(0xFF22C55E) else MaterialTheme.colorScheme.surfaceVariant,
-                        contentColor = if (isPresentFull) Color.White else MaterialTheme.colorScheme.onSurface
-                    ),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, if (isPresentFull) Color(0xFF22C55E) else MaterialTheme.colorScheme.outline),
-                    contentPadding = PaddingValues(0.dp)
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-                        Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.present_1), fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                    }
-                }
-
-                val isPresentHalf = currentStatus == "present" && currentType == "half"
-                OutlinedButton(
-                    onClick = { onMarkAttendance("present", "half") },
-                    modifier = Modifier.weight(1f).height(60.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        containerColor = if (isPresentHalf) Color(0xFF86EFAC) else MaterialTheme.colorScheme.surfaceVariant,
-                        contentColor = if (isPresentHalf) Color.White else MaterialTheme.colorScheme.onSurface
-                    ),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, if (isPresentHalf) Color(0xFF86EFAC) else MaterialTheme.colorScheme.outline),
-                    contentPadding = PaddingValues(0.dp)
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-                        Icon(Icons.Default.Schedule, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.half_day), fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                    }
-                }
-
-                val isAbsent = currentStatus == "absent"
-                OutlinedButton(
-                    onClick = { onMarkAttendance("absent", "full") },
-                    modifier = Modifier.weight(1f).height(60.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        containerColor = if (isAbsent) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.surfaceVariant,
-                        contentColor = if (isAbsent) Color.White else MaterialTheme.colorScheme.onSurface
-                    ),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, if (isAbsent) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline),
-                    contentPadding = PaddingValues(0.dp)
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-                        Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.absent_1), fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
-        }
     }
 }
 

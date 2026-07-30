@@ -12,10 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -23,15 +20,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.animation.core.*
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.material3.ModalBottomSheet
-
-import com.synfusion.attendance.viewmodel.OfflineDashboardViewModel
-import com.synfusion.attendance.viewmodel.OfflineDashboardState
-import com.synfusion.attendance.utils.AmountFormatter
-import com.synfusion.attendance.utils.IndianCurrencyVisualTransformation
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
@@ -48,16 +36,16 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.NavController
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 import com.synfusion.attendance.viewmodel.OfflineCalendarViewModel
 import com.synfusion.attendance.viewmodel.OfflineStatsViewModel
 import com.synfusion.attendance.viewmodel.OfflinePassbookViewModel
 import com.synfusion.attendance.viewmodel.OfflineSettingsViewModel
-import com.synfusion.attendance.viewmodel.OfflineWorkersViewModel
-import com.synfusion.attendance.viewmodel.OfflineWorkerDetailViewModel
-import com.synfusion.attendance.viewmodel.OfflineWorkerHistoryViewModel
+import com.synfusion.attendance.viewmodel.OfflineDashboardViewModel
+import com.synfusion.attendance.viewmodel.OfflineDashboardState
+import com.synfusion.attendance.utils.AmountFormatter
+import com.synfusion.attendance.utils.IndianCurrencyVisualTransformation
 import com.synfusion.attendance.viewmodel.OfflineViewModelFactory
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -80,13 +68,11 @@ fun DashboardScreen(
     val statsViewModel: OfflineStatsViewModel = viewModel(factory = factory)
 
     val dashboardState by dashboardViewModel.dashboardState.collectAsState()
-    val calendarState by calendarViewModel.calendarState.collectAsState()
     val bottomNavController = rememberNavController()
     val navBackStackEntry by bottomNavController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route ?: "main_pager"
     var showAdvanceDialog by remember { mutableStateOf(false) }
     var advanceAmount by remember { mutableStateOf("") }
-    var selectedWorkerId by remember { mutableStateOf<String?>(null) }
     var showPassbookBottomSheet by remember { mutableStateOf(false) }
 
     val pagerState = rememberPagerState(pageCount = { 4 })
@@ -171,31 +157,13 @@ fun DashboardScreen(
                                             )
                                         }
 
-                                        if (dashboardState.role == "contractor") {
-                                            item {
-                                                ContractorStatsGrid(
-                                                    state = dashboardState,
-                                                    onNavigatePassbook = { showPassbookBottomSheet = true }
-                                                )
-                                            }
-                                            item {
-                                                ContractorQuickActions(
-                                                    onManageWorkers = { bottomNavController.navigate("workers") },
-                                                    onMarkAttendance = {
-                                                        coroutineScope.launch { pagerState.animateScrollToPage(1) }
-                                                    },
-                                                    onAddAdvance = { showAdvanceDialog = true }
-                                                )
-                                            }
-                                        } else {
-                                            item { PersonalStatsGrid(dashboardState, onNavigatePassbook = { showPassbookBottomSheet = true }) }
-                                            item {
-                                                PersonalQuickActions(
-                                                    onAddAdvance = { showAdvanceDialog = true }
-                                                )
-                                            }
-                                            item { PersonalDailyLog(dashboardState, dashboardViewModel) }
+                                        item { PersonalStatsGrid(dashboardState, onNavigatePassbook = { showPassbookBottomSheet = true }) }
+                                        item {
+                                            PersonalQuickActions(
+                                                onAddAdvance = { showAdvanceDialog = true }
+                                            )
                                         }
+                                        item { PersonalDailyLog(dashboardState, dashboardViewModel) }
 
                                         item { Spacer(modifier = Modifier.height(24.dp)) }
                                     }
@@ -214,11 +182,6 @@ fun DashboardScreen(
                         2 -> {
                             StatsScreen(
                                 viewModel = statsViewModel,
-                                onNavigateToWorkerHistory = {
-                                    coroutineScope.launch {
-                                        bottomNavController.navigate("worker_history")
-                                    }
-                                },
                                 onNavigatePassbook = {
                                     showPassbookBottomSheet = true
                                 }
@@ -227,10 +190,7 @@ fun DashboardScreen(
                         3 -> {
                             SettingsScreen(
                                 viewModel = settingsViewModel,
-                                onLogout = onLogout,
-                                onNavigateToWorkerHistory = {
-                                    bottomNavController.navigate("worker_history")
-                                }
+                                onLogout = onLogout
                             )
                         }
                     }
@@ -249,41 +209,6 @@ fun DashboardScreen(
                     }
                 )
             }
-            composable("workers") {
-                val workersViewModel: OfflineWorkersViewModel = viewModel(factory = factory)
-                WorkersScreen(
-                    viewModel = workersViewModel,
-                    onNavigateToWorkerDetail = { bottomNavController.navigate("worker_detail/$it") }
-                )
-            }
-            composable("worker_detail/{workerId}") { backStackEntry ->
-                val workerId = backStackEntry.arguments?.getString("workerId") ?: ""
-                val workerDetailViewModel: OfflineWorkerDetailViewModel = viewModel(factory = factory)
-                WorkerDetailScreen(
-                    workerId = workerId,
-                    viewModel = workerDetailViewModel,
-                    onNavigateBack = { bottomNavController.navigateUp() },
-                    onNavigateToCalendar = {
-                        bottomNavController.navigate("worker_calendar/$workerId")
-                    }
-                )
-            }
-            composable("worker_calendar/{workerId}") { backStackEntry ->
-                val workerId = backStackEntry.arguments?.getString("workerId") ?: ""
-                val workerDetailViewModel: OfflineWorkerDetailViewModel = viewModel(factory = factory)
-                WorkerCalendarScreen(
-                    workerId = workerId,
-                    viewModel = workerDetailViewModel,
-                    onNavigateBack = { bottomNavController.navigateUp() }
-                )
-            }
-            composable("worker_history") {
-                val workerHistoryViewModel: OfflineWorkerHistoryViewModel = viewModel(factory = factory)
-                WorkerHistoryScreen(
-                    viewModel = workerHistoryViewModel,
-                    onNavigateBack = { bottomNavController.navigateUp() }
-                )
-            }
         }
 
         if (showAdvanceDialog) {
@@ -292,40 +217,6 @@ fun DashboardScreen(
                 title = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.add_advance_payment), fontWeight = FontWeight.Bold) },
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                        if (dashboardState.role == "contractor") {
-                            var expandedWorkerMenu by remember { mutableStateOf(false) }
-                            val selectedWorkerName = calendarState.workers.find { it.id == selectedWorkerId }?.name ?: "Select Worker"
-
-                            Box(modifier = Modifier.fillMaxWidth()) {
-                                OutlinedButton(
-                                    onClick = { expandedWorkerMenu = true },
-                                    modifier = Modifier.fillMaxWidth().height(56.dp),
-                                    shape = RoundedCornerShape(12.dp),
-                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface)
-                                ) {
-                                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                                        Text(selectedWorkerName, fontWeight = FontWeight.Bold)
-                                        Icon(Icons.Default.ArrowDropDown, contentDescription = null)
-                                    }
-                                }
-                                DropdownMenu(
-                                    expanded = expandedWorkerMenu,
-                                    onDismissRequest = { expandedWorkerMenu = false },
-                                    modifier = Modifier.background(MaterialTheme.colorScheme.surface)
-                                ) {
-                                    calendarState.workers.forEach { worker ->
-                                        DropdownMenuItem(
-                                            text = { Text(worker.name, fontWeight = FontWeight.Bold) },
-                                            onClick = {
-                                                selectedWorkerId = worker.id
-                                                expandedWorkerMenu = false
-                                            }
-                                        )
-                                    }
-                                }
-                            }
-                        }
-
                         OutlinedTextField(
                             value = advanceAmount,
                             onValueChange = { advanceAmount = it.filter { ch -> ch.isDigit() } },
@@ -333,7 +224,7 @@ fun DashboardScreen(
                             modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)),
                             shape = RoundedCornerShape(12.dp),
                             leadingIcon = { Text("₹", modifier = Modifier.padding(start = 8.dp), fontWeight = FontWeight.Bold) },
-                            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             visualTransformation = IndianCurrencyVisualTransformation()
                         )
                     }
@@ -343,17 +234,11 @@ fun DashboardScreen(
                         onClick = {
                             val amount = advanceAmount.toDoubleOrNull()
                             if (amount != null && amount > 0) {
-                                if (dashboardState.role == "personal") {
-                                    dashboardViewModel.addAdvance(amount)
-                                } else if (selectedWorkerId != null) {
-                                    dashboardViewModel.addAdvance(amount, selectedWorkerId)
-                                }
+                                dashboardViewModel.addAdvance(amount)
                             }
                             showAdvanceDialog = false
                             advanceAmount = ""
-                            selectedWorkerId = null
-                        },
-                        enabled = dashboardState.role == "personal" || selectedWorkerId != null
+                        }
                     ) {
                         Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.save))
                     }
@@ -443,136 +328,6 @@ fun HeaderSection(state: OfflineDashboardState) {
 }
 
 @Composable
-fun ContractorStatsGrid(state: OfflineDashboardState, onNavigatePassbook: () -> Unit = {}) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            StatCard("Total Workers", state.totalWorkers, Icons.Default.People, MaterialTheme.colorScheme.primary, Modifier.weight(1f), onClick = onNavigatePassbook)
-            StatCard("Today Present", state.todayPresent, Icons.Default.CheckCircle, Color(0xFF10B981), Modifier.weight(1f), onClick = onNavigatePassbook)
-        }
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            StatCardSmall("Today Absent", state.todayAbsent, Icons.Default.Cancel, Color(0xFFEF4444), Modifier.weight(1f), onClick = onNavigatePassbook)
-            StatCardSmall("Total Paid", "₹${AmountFormatter.format(state.totalPaidMonth)}", Icons.Default.AccountBalanceWallet, Color(0xFF3B82F6), Modifier.weight(1f), onClick = onNavigatePassbook)
-            StatCardSmall("Pending", "₹${AmountFormatter.format(state.pendingAmount)}", Icons.Default.AccountBalanceWallet, Color(0xFFF97316), Modifier.weight(1f), onClick = onNavigatePassbook)
-        }
-    }
-}
-
-@Composable
-fun StatCard(title: String, value: String, icon: ImageVector, color: Color, modifier: Modifier = Modifier, onClick: (() -> Unit)? = null) {
-    val cardModifier = if (onClick != null) {
-        modifier.height(120.dp).clip(RoundedCornerShape(16.dp)).clickable(onClick = onClick)
-    } else {
-        modifier.height(120.dp)
-    }
-    Card(
-        modifier = cardModifier,
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
-    ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.Center
-            ) {
-                Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(24.dp))
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(value, fontSize = 22.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-                Text(title, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-            }
-        }
-    }
-}
-
-@Composable
-fun StatCardSmall(title: String, value: String, icon: ImageVector, color: Color, modifier: Modifier = Modifier, onClick: (() -> Unit)? = null) {
-    val cardModifier = if (onClick != null) {
-        modifier.height(100.dp).clip(RoundedCornerShape(12.dp)).clickable(onClick = onClick)
-    } else {
-        modifier.height(100.dp)
-    }
-    Card(
-        modifier = cardModifier,
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
-    ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(8.dp),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(value, fontSize = 14.sp, fontWeight = FontWeight.Bold, textAlign = androidx.compose.ui.text.style.TextAlign.Center, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-                Text(title, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = androidx.compose.ui.text.style.TextAlign.Center, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-            }
-        }
-    }
-}
-
-@Composable
-fun ContractorQuickActions(onManageWorkers: () -> Unit, onMarkAttendance: () -> Unit, onAddAdvance: () -> Unit) {
-    Column {
-        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.quick_actions), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 8.dp, top = 8.dp))
-
-        QuickActionItem("Manage Workers", "Add, edit or remove workers", Icons.Default.People, MaterialTheme.colorScheme.primary, onClick = onManageWorkers)
-        Spacer(modifier = Modifier.height(16.dp))
-        QuickActionItem("Mark Attendance", "Daily attendance for all workers", Icons.Default.CheckCircle, Color(0xFF10B981), onClick = onMarkAttendance)
-        Spacer(modifier = Modifier.height(16.dp))
-        QuickActionItem("Add Advance Payment", "Record payments for workers", Icons.Default.Add, Color(0xFFF97316), onClick = onAddAdvance)
-    }
-}
-
-@Composable
-fun QuickActionItem(title: String, subtitle: String, icon: ImageVector, color: Color, onClick: () -> Unit = {}) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(MaterialTheme.colorScheme.surface)
-            .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp))
-            .clickable { onClick() }
-            .padding(20.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier.size(48.dp).clip(CircleShape).background(color.copy(alpha = 0.1f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(24.dp))
-            }
-            Spacer(modifier = Modifier.width(16.dp))
-            Column {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(title, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-                }
-                Text(subtitle, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-        }
-        Icon(Icons.Default.ArrowForwardIos, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
-    }
-}
-
-@Composable
 fun PersonalStatsGrid(state: OfflineDashboardState, onNavigatePassbook: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -608,8 +363,31 @@ fun PersonalStatsGrid(state: OfflineDashboardState, onNavigatePassbook: () -> Un
 fun PersonalQuickActions(onAddAdvance: () -> Unit) {
     Column {
         Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.quick_actions), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 8.dp))
-        Column(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp))) {
-            QuickActionItem("Add Advance Payment", "Record money received", Icons.Default.Add, Color(0xFFF97316), onClick = onAddAdvance)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .background(MaterialTheme.colorScheme.surface)
+                .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp))
+                .clickable { onAddAdvance() }
+                .padding(20.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier.size(48.dp).clip(CircleShape).background(Color(0xFFF97316).copy(alpha = 0.1f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = null, tint = Color(0xFFF97316), modifier = Modifier.size(24.dp))
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+                Column {
+                    Text("Add Advance Payment", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                    Text("Record money received", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            Icon(Icons.Default.ArrowForward, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
         }
     }
 }

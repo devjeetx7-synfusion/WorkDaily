@@ -14,13 +14,6 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
-data class OfflineWorker(
-    val id: String,
-    val name: String,
-    val workType: String,
-    val wage: Double
-)
-
 data class OfflineAttendanceRecord(
     val id: String,
     val date: String,
@@ -33,14 +26,8 @@ data class OfflineAttendanceRecord(
 )
 
 data class OfflineCalendarState(
-    val role: String = "",
     val isLoading: Boolean = true,
     val isRefreshing: Boolean = false,
-
-    // Contractor State
-    val selectedDate: String = "", // YYYY-MM-DD
-    val workers: List<OfflineWorker> = emptyList(),
-    val contractorAttendance: List<OfflineAttendanceRecord> = emptyList(),
 
     // Personal State
     val currentMonthDate: Date = Date(), // Determines the month/year displayed
@@ -58,125 +45,49 @@ class OfflineCalendarViewModel(
     private val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
 
     init {
-        _calendarState.value = _calendarState.value.copy(
-            selectedDate = sdf.format(Date())
-        )
-
         viewModelScope.launch {
-            preferencesRepository.userRoleFlow.collect { role ->
-                if (role != null) {
-                    _calendarState.update { it.copy(role = role) }
-                    loadData(role)
-                }
-            }
+            loadData()
         }
     }
 
     fun refresh() {
         if (_calendarState.value.isRefreshing) return
         _calendarState.update { it.copy(isRefreshing = true) }
-        loadData(_calendarState.value.role)
+        loadData()
     }
 
-    private fun loadData(role: String) {
+    private fun loadData() {
         viewModelScope.launch {
             _calendarState.update { it.copy(isLoading = true) }
 
-            if (role == "contractor") {
-                val workers = localAttendanceRepository.getAllWorkers()
-                val workersList = workers.map { worker ->
-                    OfflineWorker(
-                        id = worker.id,
-                        name = worker.name,
-                        workType = worker.workType,
-                        wage = worker.dailyWage
-                    )
-                }
+            // Personal
+            val currentMonthDate = _calendarState.value.currentMonthDate
+            val cal = Calendar.getInstance()
+            cal.time = currentMonthDate
 
-                val date = _calendarState.value.selectedDate
-                val records = localAttendanceRepository.getAttendanceByDate(date)
-                val mappedRecords = records.map { rec ->
-                    OfflineAttendanceRecord(
-                        id = rec.id,
-                        date = rec.date,
-                        status = rec.status,
-                        type = rec.type,
-                        reason = rec.reason,
-                        overtimeHours = rec.overtimeHours,
-                        note = rec.note,
-                        advanceAmount = rec.advanceAmount
-                    )
-                }
+            val sdfMonth = SimpleDateFormat("yyyy-MM", Locale.getDefault())
+            val monthPrefix = sdfMonth.format(cal.time)
 
-                _calendarState.update { it.copy(
-                    workers = workersList,
-                    contractorAttendance = mappedRecords,
-                    isLoading = false,
-                    isRefreshing = false
-                ) }
-            } else {
-                // Personal
-                val currentMonthDate = _calendarState.value.currentMonthDate
-                val cal = Calendar.getInstance()
-                cal.time = currentMonthDate
-
-                val sdfMonth = SimpleDateFormat("yyyy-MM", Locale.getDefault())
-                val monthPrefix = sdfMonth.format(cal.time)
-
-                val personal = localAttendanceRepository.getPersonalAttendance()
-                val filtered = personal.filter { it.date.startsWith(monthPrefix) }
-                val mappedRecords = filtered.map { rec ->
-                    OfflineAttendanceRecord(
-                        id = rec.id,
-                        date = rec.date,
-                        status = rec.status,
-                        type = rec.type,
-                        reason = rec.reason,
-                        overtimeHours = rec.overtimeHours,
-                        note = rec.note,
-                        advanceAmount = rec.advanceAmount
-                    )
-                }
-
-                _calendarState.update { it.copy(
-                    personalAttendance = mappedRecords,
-                    isLoading = false,
-                    isRefreshing = false
-                ) }
+            val personal = localAttendanceRepository.getPersonalAttendance()
+            val filtered = personal.filter { it.date.startsWith(monthPrefix) }
+            val mappedRecords = filtered.map { rec ->
+                OfflineAttendanceRecord(
+                    id = rec.id,
+                    date = rec.date,
+                    status = rec.status,
+                    type = rec.type,
+                    reason = rec.reason,
+                    overtimeHours = rec.overtimeHours,
+                    note = rec.note,
+                    advanceAmount = rec.advanceAmount
+                )
             }
-        }
-    }
 
-    fun changeContractorDate(offsetDays: Int) {
-        val cal = Calendar.getInstance()
-        cal.time = sdf.parse(_calendarState.value.selectedDate) ?: Date()
-        cal.add(Calendar.DAY_OF_YEAR, offsetDays)
-        _calendarState.update { it.copy(
-            selectedDate = sdf.format(cal.time),
-            isLoading = true
-        ) }
-        loadData("contractor")
-    }
-
-    fun markContractorAttendance(workerId: String, status: String, type: String) {
-        viewModelScope.launch {
-            val date = _calendarState.value.selectedDate
-            val docId = "${workerId}_$date"
-
-            val worker = _calendarState.value.workers.find { it.id == workerId }
-            val wage = worker?.wage ?: 500.0
-
-            val attendance = AttendanceEntity(
-                id = docId,
-                workerId = workerId,
-                date = date,
-                status = status,
-                type = type,
-                wage = wage
-            )
-
-            localAttendanceRepository.saveAttendance(attendance)
-            loadData("contractor")
+            _calendarState.update { it.copy(
+                personalAttendance = mappedRecords,
+                isLoading = false,
+                isRefreshing = false
+            ) }
         }
     }
 
@@ -188,7 +99,7 @@ class OfflineCalendarViewModel(
             currentMonthDate = cal.time,
             isLoading = true
         ) }
-        loadData("personal")
+        loadData()
     }
 
     fun markPersonalAttendance(
@@ -232,7 +143,7 @@ class OfflineCalendarViewModel(
                 localAttendanceRepository.deleteAttendance("${docId}_advance", date)
             }
 
-            loadData("personal")
+            loadData()
         }
     }
 
@@ -241,7 +152,7 @@ class OfflineCalendarViewModel(
             val docId = "personal_$date"
             localAttendanceRepository.deleteAttendance(docId, date)
             localAttendanceRepository.deleteAttendance("${docId}_advance", date)
-            loadData("personal")
+            loadData()
         }
     }
 }

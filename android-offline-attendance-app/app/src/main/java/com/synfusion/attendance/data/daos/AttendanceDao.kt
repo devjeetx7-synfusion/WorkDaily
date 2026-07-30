@@ -6,17 +6,11 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface AttendanceDao {
-    @Query("SELECT * FROM attendance WHERE workerId = :workerId")
-    fun getWorkerAttendanceFlow(workerId: String): Flow<List<AttendanceEntity>>
-
     @Query("SELECT * FROM attendance WHERE workerId IS NULL")
     fun getPersonalAttendanceFlow(): Flow<List<AttendanceEntity>>
 
     @Query("SELECT * FROM attendance WHERE workerId IS NULL")
     suspend fun getPersonalAttendance(): List<AttendanceEntity>
-
-    @Query("SELECT * FROM attendance WHERE workerId = :workerId")
-    suspend fun getWorkerAttendance(workerId: String): List<AttendanceEntity>
 
     @Query("SELECT * FROM attendance WHERE id = :id")
     suspend fun getAttendanceById(id: String): AttendanceEntity?
@@ -32,9 +26,6 @@ interface AttendanceDao {
 
     @Query("DELETE FROM attendance WHERE id = :id")
     suspend fun deleteAttendanceById(id: String)
-
-    @Query("DELETE FROM attendance WHERE workerId = :workerId")
-    suspend fun deleteAttendanceByWorkerId(workerId: String)
 
     @Query("DELETE FROM attendance")
     suspend fun clearAll()

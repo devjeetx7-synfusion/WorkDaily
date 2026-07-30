@@ -40,8 +40,7 @@ import androidx.compose.foundation.layout.safeDrawing
 @Composable
 fun SettingsScreen(
     viewModel: OfflineSettingsViewModel,
-    onLogout: () -> Unit,
-    onNavigateToWorkerHistory: () -> Unit = {}
+    onLogout: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
@@ -93,7 +92,7 @@ fun SettingsScreen(
                 .fillMaxSize()
                 .verticalScroll(scrollState)
                 .padding(paddingValues)
-                .padding(start = 16.dp, end = 16.dp, top = 20.dp, bottom = 16.dp),
+                .padding(start = 16.dp, end = 16.dp, top = 20.dp, bottom = 120.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -166,14 +165,6 @@ fun SettingsScreen(
 
                     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(text = state.name.ifEmpty { "User Name" }, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                        if (state.role.isNotEmpty()) {
-                            Text(
-                                text = state.role.replaceFirstChar { if (it.isLowerCase()) it.titlecase(java.util.Locale.getDefault()) else it.toString() },
-                                fontSize = 14.sp,
-                                color = MaterialTheme.colorScheme.primary,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
                         if (state.phone.isNotEmpty()) {
                             Text(text = "+91 ${state.phone}", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
@@ -242,35 +233,7 @@ fun SettingsScreen(
             }
 
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.data_export), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 4.dp))
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
-                ) {
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        if (state.role == "contractor") {
-                            Row(modifier = Modifier.fillMaxWidth().clickable { onNavigateToWorkerHistory() }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
-                                        Icon(Icons.Default.History, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                                    }
-                                    Spacer(modifier = Modifier.width(12.dp))
-                                    Column {
-                                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.worker_history), fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.attendance_payment_logs), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    }
-                                }
-                                Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                        }
-                    }
-                }
-            }
-
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.data_support), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 4.dp))
+                Text("Information & Support", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 4.dp))
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),

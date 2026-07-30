@@ -1,126 +1,112 @@
 package com.synfusion.attendance.ui
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.synfusion.attendance.data.OfflinePreferencesRepository
-import com.synfusion.attendance.utils.LocaleHelper
 import kotlinx.coroutines.launch
-
-data class OfflineLanguageOption(val code: String, val name: String, val char: String, val color: Color)
 
 @Composable
 fun LanguageSelectionScreen(
     repository: OfflinePreferencesRepository,
     onLanguageSelected: () -> Unit
 ) {
-    var selectedLanguageCode by remember { mutableStateOf<String?>(null) }
+    val languages = listOf("en" to "English", "hi" to "हिंदी")
+    var selectedLang by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
-
-    val languages = listOf(
-        OfflineLanguageOption("hi", "Hindi", "अ", Color(0xFFFFE4E1)),
-        OfflineLanguageOption("en", "English", "A", Color(0xFFE0F7FA))
-    )
-    val context = androidx.compose.ui.platform.LocalContext.current
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .padding(24.dp)
+            .padding(24.dp),
+        verticalArrangement = Arrangement.SpaceBetween,
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(modifier = Modifier.height(32.dp))
-
-        Text(
-            text = androidx.compose.ui.res.stringResource(id = com.synfusion.attendance.R.string.select_language),
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = androidx.compose.ui.res.stringResource(id = com.synfusion.attendance.R.string.choose_your_preferred_language_to_continue),
-            fontSize = 16.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier.weight(1f)
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            items(languages) { lang ->
-                val isSelected = selectedLanguageCode == lang.code
+            Spacer(modifier = Modifier.height(64.dp))
+            Icon(
+                Icons.Default.Language,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(72.dp)
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            Text(
+                text = "Select Language / भाषा चुनें",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+            Spacer(modifier = Modifier.height(32.dp))
 
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surface)
-                        .border(
-                            width = if (isSelected) 2.dp else 1.dp,
-                            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
-                            shape = RoundedCornerShape(16.dp)
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                languages.forEach { (code, name) ->
+                    val isSelected = selectedLang == code
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surface)
+                            .clickable { selectedLang = code }
+                            .padding(20.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = name,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground
                         )
-                        .clickable { selectedLanguageCode = lang.code }
-                        .padding(16.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Box(
-                            modifier = Modifier
-                                .size(56.dp)
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(lang.color),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(lang.char, fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.Black.copy(alpha=0.7f))
+                        if (isSelected) {
+                            Icon(
+                                Icons.Default.CheckCircle,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary
+                            )
                         }
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text(lang.name, fontSize = 16.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface)
                     }
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
-
         Button(
             onClick = {
-                selectedLanguageCode?.let {
-                    scope.launch {
+                scope.launch {
+                    selectedLang?.let {
                         repository.saveLanguage(it)
-                        LocaleHelper.setLocale(context, it)
                         onLanguageSelected()
                     }
                 }
             },
+            enabled = selectedLang != null,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(56.dp),
-            shape = RoundedCornerShape(12.dp),
-            enabled = selectedLanguageCode != null
+                .height(56.dp)
+                .padding(bottom = 16.dp),
+            shape = RoundedCornerShape(16.dp)
         ) {
-            Text(androidx.compose.ui.res.stringResource(id = com.synfusion.attendance.R.string.continue_btn), fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Text("Continue / आगे बढ़ें", fontSize = 16.sp, fontWeight = FontWeight.Bold)
         }
     }
 }

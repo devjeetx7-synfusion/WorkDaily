@@ -15,7 +15,6 @@ class OfflineViewModelFactory(
     private val db = AttendanceDatabase.getInstance(context)
     private val localAttendanceRepository = LocalAttendanceRepository(
         userDao = db.userDao(),
-        workerDao = db.workerDao(),
         attendanceDao = db.attendanceDao(),
         summaryDao = db.summaryDao()
     )
@@ -40,18 +39,6 @@ class OfflineViewModelFactory(
         if (modelClass.isAssignableFrom(OfflineSettingsViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
             return OfflineSettingsViewModel(repository, localAttendanceRepository) as T
-        }
-        if (modelClass.isAssignableFrom(OfflineWorkersViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return OfflineWorkersViewModel(repository, localAttendanceRepository) as T
-        }
-        if (modelClass.isAssignableFrom(OfflineWorkerDetailViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return OfflineWorkerDetailViewModel(localAttendanceRepository) as T
-        }
-        if (modelClass.isAssignableFrom(OfflineWorkerHistoryViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return OfflineWorkerHistoryViewModel(localAttendanceRepository) as T
         }
         if (modelClass.isAssignableFrom(OfflinePassbookViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")

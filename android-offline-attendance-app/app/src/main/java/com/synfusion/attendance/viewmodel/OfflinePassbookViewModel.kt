@@ -27,7 +27,6 @@ data class OfflinePassbookLog(
 )
 
 data class OfflinePassbookState(
-    val role: String = "",
     val isLoading: Boolean = true,
     val isRefreshing: Boolean = false,
     val selectedMonthDate: Date = Date(),
@@ -62,12 +61,8 @@ class OfflinePassbookViewModel(
 
     init {
         viewModelScope.launch {
-            preferencesRepository.userRoleFlow.collect { role ->
-                if (role != null) {
-                    _state.update { it.copy(role = role) }
-                    setupListeners()
-                }
-            }
+            _state.update { it.copy(isLoading = true) }
+            setupListeners()
         }
     }
 

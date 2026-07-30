@@ -4,12 +4,9 @@ import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -22,14 +19,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -168,7 +161,7 @@ fun LoginScreen(
                 Button(
                     onClick = {
                         if (name.isNotBlank() && phone.length >= 10) {
-                            authViewModel.login(name, email, phone, "personal")
+                            authViewModel.login(name, email, phone)
                         }
                     },
                     modifier = Modifier
@@ -208,7 +201,7 @@ fun LoginScreen(
 @Composable
 fun SaaSFeatureShowcase() {
     var currentState by remember { mutableIntStateOf(0) }
-    val totalStates = 6
+    val totalStates = 4
 
     LaunchedEffect(Unit) {
         while (true) {
@@ -243,10 +236,8 @@ fun SaaSFeatureShowcase() {
             when (state) {
                 0 -> PayoutsWidget()
                 1 -> AttendanceStatsWidget()
-                2 -> WorkerAnalyticsWidget()
-                3 -> PdfReportWidget()
-                4 -> AdvanceTrackWidget()
-                5 -> ActiveWorkersWidget()
+                2 -> PdfReportWidget()
+                3 -> AdvanceTrackWidget()
             }
         }
     }
@@ -348,28 +339,6 @@ fun AttendanceStatsWidget() {
 }
 
 @Composable
-fun WorkerAnalyticsWidget() {
-    SaaSWidget {
-        Column {
-            Text("Worker Analytics", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
-            Spacer(modifier = Modifier.height(24.dp))
-            repeat(3) { i ->
-                Column(modifier = Modifier.padding(vertical = 8.dp)) {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text(listOf("Plumber", "Electrician", "Painter")[i], style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
-                        Text(listOf("85%", "92%", "78%")[i], style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Black)
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Box(modifier = Modifier.fillMaxWidth().height(6.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant)) {
-                        Box(modifier = Modifier.fillMaxWidth(listOf(0.85f, 0.92f, 0.78f)[i]).fillMaxHeight().clip(CircleShape).background(MaterialTheme.colorScheme.primary))
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
 fun PdfReportWidget() {
     SaaSWidget {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -413,30 +382,6 @@ fun AdvanceTrackWidget() {
             }
             Spacer(modifier = Modifier.height(16.dp))
             Text("Manage credits with ease", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
-        }
-    }
-}
-
-@Composable
-fun ActiveWorkersWidget() {
-    SaaSWidget {
-        Column {
-            Text("Active Workers", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
-            Spacer(modifier = Modifier.height(24.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy((-12).dp)) {
-                repeat(5) { i ->
-                    val colors = listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary, MaterialTheme.colorScheme.tertiary, MaterialTheme.colorScheme.error, MaterialTheme.colorScheme.primary)
-                    val color = colors[i % colors.size]
-                    Box(modifier = Modifier.size(44.dp).clip(CircleShape).border(3.dp, MaterialTheme.colorScheme.surface, CircleShape).background(color.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
-                        Text(listOf("A", "B", "S", "M", "K")[i], color = color, fontWeight = FontWeight.Bold)
-                    }
-                }
-                Box(modifier = Modifier.size(44.dp).clip(CircleShape).border(3.dp, MaterialTheme.colorScheme.surface, CircleShape).background(MaterialTheme.colorScheme.surfaceVariant), contentAlignment = Alignment.Center) {
-                    Text("+12", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                }
-            }
-            Spacer(modifier = Modifier.height(20.dp))
-            Text("Currently on site", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
         }
     }
 }

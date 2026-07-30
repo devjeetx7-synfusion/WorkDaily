@@ -39,7 +39,7 @@ class OfflineAuthViewModel(
         }
     }
 
-    fun login(name: String, email: String, phoneNumber: String, role: String) {
+    fun login(name: String, email: String, phoneNumber: String) {
         viewModelScope.launch {
             _loginState.value = OfflineLoginState.Loading
             try {
@@ -49,25 +49,14 @@ class OfflineAuthViewModel(
                     name = name,
                     email = email,
                     phoneNumber = phoneNumber,
-                    role = role
+                    role = "personal"
                 )
                 localAttendanceRepository.saveUser(user)
                 repository.saveAuthToken(userId)
-                repository.saveUserRole(role)
+                repository.saveUserRole("personal")
                 _loginState.value = OfflineLoginState.Success(userId)
             } catch (e: Exception) {
                 _loginState.value = OfflineLoginState.Error(e.message ?: "Login failed")
-            }
-        }
-    }
-
-    fun saveRole(role: String) {
-        viewModelScope.launch {
-            val user = localAttendanceRepository.getUser()
-            if (user != null) {
-                val updated = user.copy(role = role)
-                localAttendanceRepository.saveUser(updated)
-                repository.saveUserRole(role)
             }
         }
     }
