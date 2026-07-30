@@ -64,6 +64,7 @@ android {
         kotlinCompilerExtensionVersion = "1.5.1"
     }
     ksp {
+        arg("room.schemaLocation", "$projectDir/schemas")
         arg("room.generateKotlin", "true")
     }
     packaging {
