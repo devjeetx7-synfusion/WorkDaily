@@ -87,6 +87,7 @@ fun DashboardScreen(
     var showAdvanceDialog by remember { mutableStateOf(false) }
     var advanceAmount by remember { mutableStateOf("") }
     var selectedWorkerId by remember { mutableStateOf<String?>(null) }
+    var showPassbookBottomSheet by remember { mutableStateOf(false) }
 
     val pagerState = rememberPagerState(pageCount = { 4 })
     val coroutineScope = rememberCoroutineScope()
@@ -173,7 +174,8 @@ fun DashboardScreen(
                                         if (dashboardState.role == "contractor") {
                                             item {
                                                 ContractorStatsGrid(
-                                                    state = dashboardState
+                                                    state = dashboardState,
+                                                    onNavigatePassbook = { showPassbookBottomSheet = true }
                                                 )
                                             }
                                             item {
@@ -186,7 +188,7 @@ fun DashboardScreen(
                                                 )
                                             }
                                         } else {
-                                            item { PersonalStatsGrid(dashboardState, onNavigatePassbook = { bottomNavController.navigate("passbook") }) }
+                                            item { PersonalStatsGrid(dashboardState, onNavigatePassbook = { showPassbookBottomSheet = true }) }
                                             item {
                                                 PersonalQuickActions(
                                                     onAddAdvance = { showAdvanceDialog = true }
@@ -216,6 +218,9 @@ fun DashboardScreen(
                                     coroutineScope.launch {
                                         bottomNavController.navigate("worker_history")
                                     }
+                                },
+                                onNavigatePassbook = {
+                                    showPassbookBottomSheet = true
                                 }
                             )
                         }
@@ -358,6 +363,28 @@ fun DashboardScreen(
                 }
             )
         }
+
+        if (showPassbookBottomSheet) {
+            val passbookViewModel: OfflinePassbookViewModel = viewModel(factory = factory)
+            ModalBottomSheet(
+                onDismissRequest = { showPassbookBottomSheet = false },
+                sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+                modifier = Modifier.fillMaxHeight(),
+                containerColor = MaterialTheme.colorScheme.background,
+                dragHandle = null
+            ) {
+                PassbookScreen(
+                    viewModel = passbookViewModel,
+                    onNavigateBack = { showPassbookBottomSheet = false },
+                    onNavigateToCalendar = {
+                        showPassbookBottomSheet = false
+                        coroutineScope.launch {
+                            pagerState.animateScrollToPage(1)
+                        }
+                    }
+                )
+            }
+        }
     }
 }
 
@@ -416,31 +443,36 @@ fun HeaderSection(state: OfflineDashboardState) {
 }
 
 @Composable
-fun ContractorStatsGrid(state: OfflineDashboardState) {
+fun ContractorStatsGrid(state: OfflineDashboardState, onNavigatePassbook: () -> Unit = {}) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            StatCard("Total Workers", state.totalWorkers, Icons.Default.People, MaterialTheme.colorScheme.primary, Modifier.weight(1f))
-            StatCard("Today Present", state.todayPresent, Icons.Default.CheckCircle, Color(0xFF10B981), Modifier.weight(1f))
+            StatCard("Total Workers", state.totalWorkers, Icons.Default.People, MaterialTheme.colorScheme.primary, Modifier.weight(1f), onClick = onNavigatePassbook)
+            StatCard("Today Present", state.todayPresent, Icons.Default.CheckCircle, Color(0xFF10B981), Modifier.weight(1f), onClick = onNavigatePassbook)
         }
 
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            StatCardSmall("Today Absent", state.todayAbsent, Icons.Default.Cancel, Color(0xFFEF4444), Modifier.weight(1f))
-            StatCardSmall("Total Paid", "₹${AmountFormatter.format(state.totalPaidMonth)}", Icons.Default.AccountBalanceWallet, Color(0xFF3B82F6), Modifier.weight(1f))
-            StatCardSmall("Pending", "₹${AmountFormatter.format(state.pendingAmount)}", Icons.Default.AccountBalanceWallet, Color(0xFFF97316), Modifier.weight(1f))
+            StatCardSmall("Today Absent", state.todayAbsent, Icons.Default.Cancel, Color(0xFFEF4444), Modifier.weight(1f), onClick = onNavigatePassbook)
+            StatCardSmall("Total Paid", "₹${AmountFormatter.format(state.totalPaidMonth)}", Icons.Default.AccountBalanceWallet, Color(0xFF3B82F6), Modifier.weight(1f), onClick = onNavigatePassbook)
+            StatCardSmall("Pending", "₹${AmountFormatter.format(state.pendingAmount)}", Icons.Default.AccountBalanceWallet, Color(0xFFF97316), Modifier.weight(1f), onClick = onNavigatePassbook)
         }
     }
 }
 
 @Composable
-fun StatCard(title: String, value: String, icon: ImageVector, color: Color, modifier: Modifier = Modifier) {
+fun StatCard(title: String, value: String, icon: ImageVector, color: Color, modifier: Modifier = Modifier, onClick: (() -> Unit)? = null) {
+    val cardModifier = if (onClick != null) {
+        modifier.height(120.dp).clip(RoundedCornerShape(16.dp)).clickable(onClick = onClick)
+    } else {
+        modifier.height(120.dp)
+    }
     Card(
-        modifier = modifier.height(120.dp),
+        modifier = cardModifier,
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
@@ -464,9 +496,14 @@ fun StatCard(title: String, value: String, icon: ImageVector, color: Color, modi
 }
 
 @Composable
-fun StatCardSmall(title: String, value: String, icon: ImageVector, color: Color, modifier: Modifier = Modifier) {
+fun StatCardSmall(title: String, value: String, icon: ImageVector, color: Color, modifier: Modifier = Modifier, onClick: (() -> Unit)? = null) {
+    val cardModifier = if (onClick != null) {
+        modifier.height(100.dp).clip(RoundedCornerShape(12.dp)).clickable(onClick = onClick)
+    } else {
+        modifier.height(100.dp)
+    }
     Card(
-        modifier = modifier.height(100.dp),
+        modifier = cardModifier,
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface

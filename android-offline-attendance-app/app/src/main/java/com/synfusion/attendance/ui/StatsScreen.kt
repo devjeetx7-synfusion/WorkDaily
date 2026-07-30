@@ -6,6 +6,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -78,7 +79,9 @@ fun AnimatedCounter(targetValue: Int, prefix: String = "", suffix: String = "") 
         text = if (prefix == "₹" || prefix == "Rs.") "₹$formattedCount$suffix" else "$prefix$count$suffix",
         fontSize = 24.sp,
         fontWeight = FontWeight.Bold,
-        color = MaterialTheme.colorScheme.primary
+        color = MaterialTheme.colorScheme.primary,
+        maxLines = 1,
+        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
     )
 }
 
@@ -86,7 +89,8 @@ fun AnimatedCounter(targetValue: Int, prefix: String = "", suffix: String = "") 
 @Composable
 fun StatsScreen(
     viewModel: OfflineStatsViewModel,
-    onNavigateToWorkerHistory: () -> Unit = {}
+    onNavigateToWorkerHistory: () -> Unit = {},
+    onNavigatePassbook: () -> Unit = {}
 ) {
     val state by viewModel.statsState.collectAsState()
 
@@ -134,9 +138,9 @@ fun StatsScreen(
                     }
 
                     if (state.role == "contractor") {
-                        ContractorStatsView(viewModel = viewModel, state = state, isAllTime = selectedTabIndex == 1)
+                        ContractorStatsView(viewModel = viewModel, state = state, isAllTime = selectedTabIndex == 1, onNavigatePassbook = onNavigatePassbook)
                     } else {
-                        PersonalStatsView(viewModel = viewModel, state = state, isAllTime = selectedTabIndex == 1)
+                        PersonalStatsView(viewModel = viewModel, state = state, isAllTime = selectedTabIndex == 1, onNavigatePassbook = onNavigatePassbook)
                     }
                 }
             }
@@ -145,7 +149,7 @@ fun StatsScreen(
 }
 
 @Composable
-fun ContractorStatsView(viewModel: OfflineStatsViewModel, state: OfflineStatsState, isAllTime: Boolean) {
+fun ContractorStatsView(viewModel: OfflineStatsViewModel, state: OfflineStatsState, isAllTime: Boolean, onNavigatePassbook: () -> Unit = {}) {
     val sdfMonth = SimpleDateFormat("MMMM yyyy", Locale.getDefault())
     val monthYearStr = sdfMonth.format(state.selectedMonthDate)
 
@@ -211,14 +215,16 @@ fun ContractorStatsView(viewModel: OfflineStatsViewModel, state: OfflineStatsSta
                         value = state.contractorStats.todayPresent,
                         color = Color(0xFF10B981),
                         icon = Icons.Default.CheckCircle,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        onClick = onNavigatePassbook
                     )
                     StatBox(
                         label = "TODAY ABSENT",
                         value = state.contractorStats.todayAbsent,
                         color = Color(0xFFEF4444),
                         icon = Icons.Default.Cancel,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        onClick = onNavigatePassbook
                     )
                 }
             }
@@ -232,7 +238,8 @@ fun ContractorStatsView(viewModel: OfflineStatsViewModel, state: OfflineStatsSta
                     prefix = "₹",
                     color = Color(0xFF3B82F6),
                     icon = Icons.Default.Payments,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    onClick = onNavigatePassbook
                 )
                 StatBox(
                     label = "TOTAL ADVANCE",
@@ -240,7 +247,8 @@ fun ContractorStatsView(viewModel: OfflineStatsViewModel, state: OfflineStatsSta
                     prefix = "₹",
                     color = Color(0xFFF97316),
                     icon = Icons.Default.AccountBalanceWallet,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    onClick = onNavigatePassbook
                 )
             }
         }
@@ -311,10 +319,16 @@ fun StatBox(
     prefix: String = "",
     color: Color,
     icon: ImageVector,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null
 ) {
+    val cardModifier = if (onClick != null) {
+        modifier.clip(RoundedCornerShape(16.dp)).clickable(onClick = onClick)
+    } else {
+        modifier
+    }
     Card(
-        modifier = modifier,
+        modifier = cardModifier,
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
@@ -332,7 +346,7 @@ fun StatBox(
 }
 
 @Composable
-fun PersonalStatsView(viewModel: OfflineStatsViewModel, state: OfflineStatsState, isAllTime: Boolean) {
+fun PersonalStatsView(viewModel: OfflineStatsViewModel, state: OfflineStatsState, isAllTime: Boolean, onNavigatePassbook: () -> Unit = {}) {
     val sdfMonth = SimpleDateFormat("MMMM yyyy", Locale.getDefault())
     val monthYearStr = sdfMonth.format(state.selectedMonthDate)
 
@@ -363,7 +377,7 @@ fun PersonalStatsView(viewModel: OfflineStatsViewModel, state: OfflineStatsState
 
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-                Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp)) {
+                Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).clickable(onClick = onNavigatePassbook).padding(16.dp)) {
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.earnings), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -372,7 +386,7 @@ fun PersonalStatsView(viewModel: OfflineStatsViewModel, state: OfflineStatsState
                         AnimatedCounter(targetValue = currentEarnings.toInt(), prefix = "₹")
                     }
                 }
-                Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp)) {
+                Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).clickable(onClick = onNavigatePassbook).padding(16.dp)) {
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.total_days), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -386,14 +400,14 @@ fun PersonalStatsView(viewModel: OfflineStatsViewModel, state: OfflineStatsState
 
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-                Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp)) {
+                Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).clickable(onClick = onNavigatePassbook).padding(16.dp)) {
                     Column {
                         Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.total_overtime), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(modifier = Modifier.height(4.dp))
                         AnimatedCounter(targetValue = state.personalStats.overtime, suffix = " hrs")
                     }
                 }
-                Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp)) {
+                Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).clickable(onClick = onNavigatePassbook).padding(16.dp)) {
                     Column {
                         Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.advance_deductions), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(modifier = Modifier.height(4.dp))
@@ -526,14 +540,14 @@ fun PersonalStatsView(viewModel: OfflineStatsViewModel, state: OfflineStatsState
                 Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.all_time_stats), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                 Spacer(modifier = Modifier.height(16.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-                    Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp)) {
+                    Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).clickable(onClick = onNavigatePassbook).padding(16.dp)) {
                         Column {
                             Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.total_earnings), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Spacer(modifier = Modifier.height(4.dp))
                             AnimatedCounter(targetValue = state.personalStats.allTimeEarnings.toInt(), prefix = "₹")
                         }
                     }
-                    Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp)) {
+                    Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).clickable(onClick = onNavigatePassbook).padding(16.dp)) {
                         Column {
                             Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.total_days), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Spacer(modifier = Modifier.height(4.dp))

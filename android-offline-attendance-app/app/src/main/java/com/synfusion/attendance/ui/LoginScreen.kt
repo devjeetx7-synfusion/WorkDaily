@@ -356,7 +356,7 @@ fun WorkerAnalyticsWidget() {
             repeat(3) { i ->
                 Column(modifier = Modifier.padding(vertical = 8.dp)) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text(listOf("Mistry", "Helper", "Carpenter")[i], style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
+                        Text(listOf("Plumber", "Electrician", "Painter")[i], style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
                         Text(listOf("85%", "92%", "78%")[i], style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Black)
                     }
                     Spacer(modifier = Modifier.height(8.dp))
