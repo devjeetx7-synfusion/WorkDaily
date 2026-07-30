@@ -48,7 +48,8 @@ data class OfflinePassbookState(
     val phone: String = "",
 
     val logs: List<OfflinePassbookLog> = emptyList(),
-    val isPremium: Boolean = true // Permanently unlocked for offline version
+    val isPremium: Boolean = true, // Permanently unlocked for offline version
+    val errorMessage: String? = null
 )
 
 class OfflinePassbookViewModel(
@@ -85,114 +86,141 @@ class OfflinePassbookViewModel(
 
     private fun setupListeners() {
         viewModelScope.launch {
-            val user = localAttendanceRepository.getUser()
-            val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+            try {
+                val user = localAttendanceRepository.getUser()
+                val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
 
-            if (user != null) {
+                if (user != null) {
+                    _state.update { it.copy(
+                        name = user.name,
+                        dailyWage = user.dailyWage,
+                        joinedDate = sdf.format(Date(user.createdAt)),
+                        phone = user.phoneNumber,
+                        errorMessage = null
+                    ) }
+
+                    val cal = Calendar.getInstance()
+                    cal.time = _state.value.selectedMonthDate
+                    val sdfMonth = SimpleDateFormat("yyyy-MM", Locale.getDefault())
+                    val yearMonth = sdfMonth.format(cal.time)
+
+                    val personal = localAttendanceRepository.getPersonalAttendance()
+                    val filtered = personal.filter { it.date.startsWith(yearMonth) }
+                    calculatePassbook(filtered)
+                } else {
+                    _state.update { it.copy(
+                        isLoading = false,
+                        isRefreshing = false
+                    ) }
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("OfflinePassbookVM", "Error setting up listeners", e)
                 _state.update { it.copy(
-                    name = user.name,
-                    dailyWage = user.dailyWage,
-                    joinedDate = sdf.format(Date(user.createdAt)),
-                    phone = user.phoneNumber
+                    isLoading = false,
+                    isRefreshing = false,
+                    errorMessage = "Failed to load passbook summary: ${e.localizedMessage}"
                 ) }
-
-                val cal = Calendar.getInstance()
-                cal.time = _state.value.selectedMonthDate
-                val sdfMonth = SimpleDateFormat("yyyy-MM", Locale.getDefault())
-                val yearMonth = sdfMonth.format(cal.time)
-
-                val personal = localAttendanceRepository.getPersonalAttendance()
-                val filtered = personal.filter { it.date.startsWith(yearMonth) }
-                calculatePassbook(filtered)
             }
         }
     }
 
     private fun calculatePassbook(list: List<AttendanceEntity>) {
-        val cal = Calendar.getInstance()
-        cal.time = _state.value.selectedMonthDate
+        try {
+            val cal = Calendar.getInstance()
+            cal.time = _state.value.selectedMonthDate
 
-        val today = Calendar.getInstance()
-        val isCurrentMonth = today.get(Calendar.YEAR) == cal.get(Calendar.YEAR) && today.get(Calendar.MONTH) == cal.get(Calendar.MONTH)
-        val passedDays = if (isCurrentMonth) today.get(Calendar.DAY_OF_MONTH) else cal.getActualMaximum(Calendar.DAY_OF_MONTH)
+            val today = Calendar.getInstance()
+            val isCurrentMonth = today.get(Calendar.YEAR) == cal.get(Calendar.YEAR) && today.get(Calendar.MONTH) == cal.get(Calendar.MONTH)
+            val passedDays = if (isCurrentMonth) today.get(Calendar.DAY_OF_MONTH) else cal.getActualMaximum(Calendar.DAY_OF_MONTH)
 
-        var present = 0
-        var absent = 0
-        var half = 0
-        var totalAdv = 0.0
-        var totalEarnings = 0.0
+            var present = 0
+            var absent = 0
+            var half = 0
+            var totalAdv = 0.0
+            var totalEarnings = 0.0
 
-        val logMap = mutableMapOf<String, OfflinePassbookLog>()
-        val wage = _state.value.dailyWage
+            val logMap = mutableMapOf<String, OfflinePassbookLog>()
+            val wage = _state.value.dailyWage
 
-        list.forEach { rec ->
-            val date = rec.date
-            val status = rec.status
-            val type = rec.type
-            val adv = rec.advanceAmount
-            val note = rec.note
-            val otHours = rec.overtimeHours
+            list.forEach { rec ->
+                val date = rec.date
+                val status = rec.status
+                val type = rec.type
+                val adv = rec.advanceAmount
+                val note = rec.note
+                val otHours = rec.overtimeHours
 
-            var dailyBase = 0.0
-            var dailyOT = 0.0
+                var dailyBase = 0.0
+                var dailyOT = 0.0
 
-            if (status == "present") {
-                present++
-                dailyBase = if (type == "half") {
-                    half++
-                    wage / 2.0
-                } else {
-                    wage
+                if (status == "present") {
+                    present++
+                    dailyBase = if (type == "half") {
+                        half++
+                        wage / 2.0
+                    } else {
+                        wage
+                    }
+                    dailyOT = OvertimeCalculator.calculateOvertimeAmount(wage, otHours, note)
+                    totalEarnings += (dailyBase + dailyOT)
+                } else if (status == "absent") {
+                    absent++
                 }
-                dailyOT = OvertimeCalculator.calculateOvertimeAmount(wage, otHours, note)
-                totalEarnings += (dailyBase + dailyOT)
-            } else if (status == "absent") {
-                absent++
+                if (adv > 0) totalAdv += adv
+
+                val existingLog = logMap[date]
+                val cleanedNote = OvertimeCalculator.cleanNote(note) ?: existingLog?.note?.takeIf { note == null }
+
+                val mergedOtHours = maxOf(otHours, existingLog?.overtimeHours ?: 0)
+                val mergedOtAmount = dailyOT + (existingLog?.overtimeAmount ?: 0.0)
+                val mergedBaseEarnings = dailyBase + (existingLog?.baseEarnings ?: 0.0)
+
+                logMap[date] = OfflinePassbookLog(
+                    date = date,
+                    status = if (status != "advance") status else existingLog?.status ?: "advance",
+                    type = if (status != "advance") type else existingLog?.type,
+                    note = cleanedNote,
+                    advanceAmount = (existingLog?.advanceAmount ?: 0.0) + adv,
+                    overtimeHours = mergedOtHours,
+                    overtimeAmount = mergedOtAmount,
+                    baseEarnings = mergedBaseEarnings
+                )
             }
-            if (adv > 0) totalAdv += adv
 
-            val existingLog = logMap[date]
-            val cleanedNote = OvertimeCalculator.cleanNote(note) ?: existingLog?.note?.takeIf { note == null }
+            val effectiveDays = present - (half * 0.5)
+            val grossEarned = totalEarnings
+            val finalBalance = grossEarned - totalAdv
 
-            val mergedOtHours = maxOf(otHours, existingLog?.overtimeHours ?: 0)
-            val mergedOtAmount = dailyOT + (existingLog?.overtimeAmount ?: 0.0)
-            val mergedBaseEarnings = dailyBase + (existingLog?.baseEarnings ?: 0.0)
+            val attRate = if (passedDays > 0) ((present.toDouble() / passedDays) * 100).toInt().coerceIn(0, 100) else 0
 
-            logMap[date] = OfflinePassbookLog(
-                date = date,
-                status = if (status != "advance") status else existingLog?.status ?: "advance",
-                type = if (status != "advance") type else existingLog?.type,
-                note = cleanedNote,
-                advanceAmount = (existingLog?.advanceAmount ?: 0.0) + adv,
-                overtimeHours = mergedOtHours,
-                overtimeAmount = mergedOtAmount,
-                baseEarnings = mergedBaseEarnings
-            )
-        }
+            val sortedLogs = logMap.values.toList().sortedByDescending { it.date }
 
-        val effectiveDays = present - (half * 0.5)
-        val grossEarned = totalEarnings
-        val finalBalance = grossEarned - totalAdv
-
-        val attRate = if (passedDays > 0) ((present.toDouble() / passedDays) * 100).toInt().coerceIn(0, 100) else 0
-
-        val sortedLogs = logMap.values.toList().sortedByDescending { it.date }
-
-        _state.update { current ->
-            current.copy(
-                isLoading = false,
-                presentDays = present,
-                absentDays = absent,
-                halfDays = half,
-                totalDailyWorks = effectiveDays,
-                passedDays = passedDays,
-                attendanceRate = attRate,
-                grossEarned = grossEarned,
-                totalAdvance = totalAdv,
-                finalBalance = finalBalance,
-                logs = sortedLogs,
-                isRefreshing = false
-            )
+            _state.update { current ->
+                current.copy(
+                    isLoading = false,
+                    presentDays = present,
+                    absentDays = absent,
+                    halfDays = half,
+                    totalDailyWorks = effectiveDays,
+                    passedDays = passedDays,
+                    attendanceRate = attRate,
+                    grossEarned = grossEarned,
+                    totalAdvance = totalAdv,
+                    finalBalance = finalBalance,
+                    logs = sortedLogs,
+                    isRefreshing = false,
+                    errorMessage = null
+                )
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("OfflinePassbookVM", "Error calculating passbook", e)
+            _state.update { current ->
+                current.copy(
+                    isLoading = false,
+                    isRefreshing = false,
+                    errorMessage = "Failed to calculate passbook details: ${e.localizedMessage}"
+                )
+            }
         }
     }
 }

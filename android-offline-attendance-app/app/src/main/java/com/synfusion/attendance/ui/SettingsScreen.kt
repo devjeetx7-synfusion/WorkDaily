@@ -31,6 +31,7 @@ import androidx.compose.ui.focus.focusRequester
 import com.synfusion.attendance.viewmodel.OfflineSettingsViewModel
 import com.synfusion.attendance.viewmodel.OfflineSettingsState
 import com.synfusion.attendance.utils.AmountFormatter
+import com.synfusion.attendance.utils.collectAsStateWithLifecycle
 import com.synfusion.attendance.utils.IndianCurrencyVisualTransformation
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.foundation.layout.WindowInsets
@@ -42,7 +43,7 @@ fun SettingsScreen(
     viewModel: OfflineSettingsViewModel,
     onLogout: () -> Unit
 ) {
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle(initialValue = OfflineSettingsState())
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -248,8 +249,8 @@ fun SettingsScreen(
                                 }
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column {
-                                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.how_to_use_dailywork), fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.quick_guide_tutorials), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text("How to Use WorkDaily", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                Text("Quick guide & tutorials", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
                         }
@@ -261,7 +262,7 @@ fun SettingsScreen(
                                 }
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column {
-                                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.data_privacy_policy), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                Text("Privacy Policy", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                                     Text("Stored safely offline", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
@@ -287,8 +288,8 @@ fun SettingsScreen(
                                 }
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column {
-                                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.developer_contact), fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.reach_out_for_feedback), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text("Developer Contact", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                Text("Reach out to us for support", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
                         }
@@ -391,7 +392,7 @@ fun HowToUseBottomSheet(onDismiss: () -> Unit) {
             }
             HorizontalDivider(color = MaterialTheme.colorScheme.outline)
             Text(
-                text = "WorkDaily helps users manage attendance, daily wages, advances, payments, dues, notes, and worker records.\n\n• Personal users can track their own attendance, work days, payments, and notes.\n• Contractors can manage worker records, attendance, advance, half payment, full payment, overtime, dues, and history.\n\nPassbook and reports help users review records clearly.\nPremium features are fully unlocked by default in this offline version.",
+                text = "WorkDaily helps users manage personal attendance, daily wages, advances, payments, notes, and records.\n\n• Personal users can track their own attendance, work days, payments, and notes safely.\n\nPassbook and reports help users review records clearly.",
                 fontSize = 14.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 lineHeight = 20.sp
@@ -434,7 +435,7 @@ fun PrivacyPolicyBottomSheet(onDismiss: () -> Unit) {
             }
             HorizontalDivider(color = MaterialTheme.colorScheme.outline)
             Text(
-                text = "WorkDaily respects your privacy and is designed to help users manage work attendance, worker records, payments, dues, notes, and reports securely.\n\nInformation We May Store:\n• Name, phone number, wage details, attendance records, worker details, payment records, advances, dues, notes, and app preferences.\n\nHow We Use Information:\n• To show your attendance, worker records, payment details, passbooks, and reports inside the app.\n\nData Safety:\n• User data should not be sold.\n• Sensitive user records should only be used for app functionality.\n• Users are responsible for entering accurate worker/payment information.\n\nBrand:\nSynFusion",
+                text = "WorkDaily respects your privacy and is designed to help users manage work attendance, payments, notes, and reports securely.\n\nInformation We May Store:\n• Name, phone number, wage details, attendance records, payment records, advances, notes, and app preferences.\n\nHow We Use Information:\n• To show your attendance, payment details, passbooks, and reports inside the app.\n\nData Safety:\n• User data should not be sold.\n• Sensitive user records should only be used for app functionality.\n• Users are responsible for entering accurate payment/attendance information.\n\nBrand:\nSynFusion",
                 fontSize = 14.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 lineHeight = 20.sp
@@ -477,7 +478,7 @@ fun TermsConditionsBottomSheet(onDismiss: () -> Unit) {
             }
             HorizontalDivider(color = MaterialTheme.colorScheme.outline)
             Text(
-                text = "By using WorkDaily, you agree to use the app responsibly for managing attendance, wages, payments, worker details, notes, dues, passbooks, and related work records.\n\nUser Responsibility:\n• Users are responsible for the accuracy of attendance, wage, payment, worker, and due records entered in the app.\n• WorkDaily is a record-management tool and does not verify real-world payments or worker attendance automatically.\n\nBrand:\nSynFusion",
+                text = "By using WorkDaily, you agree to use the app responsibly for managing attendance, wages, payments, notes, passbooks, and related work records.\n\nUser Responsibility:\n• Users are responsible for the accuracy of attendance, wage, payment, and due records entered in the app.\n• WorkDaily is a record-management tool and does not verify real-world payments or attendance automatically.\n\nBrand:\nSynFusion",
                 fontSize = 14.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 lineHeight = 20.sp

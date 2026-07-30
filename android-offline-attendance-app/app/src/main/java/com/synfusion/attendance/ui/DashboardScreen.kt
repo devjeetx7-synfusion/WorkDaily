@@ -47,6 +47,7 @@ import com.synfusion.attendance.viewmodel.OfflineDashboardState
 import com.synfusion.attendance.utils.AmountFormatter
 import com.synfusion.attendance.utils.IndianCurrencyVisualTransformation
 import com.synfusion.attendance.viewmodel.OfflineViewModelFactory
+import com.synfusion.attendance.utils.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -67,7 +68,7 @@ fun DashboardScreen(
     val calendarViewModel: OfflineCalendarViewModel = viewModel(factory = factory)
     val statsViewModel: OfflineStatsViewModel = viewModel(factory = factory)
 
-    val dashboardState by dashboardViewModel.dashboardState.collectAsState()
+    val dashboardState by dashboardViewModel.dashboardState.collectAsStateWithLifecycle(initialValue = OfflineDashboardState(isLoading = true))
     val bottomNavController = rememberNavController()
     val navBackStackEntry by bottomNavController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route ?: "main_pager"
@@ -123,6 +124,16 @@ fun DashboardScreen(
                             if (dashboardState.isLoading) {
                                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                                     CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                                }
+                            } else if (dashboardState.errorMessage != null) {
+                                Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                                        Icon(Icons.Default.ErrorOutline, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(64.dp))
+                                        Text(dashboardState.errorMessage ?: "An error occurred", color = MaterialTheme.colorScheme.error, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                                        Button(onClick = { dashboardViewModel.refresh() }) {
+                                            Text("Retry")
+                                        }
+                                    }
                                 }
                             } else {
                                 val pullRefreshState = rememberPullToRefreshState()
@@ -279,6 +290,10 @@ fun HeaderSection(state: OfflineDashboardState) {
         SimpleDateFormat("EEEE, dd MMMM yyyy", Locale.getDefault()).format(Date())
     }
 
+    val displayName = state.name.trim()
+    val firstName = if (displayName.isNotEmpty()) displayName.split(" ")[0] else "User"
+    val avatarLetters = if (displayName.length >= 2) displayName.take(2).uppercase() else if (displayName.isNotEmpty()) displayName.take(1).uppercase() else "U"
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -294,7 +309,7 @@ fun HeaderSection(state: OfflineDashboardState) {
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = state.name.take(2).uppercase(),
+                    text = avatarLetters,
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp
@@ -310,7 +325,7 @@ fun HeaderSection(state: OfflineDashboardState) {
                         color = MaterialTheme.colorScheme.onBackground
                     )
                     Text(
-                        text = "${state.name.split(" ")[0]} 👋",
+                        text = "$firstName 👋",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary

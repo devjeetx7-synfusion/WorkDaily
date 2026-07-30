@@ -26,6 +26,11 @@
             android:exported="false"
             android:theme="@style/Theme.DailyWork" />
 
+        <activity
+            android:name=".ui.CrashActivity"
+            android:exported="false"
+            android:theme="@style/Theme.DailyWork" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="com.synfusion.attendance.fileprovider"

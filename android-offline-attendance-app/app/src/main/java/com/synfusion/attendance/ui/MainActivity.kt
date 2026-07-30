@@ -21,6 +21,7 @@ import com.synfusion.attendance.ui.theme.DailyWorkTheme
 import com.synfusion.attendance.viewmodel.OfflineAuthViewModel
 import com.synfusion.attendance.viewmodel.OfflineSettingsViewModel
 import com.synfusion.attendance.viewmodel.OfflineViewModelFactory
+import com.synfusion.attendance.utils.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -55,12 +56,11 @@ fun OfflineDailyWorkApp(factory: OfflineViewModelFactory) {
     val authViewModel: OfflineAuthViewModel = viewModel(factory = factory)
     val settingsViewModel: OfflineSettingsViewModel = viewModel(factory = factory)
 
-    val tokenState by authViewModel.authTokenFlow.collectAsState(initial = "LOADING")
-    val languageState by authViewModel.repository.languageFlow.collectAsState(initial = "LOADING")
-    val onboardingCompleted by authViewModel.repository.isOnboardingCompletedFlow.collectAsState(initial = "LOADING")
-    val splashEnabled by authViewModel.repository.splashEnabledFlow.collectAsState(initial = "LOADING")
+    val tokenState by authViewModel.authTokenFlow.collectAsStateWithLifecycle(initialValue = "LOADING")
+    val languageState by authViewModel.repository.languageFlow.collectAsStateWithLifecycle(initialValue = "LOADING")
+    val splashEnabled by authViewModel.repository.splashEnabledFlow.collectAsStateWithLifecycle(initialValue = true)
 
-    if (tokenState == "LOADING" || languageState == "LOADING" || onboardingCompleted == "LOADING" || splashEnabled == "LOADING") {
+    if (tokenState == "LOADING" || languageState == "LOADING") {
         return
     }
 
