@@ -31,7 +31,8 @@ data class OfflineCalendarState(
 
     // Personal State
     val currentMonthDate: Date = Date(), // Determines the month/year displayed
-    val personalAttendance: List<OfflineAttendanceRecord> = emptyList()
+    val personalAttendance: List<OfflineAttendanceRecord> = emptyList(),
+    val errorMessage: String? = null
 )
 
 class OfflineCalendarViewModel(
@@ -58,36 +59,46 @@ class OfflineCalendarViewModel(
 
     private fun loadData() {
         viewModelScope.launch {
-            _calendarState.update { it.copy(isLoading = true) }
+            try {
+                _calendarState.update { it.copy(isLoading = true) }
 
-            // Personal
-            val currentMonthDate = _calendarState.value.currentMonthDate
-            val cal = Calendar.getInstance()
-            cal.time = currentMonthDate
+                // Personal
+                val currentMonthDate = _calendarState.value.currentMonthDate
+                val cal = Calendar.getInstance()
+                cal.time = currentMonthDate
 
-            val sdfMonth = SimpleDateFormat("yyyy-MM", Locale.getDefault())
-            val monthPrefix = sdfMonth.format(cal.time)
+                val sdfMonth = SimpleDateFormat("yyyy-MM", Locale.getDefault())
+                val monthPrefix = sdfMonth.format(cal.time)
 
-            val personal = localAttendanceRepository.getPersonalAttendance()
-            val filtered = personal.filter { it.date.startsWith(monthPrefix) }
-            val mappedRecords = filtered.map { rec ->
-                OfflineAttendanceRecord(
-                    id = rec.id,
-                    date = rec.date,
-                    status = rec.status,
-                    type = rec.type,
-                    reason = rec.reason,
-                    overtimeHours = rec.overtimeHours,
-                    note = rec.note,
-                    advanceAmount = rec.advanceAmount
-                )
+                val personal = localAttendanceRepository.getPersonalAttendance()
+                val filtered = personal.filter { it.date.startsWith(monthPrefix) }
+                val mappedRecords = filtered.map { rec ->
+                    OfflineAttendanceRecord(
+                        id = rec.id,
+                        date = rec.date,
+                        status = rec.status,
+                        type = rec.type,
+                        reason = rec.reason,
+                        overtimeHours = rec.overtimeHours,
+                        note = rec.note,
+                        advanceAmount = rec.advanceAmount
+                    )
+                }
+
+                _calendarState.update { it.copy(
+                    personalAttendance = mappedRecords,
+                    isLoading = false,
+                    isRefreshing = false,
+                    errorMessage = null
+                ) }
+            } catch (e: Exception) {
+                android.util.Log.e("OfflineCalendarVM", "Error loading data", e)
+                _calendarState.update { it.copy(
+                    isLoading = false,
+                    isRefreshing = false,
+                    errorMessage = "Failed to load calendar records: ${e.localizedMessage}"
+                ) }
             }
-
-            _calendarState.update { it.copy(
-                personalAttendance = mappedRecords,
-                isLoading = false,
-                isRefreshing = false
-            ) }
         }
     }
 
@@ -112,47 +123,57 @@ class OfflineCalendarViewModel(
         advanceAmount: Double
     ) {
         viewModelScope.launch {
-            val docId = "personal_$date"
+            try {
+                val docId = "personal_$date"
 
-            if (status == "present" || status == "absent") {
-                val attendance = AttendanceEntity(
-                    id = docId,
-                    workerId = null,
-                    date = date,
-                    status = status,
-                    type = type,
-                    reason = reason,
-                    overtimeHours = overtimeHours,
-                    note = note
-                )
-                localAttendanceRepository.saveAttendance(attendance)
+                if (status == "present" || status == "absent") {
+                    val attendance = AttendanceEntity(
+                        id = docId,
+                        workerId = null,
+                        date = date,
+                        status = status,
+                        type = type,
+                        reason = reason,
+                        overtimeHours = overtimeHours,
+                        note = note
+                    )
+                    localAttendanceRepository.saveAttendance(attendance)
+                }
+
+                if (advanceAmount > 0) {
+                    val advance = AttendanceEntity(
+                        id = "${docId}_advance",
+                        workerId = null,
+                        date = date,
+                        status = "advance",
+                        type = "full",
+                        advanceAmount = advanceAmount,
+                        wage = 0.0
+                    )
+                    localAttendanceRepository.saveAttendance(advance)
+                } else {
+                    localAttendanceRepository.deleteAttendance("${docId}_advance", date)
+                }
+
+                loadData()
+            } catch (e: Exception) {
+                android.util.Log.e("OfflineCalendarVM", "Error marking calendar attendance", e)
+                _calendarState.update { it.copy(errorMessage = "Failed to mark attendance.") }
             }
-
-            if (advanceAmount > 0) {
-                val advance = AttendanceEntity(
-                    id = "${docId}_advance",
-                    workerId = null,
-                    date = date,
-                    status = "advance",
-                    type = "full",
-                    advanceAmount = advanceAmount,
-                    wage = 0.0
-                )
-                localAttendanceRepository.saveAttendance(advance)
-            } else {
-                localAttendanceRepository.deleteAttendance("${docId}_advance", date)
-            }
-
-            loadData()
         }
     }
 
     fun removePersonalAttendance(date: String) {
         viewModelScope.launch {
-            val docId = "personal_$date"
-            localAttendanceRepository.deleteAttendance(docId, date)
-            localAttendanceRepository.deleteAttendance("${docId}_advance", date)
-            loadData()
+            try {
+                val docId = "personal_$date"
+                localAttendanceRepository.deleteAttendance(docId, date)
+                localAttendanceRepository.deleteAttendance("${docId}_advance", date)
+                loadData()
+            } catch (e: Exception) {
+                android.util.Log.e("OfflineCalendarVM", "Error removing attendance", e)
+                _calendarState.update { it.copy(errorMessage = "Failed to remove attendance.") }
+            }
         }
     }
 }

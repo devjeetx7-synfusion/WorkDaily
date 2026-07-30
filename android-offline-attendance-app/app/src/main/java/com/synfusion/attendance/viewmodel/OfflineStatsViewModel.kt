@@ -40,7 +40,8 @@ data class OfflineStatsState(
     val isPremium: Boolean = true, // Permanently unlocked for offline variant
 
     // Personal
-    val personalStats: OfflinePersonalStatsData = OfflinePersonalStatsData()
+    val personalStats: OfflinePersonalStatsData = OfflinePersonalStatsData(),
+    val errorMessage: String? = null
 )
 
 class OfflineStatsViewModel(
@@ -87,71 +88,83 @@ class OfflineStatsViewModel(
 
     private fun loadStats() {
         viewModelScope.launch {
-            val user = localAttendanceRepository.getUser()
-            cachedDefaultWage = user?.dailyWage ?: 500.0
+            try {
+                val user = localAttendanceRepository.getUser()
+                cachedDefaultWage = user?.dailyWage ?: 500.0
 
-            val cal = Calendar.getInstance()
-            cal.time = _statsState.value.selectedMonthDate
-            val sdfMonth = SimpleDateFormat("yyyy-MM", Locale.getDefault())
-            val currentMonth = sdfMonth.format(cal.time)
+                val cal = Calendar.getInstance()
+                cal.time = _statsState.value.selectedMonthDate
+                val sdfMonth = SimpleDateFormat("yyyy-MM", Locale.getDefault())
+                val currentMonth = sdfMonth.format(cal.time)
 
-            // Personal
-            val personal = localAttendanceRepository.getPersonalAttendance()
+                // Personal
+                val personal = localAttendanceRepository.getPersonalAttendance()
 
-            var allTimeEarnings = 0.0
-            var allTimeDays = 0
+                var allTimeEarnings = 0.0
+                var allTimeDays = 0
 
-            var totalEarnings = 0.0
-            var present = 0
-            var absent = 0
-            var halfDays = 0
-            var overtime = 0
-            var advanceTotal = 0.0
+                var totalEarnings = 0.0
+                var present = 0
+                var absent = 0
+                var halfDays = 0
+                var overtime = 0
+                var advanceTotal = 0.0
 
-            for (rec in personal) {
-                val isPresent = rec.status == "present"
-                val isHalf = rec.type == "half"
-                val ot = rec.overtimeHours
-                val noteStr = rec.note
+                for (rec in personal) {
+                    val isPresent = rec.status == "present"
+                    val isHalf = rec.type == "half"
+                    val ot = rec.overtimeHours
+                    val noteStr = rec.note
 
-                val baseCost = if (isPresent) (if (isHalf) cachedDefaultWage / 2.0 else cachedDefaultWage) else 0.0
-                val otAmt = if (isPresent) OvertimeCalculator.calculateOvertimeAmount(cachedDefaultWage, ot, noteStr) else 0.0
-                val totalCostVal = baseCost + otAmt
+                    val baseCost = if (isPresent) (if (isHalf) cachedDefaultWage / 2.0 else cachedDefaultWage) else 0.0
+                    val otAmt = if (isPresent) OvertimeCalculator.calculateOvertimeAmount(cachedDefaultWage, ot, noteStr) else 0.0
+                    val totalCostVal = baseCost + otAmt
 
-                if (isPresent) {
-                    allTimeDays++
-                    allTimeEarnings += totalCostVal
-                }
-
-                if (rec.date.startsWith(currentMonth)) {
                     if (isPresent) {
-                        present++
-                        if (isHalf) halfDays++
-                        overtime += ot
-                        totalEarnings += totalCostVal
-                    } else if (rec.status == "absent") {
-                        absent++
-                    } else if (rec.status == "advance") {
-                        advanceTotal += rec.advanceAmount
+                        allTimeDays++
+                        allTimeEarnings += totalCostVal
+                    }
+
+                    if (rec.date.startsWith(currentMonth)) {
+                        if (isPresent) {
+                            present++
+                            if (isHalf) halfDays++
+                            overtime += ot
+                            totalEarnings += totalCostVal
+                        } else if (rec.status == "absent") {
+                            absent++
+                        } else if (rec.status == "advance") {
+                            advanceTotal += rec.advanceAmount
+                        }
                     }
                 }
-            }
 
-            _statsState.update { current ->
-                current.copy(
-                    isLoading = false,
-                    isRefreshing = false,
-                    personalStats = OfflinePersonalStatsData(
-                        present = present,
-                        absent = absent,
-                        halfDays = halfDays,
-                        overtime = overtime,
-                        advanceTotal = advanceTotal,
-                        totalEarnings = totalEarnings,
-                        allTimeDays = allTimeDays,
-                        allTimeEarnings = allTimeEarnings
+                _statsState.update { current ->
+                    current.copy(
+                        isLoading = false,
+                        isRefreshing = false,
+                        errorMessage = null,
+                        personalStats = OfflinePersonalStatsData(
+                            present = present,
+                            absent = absent,
+                            halfDays = halfDays,
+                            overtime = overtime,
+                            advanceTotal = advanceTotal,
+                            totalEarnings = totalEarnings,
+                            allTimeDays = allTimeDays,
+                            allTimeEarnings = allTimeEarnings
+                        )
                     )
-                )
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("OfflineStatsVM", "Error loading stats", e)
+                _statsState.update { current ->
+                    current.copy(
+                        isLoading = false,
+                        isRefreshing = false,
+                        errorMessage = "Failed to load stats: ${e.localizedMessage}"
+                    )
+                }
             }
         }
     }

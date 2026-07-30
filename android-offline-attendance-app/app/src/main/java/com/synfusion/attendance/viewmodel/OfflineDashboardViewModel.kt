@@ -32,7 +32,9 @@ data class OfflineDashboardState(
 
     // Offline state placeholders
     val showOfflineBottomSheet: Boolean = false,
-    val hasShownOfflineSheet: Boolean = false
+    val hasShownOfflineSheet: Boolean = false,
+
+    val errorMessage: String? = null
 )
 
 class OfflineDashboardViewModel(
@@ -63,147 +65,177 @@ class OfflineDashboardViewModel(
     private fun loadLocalData() {
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
-            val user = localAttendanceRepository.getUser()
-            val name = user?.name ?: "User"
-            cachedDefaultWage = user?.dailyWage ?: 500.0
+            try {
+                val user = localAttendanceRepository.getUser()
+                val name = user?.name ?: "User"
+                cachedDefaultWage = user?.dailyWage ?: 500.0
 
-            _dashboardState.update { it.copy(name = name, isRefreshing = false, isLoading = false) }
+                _dashboardState.update { it.copy(name = name, isRefreshing = false, isLoading = false, errorMessage = null) }
 
-            // Personal role
-            val personalAttendance = localAttendanceRepository.getPersonalAttendance()
-            val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-            val currentMonthStr = SimpleDateFormat("yyyy-MM", Locale.getDefault()).format(Date())
+                // Personal role
+                val personalAttendance = localAttendanceRepository.getPersonalAttendance()
+                val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+                val currentMonthStr = SimpleDateFormat("yyyy-MM", Locale.getDefault()).format(Date())
 
-            var todayEarned = 0.0
-            var monthEarned = 0.0
-            var currentTodayStatus: String? = null
-            var currentOvertime = 0
-            var currentNote: String? = null
+                var todayEarned = 0.0
+                var monthEarned = 0.0
+                var currentTodayStatus: String? = null
+                var currentOvertime = 0
+                var currentNote: String? = null
 
-            for (record in personalAttendance) {
-                val date = record.date
-                val status = record.status
-                val type = record.type
-                val otHours = record.overtimeHours
-                val noteStr = record.note
+                for (record in personalAttendance) {
+                    val date = record.date
+                    val status = record.status
+                    val type = record.type
+                    val otHours = record.overtimeHours
+                    val noteStr = record.note
 
-                val dailyBase = if (status == "present") {
-                    if (type == "half") cachedDefaultWage / 2 else cachedDefaultWage
-                } else 0.0
-                // Support overtime calculation
-                val dailyOT = if (status == "present") OvertimeCalculator.calculateOvertimeAmount(cachedDefaultWage, otHours, noteStr) else 0.0
+                    val dailyBase = if (status == "present") {
+                        if (type == "half") cachedDefaultWage / 2.0 else cachedDefaultWage
+                    } else 0.0
+                    // Support overtime calculation
+                    val dailyOT = if (status == "present") OvertimeCalculator.calculateOvertimeAmount(cachedDefaultWage, otHours, noteStr) else 0.0
 
-                if (date == todayStr) {
-                    if (status != "advance") {
-                        currentTodayStatus = status
-                        currentOvertime = otHours
-                        currentNote = OvertimeCalculator.cleanNote(noteStr)
-                        todayEarned = dailyBase + dailyOT
+                    if (date == todayStr) {
+                        if (status != "advance") {
+                            currentTodayStatus = status
+                            currentOvertime = otHours
+                            currentNote = OvertimeCalculator.cleanNote(noteStr)
+                            todayEarned = dailyBase + dailyOT
+                        }
+                    }
+
+                    if (date.startsWith(currentMonthStr)) {
+                        monthEarned += (dailyBase + dailyOT)
                     }
                 }
 
-                if (date.startsWith(currentMonthStr)) {
-                    monthEarned += (dailyBase + dailyOT)
-                }
+                _dashboardState.update { it.copy(
+                    todayEarned = todayEarned.toInt().toString(),
+                    monthEarned = monthEarned.toInt().toString(),
+                    todayStatus = currentTodayStatus,
+                    overtimeHours = currentOvertime,
+                    todayNote = currentNote,
+                    errorMessage = null
+                ) }
+            } catch (e: Exception) {
+                android.util.Log.e("OfflineDashboardVM", "Error loading local data", e)
+                _dashboardState.update { it.copy(
+                    isLoading = false,
+                    isRefreshing = false,
+                    errorMessage = "Failed to load records: ${e.localizedMessage}"
+                ) }
             }
-
-            _dashboardState.update { it.copy(
-                todayEarned = todayEarned.toInt().toString(),
-                monthEarned = monthEarned.toInt().toString(),
-                todayStatus = currentTodayStatus,
-                overtimeHours = currentOvertime,
-                todayNote = currentNote
-            ) }
         }
     }
 
     fun markAttendance(type: String, overtimeHours: Int, note: String) {
         viewModelScope.launch {
-            val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-            val docId = "personal_$todayStr"
+            try {
+                val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+                val docId = "personal_$todayStr"
 
-            val attendance = AttendanceEntity(
-                id = docId,
-                workerId = null,
-                date = todayStr,
-                status = "present",
-                type = type,
-                overtimeHours = overtimeHours,
-                note = note,
-                wage = cachedDefaultWage
-            )
+                val attendance = AttendanceEntity(
+                    id = docId,
+                    workerId = null,
+                    date = todayStr,
+                    status = "present",
+                    type = type,
+                    overtimeHours = overtimeHours,
+                    note = note,
+                    wage = cachedDefaultWage
+                )
 
-            _dashboardState.update { it.copy(
-                todayStatus = "present",
-                overtimeHours = overtimeHours,
-                todayNote = note
-            ) }
+                _dashboardState.update { it.copy(
+                    todayStatus = "present",
+                    overtimeHours = overtimeHours,
+                    todayNote = note
+                ) }
 
-            localAttendanceRepository.saveAttendance(attendance)
-            loadLocalData()
+                localAttendanceRepository.saveAttendance(attendance)
+                loadLocalData()
+            } catch (e: Exception) {
+                android.util.Log.e("OfflineDashboardVM", "Error marking attendance", e)
+                _dashboardState.update { it.copy(errorMessage = "Failed to mark attendance.") }
+            }
         }
     }
 
     fun markAbsent(reason: String, note: String) {
         viewModelScope.launch {
-            val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-            val docId = "personal_$todayStr"
+            try {
+                val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+                val docId = "personal_$todayStr"
 
-            val attendance = AttendanceEntity(
-                id = docId,
-                workerId = null,
-                date = todayStr,
-                status = "absent",
-                type = "full",
-                reason = reason,
-                note = note,
-                wage = cachedDefaultWage
-            )
+                val attendance = AttendanceEntity(
+                    id = docId,
+                    workerId = null,
+                    date = todayStr,
+                    status = "absent",
+                    type = "full",
+                    reason = reason,
+                    note = note,
+                    wage = cachedDefaultWage
+                )
 
-            _dashboardState.update { it.copy(
-                todayStatus = "absent",
-                overtimeHours = 0,
-                todayNote = note
-            ) }
+                _dashboardState.update { it.copy(
+                    todayStatus = "absent",
+                    overtimeHours = 0,
+                    todayNote = note
+                ) }
 
-            localAttendanceRepository.saveAttendance(attendance)
-            loadLocalData()
+                localAttendanceRepository.saveAttendance(attendance)
+                loadLocalData()
+            } catch (e: Exception) {
+                android.util.Log.e("OfflineDashboardVM", "Error marking absent", e)
+                _dashboardState.update { it.copy(errorMessage = "Failed to record absence.") }
+            }
         }
     }
 
     fun addAdvance(amount: Double) {
         viewModelScope.launch {
-            val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-            val docId = "personal_${todayStr}_advance"
+            try {
+                val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+                val docId = "personal_${todayStr}_advance"
 
-            val attendance = AttendanceEntity(
-                id = docId,
-                workerId = null,
-                date = todayStr,
-                status = "advance",
-                type = "full",
-                advanceAmount = amount,
-                wage = 0.0
-            )
+                val attendance = AttendanceEntity(
+                    id = docId,
+                    workerId = null,
+                    date = todayStr,
+                    status = "advance",
+                    type = "full",
+                    advanceAmount = amount,
+                    wage = 0.0
+                )
 
-            localAttendanceRepository.saveAttendance(attendance)
-            loadLocalData()
+                localAttendanceRepository.saveAttendance(attendance)
+                loadLocalData()
+            } catch (e: Exception) {
+                android.util.Log.e("OfflineDashboardVM", "Error adding advance", e)
+                _dashboardState.update { it.copy(errorMessage = "Failed to record advance.") }
+            }
         }
     }
 
     fun removeAttendance() {
         viewModelScope.launch {
-            val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-            val docId = "personal_$todayStr"
+            try {
+                val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+                val docId = "personal_$todayStr"
 
-            _dashboardState.update { it.copy(
-                todayStatus = null,
-                overtimeHours = 0,
-                todayNote = null
-            ) }
+                _dashboardState.update { it.copy(
+                    todayStatus = null,
+                    overtimeHours = 0,
+                    todayNote = null
+                ) }
 
-            localAttendanceRepository.deleteAttendance(docId, todayStr)
-            loadLocalData()
+                localAttendanceRepository.deleteAttendance(docId, todayStr)
+                loadLocalData()
+            } catch (e: Exception) {
+                android.util.Log.e("OfflineDashboardVM", "Error removing attendance", e)
+                _dashboardState.update { it.copy(errorMessage = "Failed to remove attendance.") }
+            }
         }
     }
 

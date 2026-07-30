@@ -36,6 +36,7 @@ import com.synfusion.attendance.ui.components.CustomToggleTab
 import com.synfusion.attendance.viewmodel.OfflineStatsViewModel
 import com.synfusion.attendance.viewmodel.OfflineStatsState
 import com.synfusion.attendance.viewmodel.OfflineDailyRecord
+import com.synfusion.attendance.utils.collectAsStateWithLifecycle
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -69,7 +70,7 @@ fun StatsScreen(
     viewModel: OfflineStatsViewModel,
     onNavigatePassbook: () -> Unit = {}
 ) {
-    val state by viewModel.statsState.collectAsState()
+    val state by viewModel.statsState.collectAsStateWithLifecycle(initialValue = OfflineStatsState(isLoading = true))
 
     var selectedTabIndex by remember { mutableStateOf(0) }
     val tabs = listOf("Monthly", "All-Time")
@@ -93,6 +94,16 @@ fun StatsScreen(
         ) {
             if (state.isLoading) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            } else if (state.errorMessage != null) {
+                Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(64.dp))
+                        Text(state.errorMessage ?: "An error occurred", color = MaterialTheme.colorScheme.error, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                        Button(onClick = { viewModel.refresh() }) {
+                            Text("Retry")
+                        }
+                    }
+                }
             } else {
                 Column(modifier = Modifier.fillMaxSize()) {
                     Box(

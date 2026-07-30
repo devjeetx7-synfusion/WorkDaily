@@ -34,7 +34,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.synfusion.attendance.viewmodel.OfflinePassbookViewModel
 import com.synfusion.attendance.viewmodel.OfflinePassbookLog
+import com.synfusion.attendance.viewmodel.OfflinePassbookState
 import com.synfusion.attendance.utils.PassbookPdfGenerator
+import com.synfusion.attendance.utils.collectAsStateWithLifecycle
 import com.synfusion.attendance.utils.PdfData
 import com.synfusion.attendance.utils.PdfLog
 import com.synfusion.attendance.utils.AmountFormatter
@@ -50,7 +52,7 @@ fun PassbookScreen(
     onNavigateBack: () -> Unit,
     onNavigateToCalendar: () -> Unit
 ) {
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle(initialValue = OfflinePassbookState(isLoading = true))
     val sdfMonth = SimpleDateFormat("MMMM yyyy", Locale.getDefault())
     val sdfMonthNumeric = SimpleDateFormat("MM", Locale.getDefault())
     val sdfYearNumeric = SimpleDateFormat("yyyy", Locale.getDefault())
@@ -97,7 +99,7 @@ fun PassbookScreen(
 
         return PdfData(
             title = "WorkDaily",
-            subtitle = "Official Worker Passbook",
+            subtitle = "Official Passbook",
             name = state.name,
             userId = "personal",
             role = state.workType,
@@ -136,7 +138,7 @@ fun PassbookScreen(
 
     fun shareViaWhatsApp() {
         val text = """
-            👷 *Official Worker Passbook*
+            👷 *Official Passbook*
 
             👤 *Name:* ${state.name}
             📅 *Month:* $monthYearStr
@@ -144,7 +146,7 @@ fun PassbookScreen(
             ✅ Present: ${state.presentDays} days
             🕒 Half Days: ${state.halfDays} days
             ❌ Absent: ${state.absentDays} days
-            📈 *Total Man Days:* ${state.totalDailyWorks}
+            📈 *Total Days worked:* ${state.totalDailyWorks}
 
             💰 *Financial Summary:*
             💵 Daily Wage: ₹${AmountFormatter.format(state.dailyWage)}
@@ -194,6 +196,16 @@ fun PassbookScreen(
         if (state.isLoading) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
+            }
+        } else if (state.errorMessage != null) {
+            Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(64.dp))
+                    Text(state.errorMessage ?: "An error occurred", color = MaterialTheme.colorScheme.error, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                    Button(onClick = { viewModel.refresh() }) {
+                        Text("Retry")
+                    }
+                }
             }
         } else {
             LazyColumn(

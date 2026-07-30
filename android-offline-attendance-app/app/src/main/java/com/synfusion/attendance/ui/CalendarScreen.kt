@@ -15,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -30,6 +31,7 @@ import androidx.compose.ui.unit.sp
 import com.synfusion.attendance.viewmodel.OfflineAttendanceRecord
 import com.synfusion.attendance.viewmodel.OfflineCalendarViewModel
 import com.synfusion.attendance.utils.IndianCurrencyVisualTransformation
+import com.synfusion.attendance.utils.collectAsStateWithLifecycle
 import java.text.SimpleDateFormat
 import java.util.*
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -42,7 +44,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 fun CalendarScreen(
     viewModel: OfflineCalendarViewModel
 ) {
-    val state by viewModel.calendarState.collectAsState()
+    val state by viewModel.calendarState.collectAsStateWithLifecycle(initialValue = com.synfusion.attendance.viewmodel.OfflineCalendarState(isLoading = true))
 
     val pullRefreshState = rememberPullToRefreshState()
     LaunchedEffect(pullRefreshState.isRefreshing) {
@@ -65,6 +67,16 @@ fun CalendarScreen(
     ) {
         if (state.isLoading) {
             CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+        } else if (state.errorMessage != null) {
+            Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(64.dp))
+                    Text(state.errorMessage ?: "An error occurred", color = MaterialTheme.colorScheme.error, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                    Button(onClick = { viewModel.refresh() }) {
+                        Text("Retry")
+                    }
+                }
+            }
         } else {
             PersonalCalendarView(viewModel = viewModel, state = state)
         }
