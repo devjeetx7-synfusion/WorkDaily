@@ -10,7 +10,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -19,7 +18,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -30,36 +28,16 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.asAndroidPath
 import androidx.compose.ui.graphics.asComposePath
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.nativeCanvas
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.synfusion.attendance.ui.components.CustomToggleTab
-import com.synfusion.attendance.ui.components.RewardedLockedContent
 import com.synfusion.attendance.viewmodel.OfflineStatsViewModel
 import com.synfusion.attendance.viewmodel.OfflineStatsState
 import com.synfusion.attendance.viewmodel.OfflineDailyRecord
-import com.synfusion.attendance.viewmodel.OfflineWorkerStats
 import java.text.SimpleDateFormat
 import java.util.Locale
-
-private fun maskText(text: String, isUnlocked: Boolean, placeholder: String = "••••"): String {
-    return if (isUnlocked) text else placeholder
-}
-
-@Composable
-private fun LockedFeatureIcon(modifier: Modifier = Modifier) {
-    Icon(
-        imageVector = Icons.Default.Lock,
-        contentDescription = "Locked",
-        tint = MaterialTheme.colorScheme.primary,
-        modifier = modifier.size(16.dp)
-    )
-}
 
 @Composable
 fun AnimatedCounter(targetValue: Int, prefix: String = "", suffix: String = "") {
@@ -89,7 +67,6 @@ fun AnimatedCounter(targetValue: Int, prefix: String = "", suffix: String = "") 
 @Composable
 fun StatsScreen(
     viewModel: OfflineStatsViewModel,
-    onNavigateToWorkerHistory: () -> Unit = {},
     onNavigatePassbook: () -> Unit = {}
 ) {
     val state by viewModel.statsState.collectAsState()
@@ -101,13 +78,6 @@ fun StatsScreen(
         topBar = {
             TopAppBar(
                 title = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.statistics), fontWeight = FontWeight.Bold) },
-                actions = {
-                    if (state.role == "contractor") {
-                        IconButton(onClick = onNavigateToWorkerHistory) {
-                            Icon(Icons.Default.History, contentDescription = "History")
-                        }
-                    }
-                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
                     titleContentColor = MaterialTheme.colorScheme.onBackground,
@@ -121,7 +91,7 @@ fun StatsScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            if (state.isLoading && state.role.isEmpty()) {
+            if (state.isLoading) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             } else {
                 Column(modifier = Modifier.fillMaxSize()) {
@@ -137,210 +107,9 @@ fun StatsScreen(
                         )
                     }
 
-                    if (state.role == "contractor") {
-                        ContractorStatsView(viewModel = viewModel, state = state, isAllTime = selectedTabIndex == 1, onNavigatePassbook = onNavigatePassbook)
-                    } else {
-                        PersonalStatsView(viewModel = viewModel, state = state, isAllTime = selectedTabIndex == 1, onNavigatePassbook = onNavigatePassbook)
-                    }
+                    PersonalStatsView(viewModel = viewModel, state = state, isAllTime = selectedTabIndex == 1, onNavigatePassbook = onNavigatePassbook)
                 }
             }
-        }
-    }
-}
-
-@Composable
-fun ContractorStatsView(viewModel: OfflineStatsViewModel, state: OfflineStatsState, isAllTime: Boolean, onNavigatePassbook: () -> Unit = {}) {
-    val sdfMonth = SimpleDateFormat("MMMM yyyy", Locale.getDefault())
-    val monthYearStr = sdfMonth.format(state.selectedMonthDate)
-
-    val currentTotalCost = if (isAllTime) state.contractorStats.allTimeCost else state.contractorStats.totalCost
-    val currentTotalDays = if (isAllTime) state.contractorStats.allTimeWorks else state.contractorStats.totalDailyWorks
-    val currentTopWorkers = if (isAllTime) state.contractorStats.allTimeTopWorkers else state.contractorStats.topWorkers
-    val dailyRecords = if (isAllTime) emptyList() else state.contractorStats.dailyRecords
-
-    LazyColumn(
-        modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        item {
-            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.global_statistics), fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.worker_performance_costs), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(modifier = Modifier.height(16.dp))
-
-            if (!isAllTime) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(onClick = { viewModel.changeMonth(-1) }) { Icon(Icons.Default.ChevronLeft, contentDescription = "Previous") }
-                    Text(text = monthYearStr, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                    IconButton(onClick = { viewModel.changeMonth(1) }) { Icon(Icons.Default.ChevronRight, contentDescription = "Next") }
-                }
-            }
-        }
-
-        item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f))
-            ) {
-                Column(modifier = Modifier.padding(20.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Analytics, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.system_overview), fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.primary)
-                    }
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Column {
-                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.total_workforce), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            AnimatedCounter(targetValue = state.contractorStats.totalWorkers)
-                        }
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.total_man_days), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            AnimatedCounter(targetValue = currentTotalDays.toInt())
-                        }
-                    }
-                }
-            }
-        }
-
-        if (!isAllTime) {
-            item {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    StatBox(
-                        label = "TODAY PRESENT",
-                        value = state.contractorStats.todayPresent,
-                        color = Color(0xFF10B981),
-                        icon = Icons.Default.CheckCircle,
-                        modifier = Modifier.weight(1f),
-                        onClick = onNavigatePassbook
-                    )
-                    StatBox(
-                        label = "TODAY ABSENT",
-                        value = state.contractorStats.todayAbsent,
-                        color = Color(0xFFEF4444),
-                        icon = Icons.Default.Cancel,
-                        modifier = Modifier.weight(1f),
-                        onClick = onNavigatePassbook
-                    )
-                }
-            }
-        }
-
-        item {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                StatBox(
-                    label = "TOTAL COST",
-                    value = currentTotalCost.toInt(),
-                    prefix = "₹",
-                    color = Color(0xFF3B82F6),
-                    icon = Icons.Default.Payments,
-                    modifier = Modifier.weight(1f),
-                    onClick = onNavigatePassbook
-                )
-                StatBox(
-                    label = "TOTAL ADVANCE",
-                    value = state.contractorStats.totalAdvance.toInt(),
-                    prefix = "₹",
-                    color = Color(0xFFF97316),
-                    icon = Icons.Default.AccountBalanceWallet,
-                    modifier = Modifier.weight(1f),
-                    onClick = onNavigatePassbook
-                )
-            }
-        }
-
-        if (!isAllTime && dailyRecords.isNotEmpty()) {
-            item {
-                Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp)) {
-                    Column {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.daily_costs), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-                        }
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Box {
-                            EarningsLineChart(dailyRecords = dailyRecords)
-                        }
-                    }
-                }
-            }
-        }
-
-        item {
-            val maxCost = currentTopWorkers.maxOfOrNull { it.cost } ?: 1.0
-
-            Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp)) {
-                Column {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.cost_breakdown), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-                    }
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    if (currentTopWorkers.isEmpty()) {
-                        Text("No active workers ${if (isAllTime) "found" else "this month"}.", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(32.dp))
-                    } else {
-                        currentTopWorkers.take(5).forEach { worker ->
-                            val progress = (worker.cost / maxCost).toFloat()
-                            val animatedProgress by animateFloatAsState(
-                                targetValue = progress,
-                                animationSpec = tween(1000),
-                                label = "progress"
-                            )
-
-                            Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
-                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                    Text(worker.name, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                    Text("₹${AmountFormatter.format(worker.cost)}", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.primary)
-                                }
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Box(modifier = Modifier.weight(1f).height(8.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant)) {
-                                        Box(modifier = Modifier.fillMaxHeight().fillMaxWidth(animatedProgress).clip(CircleShape).background(MaterialTheme.colorScheme.primary))
-                                    }
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text("${worker.days}d", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun StatBox(
-    label: String,
-    value: Int,
-    prefix: String = "",
-    color: Color,
-    icon: ImageVector,
-    modifier: Modifier = Modifier,
-    onClick: (() -> Unit)? = null
-) {
-    val cardModifier = if (onClick != null) {
-        modifier.clip(RoundedCornerShape(16.dp)).clickable(onClick = onClick)
-    } else {
-        modifier
-    }
-    Card(
-        modifier = cardModifier,
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(20.dp))
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(label, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            Spacer(modifier = Modifier.height(4.dp))
-            AnimatedCounter(targetValue = value, prefix = prefix)
         }
     }
 }

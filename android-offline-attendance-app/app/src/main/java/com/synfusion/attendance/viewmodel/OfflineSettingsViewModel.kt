@@ -17,8 +17,8 @@ data class OfflineSettingsState(
     val dailyWage: Double = 500.0,
     val originalWage: Double = 500.0,
     val workType: String = "",
-    val role: String = "",
-    val originalRole: String = "",
+    val role: String = "personal",
+    val originalRole: String = "personal",
     val phone: String = "",
     val originalPhone: String = "",
     val profileImageUrl: String = "",
@@ -34,7 +34,7 @@ data class OfflineSettingsState(
     val triggerRestart: Boolean = false,
     val isLanguageEnabled: Boolean = true,
     val isLanguageActivityEnabled: Boolean = true,
-    val isRoleUiEnabled: Boolean = true
+    val isRoleUiEnabled: Boolean = false
 )
 
 class OfflineSettingsViewModel(
@@ -78,8 +78,8 @@ class OfflineSettingsViewModel(
                     originalName = user.name,
                     dailyWage = user.dailyWage,
                     originalWage = user.dailyWage,
-                    role = user.role,
-                    originalRole = user.role,
+                    role = "personal",
+                    originalRole = "personal",
                     phone = user.phoneNumber,
                     originalPhone = user.phoneNumber
                 ) }
@@ -114,10 +114,6 @@ class OfflineSettingsViewModel(
         _state.update { it.copy(dailyWage = wageDouble) }
     }
 
-    fun onRoleChange(newRole: String) {
-        _state.update { it.copy(role = newRole) }
-    }
-
     fun onPhoneChange(newPhone: String) {
         _state.update { it.copy(phone = newPhone) }
     }
@@ -130,17 +126,13 @@ class OfflineSettingsViewModel(
         _state.update { it.copy(
             name = it.originalName,
             dailyWage = it.originalWage,
-            phone = it.originalPhone,
-            role = it.originalRole
+            phone = it.originalPhone
         ) }
     }
 
     fun saveChanges() {
         viewModelScope.launch {
             val currentState = _state.value
-            val roleChanged = currentState.role != currentState.originalRole
-            val newRole = currentState.role
-
             _state.update { it.copy(isSaving = true) }
 
             try {
@@ -149,24 +141,19 @@ class OfflineSettingsViewModel(
                     val updated = user.copy(
                         name = currentState.name,
                         dailyWage = currentState.dailyWage,
-                        role = currentState.role,
+                        role = "personal",
                         phoneNumber = currentState.phone
                     )
                     localAttendanceRepository.saveUser(updated)
 
-                    if (roleChanged) {
-                        repository.saveUserRole(newRole)
-                    }
-
                     _state.update { it.copy(
                         originalName = it.name,
                         originalWage = it.dailyWage,
-                        originalRole = it.role,
+                        originalRole = "personal",
                         originalPhone = it.phone,
                         profileImageUri = null,
                         savedMessage = "Profile updated successfully!",
-                        isSaving = false,
-                        triggerRestart = roleChanged
+                        isSaving = false
                     ) }
                 }
             } catch (e: Exception) {

@@ -16,18 +16,10 @@ import java.util.Date
 import java.util.Locale
 
 data class OfflineDashboardState(
-    val role: String = "",
     val name: String = "",
     val photoUrl: String = "",
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
-
-    // Contractor Stats
-    val totalWorkers: String = "0",
-    val todayPresent: String = "0",
-    val todayAbsent: String = "0",
-    val totalPaidMonth: String = "0",
-    val pendingAmount: String = "0",
 
     // Personal Stats
     val todayEarned: String = "0",
@@ -55,24 +47,20 @@ class OfflineDashboardViewModel(
 
     init {
         viewModelScope.launch {
-            preferencesRepository.userRoleFlow.collect { role ->
-                if (role != null) {
-                    _dashboardState.update { it.copy(role = role) }
-                    loadLocalData(role)
-                }
-            }
+            _dashboardState.update { it.copy(isLoading = true) }
+            loadLocalData()
         }
     }
 
     fun refresh() {
         if (_dashboardState.value.isRefreshing) return
         _dashboardState.update { it.copy(isRefreshing = true) }
-        loadLocalData(_dashboardState.value.role)
+        loadLocalData()
     }
 
     private var loadJob: Job? = null
 
-    private fun loadLocalData(role: String) {
+    private fun loadLocalData() {
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
             val user = localAttendanceRepository.getUser()
@@ -81,81 +69,51 @@ class OfflineDashboardViewModel(
 
             _dashboardState.update { it.copy(name = name, isRefreshing = false, isLoading = false) }
 
-            if (role == "contractor") {
-                val workers = localAttendanceRepository.getAllWorkers()
-                val totalWorkersCount = workers.size
+            // Personal role
+            val personalAttendance = localAttendanceRepository.getPersonalAttendance()
+            val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+            val currentMonthStr = SimpleDateFormat("yyyy-MM", Locale.getDefault()).format(Date())
 
-                val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-                val currentMonthStr = SimpleDateFormat("yyyy-MM", Locale.getDefault()).format(Date())
+            var todayEarned = 0.0
+            var monthEarned = 0.0
+            var currentTodayStatus: String? = null
+            var currentOvertime = 0
+            var currentNote: String? = null
 
-                val monthSummary = localAttendanceRepository.getSummaryFlow(currentMonthStr, "contractor")
+            for (record in personalAttendance) {
+                val date = record.date
+                val status = record.status
+                val type = record.type
+                val otHours = record.overtimeHours
+                val noteStr = record.note
 
-                // Let's also dynamically calculate stats to be extremely accurate
-                val todayRecords = localAttendanceRepository.getAttendanceByDate(todayStr)
-                val todayPresentCount = todayRecords.count { it.status == "present" }
-                val todayAbsentCount = todayRecords.count { it.status == "absent" }
+                val dailyBase = if (status == "present") {
+                    if (type == "half") cachedDefaultWage / 2 else cachedDefaultWage
+                } else 0.0
+                // Support overtime calculation
+                val dailyOT = if (status == "present") OvertimeCalculator.calculateOvertimeAmount(cachedDefaultWage, otHours, noteStr) else 0.0
 
-                // Collect the summary flow or compute
-                monthSummary.collect { summary ->
-                    val totalPaid = summary?.totalAdvance ?: 0.0
-                    val totalWages = summary?.totalWages ?: 0.0
-                    val pending = totalWages - totalPaid
-
-                    _dashboardState.update { it.copy(
-                        totalWorkers = totalWorkersCount.toString(),
-                        todayPresent = todayPresentCount.toString(),
-                        todayAbsent = todayAbsentCount.toString(),
-                        totalPaidMonth = totalPaid.toInt().toString(),
-                        pendingAmount = pending.toInt().toString()
-                    ) }
-                }
-            } else {
-                // Personal role
-                val personalAttendance = localAttendanceRepository.getPersonalAttendance()
-                val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-                val currentMonthStr = SimpleDateFormat("yyyy-MM", Locale.getDefault()).format(Date())
-
-                var todayEarned = 0.0
-                var monthEarned = 0.0
-                var currentTodayStatus: String? = null
-                var currentOvertime = 0
-                var currentNote: String? = null
-
-                for (record in personalAttendance) {
-                    val date = record.date
-                    val status = record.status
-                    val type = record.type
-                    val otHours = record.overtimeHours
-                    val noteStr = record.note
-
-                    val dailyBase = if (status == "present") {
-                        if (type == "half") cachedDefaultWage / 2 else cachedDefaultWage
-                    } else 0.0
-                    // Support overtime calculation
-                    val dailyOT = if (status == "present") OvertimeCalculator.calculateOvertimeAmount(cachedDefaultWage, otHours, noteStr) else 0.0
-
-                    if (date == todayStr) {
-                        if (status != "advance") {
-                            currentTodayStatus = status
-                            currentOvertime = otHours
-                            currentNote = OvertimeCalculator.cleanNote(noteStr)
-                            todayEarned = dailyBase + dailyOT
-                        }
-                    }
-
-                    if (date.startsWith(currentMonthStr)) {
-                        monthEarned += (dailyBase + dailyOT)
+                if (date == todayStr) {
+                    if (status != "advance") {
+                        currentTodayStatus = status
+                        currentOvertime = otHours
+                        currentNote = OvertimeCalculator.cleanNote(noteStr)
+                        todayEarned = dailyBase + dailyOT
                     }
                 }
 
-                _dashboardState.update { it.copy(
-                    todayEarned = todayEarned.toInt().toString(),
-                    monthEarned = monthEarned.toInt().toString(),
-                    todayStatus = currentTodayStatus,
-                    overtimeHours = currentOvertime,
-                    todayNote = currentNote
-                ) }
+                if (date.startsWith(currentMonthStr)) {
+                    monthEarned += (dailyBase + dailyOT)
+                }
             }
+
+            _dashboardState.update { it.copy(
+                todayEarned = todayEarned.toInt().toString(),
+                monthEarned = monthEarned.toInt().toString(),
+                todayStatus = currentTodayStatus,
+                overtimeHours = currentOvertime,
+                todayNote = currentNote
+            ) }
         }
     }
 
@@ -182,7 +140,7 @@ class OfflineDashboardViewModel(
             ) }
 
             localAttendanceRepository.saveAttendance(attendance)
-            loadLocalData("personal")
+            loadLocalData()
         }
     }
 
@@ -209,18 +167,18 @@ class OfflineDashboardViewModel(
             ) }
 
             localAttendanceRepository.saveAttendance(attendance)
-            loadLocalData("personal")
+            loadLocalData()
         }
     }
 
-    fun addAdvance(amount: Double, workerId: String? = null) {
+    fun addAdvance(amount: Double) {
         viewModelScope.launch {
             val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-            val docId = if (workerId != null) "${workerId}_${todayStr}_advance" else "personal_${todayStr}_advance"
+            val docId = "personal_${todayStr}_advance"
 
             val attendance = AttendanceEntity(
                 id = docId,
-                workerId = workerId,
+                workerId = null,
                 date = todayStr,
                 status = "advance",
                 type = "full",
@@ -229,7 +187,7 @@ class OfflineDashboardViewModel(
             )
 
             localAttendanceRepository.saveAttendance(attendance)
-            loadLocalData(_dashboardState.value.role)
+            loadLocalData()
         }
     }
 
@@ -245,7 +203,7 @@ class OfflineDashboardViewModel(
             ) }
 
             localAttendanceRepository.deleteAttendance(docId, todayStr)
-            loadLocalData("personal")
+            loadLocalData()
         }
     }
 

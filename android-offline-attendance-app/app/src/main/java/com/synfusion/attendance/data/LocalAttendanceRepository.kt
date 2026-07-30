@@ -3,18 +3,15 @@ package com.synfusion.attendance.data
 import com.synfusion.attendance.data.daos.AttendanceDao
 import com.synfusion.attendance.data.daos.SummaryDao
 import com.synfusion.attendance.data.daos.UserDao
-import com.synfusion.attendance.data.daos.WorkerDao
 import com.synfusion.attendance.data.entities.AttendanceEntity
 import com.synfusion.attendance.data.entities.SummaryEntity
 import com.synfusion.attendance.data.entities.UserEntity
-import com.synfusion.attendance.data.entities.WorkerEntity
 import kotlinx.coroutines.flow.Flow
 import java.text.SimpleDateFormat
 import java.util.*
 
 class LocalAttendanceRepository(
     private val userDao: UserDao,
-    private val workerDao: WorkerDao,
     private val attendanceDao: AttendanceDao,
     private val summaryDao: SummaryDao
 ) {
@@ -25,35 +22,16 @@ class LocalAttendanceRepository(
     suspend fun saveUser(user: UserEntity) = userDao.insertUser(user)
     suspend fun clearSession() {
         userDao.clearAll()
-        workerDao.clearAll()
         attendanceDao.clearAll()
         summaryDao.clearAll()
     }
 
-    // --- Worker Management ---
-    fun getAllWorkersFlow(): Flow<List<WorkerEntity>> = workerDao.getAllWorkersFlow()
-    suspend fun getAllWorkers(): List<WorkerEntity> = workerDao.getAllWorkers()
-    suspend fun getWorkerById(id: String): WorkerEntity? = workerDao.getWorkerById(id)
-    fun getWorkerByIdFlow(id: String): Flow<WorkerEntity?> = workerDao.getWorkerByIdFlow(id)
-    suspend fun saveWorker(worker: WorkerEntity) = workerDao.insertWorker(worker)
-    suspend fun deleteWorker(id: String) {
-        attendanceDao.deleteAttendanceByWorkerId(id)
-        workerDao.deleteWorkerById(id)
-        recalculateAllSummaries()
-    }
-
     // --- Attendance Operations ---
-    fun getWorkerAttendanceFlow(workerId: String): Flow<List<AttendanceEntity>> =
-        attendanceDao.getWorkerAttendanceFlow(workerId)
-
     fun getPersonalAttendanceFlow(): Flow<List<AttendanceEntity>> =
         attendanceDao.getPersonalAttendanceFlow()
 
     suspend fun getPersonalAttendance(): List<AttendanceEntity> =
         attendanceDao.getPersonalAttendance()
-
-    suspend fun getWorkerAttendance(workerId: String): List<AttendanceEntity> =
-        attendanceDao.getWorkerAttendance(workerId)
 
     fun getAttendanceByDateFlow(date: String): Flow<List<AttendanceEntity>> =
         attendanceDao.getAttendanceByDateFlow(date)
@@ -87,7 +65,7 @@ class LocalAttendanceRepository(
         newData: AttendanceEntity?
     ) {
         val monthId = date.substring(0, 7) // YYYY-MM
-        val role = if (oldData?.workerId != null || newData?.workerId != null) "contractor" else "personal"
+        val role = "personal"
         val summaryId = "${role}_$monthId"
 
         val currentSummary = summaryDao.getSummaryById(summaryId) ?: SummaryEntity(
@@ -143,11 +121,5 @@ class LocalAttendanceRepository(
         )
 
         summaryDao.insertSummary(updatedSummary)
-    }
-
-    private suspend fun recalculateAllSummaries() {
-        // Simple safety recalculation when worker deletes or changes occur
-        // For each month/year, recalculate summaries
-        // Since it's a lightweight local app, this is very fast.
     }
 }

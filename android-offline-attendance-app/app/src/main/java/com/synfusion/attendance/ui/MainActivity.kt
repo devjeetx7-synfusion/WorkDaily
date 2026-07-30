@@ -57,18 +57,16 @@ fun OfflineDailyWorkApp(factory: OfflineViewModelFactory) {
 
     val tokenState by authViewModel.authTokenFlow.collectAsState(initial = "LOADING")
     val languageState by authViewModel.repository.languageFlow.collectAsState(initial = "LOADING")
-    val roleState by authViewModel.userRoleFlow.collectAsState(initial = "LOADING")
     val onboardingCompleted by authViewModel.repository.isOnboardingCompletedFlow.collectAsState(initial = "LOADING")
     val splashEnabled by authViewModel.repository.splashEnabledFlow.collectAsState(initial = "LOADING")
 
-    if (tokenState == "LOADING" || languageState == "LOADING" || roleState == "LOADING" || onboardingCompleted == "LOADING" || splashEnabled == "LOADING") {
+    if (tokenState == "LOADING" || languageState == "LOADING" || onboardingCompleted == "LOADING" || splashEnabled == "LOADING") {
         return
     }
 
     val startDest = if (splashEnabled == false) {
         if (languageState == null) "language_selection"
         else if (tokenState == null) "login"
-        else if (roleState == null || roleState!!.isEmpty()) "role_selection"
         else "dashboard"
     } else {
         "splash"
@@ -84,10 +82,6 @@ fun OfflineDailyWorkApp(factory: OfflineViewModelFactory) {
                         }
                     } else if (tokenState == null) {
                         navController.navigate("login") {
-                            popUpTo("splash") { inclusive = true }
-                        }
-                    } else if (roleState == null || roleState!!.isEmpty()) {
-                        navController.navigate("role_selection") {
                             popUpTo("splash") { inclusive = true }
                         }
                     } else {
@@ -113,24 +107,8 @@ fun OfflineDailyWorkApp(factory: OfflineViewModelFactory) {
                 authViewModel = authViewModel,
                 selectedLanguage = languageState ?: "en",
                 onLoginSuccess = {
-                    if (roleState != null && roleState!!.isNotEmpty()) {
-                        navController.navigate("dashboard") {
-                            popUpTo("login") { inclusive = true }
-                        }
-                    } else {
-                        navController.navigate("role_selection") {
-                            popUpTo("login") { inclusive = true }
-                        }
-                    }
-                }
-            )
-        }
-        composable("role_selection") {
-            RoleSelectionScreen(
-                authViewModel = authViewModel,
-                onComplete = {
                     navController.navigate("dashboard") {
-                        popUpTo("role_selection") { inclusive = true }
+                        popUpTo("login") { inclusive = true }
                     }
                 }
             )
