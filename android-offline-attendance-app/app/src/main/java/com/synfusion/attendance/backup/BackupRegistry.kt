@@ -1,0 +1,135 @@
+package com.synfusion.attendance.backup
+
+import android.content.Context
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
+import com.synfusion.attendance.data.AttendanceDatabase
+import com.synfusion.attendance.data.offlineDataStore
+import kotlinx.coroutines.flow.first
+import java.io.File
+
+interface BackupModule {
+    val name: String
+    val keyName: String
+    suspend fun exportModule(context: Context, backupWorkingDir: File, logger: BackupLogger): Map<String, Int>
+    suspend fun importModule(context: Context, backupWorkingDir: File, merge: Boolean, logger: BackupLogger): Map<String, Int>
+}
+
+object BackupRegistry {
+    private val modules = mutableListOf<BackupModule>()
+
+    init {
+        // Register core & extensible modules
+        registerModule(DatabaseBackupModule())
+        registerModule(PreferencesBackupModule())
+        registerModule(MediaBackupModule())
+        registerModule(LeaveBackupModule())
+        registerModule(CalendarBackupModule())
+        registerModule(NotificationBackupModule())
+    }
+
+    fun registerModule(module: BackupModule) {
+        if (modules.none { it.name == module.name }) {
+            modules.add(module)
+        }
+    }
+
+    fun getModules(): List<BackupModule> = modules
+}
+
+class DatabaseBackupModule : BackupModule {
+    override val name: String = "Database"
+    override val keyName: String = "database"
+
+    override suspend fun exportModule(context: Context, backupWorkingDir: File, logger: BackupLogger): Map<String, Int> {
+        val db = AttendanceDatabase.getInstance(context)
+        return JsonExporter.exportDatabase(db, backupWorkingDir, logger)
+    }
+
+    override suspend fun importModule(context: Context, backupWorkingDir: File, merge: Boolean, logger: BackupLogger): Map<String, Int> {
+        val tempDb = TempDatabaseManager.createTempDatabase(context)
+        try {
+            val counts = JsonImporter.importDatabase(tempDb, backupWorkingDir, merge, logger)
+            TempDatabaseManager.swapToProduction(context, tempDb)
+            return counts
+        } finally {
+            tempDb.close()
+        }
+    }
+}
+
+class PreferencesBackupModule : BackupModule {
+    override val name: String = "Preferences"
+    override val keyName: String = "preferences"
+
+    override suspend fun exportModule(context: Context, backupWorkingDir: File, logger: BackupLogger): Map<String, Int> {
+        val prefDir = File(backupWorkingDir, "preferences")
+        val dataStoreMap = readDataStoreValues(context)
+        JsonExporter.exportPreferences(prefDir, dataStoreMap, emptyMap(), logger)
+        return mapOf("datastore" to dataStoreMap.size)
+    }
+
+    override suspend fun importModule(context: Context, backupWorkingDir: File, merge: Boolean, logger: BackupLogger): Map<String, Int> {
+        val (dsPrefs, _) = JsonImporter.importPreferences(backupWorkingDir, logger)
+        applyDataStorePreferences(context, dsPrefs)
+        return mapOf("datastore" to dsPrefs.size)
+    }
+
+    private suspend fun readDataStoreValues(context: Context): Map<String, Any> {
+        val prefs = context.offlineDataStore.data.first()
+        val map = mutableMapOf<String, Any>()
+        prefs.asMap().forEach { (key, value) ->
+            map[key.name] = value
+        }
+        return map
+    }
+
+    private suspend fun applyDataStorePreferences(context: Context, dsMap: Map<String, Any>) {
+        context.offlineDataStore.edit { preferences ->
+            dsMap.forEach { (key, value) ->
+                when (value) {
+                    is Boolean -> preferences[androidx.datastore.preferences.core.booleanPreferencesKey(key)] = value
+                    is String -> preferences[androidx.datastore.preferences.core.stringPreferencesKey(key)] = value
+                }
+            }
+        }
+    }
+}
+
+class MediaBackupModule : BackupModule {
+    override val name: String = "Media"
+    override val keyName: String = "media"
+
+    override suspend fun exportModule(context: Context, backupWorkingDir: File, logger: BackupLogger): Map<String, Int> {
+        val mediaDir = File(backupWorkingDir, "media")
+        val count = MediaExporter.exportMedia(context.filesDir, mediaDir, logger)
+        return mapOf("media" to count)
+    }
+
+    override suspend fun importModule(context: Context, backupWorkingDir: File, merge: Boolean, logger: BackupLogger): Map<String, Int> {
+        val mediaDir = File(backupWorkingDir, "media")
+        val count = MediaImporter.importMedia(mediaDir, context.filesDir, logger)
+        return mapOf("media" to count)
+    }
+}
+
+class LeaveBackupModule : BackupModule {
+    override val name: String = "Leave"
+    override val keyName: String = "leave"
+    override suspend fun exportModule(context: Context, backupWorkingDir: File, logger: BackupLogger): Map<String, Int> = mapOf("leave" to 0)
+    override suspend fun importModule(context: Context, backupWorkingDir: File, merge: Boolean, logger: BackupLogger): Map<String, Int> = mapOf("leave" to 0)
+}
+
+class CalendarBackupModule : BackupModule {
+    override val name: String = "Calendar"
+    override val keyName: String = "calendar"
+    override suspend fun exportModule(context: Context, backupWorkingDir: File, logger: BackupLogger): Map<String, Int> = mapOf("calendar" to 0)
+    override suspend fun importModule(context: Context, backupWorkingDir: File, merge: Boolean, logger: BackupLogger): Map<String, Int> = mapOf("calendar" to 0)
+}
+
+class NotificationBackupModule : BackupModule {
+    override val name: String = "Notification"
+    override val keyName: String = "notification"
+    override suspend fun exportModule(context: Context, backupWorkingDir: File, logger: BackupLogger): Map<String, Int> = mapOf("notification" to 0)
+    override suspend fun importModule(context: Context, backupWorkingDir: File, merge: Boolean, logger: BackupLogger): Map<String, Int> = mapOf("notification" to 0)
+}

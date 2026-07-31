@@ -50,5 +50,15 @@ abstract class AttendanceDatabase : RoomDatabase() {
                 instance
             }
         }
+
+        @Synchronized
+        fun resetInstance() {
+            try {
+                INSTANCE?.close()
+            } catch (e: Exception) {
+                // ignore
+            }
+            INSTANCE = null
+        }
     }
 }
