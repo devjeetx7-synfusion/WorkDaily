@@ -2,7 +2,18 @@ package com.synfusion.attendance.ui
 
 import android.net.Uri
 import android.widget.Toast
+import androidx.core.content.FileProvider
+import com.synfusion.attendance.backup.BackupManager
+import com.synfusion.attendance.backup.ProgressTracker
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import android.content.ActivityNotFoundException
+import androidx.compose.ui.text.style.TextAlign
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -74,7 +85,30 @@ fun SettingsScreen(
             (context as? android.app.Activity)?.finish()
         }
     }
-    var showLogoutDialog by remember { mutableStateOf(false) }
+    var showLogoutBottomSheet by remember { mutableStateOf(false) }
+    var showPreDeleteReminderDialog by remember { mutableStateOf(false) }
+
+    val coroutineScope = rememberCoroutineScope()
+    val backupManager = remember { BackupManager(context) }
+    var isBackingUpForLogout by remember { mutableStateOf(false) }
+    val backupProgressTracker = remember { ProgressTracker() }
+    val backupProgress by backupProgressTracker.progress.collectAsState(initial = 0f)
+    val backupStatus by backupProgressTracker.status.collectAsState(initial = "")
+    var backupSuccessDialogDetails by remember { mutableStateOf<File?>(null) }
+
+    var lastBackupFile by remember { mutableStateOf<File?>(null) }
+    LaunchedEffect(Unit) {
+        withContext(Dispatchers.IO) {
+            val dir = context.getExternalFilesDir(null)
+            if (dir != null && dir.exists()) {
+                val files = dir.listFiles { _, name -> name.startsWith("AttendanceBackup_") && name.endsWith(".zip") }
+                if (!files.isNullOrEmpty()) {
+                    lastBackupFile = files.maxByOrNull { it.lastModified() }
+                }
+            }
+        }
+    }
+
     var showProfileEditSheet by remember { mutableStateOf(false) }
 
     val supportedLanguages = mapOf("en" to "English", "hi" to "हिंदी")
@@ -94,7 +128,7 @@ fun SettingsScreen(
                 .fillMaxSize()
                 .verticalScroll(scrollState)
                 .padding(paddingValues)
-                .padding(start = 16.dp, end = 16.dp, top = 20.dp, bottom = 120.dp),
+                .padding(start = 16.dp, end = 16.dp, top = 20.dp, bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -235,38 +269,71 @@ fun SettingsScreen(
             }
 
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("Data & Backup", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 4.dp))
+                Text("Backup & Restore", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 4.dp))
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { showBackupSheet = true }
-                            .padding(16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier = Modifier
-                                    .size(40.dp)
-                                    .clip(androidx.compose.foundation.shape.CircleShape)
-                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(Icons.Default.Backup, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        val lastDateStr = lastBackupFile?.let {
+                            SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault()).format(Date(it.lastModified()))
+                        } ?: "Never"
+                        val lastSizeStr = lastBackupFile?.let {
+                            val sizeMb = it.length() / 1024.0 / 1024.0
+                            String.format(Locale.getDefault(), "%.2f MB", sizeMb)
+                        } ?: "N/A"
+                        val lastLocStr = lastBackupFile?.let { "External Files" } ?: "N/A"
+
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text("Last Backup:", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(lastDateStr, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
                             }
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column {
-                                Text("Backup & Restore", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                Text("Export and restore app state", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text("Backup Size:", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(lastSizeStr, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
+                            }
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text("Backup Location:", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(lastLocStr, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
                             }
                         }
-                        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Button(
+                                onClick = { showBackupSheet = true },
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Icon(Icons.Default.Backup, null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Manage", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            }
+
+                            if (lastBackupFile != null) {
+                                OutlinedButton(
+                                    onClick = {
+                                        val uri = FileProvider.getUriForFile(context, "com.synfusion.attendance.fileprovider", lastBackupFile!!)
+                                        val intent = Intent(Intent.ACTION_SEND).apply {
+                                            type = "application/zip"
+                                            putExtra(Intent.EXTRA_STREAM, uri)
+                                            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                        }
+                                        context.startActivity(Intent.createChooser(intent, "Share Backup"))
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(8.dp)
+                                ) {
+                                    Icon(Icons.Default.Share, null, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Share", fontSize = 12.sp)
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -336,7 +403,7 @@ fun SettingsScreen(
             }
 
             Button(
-                onClick = { showLogoutDialog = true },
+                onClick = { showPreDeleteReminderDialog = true },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp)
@@ -382,28 +449,220 @@ fun SettingsScreen(
         if (showBackupSheet) {
             com.synfusion.attendance.ui.components.BackupRestoreBottomSheet(onDismiss = { showBackupSheet = false })
         }
-        if (showLogoutDialog) {
+        if (showPreDeleteReminderDialog) {
             AlertDialog(
-                onDismissRequest = { showLogoutDialog = false },
-                title = { Text(text = "Log Out?", fontWeight = FontWeight.Bold) },
-                text = { Text(text = "Are you sure you want to log out?") },
+                onDismissRequest = { showPreDeleteReminderDialog = false },
+                title = { Text("Pre-Delete Reminder", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error) },
+                text = {
+                    Text("To avoid losing your attendance history, create a backup before removing the app.")
+                },
                 confirmButton = {
+                    Button(
+                        onClick = {
+                            showPreDeleteReminderDialog = false
+                            isBackingUpForLogout = true
+                            coroutineScope.launch {
+                                try {
+                                    val backupDir = context.getExternalFilesDir(null) ?: context.cacheDir
+                                    val backupFile = File(backupDir, "AttendanceBackup_${SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())}.zip")
+                                    backupManager.performBackup(backupFile, backupProgressTracker)
+                                    backupSuccessDialogDetails = backupFile
+                                } catch (e: Exception) {
+                                    Toast.makeText(context, "Backup failed: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                                } finally {
+                                    isBackingUpForLogout = false
+                                }
+                            }
+                        }
+                    ) {
+                        Text("Backup Now")
+                    }
+                },
+                dismissButton = {
+                    Row {
+                        TextButton(
+                            onClick = {
+                                showPreDeleteReminderDialog = false
+                                showLogoutBottomSheet = true
+                            }
+                        ) {
+                            Text("Continue", color = MaterialTheme.colorScheme.primary)
+                        }
+                        TextButton(
+                            onClick = { showPreDeleteReminderDialog = false }
+                        ) {
+                            Text("Cancel", color = MaterialTheme.colorScheme.onSurface)
+                        }
+                    }
+                }
+            )
+        }
+        if (showLogoutBottomSheet) {
+            LogoutBottomSheet(
+                onDismiss = { showLogoutBottomSheet = false },
+                onBackupAndLogout = {
+                    showLogoutBottomSheet = false
+                    isBackingUpForLogout = true
+                    coroutineScope.launch {
+                        try {
+                            val backupDir = context.getExternalFilesDir(null) ?: context.cacheDir
+                            val backupFile = File(backupDir, "AttendanceBackup_${SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())}.zip")
+                            backupManager.performBackup(backupFile, backupProgressTracker)
+                            backupSuccessDialogDetails = backupFile
+                        } catch (e: Exception) {
+                            Toast.makeText(context, "Backup failed: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                            // Still logout or stay? Stay so they can try again.
+                        } finally {
+                            isBackingUpForLogout = false
+                        }
+                    }
+                },
+                onLogoutWithoutBackup = {
+                    showLogoutBottomSheet = false
+                    viewModel.logout()
+                    onLogout()
+                }
+            )
+        }
+
+        if (isBackingUpForLogout) {
+            AlertDialog(
+                onDismissRequest = {},
+                title = { Text("Creating Backup...", fontWeight = FontWeight.Bold) },
+                text = {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+                        CircularProgressIndicator(progress = { backupProgress / 100f }, color = MaterialTheme.colorScheme.primary)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text("$backupStatus (${backupProgress.toInt()}%)", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    }
+                },
+                confirmButton = {}
+            )
+        }
+
+        if (backupSuccessDialogDetails != null) {
+            val file = backupSuccessDialogDetails!!
+            val fileSizeMb = String.format(Locale.getDefault(), "%.2f", file.length() / 1024.0 / 1024.0)
+            val createdTime = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault()).format(Date(file.lastModified()))
+            AlertDialog(
+                onDismissRequest = {},
+                title = { Text("Backup Created Successfully", fontWeight = FontWeight.Bold) },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("Your backup details:")
+                        Text("• Size: $fileSizeMb MB", fontSize = 13.sp)
+                        Text("• Created Time: $createdTime", fontSize = 13.sp)
+                        Text("• Location: ${file.parentFile?.name ?: "Downloads"}", fontSize = 13.sp)
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            val uri = FileProvider.getUriForFile(context, "com.synfusion.attendance.fileprovider", file)
+                            val intent = Intent(Intent.ACTION_SEND).apply {
+                                type = "application/zip"
+                                putExtra(Intent.EXTRA_STREAM, uri)
+                                flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                            }
+                            context.startActivity(Intent.createChooser(intent, "Share Backup ZIP"))
+                        }
+                    ) {
+                        Icon(Icons.Default.Share, null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Share")
+                    }
+                },
+                dismissButton = {
                     TextButton(
                         onClick = {
-                            showLogoutDialog = false
+                            backupSuccessDialogDetails = null
                             viewModel.logout()
                             onLogout()
                         }
                     ) {
-                        Text("Log Out", color = MaterialTheme.colorScheme.error)
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showLogoutDialog = false }) {
-                        Text("Cancel", color = MaterialTheme.colorScheme.onSurface)
+                        Text("Done")
                     }
                 }
             )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun LogoutBottomSheet(
+    onDismiss: () -> Unit,
+    onBackupAndLogout: () -> Unit,
+    onLogoutWithoutBackup: () -> Unit
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = MaterialTheme.colorScheme.background,
+        dragHandle = { BottomSheetDefaults.DragHandle() }
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                imageVector = Icons.Default.Logout,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.error,
+                modifier = Modifier.size(48.dp)
+            )
+
+            Text(
+                text = "Logout",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+
+            Text(
+                text = "Would you like to create a backup before logging out?",
+                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Button(
+                onClick = onBackupAndLogout,
+                modifier = Modifier.fillMaxWidth().height(50.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Backup, null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Backup & Logout", fontWeight = FontWeight.Bold)
+                }
+            }
+
+            OutlinedButton(
+                onClick = onLogoutWithoutBackup,
+                modifier = Modifier.fillMaxWidth().height(50.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.error)
+            ) {
+                Text("Logout Without Backup", fontWeight = FontWeight.Bold)
+            }
+
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth().height(48.dp)
+            ) {
+                Text("Cancel", color = MaterialTheme.colorScheme.onSurface)
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }

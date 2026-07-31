@@ -1,6 +1,11 @@
 package com.synfusion.attendance.ui
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import com.synfusion.attendance.ui.components.ShimmerBox
+import com.synfusion.attendance.ui.components.ShimmerCircle
+import com.synfusion.attendance.ui.components.ShimmerTextLine
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -66,20 +71,30 @@ fun CalendarScreen(
             .fillMaxSize()
             .nestedScroll(pullRefreshState.nestedScrollConnection)
     ) {
-        if (state.isLoading) {
-            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-        } else if (state.errorMessage != null) {
-            Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(64.dp))
-                    Text(state.errorMessage ?: "An error occurred", color = MaterialTheme.colorScheme.error, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-                    Button(onClick = { viewModel.refresh() }) {
-                        Text("Retry")
+        Crossfade(
+            targetState = if (state.isLoading) "shimmer" else if (state.errorMessage != null) "error" else "content",
+            animationSpec = tween(350),
+            label = "calendar_crossfade"
+        ) { pageState ->
+            when (pageState) {
+                "shimmer" -> {
+                    CalendarShimmer()
+                }
+                "error" -> {
+                    Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                            Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(64.dp))
+                            Text(state.errorMessage ?: "An error occurred", color = MaterialTheme.colorScheme.error, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                            Button(onClick = { viewModel.refresh() }) {
+                                Text("Retry")
+                            }
+                        }
                     }
                 }
+                "content" -> {
+                    PersonalCalendarView(viewModel = viewModel, state = state, scrollState = scrollState)
+                }
             }
-        } else {
-            PersonalCalendarView(viewModel = viewModel, state = state, scrollState = scrollState)
         }
         PullToRefreshContainer(
             state = pullRefreshState,
@@ -582,4 +597,47 @@ fun PersonalAttendanceDialog(
             }
         }
     )
+}
+
+@Composable
+fun CalendarShimmer() {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        ShimmerTextLine(height = 24.dp, fraction = 0.3f)
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Month selector Shimmer
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            ShimmerCircle(size = 40.dp)
+            ShimmerTextLine(height = 20.dp, fraction = 0.4f)
+            ShimmerCircle(size = 40.dp)
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Preset / Absent counts Shimmer
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            ShimmerBox(modifier = Modifier.weight(1f), height = 48.dp, cornerRadius = 12.dp)
+            ShimmerBox(modifier = Modifier.weight(1f), height = 48.dp, cornerRadius = 12.dp)
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Calendar Grid Shimmer
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            for (i in 0 until 5) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    for (j in 0..6) {
+                        ShimmerBox(modifier = Modifier.weight(1f).aspectRatio(1f), height = 40.dp, cornerRadius = 100.dp)
+                    }
+                }
+            }
+        }
+    }
 }

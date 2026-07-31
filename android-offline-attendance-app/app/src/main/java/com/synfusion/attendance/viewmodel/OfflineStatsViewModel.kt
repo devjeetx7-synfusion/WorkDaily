@@ -178,6 +178,7 @@ class OfflineStatsViewModel(
                     )
                 }
             } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
                 android.util.Log.e("OfflineStatsVM", "Error loading stats", e)
                 _statsState.update { current ->
                     current.copy(

@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 2,
-    "identityHash": "e34a5a908154851dbc8471365bfb4199",
+    "identityHash": "86e0c6caf5ea53f482b7de86081cc850",
     "entities": [
       {
         "tableName": "users",
@@ -137,7 +137,26 @@
             "id"
           ]
         },
-        "indices": [],
+        "indices": [
+          {
+            "name": "index_attendance_date",
+            "unique": false,
+            "columnNames": [
+              "date"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_attendance_date` ON `${TABLE_NAME}` (`date`)"
+          },
+          {
+            "name": "index_attendance_workerId",
+            "unique": false,
+            "columnNames": [
+              "workerId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_attendance_workerId` ON `${TABLE_NAME}` (`workerId`)"
+          }
+        ],
         "foreignKeys": []
       },
       {
@@ -199,14 +218,25 @@
             "id"
           ]
         },
-        "indices": [],
+        "indices": [
+          {
+            "name": "index_summaries_monthId_role",
+            "unique": false,
+            "columnNames": [
+              "monthId",
+              "role"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_summaries_monthId_role` ON `${TABLE_NAME}` (`monthId`, `role`)"
+          }
+        ],
         "foreignKeys": []
       }
     ],
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'e34a5a908154851dbc8471365bfb4199')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '86e0c6caf5ea53f482b7de86081cc850')"
     ]
   }
 }

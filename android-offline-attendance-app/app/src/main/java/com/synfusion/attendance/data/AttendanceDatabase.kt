@@ -43,6 +43,7 @@ abstract class AttendanceDatabase : RoomDatabase() {
                     AttendanceDatabase::class.java,
                     "synfusion_offline_attendance_db"
                 )
+                .setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING)
                 .addMigrations(MIGRATION_1_2)
                 .fallbackToDestructiveMigration()
                 .build()

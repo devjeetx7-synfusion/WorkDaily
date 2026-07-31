@@ -1,6 +1,10 @@
 package com.synfusion.attendance.ui
 
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.animateFloatAsState
+import com.synfusion.attendance.ui.components.ShimmerBox
+import com.synfusion.attendance.ui.components.ShimmerCircle
+import com.synfusion.attendance.ui.components.ShimmerTextLine
 import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
@@ -112,33 +116,43 @@ fun StatsScreen(
                 .padding(padding)
                 .nestedScroll(pullRefreshState.nestedScrollConnection)
         ) {
-            if (state.isLoading) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-            } else if (state.errorMessage != null) {
-                Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                        Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(64.dp))
-                        Text(state.errorMessage ?: "An error occurred", color = MaterialTheme.colorScheme.error, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-                        Button(onClick = { viewModel.refresh() }) {
-                            Text("Retry")
+            Crossfade(
+                targetState = if (state.isLoading) "shimmer" else if (state.errorMessage != null) "error" else "content",
+                animationSpec = tween(350),
+                label = "stats_crossfade"
+            ) { pageState ->
+                when (pageState) {
+                    "shimmer" -> {
+                        StatsShimmer()
+                    }
+                    "error" -> {
+                        Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                                Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(64.dp))
+                                Text(state.errorMessage ?: "An error occurred", color = MaterialTheme.colorScheme.error, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                                Button(onClick = { viewModel.refresh() }) {
+                                    Text("Retry")
+                                }
+                            }
                         }
                     }
-                }
-            } else {
-                Column(modifier = Modifier.fillMaxSize()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 12.dp)
-                    ) {
-                        CustomToggleTab(
-                            tabs = tabs,
-                            selectedTabIndex = selectedTabIndex,
-                            onTabSelected = { selectedTabIndex = it }
-                        )
-                    }
+                    "content" -> {
+                        Column(modifier = Modifier.fillMaxSize()) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                            ) {
+                                CustomToggleTab(
+                                    tabs = tabs,
+                                    selectedTabIndex = selectedTabIndex,
+                                    onTabSelected = { selectedTabIndex = it }
+                                )
+                            }
 
-                    PersonalStatsView(viewModel = viewModel, state = state, isAllTime = selectedTabIndex == 1, onNavigatePassbook = onNavigatePassbook, scrollState = scrollState)
+                            PersonalStatsView(viewModel = viewModel, state = state, isAllTime = selectedTabIndex == 1, onNavigatePassbook = onNavigatePassbook, scrollState = scrollState)
+                        }
+                    }
                 }
             }
 
@@ -148,6 +162,41 @@ fun StatsScreen(
                 contentColor = MaterialTheme.colorScheme.primary
             )
         }
+    }
+}
+
+@Composable
+fun StatsShimmer() {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // Toggle tab shimmer
+        ShimmerBox(modifier = Modifier.fillMaxWidth(), height = 48.dp, cornerRadius = 24.dp)
+        Spacer(modifier = Modifier.height(8.dp))
+
+        ShimmerTextLine(height = 24.dp, fraction = 0.4f)
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Month Selector Shimmer
+        ShimmerBox(modifier = Modifier.fillMaxWidth(), height = 56.dp, cornerRadius = 16.dp)
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Grid cards shimmer
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+            ShimmerBox(modifier = Modifier.weight(1f), height = 80.dp, cornerRadius = 16.dp)
+            ShimmerBox(modifier = Modifier.weight(1f), height = 80.dp, cornerRadius = 16.dp)
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+            ShimmerBox(modifier = Modifier.weight(1f), height = 80.dp, cornerRadius = 16.dp)
+            ShimmerBox(modifier = Modifier.weight(1f), height = 80.dp, cornerRadius = 16.dp)
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Chart Shimmer
+        ShimmerBox(modifier = Modifier.fillMaxWidth(), height = 200.dp, cornerRadius = 16.dp)
     }
 }
 
