@@ -1,7 +1,20 @@
 package com.synfusion.attendance.ui
 
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
+import com.synfusion.attendance.backup.RestoreManager
+import com.synfusion.attendance.backup.ProgressTracker
+import com.synfusion.attendance.backup.BackupManifest
+import java.io.File
+import java.io.FileOutputStream
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.background
@@ -71,6 +84,223 @@ fun LoginScreen(
     var name by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
+
+    var detectedBackupFile by remember { mutableStateOf<File?>(null) }
+    var showSmartBackupDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        withContext(Dispatchers.IO) {
+            val scanDirs = listOfNotNull(
+                context.getExternalFilesDir(null),
+                android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS)
+            )
+
+            var foundFile: File? = null
+            for (dir in scanDirs) {
+                if (dir.exists() && dir.isDirectory) {
+                    val files = dir.listFiles { _, fileName ->
+                        fileName.startsWith("AttendanceBackup_") && fileName.endsWith(".zip")
+                    }
+                    if (!files.isNullOrEmpty()) {
+                        foundFile = files.maxByOrNull { it.lastModified() }
+                        break
+                    }
+                }
+            }
+
+            if (foundFile != null) {
+                detectedBackupFile = foundFile
+                showSmartBackupDialog = true
+            }
+        }
+    }
+
+    val restoreManager = remember { RestoreManager(context) }
+    val progressTracker = remember { ProgressTracker() }
+    val progress by progressTracker.progress.collectAsState(initial = 0f)
+    val status by progressTracker.status.collectAsState(initial = "")
+
+    var isOperating by remember { mutableStateOf(false) }
+    var restorePreview by remember { mutableStateOf<BackupManifest?>(null) }
+    var restoreFileToApply by remember { mutableStateOf<File?>(null) }
+
+    var operationSuccess by remember { mutableStateOf<Boolean?>(null) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    // File Pick Launcher for SAF Restore
+    val pickRestoreLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument(),
+        onResult = { uri ->
+            if (uri != null) {
+                scope.launch {
+                    try {
+                        val tempFile = File(context.cacheDir, "RestoreTempLogin.zip")
+                        withContext(Dispatchers.IO) {
+                            context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                                FileOutputStream(tempFile).use { fos ->
+                                    inputStream.copyTo(fos)
+                                }
+                            }
+                        }
+
+                        val manifest = restoreManager.getBackupPreview(tempFile)
+                        if (manifest != null) {
+                            restorePreview = manifest
+                            restoreFileToApply = tempFile
+                        } else {
+                            tempFile.delete()
+                            Toast.makeText(context, "Invalid or corrupt backup package", Toast.LENGTH_LONG).show()
+                        }
+                    } catch (e: Exception) {
+                        Toast.makeText(context, "Failed to load backup: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                    }
+                }
+            } else {
+                Toast.makeText(context, "Restore selection cancelled", Toast.LENGTH_SHORT).show()
+            }
+        }
+    )
+
+    if (restorePreview != null) {
+        val preview = restorePreview!!
+        AlertDialog(
+            onDismissRequest = {
+                restorePreview = null
+                restoreFileToApply?.delete()
+                restoreFileToApply = null
+            },
+            title = { Text("Backup Package Preview", fontWeight = FontWeight.Bold) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("A backup package was parsed. Preview details:")
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text("• Backup Date: ${SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault()).format(Date(preview.backupDate))}", fontSize = 13.sp)
+                    Text("• Device Info: ${preview.deviceModel}", fontSize = 13.sp)
+                    Text("• App Version: ${preview.appVersion}", fontSize = 13.sp)
+                    Text("• Records: ${preview.recordCounts.map { "${it.key}: ${it.value}" }.joinToString(", ")}", fontSize = 13.sp)
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        isOperating = true
+                        val file = restoreFileToApply
+                        restorePreview = null
+                        scope.launch {
+                            try {
+                                if (file != null) {
+                                    val report = restoreManager.performRestore(file, false, progressTracker)
+                                    if (report != null) {
+                                        operationSuccess = true
+                                        // Auto-login since the backup is restored!
+                                        com.synfusion.attendance.data.AttendanceDatabase.resetInstance()
+                                        authViewModel.checkForUserAndLogin()
+                                    } else {
+                                        errorMessage = "Failed to restore backup database."
+                                        operationSuccess = false
+                                    }
+                                    file.delete()
+                                } else {
+                                    errorMessage = "Internal backup file error."
+                                    operationSuccess = false
+                                }
+                            } catch (e: Exception) {
+                                errorMessage = e.localizedMessage ?: "Restore process failed."
+                                operationSuccess = false
+                            } finally {
+                                isOperating = false
+                            }
+                        }
+                    }
+                ) {
+                    Text("Restore Now")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        restorePreview = null
+                        restoreFileToApply?.delete()
+                        restoreFileToApply = null
+                    }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    if (showSmartBackupDialog && detectedBackupFile != null) {
+        AlertDialog(
+            onDismissRequest = { showSmartBackupDialog = false },
+            title = { Text("Backup Found", fontWeight = FontWeight.Bold) },
+            text = { Text("A previous backup was detected.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showSmartBackupDialog = false
+                        val file = detectedBackupFile
+                        if (file != null) {
+                            isOperating = true
+                            scope.launch {
+                                try {
+                                    val report = restoreManager.performRestore(file, false, progressTracker)
+                                    if (report != null) {
+                                        operationSuccess = true
+                                        com.synfusion.attendance.data.AttendanceDatabase.resetInstance()
+                                        authViewModel.checkForUserAndLogin()
+                                    } else {
+                                        errorMessage = "Failed to restore backup database."
+                                        operationSuccess = false
+                                    }
+                                } catch (e: Exception) {
+                                    errorMessage = e.localizedMessage ?: "Restore process failed."
+                                    operationSuccess = false
+                                } finally {
+                                    isOperating = false
+                                }
+                            }
+                        }
+                    }
+                ) {
+                    Text("Restore Now")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showSmartBackupDialog = false }) {
+                    Text("Skip")
+                }
+            }
+        )
+    }
+
+    if (isOperating) {
+        AlertDialog(
+            onDismissRequest = {},
+            title = { Text("Restoring Backup...", fontWeight = FontWeight.Bold) },
+            text = {
+                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+                    CircularProgressIndicator(progress = { progress / 100f }, color = MaterialTheme.colorScheme.primary)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("$status (${progress.toInt()}%)", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                }
+            },
+            confirmButton = {}
+        )
+    }
+
+    if (operationSuccess == false) {
+        AlertDialog(
+            onDismissRequest = { operationSuccess = null },
+            title = { Text("Restore Failed", fontWeight = FontWeight.Bold) },
+            text = { Text(errorMessage ?: "An unexpected error occurred during the restore.") },
+            confirmButton = {
+                Button(onClick = { operationSuccess = null }) {
+                    Text("OK")
+                }
+            }
+        )
+    }
 
     val startText = when (selectedLanguage) {
         "hi" -> "स्थानीय कार्यक्षेत्र शुरू करें"
@@ -192,6 +422,26 @@ fun LoginScreen(
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontWeight = FontWeight.Medium
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+                HorizontalDivider(modifier = Modifier.width(180.dp), color = MaterialTheme.colorScheme.outlineVariant)
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = "Already have a Backup?",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Restore Backup",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier
+                        .clickable { pickRestoreLauncher.launch(arrayOf("application/zip")) }
+                        .padding(8.dp)
                 )
             }
         }

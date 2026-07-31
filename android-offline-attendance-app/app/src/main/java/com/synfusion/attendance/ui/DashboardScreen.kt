@@ -1,6 +1,9 @@
 package com.synfusion.attendance.ui
 
 import androidx.compose.foundation.background
+import com.synfusion.attendance.ui.components.ShimmerBox
+import com.synfusion.attendance.ui.components.ShimmerCircle
+import com.synfusion.attendance.ui.components.ShimmerTextLine
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -166,70 +169,78 @@ fun DashboardScreen(
                 ) { page ->
                     when (page) {
                         0 -> {
-                            if (dashboardState.isLoading) {
-                                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                                }
-                            } else if (dashboardState.errorMessage != null) {
-                                Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
-                                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                                        Icon(Icons.Default.ErrorOutline, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(64.dp))
-                                        Text(dashboardState.errorMessage ?: "An error occurred", color = MaterialTheme.colorScheme.error, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-                                        Button(onClick = { dashboardViewModel.refresh() }) {
-                                            Text("Retry")
+                            Crossfade(
+                                targetState = if (dashboardState.isLoading) "shimmer" else if (dashboardState.errorMessage != null) "error" else "content",
+                                animationSpec = tween(350),
+                                label = "dashboard_crossfade"
+                            ) { state ->
+                                when (state) {
+                                    "shimmer" -> {
+                                        DashboardShimmer()
+                                    }
+                                    "error" -> {
+                                        Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
+                                            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                                                Icon(Icons.Default.ErrorOutline, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(64.dp))
+                                                Text(dashboardState.errorMessage ?: "An error occurred", color = MaterialTheme.colorScheme.error, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                                                Button(onClick = { dashboardViewModel.refresh() }) {
+                                                    Text("Retry")
+                                                }
+                                            }
                                         }
                                     }
-                                }
-                            } else {
-                                val pullRefreshState = rememberPullToRefreshState()
-                                LaunchedEffect(pullRefreshState.isRefreshing) {
-                                    if (pullRefreshState.isRefreshing) {
-                                        dashboardViewModel.refresh()
-                                    }
-                                }
-                                LaunchedEffect(dashboardState.isRefreshing) {
-                                    if (dashboardState.isRefreshing) {
-                                        pullRefreshState.startRefresh()
-                                    } else {
-                                        pullRefreshState.endRefresh()
-                                    }
-                                }
+                                    "content" -> {
+                                        val pullRefreshState = rememberPullToRefreshState()
+                                        LaunchedEffect(pullRefreshState.isRefreshing) {
+                                            if (pullRefreshState.isRefreshing) {
+                                                dashboardViewModel.refresh()
+                                            }
+                                        }
+                                        LaunchedEffect(dashboardState.isRefreshing) {
+                                            if (dashboardState.isRefreshing) {
+                                                pullRefreshState.startRefresh()
+                                            } else {
+                                                pullRefreshState.endRefresh()
+                                            }
+                                        }
 
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .nestedScroll(pullRefreshState.nestedScrollConnection)
-                                        .background(MaterialTheme.colorScheme.background)
-                                ) {
-                                    LazyColumn(
-                                        state = dashboardScrollState,
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .padding(16.dp),
-                                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                                    ) {
-                                        item {
-                                            HeaderSection(
-                                                state = dashboardState
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .nestedScroll(pullRefreshState.nestedScrollConnection)
+                                                .background(MaterialTheme.colorScheme.background)
+                                        ) {
+                                            LazyColumn(
+                                                state = dashboardScrollState,
+                                                modifier = Modifier
+                                                    .fillMaxSize()
+                                                    .padding(16.dp),
+                                                verticalArrangement = Arrangement.spacedBy(16.dp)
+                                            ) {
+                                                item {
+                                                    HeaderSection(
+                                                        state = dashboardState
+                                                    )
+                                                }
+
+                                                item { PersonalStatsGrid(dashboardState, onNavigatePassbook = { showPassbookBottomSheet = true }) }
+                                                item {
+                                                    PersonalQuickActions(
+                                                        onAddAdvance = { showAdvanceDialog = true }
+                                                    )
+                                                }
+                                                item { PersonalDailyLog(dashboardState, dashboardViewModel) }
+
+                                                item { Spacer(modifier = Modifier.height(24.dp)) }
+                                            }
+
+                                            PullToRefreshContainer(
+                                                state = pullRefreshState,
+                                                modifier = Modifier.align(Alignment.TopCenter),
+                                                contentColor = MaterialTheme.colorScheme.primary
                                             )
                                         }
-
-                                        item { PersonalStatsGrid(dashboardState, onNavigatePassbook = { showPassbookBottomSheet = true }) }
-                                        item {
-                                            PersonalQuickActions(
-                                                onAddAdvance = { showAdvanceDialog = true }
-                                            )
-                                        }
-                                        item { PersonalDailyLog(dashboardState, dashboardViewModel) }
-
-                                        item { Spacer(modifier = Modifier.height(24.dp)) }
                                     }
-
-                                    PullToRefreshContainer(
-                                        state = pullRefreshState,
-                                        modifier = Modifier.align(Alignment.TopCenter),
-                                        contentColor = MaterialTheme.colorScheme.primary
-                                    )
                                 }
                             }
                         }
@@ -325,6 +336,55 @@ fun DashboardScreen(
                 )
             }
         }
+    }
+}
+
+@Composable
+fun DashboardShimmer() {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // Header Shimmer
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            ShimmerCircle(size = 48.dp)
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                ShimmerTextLine(height = 20.dp, fraction = 0.4f)
+                ShimmerTextLine(height = 14.dp, fraction = 0.6f)
+            }
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Stats Grid Shimmer
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            ShimmerBox(modifier = Modifier.weight(1f), height = 100.dp, cornerRadius = 16.dp)
+            ShimmerBox(modifier = Modifier.weight(1f), height = 100.dp, cornerRadius = 16.dp)
+        }
+
+        // View Passbook Button Shimmer
+        ShimmerBox(modifier = Modifier.fillMaxWidth(), height = 56.dp, cornerRadius = 16.dp)
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Quick Actions Title Shimmer
+        ShimmerTextLine(height = 14.dp, fraction = 0.3f)
+        ShimmerBox(modifier = Modifier.fillMaxWidth(), height = 88.dp, cornerRadius = 16.dp)
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Daily Log Title Shimmer
+        ShimmerTextLine(height = 14.dp, fraction = 0.2f)
+        ShimmerBox(modifier = Modifier.fillMaxWidth(), height = 72.dp, cornerRadius = 16.dp)
+        ShimmerBox(modifier = Modifier.fillMaxWidth(), height = 56.dp, cornerRadius = 12.dp)
     }
 }
 

@@ -39,6 +39,16 @@ class OfflineAuthViewModel(
         }
     }
 
+    fun checkForUserAndLogin() {
+        viewModelScope.launch {
+            val user = localAttendanceRepository.getUser()
+            if (user != null) {
+                repository.saveAuthToken(user.id)
+                _loginState.value = OfflineLoginState.Success(user.id)
+            }
+        }
+    }
+
     fun login(name: String, email: String, phoneNumber: String) {
         viewModelScope.launch {
             _loginState.value = OfflineLoginState.Loading

@@ -137,6 +137,7 @@ class OfflineDashboardViewModel(
                     errorMessage = null
                 ) }
             } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
                 android.util.Log.e("OfflineDashboardVM", "Error loading local data", e)
                 _dashboardState.update { it.copy(
                     isLoading = false,
@@ -175,6 +176,7 @@ class OfflineDashboardViewModel(
                 }
                 loadLocalData(showLoadingIndicator = false)
             } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
                 android.util.Log.e("OfflineDashboardVM", "Error marking attendance", e)
                 _dashboardState.update { it.copy(errorMessage = "Failed to mark attendance.") }
             }
@@ -209,6 +211,7 @@ class OfflineDashboardViewModel(
                 }
                 loadLocalData(showLoadingIndicator = false)
             } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
                 android.util.Log.e("OfflineDashboardVM", "Error marking absent", e)
                 _dashboardState.update { it.copy(errorMessage = "Failed to record absence.") }
             }
@@ -236,6 +239,7 @@ class OfflineDashboardViewModel(
                 }
                 loadLocalData(showLoadingIndicator = false)
             } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
                 android.util.Log.e("OfflineDashboardVM", "Error adding advance", e)
                 _dashboardState.update { it.copy(errorMessage = "Failed to record advance.") }
             }
@@ -259,6 +263,7 @@ class OfflineDashboardViewModel(
                 }
                 loadLocalData(showLoadingIndicator = false)
             } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
                 android.util.Log.e("OfflineDashboardVM", "Error removing attendance", e)
                 _dashboardState.update { it.copy(errorMessage = "Failed to remove attendance.") }
             }

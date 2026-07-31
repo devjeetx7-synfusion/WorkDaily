@@ -137,6 +137,7 @@ class OfflinePassbookViewModel(
                     ) }
                 }
             } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
                 android.util.Log.e("OfflinePassbookVM", "Error setting up listeners", e)
                 _state.update { it.copy(
                     isLoading = false,
@@ -236,6 +237,7 @@ class OfflinePassbookViewModel(
                 )
             }
         } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) throw e
             android.util.Log.e("OfflinePassbookVM", "Error calculating passbook", e)
             _state.update { current ->
                 current.copy(

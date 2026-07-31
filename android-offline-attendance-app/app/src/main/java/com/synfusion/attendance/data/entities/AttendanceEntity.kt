@@ -3,7 +3,13 @@ package com.synfusion.attendance.data.entities
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "attendance")
+@Entity(
+    tableName = "attendance",
+    indices = [
+        androidx.room.Index(value = ["date"]),
+        androidx.room.Index(value = ["workerId"])
+    ]
+)
 data class AttendanceEntity(
     @PrimaryKey
     val id: String, // format: "workerId_date" or "personal_date"

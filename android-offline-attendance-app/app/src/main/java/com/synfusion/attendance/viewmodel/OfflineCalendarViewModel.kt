@@ -112,6 +112,7 @@ class OfflineCalendarViewModel(
                     errorMessage = null
                 ) }
             } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
                 android.util.Log.e("OfflineCalendarVM", "Error loading data", e)
                 _calendarState.update { it.copy(
                     isLoading = false,
@@ -176,6 +177,7 @@ class OfflineCalendarViewModel(
 
                 loadData()
             } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
                 android.util.Log.e("OfflineCalendarVM", "Error marking calendar attendance", e)
                 _calendarState.update { it.copy(errorMessage = "Failed to mark attendance.") }
             }
@@ -190,6 +192,7 @@ class OfflineCalendarViewModel(
                 localAttendanceRepository.deleteAttendance("${docId}_advance", date)
                 loadData()
             } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
                 android.util.Log.e("OfflineCalendarVM", "Error removing attendance", e)
                 _calendarState.update { it.copy(errorMessage = "Failed to remove attendance.") }
             }
