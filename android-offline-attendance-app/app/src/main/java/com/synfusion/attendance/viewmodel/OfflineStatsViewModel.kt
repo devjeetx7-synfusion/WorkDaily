@@ -4,8 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.synfusion.attendance.data.LocalAttendanceRepository
 import com.synfusion.attendance.data.OfflinePreferencesRepository
+import com.synfusion.attendance.data.DrillDownRepository
+import com.synfusion.attendance.data.DrillDownType
 import com.synfusion.attendance.data.entities.AttendanceEntity
 import com.synfusion.attendance.utils.OvertimeCalculator
+import com.synfusion.attendance.utils.AttendanceCalculationEngine
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -45,12 +48,17 @@ data class OfflineStatsState(
 
     // Personal
     val personalStats: OfflinePersonalStatsData = OfflinePersonalStatsData(),
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+
+    val selectedDrillDownType: DrillDownType? = null,
+    val selectedLogs: List<OfflinePassbookLog> = emptyList(),
+    val isDrillDownLoading: Boolean = false
 )
 
 class OfflineStatsViewModel(
     private val preferencesRepository: OfflinePreferencesRepository,
-    private val localAttendanceRepository: LocalAttendanceRepository
+    private val localAttendanceRepository: LocalAttendanceRepository,
+    private val drillDownRepository: DrillDownRepository
 ) : ViewModel() {
 
     private val _statsState = MutableStateFlow(OfflineStatsState())
@@ -189,5 +197,30 @@ class OfflineStatsViewModel(
                 }
             }
         }
+    }
+
+    fun openDrillDown(type: DrillDownType, isAllTime: Boolean) {
+        viewModelScope.launch {
+            _statsState.update { it.copy(selectedDrillDownType = type, isDrillDownLoading = true, selectedLogs = emptyList()) }
+            try {
+                val cal = Calendar.getInstance()
+                cal.time = _statsState.value.selectedMonthDate
+                val sdfMonth = SimpleDateFormat("yyyy-MM", Locale.getDefault())
+                val monthPrefix = if (isAllTime) null else sdfMonth.format(cal.time)
+
+                val records = drillDownRepository.getDrillDownRecords(type, monthPrefix, isAllTime)
+                val calcResult = AttendanceCalculationEngine.calculatePassbook(records, cachedDefaultWage)
+
+                _statsState.update { it.copy(selectedLogs = calcResult.logs, isDrillDownLoading = false) }
+            } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                android.util.Log.e("OfflineStatsVM", "Error loading drill down", e)
+                _statsState.update { it.copy(isDrillDownLoading = false) }
+            }
+        }
+    }
+
+    fun closeDrillDown() {
+        _statsState.update { it.copy(selectedDrillDownType = null, selectedLogs = emptyList()) }
     }
 }

@@ -49,6 +49,8 @@ import com.synfusion.attendance.viewmodel.OfflinePassbookViewModel
 import com.synfusion.attendance.viewmodel.OfflineSettingsViewModel
 import com.synfusion.attendance.viewmodel.OfflineDashboardViewModel
 import com.synfusion.attendance.viewmodel.OfflineDashboardState
+import com.synfusion.attendance.data.DrillDownType
+import com.synfusion.attendance.ui.components.DrillDownBottomSheet
 import com.synfusion.attendance.utils.AmountFormatter
 import com.synfusion.attendance.utils.IndianCurrencyVisualTransformation
 import com.synfusion.attendance.viewmodel.OfflineViewModelFactory
@@ -223,7 +225,16 @@ fun DashboardScreen(
                                                     )
                                                 }
 
-                                                item { PersonalStatsGrid(dashboardState, onNavigatePassbook = { showPassbookBottomSheet = true }) }
+                                                item {
+                                                    PersonalStatsGrid(
+                                                        state = dashboardState,
+                                                        onNavigatePassbook = { showPassbookBottomSheet = true },
+                                                        onEarningsClick = { dashboardViewModel.openDrillDown(DrillDownType.EARNINGS) }
+                                                    )
+                                                }
+                                                item {
+                                                    AllTimePassbookButton(onNavigate = { bottomNavController.navigate("all_time_passbook") })
+                                                }
                                                 item {
                                                     PersonalQuickActions(
                                                         onAddAdvance = { showAdvanceDialog = true }
@@ -275,6 +286,13 @@ fun DashboardScreen(
                         bottomNavController.navigateUp()
                         selectedTab = 1
                     }
+                )
+            }
+            composable("all_time_passbook") {
+                val allTimeViewModel: com.synfusion.attendance.viewmodel.OfflineAllTimePassbookViewModel = viewModel(factory = factory)
+                AllTimePassbookScreen(
+                    viewModel = allTimeViewModel,
+                    onNavigateBack = { bottomNavController.navigateUp() }
                 )
             }
         }
@@ -335,6 +353,32 @@ fun DashboardScreen(
                     }
                 )
             }
+        }
+
+        dashboardState.selectedDrillDownType?.let { type ->
+            DrillDownBottomSheet(
+                title = when(type) {
+                    DrillDownType.EARNINGS -> "Earnings"
+                    DrillDownType.PRESENT -> "Present"
+                    DrillDownType.ABSENT -> "Absent"
+                    DrillDownType.HALF_DAY -> "Half Day"
+                    DrillDownType.OVERTIME -> "Overtime"
+                    DrillDownType.ADVANCE -> "Advance"
+                },
+                logs = dashboardState.selectedLogs,
+                onDismiss = { dashboardViewModel.closeDrillDown() },
+                totalRecordsText = "${dashboardState.selectedLogs.size} records",
+                totalAmountText = if (type == DrillDownType.EARNINGS || type == DrillDownType.OVERTIME || type == DrillDownType.ADVANCE) {
+                    val total = if (type == DrillDownType.ADVANCE) {
+                        dashboardState.selectedLogs.sumOf { it.advanceAmount ?: 0.0 }
+                    } else if (type == DrillDownType.OVERTIME) {
+                        dashboardState.selectedLogs.sumOf { it.overtimeAmount }
+                    } else {
+                        dashboardState.selectedLogs.sumOf { it.baseEarnings + it.overtimeAmount }
+                    }
+                    AmountFormatter.format(total)
+                } else null
+            )
         }
     }
 }
@@ -447,18 +491,18 @@ fun HeaderSection(state: OfflineDashboardState) {
 }
 
 @Composable
-fun PersonalStatsGrid(state: OfflineDashboardState, onNavigatePassbook: () -> Unit) {
+fun PersonalStatsGrid(state: OfflineDashboardState, onNavigatePassbook: () -> Unit, onEarningsClick: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             Column(
-                modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(20.dp)
+                modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).clickable(onClick = onEarningsClick).padding(20.dp)
             ) {
                 Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.todays_earnings), fontSize = 12.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                 Spacer(modifier = Modifier.height(8.dp))
                 Text("₹${AmountFormatter.format(state.todayEarned)}", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
             }
             Column(
-                modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(20.dp)
+                modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).clickable(onClick = onEarningsClick).padding(20.dp)
             ) {
                 Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.monthly_earnings), fontSize = 12.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                 Spacer(modifier = Modifier.height(8.dp))
@@ -475,6 +519,25 @@ fun PersonalStatsGrid(state: OfflineDashboardState, onNavigatePassbook: () -> Un
             Spacer(modifier = Modifier.width(8.dp))
             Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.view_my_passbook), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
         }
+    }
+}
+
+@Composable
+fun AllTimePassbookButton(onNavigate: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.tertiary.copy(alpha = 0.1f))
+            .border(1.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f), RoundedCornerShape(16.dp))
+            .clickable(onClick = onNavigate)
+            .padding(16.dp),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(Icons.Default.History, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary)
+        Spacer(modifier = Modifier.width(8.dp))
+        Text("View All Time Passbook", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.tertiary)
     }
 }
 
