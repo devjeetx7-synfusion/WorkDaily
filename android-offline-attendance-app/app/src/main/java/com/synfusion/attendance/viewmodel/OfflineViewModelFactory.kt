@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.synfusion.attendance.data.AttendanceDatabase
+import com.synfusion.attendance.data.DrillDownRepository
 import com.synfusion.attendance.data.LocalAttendanceRepository
 import com.synfusion.attendance.data.OfflinePreferencesRepository
 
@@ -18,6 +19,7 @@ class OfflineViewModelFactory(
         attendanceDao = db.attendanceDao(),
         summaryDao = db.summaryDao()
     )
+    private val drillDownRepository = DrillDownRepository(attendanceDao = db.attendanceDao())
 
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(OfflineAuthViewModel::class.java)) {
@@ -26,7 +28,7 @@ class OfflineViewModelFactory(
         }
         if (modelClass.isAssignableFrom(OfflineDashboardViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return OfflineDashboardViewModel(repository, localAttendanceRepository) as T
+            return OfflineDashboardViewModel(repository, localAttendanceRepository, drillDownRepository) as T
         }
         if (modelClass.isAssignableFrom(OfflineCalendarViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
@@ -34,7 +36,7 @@ class OfflineViewModelFactory(
         }
         if (modelClass.isAssignableFrom(OfflineStatsViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return OfflineStatsViewModel(repository, localAttendanceRepository) as T
+            return OfflineStatsViewModel(repository, localAttendanceRepository, drillDownRepository) as T
         }
         if (modelClass.isAssignableFrom(OfflineSettingsViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
@@ -43,6 +45,10 @@ class OfflineViewModelFactory(
         if (modelClass.isAssignableFrom(OfflinePassbookViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
             return OfflinePassbookViewModel(repository, localAttendanceRepository) as T
+        }
+        if (modelClass.isAssignableFrom(OfflineAllTimePassbookViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return OfflineAllTimePassbookViewModel(repository, localAttendanceRepository, drillDownRepository) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

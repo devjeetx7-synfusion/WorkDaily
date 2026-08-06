@@ -40,6 +40,8 @@ import com.synfusion.attendance.ui.components.CustomToggleTab
 import com.synfusion.attendance.viewmodel.OfflineStatsViewModel
 import com.synfusion.attendance.viewmodel.OfflineStatsState
 import com.synfusion.attendance.viewmodel.OfflineDailyRecord
+import com.synfusion.attendance.data.DrillDownType
+import com.synfusion.attendance.ui.components.DrillDownBottomSheet
 import com.synfusion.attendance.utils.collectAsStateWithLifecycle
 import java.text.SimpleDateFormat
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -162,6 +164,32 @@ fun StatsScreen(
                 contentColor = MaterialTheme.colorScheme.primary
             )
         }
+
+        state.selectedDrillDownType?.let { type ->
+            DrillDownBottomSheet(
+                title = when(type) {
+                    DrillDownType.EARNINGS -> "Earnings"
+                    DrillDownType.PRESENT -> "Present"
+                    DrillDownType.ABSENT -> "Absent"
+                    DrillDownType.HALF_DAY -> "Half Day"
+                    DrillDownType.OVERTIME -> "Overtime"
+                    DrillDownType.ADVANCE -> "Advance"
+                },
+                logs = state.selectedLogs,
+                onDismiss = { viewModel.closeDrillDown() },
+                totalRecordsText = "${state.selectedLogs.size} records",
+                totalAmountText = if (type == DrillDownType.EARNINGS || type == DrillDownType.OVERTIME || type == DrillDownType.ADVANCE) {
+                    val total = if (type == DrillDownType.ADVANCE) {
+                        state.selectedLogs.sumOf { it.advanceAmount ?: 0.0 }
+                    } else if (type == DrillDownType.OVERTIME) {
+                        state.selectedLogs.sumOf { it.overtimeAmount }
+                    } else {
+                        state.selectedLogs.sumOf { it.baseEarnings + it.overtimeAmount }
+                    }
+                    AmountFormatter.format(total)
+                } else null
+            )
+        }
     }
 }
 
@@ -239,7 +267,7 @@ fun PersonalStatsView(
 
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-                Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).clickable(onClick = onNavigatePassbook).padding(16.dp)) {
+                Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).clickable { viewModel.openDrillDown(DrillDownType.EARNINGS, isAllTime) }.padding(16.dp)) {
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.earnings), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -248,7 +276,7 @@ fun PersonalStatsView(
                         AnimatedCounter(targetValue = currentEarnings.toInt(), prefix = "₹")
                     }
                 }
-                Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).clickable(onClick = onNavigatePassbook).padding(16.dp)) {
+                Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).clickable { viewModel.openDrillDown(DrillDownType.PRESENT, isAllTime) }.padding(16.dp)) {
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.total_days), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -262,14 +290,14 @@ fun PersonalStatsView(
 
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-                Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).clickable(onClick = onNavigatePassbook).padding(16.dp)) {
+                Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).clickable { viewModel.openDrillDown(DrillDownType.OVERTIME, isAllTime) }.padding(16.dp)) {
                     Column {
                         Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.total_overtime), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(modifier = Modifier.height(4.dp))
                         AnimatedCounter(targetValue = state.personalStats.overtime, suffix = " hrs")
                     }
                 }
-                Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).clickable(onClick = onNavigatePassbook).padding(16.dp)) {
+                Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).clickable { viewModel.openDrillDown(DrillDownType.ADVANCE, isAllTime) }.padding(16.dp)) {
                     Column {
                         Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.advance_deductions), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(modifier = Modifier.height(4.dp))
@@ -370,17 +398,17 @@ fun PersonalStatsView(
                                 Spacer(modifier = Modifier.width(24.dp))
 
                                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Row(modifier = Modifier.clickable { viewModel.openDrillDown(DrillDownType.PRESENT, isAllTime) }.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                                         Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(presentColor))
                                         Spacer(modifier = Modifier.width(8.dp))
                                         Text("Present (${purePresent})", fontSize = 14.sp, fontWeight = FontWeight.Medium)
                                     }
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Row(modifier = Modifier.clickable { viewModel.openDrillDown(DrillDownType.HALF_DAY, isAllTime) }.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                                         Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(halfColor))
                                         Spacer(modifier = Modifier.width(8.dp))
                                         Text("Half Day (${state.personalStats.halfDays})", fontSize = 14.sp, fontWeight = FontWeight.Medium)
                                     }
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Row(modifier = Modifier.clickable { viewModel.openDrillDown(DrillDownType.ABSENT, isAllTime) }.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                                         Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(absentColor))
                                         Spacer(modifier = Modifier.width(8.dp))
                                         Text("Absent (${state.personalStats.absent})", fontSize = 14.sp, fontWeight = FontWeight.Medium)
@@ -402,14 +430,14 @@ fun PersonalStatsView(
                 Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.all_time_stats), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                 Spacer(modifier = Modifier.height(16.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-                    Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).clickable(onClick = onNavigatePassbook).padding(16.dp)) {
+                    Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).clickable { viewModel.openDrillDown(DrillDownType.EARNINGS, true) }.padding(16.dp)) {
                         Column {
                             Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.total_earnings), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Spacer(modifier = Modifier.height(4.dp))
                             AnimatedCounter(targetValue = state.personalStats.allTimeEarnings.toInt(), prefix = "₹")
                         }
                     }
-                    Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).clickable(onClick = onNavigatePassbook).padding(16.dp)) {
+                    Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).clickable { viewModel.openDrillDown(DrillDownType.PRESENT, true) }.padding(16.dp)) {
                         Column {
                             Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.total_days), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Spacer(modifier = Modifier.height(4.dp))

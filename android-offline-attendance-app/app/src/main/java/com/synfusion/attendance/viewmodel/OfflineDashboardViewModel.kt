@@ -4,8 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.synfusion.attendance.data.LocalAttendanceRepository
 import com.synfusion.attendance.data.OfflinePreferencesRepository
+import com.synfusion.attendance.data.DrillDownRepository
+import com.synfusion.attendance.data.DrillDownType
 import com.synfusion.attendance.data.entities.AttendanceEntity
 import com.synfusion.attendance.utils.OvertimeCalculator
+import com.synfusion.attendance.utils.AttendanceCalculationEngine
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -37,12 +40,17 @@ data class OfflineDashboardState(
     val showOfflineBottomSheet: Boolean = false,
     val hasShownOfflineSheet: Boolean = false,
 
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+
+    val selectedDrillDownType: DrillDownType? = null,
+    val selectedLogs: List<OfflinePassbookLog> = emptyList(),
+    val isDrillDownLoading: Boolean = false
 )
 
 class OfflineDashboardViewModel(
     private val preferencesRepository: OfflinePreferencesRepository,
-    private val localAttendanceRepository: LocalAttendanceRepository
+    private val localAttendanceRepository: LocalAttendanceRepository,
+    private val drillDownRepository: DrillDownRepository
 ) : ViewModel() {
 
     private val _dashboardState = MutableStateFlow(OfflineDashboardState(isLoading = true))
@@ -86,37 +94,13 @@ class OfflineDashboardViewModel(
                 val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
                 val currentMonthStr = SimpleDateFormat("yyyy-MM", Locale.getDefault()).format(Date())
 
-                var todayEarned = 0.0
-                var monthEarned = 0.0
-                var currentTodayStatus: String? = null
-                var currentOvertime = 0
-                var currentNote: String? = null
-
-                for (record in personalAttendance) {
-                    val date = record.date
-                    val status = record.status
-                    val type = record.type
-                    val otHours = record.overtimeHours
-                    val noteStr = record.note
-
-                    val dailyBase = if (status == "present") {
-                        if (type == "half") cachedDefaultWage / 2.0 else cachedDefaultWage
-                    } else 0.0
-                    // Support overtime calculation
-                    val dailyOT = if (status == "present") OvertimeCalculator.calculateOvertimeAmount(cachedDefaultWage, otHours, noteStr) else 0.0
-
-                    if (date == todayStr) {
-                        if (status != "advance") {
-                            currentTodayStatus = status
-                            currentOvertime = otHours
-                            currentNote = OvertimeCalculator.cleanNote(noteStr)
-                            todayEarned = dailyBase + dailyOT
-                        }
-                    }
-
-                    if (date.startsWith(currentMonthStr)) {
-                        monthEarned += (dailyBase + dailyOT)
-                    }
+                val calcResult = withContext(Dispatchers.Default) {
+                    AttendanceCalculationEngine.calculateDashboardStats(
+                        records = personalAttendance,
+                        todayStr = todayStr,
+                        currentMonthStr = currentMonthStr,
+                        defaultWage = cachedDefaultWage
+                    )
                 }
 
                 if (isRefreshing) {
@@ -127,11 +111,11 @@ class OfflineDashboardViewModel(
                 }
 
                 _dashboardState.update { it.copy(
-                    todayEarned = todayEarned.toInt().toString(),
-                    monthEarned = monthEarned.toInt().toString(),
-                    todayStatus = currentTodayStatus,
-                    overtimeHours = currentOvertime,
-                    todayNote = currentNote,
+                    todayEarned = calcResult.todayEarned.toString().removeSuffix(".0"),
+                    monthEarned = calcResult.monthEarned.toString().removeSuffix(".0"),
+                    todayStatus = calcResult.currentTodayStatus,
+                    overtimeHours = calcResult.currentOvertime,
+                    todayNote = calcResult.currentNote,
                     isLoading = false,
                     isRefreshing = false,
                     errorMessage = null
@@ -268,6 +252,26 @@ class OfflineDashboardViewModel(
                 _dashboardState.update { it.copy(errorMessage = "Failed to remove attendance.") }
             }
         }
+    }
+
+    fun openDrillDown(type: DrillDownType, isAllTime: Boolean = false) {
+        viewModelScope.launch {
+            _dashboardState.update { it.copy(selectedDrillDownType = type, isDrillDownLoading = true, selectedLogs = emptyList()) }
+            try {
+                val currentMonthStr = SimpleDateFormat("yyyy-MM", Locale.getDefault()).format(Date())
+                val records = drillDownRepository.getDrillDownRecords(type, currentMonthStr, isAllTime)
+                val calcResult = AttendanceCalculationEngine.calculatePassbook(records, cachedDefaultWage)
+                _dashboardState.update { it.copy(selectedLogs = calcResult.logs, isDrillDownLoading = false) }
+            } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                android.util.Log.e("OfflineDashboardVM", "Error loading drill down", e)
+                _dashboardState.update { it.copy(isDrillDownLoading = false) }
+            }
+        }
+    }
+
+    fun closeDrillDown() {
+        _dashboardState.update { it.copy(selectedDrillDownType = null, selectedLogs = emptyList()) }
     }
 
     fun onNetworkStateChanged(isConnected: Boolean) {
