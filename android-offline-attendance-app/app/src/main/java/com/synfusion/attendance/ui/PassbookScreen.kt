@@ -79,6 +79,12 @@ fun PassbookScreen(
         var totalOTHours = 0
         var totalOTEarnings = 0.0
 
+        val rsStr = context.getString(com.synfusion.attendance.R.string.pdf_rs)
+        val hrsStr = context.getString(com.synfusion.attendance.R.string.pdf_hrs)
+        val halfDayStr = context.getString(com.synfusion.attendance.R.string.half_day)
+        val presentStr = context.getString(com.synfusion.attendance.R.string.present_1)
+        val absentStr = context.getString(com.synfusion.attendance.R.string.absent_1)
+
         val sortedLogs = state.logs.sortedBy { it.date }.map { log ->
             val dailyEarned = log.baseEarnings
             val advanceAmt = log.advanceAmount ?: 0.0
@@ -90,25 +96,31 @@ fun PassbookScreen(
             currentRunningBalance += (dailyEarned + otAmt) - advanceAmt
 
             val otPdfText = if (log.overtimeAmount > 0) {
-                if (log.overtimeHours > 0) "${log.overtimeHours} hrs / Rs.${AmountFormatter.format(log.overtimeAmount)}"
-                else "Rs.${AmountFormatter.format(log.overtimeAmount)}"
+                if (log.overtimeHours > 0) "${log.overtimeHours} $hrsStr / $rsStr ${AmountFormatter.format(log.overtimeAmount)}"
+                else "$rsStr ${AmountFormatter.format(log.overtimeAmount)}"
+            } else "-"
+
+            val statusText = if (log.status == "present") {
+                if (log.type == "half") halfDayStr else presentStr
+            } else if (log.status == "absent") {
+                absentStr
             } else "-"
 
             PdfLog(
                 date = log.date.split("-").reversed().joinToString("/"),
-                status = if (log.status == "present") if (log.type == "half") "Half Day" else "Present" else if (log.status == "absent") "Absent" else "-",
+                status = statusText,
                 workType = state.workType,
-                dailyWage = "Rs. ${AmountFormatter.format(state.dailyWage)}",
+                dailyWage = "$rsStr ${AmountFormatter.format(state.dailyWage)}",
                 overtime = otPdfText,
-                advanceAmount = if (log.status == "advance" || advanceAmt > 0) "Rs. ${AmountFormatter.format(advanceAmt)}" else "-",
-                runningBalance = "Rs. ${AmountFormatter.format(currentRunningBalance)}",
+                advanceAmount = if (log.status == "advance" || advanceAmt > 0) "$rsStr ${AmountFormatter.format(advanceAmt)}" else "-",
+                runningBalance = "$rsStr ${AmountFormatter.format(currentRunningBalance)}",
                 note = log.note ?: ""
             )
         }
 
         return PdfData(
             title = "WorkDaily",
-            subtitle = "Official Passbook",
+            subtitle = context.getString(com.synfusion.attendance.R.string.pdf_subtitle_passbook),
             name = state.name,
             userId = "personal",
             role = state.workType,
@@ -264,14 +276,14 @@ fun PassbookScreen(
                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                             Icon(Icons.Default.CurrencyRupee, contentDescription = null, tint = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent(), modifier = Modifier.size(16.dp))
                                             Spacer(modifier = Modifier.width(8.dp))
-                                            Text("₹${AmountFormatter.format(state.dailyWage)} / day", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent())
+                                            Text("₹${AmountFormatter.format(state.dailyWage)} / " + androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.day_singular), fontWeight = FontWeight.Bold, fontSize = 14.sp, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent())
                                         }
                                     }
                                     Column(verticalArrangement = Arrangement.spacedBy(8.dp), horizontalAlignment = Alignment.End) {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                             Icon(Icons.Default.CalendarToday, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
                                             Spacer(modifier = Modifier.width(8.dp))
-                                            Text("Joined ${state.joinedDate}", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.joined_date_label, state.joinedDate), fontWeight = FontWeight.Bold, fontSize = 12.sp)
                                         }
                                     }
                                 }
@@ -350,7 +362,7 @@ fun PassbookScreen(
                                     Spacer(modifier = Modifier.height(12.dp))
                                     LinearProgressIndicator(progress = state.attendanceRate / 100f, modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape), color = MaterialTheme.colorScheme.primary, trackColor = MaterialTheme.colorScheme.surfaceVariant)
                                     Spacer(modifier = Modifier.height(8.dp))
-                                    Text("Worked ${state.totalDailyWorks} out of ${state.passedDays} passed days this month", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center, fontWeight = FontWeight.Medium)
+                                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.worked_ratio_label, state.totalDailyWorks, state.passedDays), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center, fontWeight = FontWeight.Medium)
                                 }
                             }
                         }
@@ -468,7 +480,7 @@ fun PassbookScreen(
                                                 }
 
                                                 if (log.advanceAmount != null && log.advanceAmount > 0) {
-                                                    Text("₹${AmountFormatter.format(log.advanceAmount)} Advance", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay())
+                                                    Text("₹${AmountFormatter.format(log.advanceAmount)} " + androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.advance), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay())
                                                 }
                                             }
 

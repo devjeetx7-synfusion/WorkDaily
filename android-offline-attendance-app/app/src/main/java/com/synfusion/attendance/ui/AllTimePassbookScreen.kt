@@ -45,7 +45,7 @@ fun AllTimePassbookScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("All Time Passbook", fontWeight = FontWeight.Bold) },
+                title = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.all_time_passbook_title), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
@@ -81,7 +81,7 @@ fun AllTimePassbookScreen(
                             value = state.searchQuery,
                             onValueChange = { viewModel.updateSearchQuery(it) },
                             modifier = Modifier.fillMaxWidth(),
-                            placeholder = { Text("Search records...") },
+                                placeholder = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.search_records)) },
                             leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                             shape = RoundedCornerShape(12.dp),
                             singleLine = true
@@ -91,7 +91,7 @@ fun AllTimePassbookScreen(
                     if (state.yearGroups.isEmpty()) {
                         item {
                             Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                                Text("No records found.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.no_records_found_dots), color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
                     } else {
@@ -153,9 +153,9 @@ fun EmploymentSummarySection(state: com.synfusion.attendance.viewmodel.OfflineAl
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column {
-                        Text("Employment Summary", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.employment_summary), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                         if (state.employmentSince.isNotEmpty()) {
-                            Text("Employment Since: ${state.employmentSince}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
+                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.employment_since, state.employmentSince), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
                         }
                     }
                     Box(
@@ -185,7 +185,7 @@ fun EmploymentSummarySection(state: com.synfusion.attendance.viewmodel.OfflineAl
                             .padding(12.dp)
                     ) {
                         Column {
-                            Text("Total Present", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
+                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.total_present), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(state.totalPresent.toString(), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent())
                         }
@@ -199,7 +199,7 @@ fun EmploymentSummarySection(state: com.synfusion.attendance.viewmodel.OfflineAl
                             .padding(12.dp)
                     ) {
                         Column {
-                            Text("Total Absent", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
+                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.total_absent), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(state.totalAbsent.toString(), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent())
                         }
@@ -218,7 +218,7 @@ fun EmploymentSummarySection(state: com.synfusion.attendance.viewmodel.OfflineAl
                             .padding(12.dp)
                     ) {
                         Column {
-                            Text("Total Half Days", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
+                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.total_half_days), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(state.totalHalfDays.toString(), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay())
                         }
@@ -231,7 +231,7 @@ fun EmploymentSummarySection(state: com.synfusion.attendance.viewmodel.OfflineAl
                             .padding(12.dp)
                     ) {
                         Column {
-                            Text("Working Days", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
+                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.working_days), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(state.totalWorkingDays.toString().removeSuffix(".0"), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                         }
@@ -256,8 +256,8 @@ fun EmploymentSummarySection(state: com.synfusion.attendance.viewmodel.OfflineAl
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column {
-                        Text("Financial Summary", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-                        Text("Overview of earnings and deductions", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.financial_summary), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.manage_your_daily_labor_earnings), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Box(
                         modifier = Modifier
@@ -278,21 +278,21 @@ fun EmploymentSummarySection(state: com.synfusion.attendance.viewmodel.OfflineAl
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text("Salary Earned", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
+                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.salary), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
                     Text("₹${AmountFormatter.format(state.totalSalaryEarned)}", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text("OT Earned", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
+                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.overtime), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
                     Text("₹${AmountFormatter.format(state.totalOtEarned)}", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getLeave())
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text("Advance Paid", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
+                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.advance), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
                     Text("₹${AmountFormatter.format(state.totalAdvance)}", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay())
                 }
 
@@ -301,7 +301,7 @@ fun EmploymentSummarySection(state: com.synfusion.attendance.viewmodel.OfflineAl
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text("Net Salary", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.net_salary), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                     Text("₹${AmountFormatter.format(state.totalNetEarnings)}", fontSize = 20.sp, fontWeight = FontWeight.Black, color = if (state.totalNetEarnings >= 0) com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent() else com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent())
                 }
             }
@@ -397,15 +397,15 @@ fun MonthGroupItem(monthGroup: com.synfusion.attendance.viewmodel.AllTimeGroup) 
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Column {
-                            Text("Total Salary", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.salary), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Text("₹${AmountFormatter.format(monthGroup.totalEarnings)}", fontSize = 13.sp, fontWeight = FontWeight.Bold)
                         }
                         Column {
-                            Text("Total OT", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.overtime), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Text("₹${AmountFormatter.format(monthGroup.totalOvertime)}", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getLeave())
                         }
                         Column {
-                            Text("Total Present", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.total_present), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Text(monthGroup.presentCount.toString(), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent())
                         }
                     }

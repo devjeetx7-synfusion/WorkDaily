@@ -169,15 +169,15 @@ fun LoginScreen(
                 restoreFileToApply?.delete()
                 restoreFileToApply = null
             },
-            title = { Text("Backup Package Preview", fontWeight = FontWeight.Bold) },
+            title = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.prev_backup_preview), fontWeight = FontWeight.Bold) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("A backup package was parsed. Preview details:")
+                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.backup_parsed_msg))
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text("• Backup Date: ${SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault()).format(Date(preview.backupDate))}", fontSize = 13.sp)
-                    Text("• Device Info: ${preview.deviceModel}", fontSize = 13.sp)
-                    Text("• App Version: ${preview.appVersion}", fontSize = 13.sp)
-                    Text("• Records: ${preview.recordCounts.map { "${it.key}: ${it.value}" }.joinToString(", ")}", fontSize = 13.sp)
+                    Text("• " + androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.last_backup) + ": ${SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault()).format(Date(preview.backupDate))}", fontSize = 13.sp)
+                    Text("• " + androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.device_info_line, preview.deviceModel), fontSize = 13.sp)
+                    Text("• " + androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.app_version_line, preview.appVersion), fontSize = 13.sp)
+                    Text("• " + androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.records_line, preview.recordCounts.map { "${it.key}: ${it.value}" }.joinToString(", ")), fontSize = 13.sp)
                 }
             },
             confirmButton = {
@@ -213,7 +213,7 @@ fun LoginScreen(
                         }
                     }
                 ) {
-                    Text("Restore Now")
+                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.restore_now))
                 }
             },
             dismissButton = {
@@ -224,7 +224,7 @@ fun LoginScreen(
                         restoreFileToApply = null
                     }
                 ) {
-                    Text("Cancel")
+                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.cancel))
                 }
             }
         )
@@ -233,8 +233,8 @@ fun LoginScreen(
     if (showSmartBackupDialog && detectedBackupFile != null) {
         AlertDialog(
             onDismissRequest = { showSmartBackupDialog = false },
-            title = { Text("Backup Found", fontWeight = FontWeight.Bold) },
-            text = { Text("A previous backup was detected.") },
+            title = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.backup_found_dialog), fontWeight = FontWeight.Bold) },
+            text = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.backup_found_msg)) },
             confirmButton = {
                 Button(
                     onClick = {
@@ -263,12 +263,12 @@ fun LoginScreen(
                         }
                     }
                 ) {
-                    Text("Restore Now")
+                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.restore_now))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showSmartBackupDialog = false }) {
-                    Text("Skip")
+                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.skip))
                 }
             }
         )
@@ -277,7 +277,7 @@ fun LoginScreen(
     if (isOperating) {
         AlertDialog(
             onDismissRequest = {},
-            title = { Text("Restoring Backup...", fontWeight = FontWeight.Bold) },
+            title = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.restoring_backup), fontWeight = FontWeight.Bold) },
             text = {
                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth().padding(16.dp)) {
                     CircularProgressIndicator(progress = { progress / 100f }, color = MaterialTheme.colorScheme.primary)
@@ -292,7 +292,7 @@ fun LoginScreen(
     if (operationSuccess == false) {
         AlertDialog(
             onDismissRequest = { operationSuccess = null },
-            title = { Text("Restore Failed", fontWeight = FontWeight.Bold) },
+            title = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.restore_failed), fontWeight = FontWeight.Bold) },
             text = { Text(errorMessage ?: "An unexpected error occurred during the restore.") },
             confirmButton = {
                 Button(onClick = { operationSuccess = null }) {
@@ -302,10 +302,7 @@ fun LoginScreen(
         )
     }
 
-    val startText = when (selectedLanguage) {
-        "hi" -> "स्थानीय कार्यक्षेत्र शुरू करें"
-        else -> "Create Offline Workspace"
-    }
+    val startText = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.create_offline_workspace)
 
     LaunchedEffect(loginState) {
         if (loginState is OfflineLoginState.Success) {
@@ -365,7 +362,7 @@ fun LoginScreen(
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    placeholder = { Text("Full Name *") },
+                    placeholder = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.full_name_1)) },
                     modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)),
                     shape = RoundedCornerShape(12.dp),
                     leadingIcon = { Icon(Icons.Default.Person, null, tint = MaterialTheme.colorScheme.primary) },
@@ -379,7 +376,7 @@ fun LoginScreen(
                         val digits = newValue.filter { it.isDigit() }.take(10)
                         phone = digits
                     },
-                    placeholder = { Text("Phone Number (10 digits) *") },
+                    placeholder = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.enter_valid_10digit_mobile_number)) },
                     modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)),
                     shape = RoundedCornerShape(12.dp),
                     leadingIcon = { Icon(Icons.Default.Phone, null, tint = MaterialTheme.colorScheme.primary) },
@@ -418,7 +415,7 @@ fun LoginScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
-                    text = "100% Private & Offline Attendance",
+                    text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.private_offline_footer),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontWeight = FontWeight.Medium
@@ -429,13 +426,13 @@ fun LoginScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Text(
-                    text = "Already have a Backup?",
+                    text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.already_have_backup),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Restore Backup",
+                    text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.restore_backup),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold,
@@ -544,7 +541,7 @@ fun PayoutsWidget() {
                     Icon(Icons.Default.Payments, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                 }
                 Spacer(modifier = Modifier.width(12.dp))
-                Text("Total Payouts", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
+                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.payouts_widget_title), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
             }
             Spacer(modifier = Modifier.height(24.dp))
             CountingText("₹ 1,28,450", MaterialTheme.typography.headlineMedium, MaterialTheme.colorScheme.onSurface)
@@ -554,7 +551,7 @@ fun PayoutsWidget() {
                     Icon(Icons.Default.TrendingUp, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(10.dp))
                 }
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("12% increase from last month", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.payout_increase_sub), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -564,7 +561,7 @@ fun PayoutsWidget() {
 fun AttendanceStatsWidget() {
     SaaSWidget {
         Column {
-            Text("Attendance Stats", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
+            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.attendance_breakdown), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
             Spacer(modifier = Modifier.height(24.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
                 val heights = listOf(0.4f, 0.7f, 0.5f, 0.9f, 0.6f, 0.8f, 0.75f)
@@ -576,11 +573,11 @@ fun AttendanceStatsWidget() {
             Spacer(modifier = Modifier.height(20.dp))
             Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
                 Column {
-                    Text("Present", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.present_1), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text("94%", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface)
                 }
                 Column(horizontalAlignment = Alignment.End) {
-                    Text("Absent", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.absent_1), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text("6%", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.error)
                 }
             }
@@ -596,8 +593,8 @@ fun PdfReportWidget() {
                 Icon(Icons.Default.PictureAsPdf, null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(32.dp))
             }
             Spacer(modifier = Modifier.height(20.dp))
-            Text("Monthly Passbook", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
-            Text("Ready to export", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.view_my_passbook), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
+            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.ready_to_export), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(modifier = Modifier.height(24.dp))
             Button(
                 onClick = {},
@@ -607,7 +604,7 @@ fun PdfReportWidget() {
             ) {
                 Icon(Icons.Default.Download, null, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Download PDF", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.download_pdf), fontSize = 13.sp, fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -617,7 +614,7 @@ fun PdfReportWidget() {
 fun AdvanceTrackWidget() {
     SaaSWidget {
         Column {
-            Text("Advance Tracking", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
+            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.advance_payment), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
             Spacer(modifier = Modifier.height(24.dp))
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f)).padding(12.dp)) {
                 Box(modifier = Modifier.size(32.dp).clip(CircleShape).background(MaterialTheme.colorScheme.secondary), contentAlignment = Alignment.Center) {
@@ -626,12 +623,12 @@ fun AdvanceTrackWidget() {
                 Spacer(modifier = Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text("Rahul Kumar", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                    Text("Pending Due", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.advance), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Text("₹ 2,400", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.secondary)
             }
             Spacer(modifier = Modifier.height(16.dp))
-            Text("Manage credits with ease", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.payout_manage_sub), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
         }
     }
 }

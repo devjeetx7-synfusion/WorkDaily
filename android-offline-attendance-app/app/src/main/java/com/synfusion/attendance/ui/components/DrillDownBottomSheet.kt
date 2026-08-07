@@ -77,7 +77,7 @@ fun DrillDownBottomSheet(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp),
-                placeholder = { Text("Search by date or note...") },
+                placeholder = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.search_records)) },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 shape = RoundedCornerShape(12.dp),
                 singleLine = true,
@@ -100,7 +100,7 @@ fun DrillDownBottomSheet(
 
             if (filteredLogs.isEmpty()) {
                 Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    Text("No records found.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.no_records_found_dots), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             } else {
                 LazyColumn(
@@ -126,13 +126,13 @@ fun DrillDownBottomSheet(
             ) {
                 Column {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("Total Records", fontWeight = FontWeight.Bold)
+                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.all_records_drilldown), fontWeight = FontWeight.Bold)
                         Text(totalRecordsText, fontWeight = FontWeight.Bold)
                     }
                     if (totalAmountText != null) {
                         Spacer(modifier = Modifier.height(8.dp))
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("Total Amount", fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent())
+                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.all_amount_drilldown), fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent())
                             Text("₹$totalAmountText", fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent())
                         }
                     }
@@ -162,7 +162,7 @@ fun DrillDownRecordItem(log: OfflinePassbookLog) {
                 Text(log.note, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             if (log.overtimeHours > 0) {
-                Text("OT: ${log.overtimeHours} hrs (₹${AmountFormatter.format(log.overtimeAmount)})", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
+                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.all_ot_drilldown, log.overtimeHours.toString(), AmountFormatter.format(log.overtimeAmount)), fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
             }
         }
 
