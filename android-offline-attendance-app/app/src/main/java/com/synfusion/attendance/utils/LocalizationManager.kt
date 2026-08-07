@@ -1,12 +1,25 @@
 package com.synfusion.attendance.utils
 
 import android.content.Context
+import android.content.ContextWrapper
 import android.content.res.Configuration
 import android.os.Build
 import android.os.LocaleList
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 import java.util.Locale
+
+class LocalizedContextWrapper(
+    private val activityContext: Context,
+    private val localizedContext: Context
+) : ContextWrapper(activityContext) {
+    override fun getResources() = localizedContext.resources
+    override fun getAssets() = localizedContext.assets
+    override fun getTheme() = localizedContext.theme
+    override fun getSystemService(name: String): Any? {
+        return localizedContext.getSystemService(name)
+    }
+}
 
 object LocalizationManager {
 
