@@ -42,12 +42,13 @@ data class OfflineSettingsState(
 class OfflineSettingsViewModel(
     private val repository: OfflinePreferencesRepository,
     private val localAttendanceRepository: LocalAttendanceRepository
-) : ViewModel() {
+) : ViewModel(), com.synfusion.attendance.backup.RefreshableViewModel {
 
     private val _state = MutableStateFlow(OfflineSettingsState())
     val state: StateFlow<OfflineSettingsState> = _state
 
     init {
+        com.synfusion.attendance.backup.DatabaseLifecycleCoordinator.registerViewModel(this)
         loadSettings()
         viewModelScope.launch {
             repository.darkModeFlow.collect { isDark ->
@@ -71,8 +72,24 @@ class OfflineSettingsViewModel(
         }
     }
 
+    override fun onCleared() {
+        super.onCleared()
+        com.synfusion.attendance.backup.DatabaseLifecycleCoordinator.unregisterViewModel(this)
+    }
+
+    override fun cancelActiveJobs() {
+        loadJob?.cancel()
+    }
+
+    override fun refreshOnRestore() {
+        loadSettings()
+    }
+
+    private var loadJob: kotlinx.coroutines.Job? = null
+
     fun loadSettings() {
-        viewModelScope.launch {
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
             val user = withContext(Dispatchers.IO) {
                 localAttendanceRepository.getUser()
             }

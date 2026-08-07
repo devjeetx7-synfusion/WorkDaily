@@ -51,7 +51,7 @@ class OfflineDashboardViewModel(
     private val preferencesRepository: OfflinePreferencesRepository,
     private val localAttendanceRepository: LocalAttendanceRepository,
     private val drillDownRepository: DrillDownRepository
-) : ViewModel() {
+) : ViewModel(), com.synfusion.attendance.backup.RefreshableViewModel {
 
     private val _dashboardState = MutableStateFlow(OfflineDashboardState(isLoading = true))
     val dashboardState: StateFlow<OfflineDashboardState> = _dashboardState
@@ -59,10 +59,24 @@ class OfflineDashboardViewModel(
     private var cachedDefaultWage: Double = 500.0
 
     init {
+        com.synfusion.attendance.backup.DatabaseLifecycleCoordinator.registerViewModel(this)
         viewModelScope.launch {
             _dashboardState.update { it.copy(isLoading = true) }
             loadLocalData()
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        com.synfusion.attendance.backup.DatabaseLifecycleCoordinator.unregisterViewModel(this)
+    }
+
+    override fun cancelActiveJobs() {
+        loadJob?.cancel()
+    }
+
+    override fun refreshOnRestore() {
+        loadLocalData(showLoadingIndicator = true)
     }
 
     fun refresh() {

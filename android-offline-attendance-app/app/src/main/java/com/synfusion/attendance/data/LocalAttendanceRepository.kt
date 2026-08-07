@@ -1,5 +1,6 @@
 package com.synfusion.attendance.data
 
+import android.content.Context
 import com.synfusion.attendance.data.daos.AttendanceDao
 import com.synfusion.attendance.data.daos.SummaryDao
 import com.synfusion.attendance.data.daos.UserDao
@@ -8,13 +9,23 @@ import com.synfusion.attendance.data.entities.SummaryEntity
 import com.synfusion.attendance.data.entities.UserEntity
 import kotlinx.coroutines.flow.Flow
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.Locale
 
 class LocalAttendanceRepository(
-    private val userDao: UserDao,
-    private val attendanceDao: AttendanceDao,
-    private val summaryDao: SummaryDao
+    private val context: Context
 ) {
+    private val db: AttendanceDatabase
+        get() = AttendanceDatabase.getInstance(context)
+
+    private val userDao: UserDao
+        get() = db.userDao()
+
+    private val attendanceDao: AttendanceDao
+        get() = db.attendanceDao()
+
+    private val summaryDao: SummaryDao
+        get() = db.summaryDao()
 
     // --- User Profile ---
     fun getUserFlow(): Flow<UserEntity?> = userDao.getUserFlow()
