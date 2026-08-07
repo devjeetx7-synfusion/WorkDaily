@@ -28,6 +28,10 @@ import com.synfusion.attendance.data.OfflinePreferencesRepository
 import com.synfusion.attendance.ui.theme.DailyWorkTheme
 import kotlinx.coroutines.launch
 
+import com.synfusion.attendance.utils.LocalizationManager
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalContext
+
 class LanguageSelectorActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,22 +42,27 @@ class LanguageSelectorActivity : ComponentActivity() {
             val isDarkMode = userThemePreference ?: isSystemInDarkTheme()
 
             val languageState by repository.languageFlow.collectAsState(initial = "en")
+            val activeLanguage = languageState ?: "en"
 
-            DailyWorkTheme(darkTheme = isDarkMode) {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    LanguageSelectorScreen(
-                        currentLang = languageState ?: "en",
-                        onLanguageSelected = { lang ->
-                            lifecycleScope.launch {
-                                repository.saveLanguage(lang)
-                                finish()
-                            }
-                        },
-                        onBack = { finish() }
-                    )
+            val localizedContext = LocalizationManager.applyLanguage(LocalContext.current, activeLanguage)
+
+            CompositionLocalProvider(LocalContext provides localizedContext) {
+                DailyWorkTheme(darkTheme = isDarkMode) {
+                    Surface(
+                        modifier = Modifier.fillMaxSize(),
+                        color = MaterialTheme.colorScheme.background
+                    ) {
+                        LanguageSelectorScreen(
+                            currentLang = activeLanguage,
+                            onLanguageSelected = { lang ->
+                                lifecycleScope.launch {
+                                    repository.saveLanguage(lang)
+                                    finish()
+                                }
+                            },
+                            onBack = { finish() }
+                        )
+                    }
                 }
             }
         }
@@ -73,7 +82,7 @@ fun LanguageSelectorScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("App Language", fontWeight = FontWeight.Bold) },
+                title = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.app_language), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
@@ -109,7 +118,7 @@ fun LanguageSelectorScreen(
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
-                    text = "Choose your preferred language",
+                    text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.select_your_preferred_language),
                     fontSize = 16.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -154,7 +163,7 @@ fun LanguageSelectorScreen(
                     .padding(bottom = 16.dp),
                 shape = RoundedCornerShape(16.dp)
             ) {
-                Text("Apply Settings", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.apply_settings), fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
         }
     }

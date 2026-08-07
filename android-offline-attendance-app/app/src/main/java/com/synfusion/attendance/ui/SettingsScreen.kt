@@ -162,7 +162,7 @@ fun SettingsScreen(
                                 if (state.isSaving) {
                                     CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
                                 } else {
-                                    Icon(Icons.Default.Check, contentDescription = "Save Changes", tint = MaterialTheme.colorScheme.primary)
+                                    Icon(Icons.Default.Check, contentDescription = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.save_changes), tint = MaterialTheme.colorScheme.primary)
                                 }
                             }
                         }
@@ -179,7 +179,7 @@ fun SettingsScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Person,
-                                contentDescription = "User Profile",
+                        contentDescription = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.profile_settings),
                                 modifier = Modifier.size(50.dp),
                                 tint = MaterialTheme.colorScheme.primary
                             )
@@ -195,7 +195,7 @@ fun SettingsScreen(
                                 .clickable { showProfileEditSheet = true },
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(Icons.Default.Edit, contentDescription = "Edit Profile", tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(16.dp))
+                            Icon(Icons.Default.Edit, contentDescription = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.edit_profile), tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(16.dp))
                         }
                     }
 
@@ -212,7 +212,7 @@ fun SettingsScreen(
             }
 
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("General Settings", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 4.dp))
+                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.profile_settings), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 4.dp))
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
@@ -269,7 +269,7 @@ fun SettingsScreen(
             }
 
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("Backup & Restore", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 4.dp))
+                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.backup_and_restore), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 4.dp))
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
@@ -288,15 +288,15 @@ fun SettingsScreen(
 
                         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Text("Last Backup:", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.last_backup) + ":", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 Text(lastDateStr, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
                             }
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Text("Backup Size:", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.backup_size) + ":", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 Text(lastSizeStr, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
                             }
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Text("Backup Location:", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.backup_location) + ":", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 Text(lastLocStr, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
                             }
                         }
@@ -311,7 +311,7 @@ fun SettingsScreen(
                             ) {
                                 Icon(Icons.Default.Backup, null, modifier = Modifier.size(16.dp))
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text("Manage", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.manage), fontSize = 12.sp, fontWeight = FontWeight.Bold)
                             }
 
                             if (lastBackupFile != null) {
@@ -330,7 +330,7 @@ fun SettingsScreen(
                                 ) {
                                     Icon(Icons.Default.Share, null, modifier = Modifier.size(16.dp))
                                     Spacer(modifier = Modifier.width(4.dp))
-                                    Text("Share", fontSize = 12.sp)
+                                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.share), fontSize = 12.sp)
                                 }
                             }
                         }
@@ -339,7 +339,7 @@ fun SettingsScreen(
             }
 
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("Information & Support", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 4.dp))
+                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.information_support), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 4.dp))
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
@@ -354,8 +354,8 @@ fun SettingsScreen(
                                 }
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column {
-                                Text("How to Use WorkDaily", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                Text("Quick guide & tutorials", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.how_to_use_dailywork), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.quick_guide_tutorials), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
                         }
@@ -367,8 +367,8 @@ fun SettingsScreen(
                                 }
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column {
-                                Text("Privacy Policy", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                    Text("Stored safely offline", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.privacy_policy), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.stored_safely_offline), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
                         }
@@ -380,8 +380,8 @@ fun SettingsScreen(
                                 }
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column {
-                                    Text("Terms & Conditions", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                    Text("Rules and guidelines for using the app", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.terms_conditions), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.rules_guidelines), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
                         }
@@ -393,8 +393,8 @@ fun SettingsScreen(
                                 }
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column {
-                                Text("Developer Contact", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                Text("Reach out to us for support", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.developer_contact), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.reach_out_support), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
                         }
@@ -452,9 +452,9 @@ fun SettingsScreen(
         if (showPreDeleteReminderDialog) {
             AlertDialog(
                 onDismissRequest = { showPreDeleteReminderDialog = false },
-                title = { Text("Pre-Delete Reminder", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error) },
+                title = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.pre_delete_reminder), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error) },
                 text = {
-                    Text("To avoid losing your attendance history, create a backup before removing the app.")
+                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.pre_delete_msg))
                 },
                 confirmButton = {
                     Button(
@@ -475,7 +475,7 @@ fun SettingsScreen(
                             }
                         }
                     ) {
-                        Text("Backup Now")
+                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.backup_now))
                     }
                 },
                 dismissButton = {
@@ -486,12 +486,12 @@ fun SettingsScreen(
                                 showLogoutBottomSheet = true
                             }
                         ) {
-                            Text("Continue", color = MaterialTheme.colorScheme.primary)
+                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.continue_action), color = MaterialTheme.colorScheme.primary)
                         }
                         TextButton(
                             onClick = { showPreDeleteReminderDialog = false }
                         ) {
-                            Text("Cancel", color = MaterialTheme.colorScheme.onSurface)
+                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.cancel), color = MaterialTheme.colorScheme.onSurface)
                         }
                     }
                 }
@@ -528,7 +528,7 @@ fun SettingsScreen(
         if (isBackingUpForLogout) {
             AlertDialog(
                 onDismissRequest = {},
-                title = { Text("Creating Backup...", fontWeight = FontWeight.Bold) },
+                title = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.creating_backup), fontWeight = FontWeight.Bold) },
                 text = {
                     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth().padding(16.dp)) {
                         CircularProgressIndicator(progress = { backupProgress / 100f }, color = MaterialTheme.colorScheme.primary)
@@ -546,13 +546,13 @@ fun SettingsScreen(
             val createdTime = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault()).format(Date(file.lastModified()))
             AlertDialog(
                 onDismissRequest = {},
-                title = { Text("Backup Created Successfully", fontWeight = FontWeight.Bold) },
+                title = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.backup_success_title), fontWeight = FontWeight.Bold) },
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("Your backup details:")
-                        Text("• Size: $fileSizeMb MB", fontSize = 13.sp)
-                        Text("• Created Time: $createdTime", fontSize = 13.sp)
-                        Text("• Location: ${file.parentFile?.name ?: "Downloads"}", fontSize = 13.sp)
+                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.backup_success_details))
+                        Text("• " + androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.backup_size) + ": $fileSizeMb MB", fontSize = 13.sp)
+                        Text("• " + androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.last_backup) + ": $createdTime", fontSize = 13.sp)
+                        Text("• " + androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.backup_location) + ": ${file.parentFile?.name ?: "Downloads"}", fontSize = 13.sp)
                     }
                 },
                 confirmButton = {
@@ -569,7 +569,7 @@ fun SettingsScreen(
                     ) {
                         Icon(Icons.Default.Share, null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Share")
+                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.share))
                     }
                 },
                 dismissButton = {
@@ -580,7 +580,7 @@ fun SettingsScreen(
                             onLogout()
                         }
                     ) {
-                        Text("Done")
+                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.done))
                     }
                 }
             )
@@ -642,7 +642,7 @@ fun LogoutBottomSheet(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.Backup, null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Backup & Logout", fontWeight = FontWeight.Bold)
+                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.backup_logout), fontWeight = FontWeight.Bold)
                 }
             }
 
@@ -653,14 +653,14 @@ fun LogoutBottomSheet(
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
                 border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.error)
             ) {
-                Text("Logout Without Backup", fontWeight = FontWeight.Bold)
+                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.logout_without_backup), fontWeight = FontWeight.Bold)
             }
 
             TextButton(
                 onClick = onDismiss,
                 modifier = Modifier.fillMaxWidth().height(48.dp)
             ) {
-                Text("Cancel", color = MaterialTheme.colorScheme.onSurface)
+                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.cancel), color = MaterialTheme.colorScheme.onSurface)
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -690,7 +690,7 @@ fun HowToUseBottomSheet(onDismiss: () -> Unit) {
                     Icon(Icons.Default.Info, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                 }
                 Spacer(modifier = Modifier.width(12.dp))
-                Text("How to Use WorkDaily", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.how_to_use_dailywork), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
             }
             HorizontalDivider(color = MaterialTheme.colorScheme.outline)
             Text(
@@ -705,7 +705,7 @@ fun HowToUseBottomSheet(onDismiss: () -> Unit) {
                 modifier = Modifier.fillMaxWidth().height(50.dp),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Text("Close", fontWeight = FontWeight.Bold)
+                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.close), fontWeight = FontWeight.Bold)
             }
             Spacer(modifier = Modifier.height(32.dp))
         }
@@ -734,7 +734,7 @@ fun PrivacyPolicyBottomSheet(onDismiss: () -> Unit) {
                     Icon(Icons.Default.Security, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                 }
                 Spacer(modifier = Modifier.width(12.dp))
-                Text("Privacy Policy", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.privacy_policy), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
             }
             HorizontalDivider(color = MaterialTheme.colorScheme.outline)
             Text(
@@ -749,7 +749,7 @@ fun PrivacyPolicyBottomSheet(onDismiss: () -> Unit) {
                 modifier = Modifier.fillMaxWidth().height(50.dp),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Text("Close", fontWeight = FontWeight.Bold)
+                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.close), fontWeight = FontWeight.Bold)
             }
             Spacer(modifier = Modifier.height(32.dp))
         }
@@ -778,7 +778,7 @@ fun TermsConditionsBottomSheet(onDismiss: () -> Unit) {
                     Icon(Icons.Default.Description, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                 }
                 Spacer(modifier = Modifier.width(12.dp))
-                Text("Terms & Conditions", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.terms_conditions), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
             }
             HorizontalDivider(color = MaterialTheme.colorScheme.outline)
             Text(
@@ -793,7 +793,7 @@ fun TermsConditionsBottomSheet(onDismiss: () -> Unit) {
                 modifier = Modifier.fillMaxWidth().height(50.dp),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Text("Close", fontWeight = FontWeight.Bold)
+                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.close), fontWeight = FontWeight.Bold)
             }
             Spacer(modifier = Modifier.height(32.dp))
         }
@@ -951,7 +951,7 @@ fun OfflineProfileEditBottomSheet(
                     Icon(Icons.Default.Edit, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                 }
                 Spacer(modifier = Modifier.width(12.dp))
-                Text("Edit Profile", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.edit_profile), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
             }
             HorizontalDivider(color = MaterialTheme.colorScheme.outline)
 
@@ -1002,7 +1002,7 @@ fun OfflineProfileEditBottomSheet(
                     modifier = Modifier.weight(1f).height(50.dp),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("Cancel")
+                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.cancel))
                 }
                 Button(
                     onClick = {
@@ -1016,7 +1016,7 @@ fun OfflineProfileEditBottomSheet(
                     if (state.isSaving) {
                         CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
                     } else {
-                        Text("Save Changes", fontWeight = FontWeight.Bold)
+                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.save_changes), fontWeight = FontWeight.Bold)
                     }
                 }
             }

@@ -24,8 +24,11 @@ import com.synfusion.attendance.viewmodel.OfflineAuthViewModel
 import com.synfusion.attendance.viewmodel.OfflineSettingsViewModel
 import com.synfusion.attendance.viewmodel.OfflineViewModelFactory
 import com.synfusion.attendance.utils.collectAsStateWithLifecycle
+import com.synfusion.attendance.utils.LocalizationManager
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalContext
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -38,13 +41,19 @@ class MainActivity : ComponentActivity() {
             setContent {
                 val userThemePreference by repository.darkModeFlow.collectAsState(initial = null)
                 val isDarkMode = userThemePreference ?: isSystemInDarkTheme()
+                val languageState by repository.languageFlow.collectAsState(initial = "en")
+                val activeLanguage = languageState ?: "en"
 
-                DailyWorkTheme(darkTheme = isDarkMode) {
-                    Surface(
-                        modifier = Modifier.fillMaxSize(),
-                        color = MaterialTheme.colorScheme.background
-                    ) {
-                        OfflineDailyWorkApp(factory)
+                val localizedContext = LocalizationManager.applyLanguage(LocalContext.current, activeLanguage)
+
+                CompositionLocalProvider(LocalContext provides localizedContext) {
+                    DailyWorkTheme(darkTheme = isDarkMode) {
+                        Surface(
+                            modifier = Modifier.fillMaxSize(),
+                            color = MaterialTheme.colorScheme.background
+                        ) {
+                            OfflineDailyWorkApp(factory)
+                        }
                     }
                 }
             }

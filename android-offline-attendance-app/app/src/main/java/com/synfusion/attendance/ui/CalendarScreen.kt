@@ -86,7 +86,7 @@ fun CalendarScreen(
                             Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(64.dp))
                             Text(state.errorMessage ?: "An error occurred", color = MaterialTheme.colorScheme.error, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                             Button(onClick = { viewModel.refresh() }) {
-                                Text("Retry")
+                                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.try_again))
                             }
                         }
                     }

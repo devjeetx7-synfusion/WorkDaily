@@ -133,7 +133,7 @@ fun StatsScreen(
                                 Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(64.dp))
                                 Text(state.errorMessage ?: "An error occurred", color = MaterialTheme.colorScheme.error, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                                 Button(onClick = { viewModel.refresh() }) {
-                                    Text("Retry")
+                                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.try_again))
                                 }
                             }
                         }
@@ -401,17 +401,17 @@ fun PersonalStatsView(
                                     Row(modifier = Modifier.clickable { viewModel.openDrillDown(DrillDownType.PRESENT, isAllTime) }.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                                         Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(presentColor))
                                         Spacer(modifier = Modifier.width(8.dp))
-                                        Text("Present (${purePresent})", fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.stats_present_label, purePresent), fontSize = 14.sp, fontWeight = FontWeight.Medium)
                                     }
                                     Row(modifier = Modifier.clickable { viewModel.openDrillDown(DrillDownType.HALF_DAY, isAllTime) }.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                                         Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(halfColor))
                                         Spacer(modifier = Modifier.width(8.dp))
-                                        Text("Half Day (${state.personalStats.halfDays})", fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.stats_half_label, state.personalStats.halfDays), fontSize = 14.sp, fontWeight = FontWeight.Medium)
                                     }
                                     Row(modifier = Modifier.clickable { viewModel.openDrillDown(DrillDownType.ABSENT, isAllTime) }.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                                         Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(absentColor))
                                         Spacer(modifier = Modifier.width(8.dp))
-                                        Text("Absent (${state.personalStats.absent})", fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.stats_absent_label, state.personalStats.absent), fontSize = 14.sp, fontWeight = FontWeight.Medium)
                                     }
                                 }
                             }

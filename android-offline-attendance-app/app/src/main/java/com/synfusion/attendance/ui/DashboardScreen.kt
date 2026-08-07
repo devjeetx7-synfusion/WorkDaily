@@ -186,7 +186,7 @@ fun DashboardScreen(
                                                 Icon(Icons.Default.ErrorOutline, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(64.dp))
                                                 Text(dashboardState.errorMessage ?: "An error occurred", color = MaterialTheme.colorScheme.error, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                                                 Button(onClick = { dashboardViewModel.refresh() }) {
-                                                    Text("Retry")
+                                                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.try_again))
                                                 }
                                             }
                                         }
@@ -538,7 +538,7 @@ fun AllTimePassbookButton(onNavigate: () -> Unit) {
     ) {
         Icon(Icons.Default.History, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary)
         Spacer(modifier = Modifier.width(8.dp))
-        Text("View All Time Passbook", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.tertiary)
+        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.all_time_passbook_title), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.tertiary)
     }
 }
 
@@ -566,8 +566,8 @@ fun PersonalQuickActions(onAddAdvance: () -> Unit) {
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 Column {
-                    Text("Add Advance Payment", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-                    Text("Record money received", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.add_advance_payment), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.advance_payment), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             Icon(Icons.Default.ArrowForward, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
