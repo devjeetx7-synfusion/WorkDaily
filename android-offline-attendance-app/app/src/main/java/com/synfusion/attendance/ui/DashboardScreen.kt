@@ -342,7 +342,8 @@ fun DashboardScreen(
                 sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
                 modifier = Modifier.fillMaxHeight(),
                 containerColor = MaterialTheme.colorScheme.background,
-                dragHandle = null
+                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                dragHandle = { BottomSheetDefaults.DragHandle() }
             ) {
                 PassbookScreen(
                     viewModel = passbookViewModel,
@@ -499,14 +500,14 @@ fun PersonalStatsGrid(state: OfflineDashboardState, onNavigatePassbook: () -> Un
             ) {
                 Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.todays_earnings), fontSize = 12.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("₹${AmountFormatter.format(state.todayEarned)}", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                Text("₹${AmountFormatter.format(state.todayEarned)}", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent(), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
             }
             Column(
                 modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).clickable(onClick = onEarningsClick).padding(20.dp)
             ) {
                 Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.monthly_earnings), fontSize = 12.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("₹${AmountFormatter.format(state.monthEarned)}", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color(0xFF10B981), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                Text("₹${AmountFormatter.format(state.monthEarned)}", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent(), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
             }
         }
 
@@ -558,10 +559,10 @@ fun PersonalQuickActions(onAddAdvance: () -> Unit) {
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
-                    modifier = Modifier.size(48.dp).clip(CircleShape).background(Color(0xFFF97316).copy(alpha = 0.1f)),
+                    modifier = Modifier.size(48.dp).clip(CircleShape).background(com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay().copy(alpha = 0.1f)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = null, tint = Color(0xFFF97316), modifier = Modifier.size(24.dp))
+                    Icon(Icons.Default.Add, contentDescription = null, tint = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay(), modifier = Modifier.size(24.dp))
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 Column {
@@ -599,9 +600,9 @@ fun PersonalDailyLog(state: OfflineDashboardState, dashboardViewModel: OfflineDa
             Row(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.overtime_hours), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(modifier = Modifier.size(40.dp).clip(CircleShape).background(MaterialTheme.colorScheme.error.copy(alpha = 0.1f)).clickable { if (overtimeHours > 0) overtimeHours-- }, contentAlignment = Alignment.Center) { Icon(Icons.Default.Remove, contentDescription = null, tint = MaterialTheme.colorScheme.error) }
+                    Box(modifier = Modifier.size(40.dp).clip(CircleShape).background(com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent().copy(alpha = 0.1f)).clickable { if (overtimeHours > 0) overtimeHours-- }, contentAlignment = Alignment.Center) { Icon(Icons.Default.Remove, contentDescription = null, tint = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent()) }
                     Text(overtimeHours.toString(), fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 16.dp))
-                    Box(modifier = Modifier.size(40.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)).clickable { overtimeHours++ }, contentAlignment = Alignment.Center) { Icon(Icons.Default.Add, contentDescription = null, tint = MaterialTheme.colorScheme.primary) }
+                    Box(modifier = Modifier.size(40.dp).clip(CircleShape).background(com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent().copy(alpha = 0.1f)).clickable { overtimeHours++ }, contentAlignment = Alignment.Center) { Icon(Icons.Default.Add, contentDescription = null, tint = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent()) }
                 }
             }
             Spacer(modifier = Modifier.height(12.dp))
@@ -667,7 +668,12 @@ fun PersonalDailyLog(state: OfflineDashboardState, dashboardViewModel: OfflineDa
             }
         } else {
             val isPresent = state.todayStatus == "present"
-            val bgColor = if (isPresent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+            val isHalf = state.todayType == "half"
+            val bgColor = if (isPresent) {
+                if (isHalf) com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay() else com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent()
+            } else {
+                com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent()
+            }
 
             Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(bgColor.copy(alpha = 0.1f)).border(2.dp, bgColor, RoundedCornerShape(16.dp)).padding(24.dp), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -679,7 +685,7 @@ fun PersonalDailyLog(state: OfflineDashboardState, dashboardViewModel: OfflineDa
                         }
                     }
                     Spacer(modifier = Modifier.height(12.dp))
-                    Text(if (isPresent) "Marked Present" else "Marked Absent", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = bgColor)
+                    Text(if (isPresent) { if (isHalf) "Marked Half Day" else "Marked Present" } else "Marked Absent", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = bgColor)
                     if (note.isNotEmpty()) {
                         Spacer(modifier = Modifier.height(8.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -692,7 +698,7 @@ fun PersonalDailyLog(state: OfflineDashboardState, dashboardViewModel: OfflineDa
             }
 
             Spacer(modifier = Modifier.height(12.dp))
-            OutlinedButton(onClick = { dashboardViewModel.removeAttendance() }, modifier = Modifier.fillMaxWidth().height(50.dp), shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error, containerColor = MaterialTheme.colorScheme.background), border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.error)) {
+            OutlinedButton(onClick = { dashboardViewModel.removeAttendance() }, modifier = Modifier.fillMaxWidth().height(50.dp), shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.outlinedButtonColors(contentColor = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent(), containerColor = MaterialTheme.colorScheme.background), border = androidx.compose.foundation.BorderStroke(1.dp, com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent())) {
                 Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.remove_attendance), fontWeight = FontWeight.Bold, fontSize = 14.sp)
             }
         }
@@ -708,7 +714,7 @@ fun PersonalDailyLog(state: OfflineDashboardState, dashboardViewModel: OfflineDa
                             dashboardViewModel.markAbsent("personal", note)
                             showAbsentDialog = false
                         },
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                        colors = ButtonDefaults.buttonColors(containerColor = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent())
                     ) {
                         Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.confirm))
                     }

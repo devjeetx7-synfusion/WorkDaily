@@ -54,6 +54,7 @@ fun DrillDownBottomSheet(
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = MaterialTheme.colorScheme.background,
         dragHandle = { BottomSheetDefaults.DragHandle() },
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
         modifier = Modifier.fillMaxHeight(0.9f)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -131,8 +132,8 @@ fun DrillDownBottomSheet(
                     if (totalAmountText != null) {
                         Spacer(modifier = Modifier.height(8.dp))
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("Total Amount", fontWeight = FontWeight.Bold, color = Color(0xFF10B981))
-                            Text("₹$totalAmountText", fontWeight = FontWeight.Bold, color = Color(0xFF10B981))
+                            Text("Total Amount", fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent())
+                            Text("₹$totalAmountText", fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent())
                         }
                     }
                 }
@@ -172,7 +173,7 @@ fun DrillDownRecordItem(log: OfflinePassbookLog) {
                 "+₹${AmountFormatter.format(log.baseEarnings + log.overtimeAmount)}"
             } else ""
 
-            val color = if (log.status == "advance") MaterialTheme.colorScheme.error else Color(0xFF10B981)
+            val color = if (log.status == "advance") com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent() else com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent()
 
             Text(
                 text = log.status.replaceFirstChar { it.uppercase() } + (if (log.type == "half") " (Half)" else ""),

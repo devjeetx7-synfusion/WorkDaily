@@ -262,9 +262,9 @@ fun PassbookScreen(
                                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Icon(Icons.Default.CurrencyRupee, contentDescription = null, tint = Color(0xFF16A34A), modifier = Modifier.size(16.dp))
+                                            Icon(Icons.Default.CurrencyRupee, contentDescription = null, tint = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent(), modifier = Modifier.size(16.dp))
                                             Spacer(modifier = Modifier.width(8.dp))
-                                            Text("₹${AmountFormatter.format(state.dailyWage)} / day", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFF16A34A))
+                                            Text("₹${AmountFormatter.format(state.dailyWage)} / day", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent())
                                         }
                                     }
                                     Column(verticalArrangement = Arrangement.spacedBy(8.dp), horizontalAlignment = Alignment.End) {
@@ -281,13 +281,13 @@ fun PassbookScreen(
                         item {
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                 OutlinedButton(onClick = onNavigateToCalendar, modifier = Modifier.weight(1f).height(48.dp), shape = RoundedCornerShape(12.dp)) {
-                                    Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF16A34A), modifier = Modifier.size(16.dp))
+                                    Icon(Icons.Default.CheckCircle, contentDescription = null, tint = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent(), modifier = Modifier.size(16.dp))
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.mark_today), fontSize = 12.sp, fontWeight = FontWeight.Bold)
                                 }
                                 Spacer(modifier = Modifier.width(12.dp))
                                 OutlinedButton(onClick = onNavigateToCalendar, modifier = Modifier.weight(1f).height(48.dp), shape = RoundedCornerShape(12.dp)) {
-                                    Icon(Icons.Default.Add, contentDescription = null, tint = Color(0xFFF97316), modifier = Modifier.size(16.dp))
+                                    Icon(Icons.Default.Add, contentDescription = null, tint = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay(), modifier = Modifier.size(16.dp))
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.advance), fontSize = 12.sp, fontWeight = FontWeight.Bold)
                                 }
@@ -359,19 +359,19 @@ fun PassbookScreen(
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                                 Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(12.dp)).padding(12.dp), contentAlignment = Alignment.Center) {
                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                        Text("${state.presentDays}", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color(0xFF16A34A))
+                                        Text("${state.presentDays}", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent())
                                         Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.present), fontSize = 9.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
                                 }
                                 Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(12.dp)).padding(12.dp), contentAlignment = Alignment.Center) {
                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                        Text("${state.absentDays}", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color(0xFFDC2626))
+                                        Text("${state.absentDays}", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent())
                                         Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.absent), fontSize = 9.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
                                 }
                                 Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(12.dp)).padding(12.dp), contentAlignment = Alignment.Center) {
                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                        Text("${state.halfDays}", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color(0xFFF97316))
+                                        Text("${state.halfDays}", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay())
                                         Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.half), fontSize = 9.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
                                 }
@@ -404,14 +404,14 @@ fun PassbookScreen(
                                     Spacer(modifier = Modifier.height(12.dp))
                                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                         Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.total_advance), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
-                                        Text("- ₹${AmountFormatter.format(state.totalAdvance)}", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFFF97316))
+                                        Text("- ₹${AmountFormatter.format(state.totalAdvance)}", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay())
                                     }
                                     Spacer(modifier = Modifier.height(12.dp))
                                     Divider(color = MaterialTheme.colorScheme.outline)
                                     Spacer(modifier = Modifier.height(12.dp))
                                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                         Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.net_payable), fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                                        Text("₹${AmountFormatter.format(state.finalBalance)}", fontSize = 20.sp, fontWeight = FontWeight.Black, color = if (state.finalBalance >= 0) MaterialTheme.colorScheme.primary else Color(0xFFDC2626))
+                                        Text("₹${AmountFormatter.format(state.finalBalance)}", fontSize = 20.sp, fontWeight = FontWeight.Black, color = if (state.finalBalance >= 0) MaterialTheme.colorScheme.primary else com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent())
                                     }
                                 }
                             }
@@ -451,20 +451,24 @@ fun PassbookScreen(
                                             if (log.overtimeAmount > 0) {
                                                 val otText = if (log.overtimeHours > 0) "+ ₹${AmountFormatter.format(log.overtimeAmount)} (${log.overtimeHours} hrs OT)" else "+ ₹${AmountFormatter.format(log.overtimeAmount)} (OT)"
                                                 Spacer(modifier = Modifier.height(4.dp))
-                                                Text(otText, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF8B5CF6))
+                                                Text(otText, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getLeave())
                                             }
                                         }
 
                                         Row(verticalAlignment = Alignment.Top) {
                                             Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                                 if (log.status == "present" || log.status == "absent") {
-                                                    val textColor = if (log.status == "present") Color(0xFF16A34A) else Color(0xFFDC2626)
+                                                    val textColor = if (log.status == "present") {
+                                                        if (log.type == "half") com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay() else com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent()
+                                                    } else {
+                                                        com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent()
+                                                    }
                                                     val text = if (log.status == "present") { if (log.type == "half") "Half Day" else "Present" } else "Absent"
                                                     Text(text, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = textColor)
                                                 }
 
                                                 if (log.advanceAmount != null && log.advanceAmount > 0) {
-                                                    Text("₹${AmountFormatter.format(log.advanceAmount)} Advance", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFFEA580C))
+                                                    Text("₹${AmountFormatter.format(log.advanceAmount)} Advance", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay())
                                                 }
                                             }
 

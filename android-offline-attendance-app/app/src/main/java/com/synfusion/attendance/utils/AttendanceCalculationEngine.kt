@@ -10,6 +10,7 @@ data class DashboardCalculationResult(
     val todayEarned: Double,
     val monthEarned: Double,
     val currentTodayStatus: String?,
+    val currentTodayType: String?,
     val currentOvertime: Int,
     val currentNote: String?,
     val advanceToday: Double
@@ -37,6 +38,7 @@ object AttendanceCalculationEngine {
         var todayEarned = 0.0
         var monthEarned = 0.0
         var currentTodayStatus: String? = null
+        var currentTodayType: String? = null
         var currentOvertime = 0
         var currentNote: String? = null
         var advanceToday = 0.0
@@ -60,6 +62,7 @@ object AttendanceCalculationEngine {
             if (date == todayStr) {
                 if (status != "advance") {
                     currentTodayStatus = status
+                    currentTodayType = type
                     currentOvertime = otHours
                     currentNote = OvertimeCalculator.cleanNote(noteStr)
                     todayEarned = dailyBase + dailyOT
@@ -77,6 +80,7 @@ object AttendanceCalculationEngine {
             todayEarned = todayEarned,
             monthEarned = monthEarned,
             currentTodayStatus = currentTodayStatus,
+            currentTodayType = currentTodayType,
             currentOvertime = currentOvertime,
             currentNote = currentNote,
             advanceToday = advanceToday
