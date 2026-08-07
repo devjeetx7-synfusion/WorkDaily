@@ -343,9 +343,9 @@ fun PersonalStatsView(
                             val animatedHalfSweep by animateFloatAsState(targetValue = halfSweep, animationSpec = tween(1000), label = "half")
                             val animatedAbsentSweep by animateFloatAsState(targetValue = absentSweep, animationSpec = tween(1000), label = "absent")
 
-                            val presentColor = Color(0xFF39b27d)
-                            val halfColor = Color(0xFFF97316)
-                            val absentColor = MaterialTheme.colorScheme.error
+                            val presentColor = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent()
+                            val halfColor = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay()
+                            val absentColor = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent()
 
                             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                                 Box(modifier = Modifier.size(120.dp), contentAlignment = Alignment.Center) {

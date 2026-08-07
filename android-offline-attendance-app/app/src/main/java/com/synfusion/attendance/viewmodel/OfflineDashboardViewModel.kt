@@ -33,6 +33,7 @@ data class OfflineDashboardState(
 
     // Personal Attendance State
     val todayStatus: String? = null,
+    val todayType: String? = null,
     val overtimeHours: Int = 0,
     val todayNote: String? = null,
 
@@ -128,6 +129,7 @@ class OfflineDashboardViewModel(
                     todayEarned = calcResult.todayEarned.toString().removeSuffix(".0"),
                     monthEarned = calcResult.monthEarned.toString().removeSuffix(".0"),
                     todayStatus = calcResult.currentTodayStatus,
+                    todayType = calcResult.currentTodayType,
                     overtimeHours = calcResult.currentOvertime,
                     todayNote = calcResult.currentNote,
                     isLoading = false,
@@ -165,6 +167,7 @@ class OfflineDashboardViewModel(
 
                 _dashboardState.update { it.copy(
                     todayStatus = "present",
+                    todayType = type,
                     overtimeHours = overtimeHours,
                     todayNote = note
                 ) }
@@ -200,6 +203,7 @@ class OfflineDashboardViewModel(
 
                 _dashboardState.update { it.copy(
                     todayStatus = "absent",
+                    todayType = "full",
                     overtimeHours = 0,
                     todayNote = note
                 ) }
@@ -252,6 +256,7 @@ class OfflineDashboardViewModel(
 
                 _dashboardState.update { it.copy(
                     todayStatus = null,
+                    todayType = null,
                     overtimeHours = 0,
                     todayNote = null
                 ) }

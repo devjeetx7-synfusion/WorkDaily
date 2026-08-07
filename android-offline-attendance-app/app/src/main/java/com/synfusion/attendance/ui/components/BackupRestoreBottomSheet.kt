@@ -143,6 +143,7 @@ fun BackupRestoreBottomSheet(
         onDismissRequest = { if (!isOperating) onDismiss() },
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = MaterialTheme.colorScheme.background,
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
         dragHandle = { BottomSheetDefaults.DragHandle() }
     ) {
         Column(
@@ -470,7 +471,7 @@ fun ReportRow(label: String, detail: String, success: Boolean) {
         Icon(
             imageVector = if (success) Icons.Default.CheckCircle else Icons.Default.Cancel,
             contentDescription = null,
-            tint = if (success) Color(0xFF16A34A) else MaterialTheme.colorScheme.error,
+            tint = if (success) com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent() else com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent(),
             modifier = Modifier.size(18.dp)
         )
     }

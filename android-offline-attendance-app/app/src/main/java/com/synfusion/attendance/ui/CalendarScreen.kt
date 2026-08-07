@@ -286,9 +286,9 @@ fun PersonalCalendarView(
                                     val isToday = isCurrentMonth && day == todayDay
 
                                     val bgColor = when {
-                                        isPresent && isHalf -> Color(0xFFF97316)
-                                        isPresent -> MaterialTheme.colorScheme.primary
-                                        isAbsent -> MaterialTheme.colorScheme.error
+                                        isPresent && isHalf -> com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay()
+                                        isPresent -> com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent()
+                                        isAbsent -> com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent()
                                         else -> Color.Transparent
                                     }
 
@@ -311,7 +311,7 @@ fun PersonalCalendarView(
                                             }
                                             .border(
                                                 width = if (hasOT) 2.dp else if (isToday && !isPresent && !isAbsent) 2.dp else 0.dp,
-                                                color = if (hasOT) Color(0xFF8B5CF6) else if (isToday && !isPresent && !isAbsent) MaterialTheme.colorScheme.primary else Color.Transparent,
+                                                color = if (hasOT) com.synfusion.attendance.ui.theme.AttendanceStatusColors.getLeave() else if (isToday && !isPresent && !isAbsent) MaterialTheme.colorScheme.primary else Color.Transparent,
                                                 shape = CircleShape
                                             ),
                                         contentAlignment = Alignment.Center
@@ -339,7 +339,7 @@ fun PersonalCalendarView(
                                                     .padding(bottom = 6.dp)
                                                     .size(8.dp)
                                                     .clip(CircleShape)
-                                                    .background(Color(0xFFF97316))
+                                                    .background(com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay())
                                             )
                                         }
                                     }
@@ -360,25 +360,25 @@ fun PersonalCalendarView(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary))
+                    Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent()))
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.full_day), fontSize = 10.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(Color(0xFFF97316)))
+                    Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay()))
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.half_day), fontSize = 10.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(MaterialTheme.colorScheme.error))
+                    Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent()))
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.absent_1), fontSize = 10.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(Color(0xFFF97316)))
+                    Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay()))
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.advance), fontSize = 10.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
@@ -444,8 +444,8 @@ fun PersonalAttendanceDialog(
                         modifier = Modifier.weight(1f).height(48.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = if (editStatus == "present") MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-                            contentColor = if (editStatus == "present") MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+                            containerColor = if (editStatus == "present") com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent() else MaterialTheme.colorScheme.surfaceVariant,
+                            contentColor = if (editStatus == "present") Color.White else MaterialTheme.colorScheme.onSurface
                         )
                     ) {
                         Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.present_1), fontWeight = FontWeight.Bold)
@@ -455,8 +455,8 @@ fun PersonalAttendanceDialog(
                         modifier = Modifier.weight(1f).height(48.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = if (editStatus == "absent") MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.surfaceVariant,
-                            contentColor = if (editStatus == "absent") MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onSurface
+                            containerColor = if (editStatus == "absent") com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent() else MaterialTheme.colorScheme.surfaceVariant,
+                            contentColor = if (editStatus == "absent") Color.White else MaterialTheme.colorScheme.onSurface
                         )
                     ) {
                         Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.absent_1), fontWeight = FontWeight.Bold)
@@ -534,8 +534,8 @@ fun PersonalAttendanceDialog(
                                 onClick = { editReason = reason },
                                 shape = RoundedCornerShape(12.dp),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (editReason == reason) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.surfaceVariant,
-                                    contentColor = if (editReason == reason) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onSurface
+                                    containerColor = if (editReason == reason) com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent() else MaterialTheme.colorScheme.surfaceVariant,
+                                    contentColor = if (editReason == reason) Color.White else MaterialTheme.colorScheme.onSurface
                                 ),
                                 contentPadding = PaddingValues(0.dp)
                             ) {
