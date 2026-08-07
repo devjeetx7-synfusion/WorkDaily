@@ -42,7 +42,7 @@ data class OfflineCalendarState(
 class OfflineCalendarViewModel(
     private val preferencesRepository: OfflinePreferencesRepository,
     private val localAttendanceRepository: LocalAttendanceRepository
-) : ViewModel() {
+) : ViewModel(), com.synfusion.attendance.backup.RefreshableViewModel {
 
     private val _calendarState = MutableStateFlow(OfflineCalendarState())
     val calendarState: StateFlow<OfflineCalendarState> = _calendarState
@@ -50,9 +50,23 @@ class OfflineCalendarViewModel(
     private val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
 
     init {
+        com.synfusion.attendance.backup.DatabaseLifecycleCoordinator.registerViewModel(this)
         viewModelScope.launch {
             loadData()
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        com.synfusion.attendance.backup.DatabaseLifecycleCoordinator.unregisterViewModel(this)
+    }
+
+    override fun cancelActiveJobs() {
+        loadJob?.cancel()
+    }
+
+    override fun refreshOnRestore() {
+        loadData(showLoadingIndicator = true)
     }
 
     fun refresh() {

@@ -62,7 +62,7 @@ class OfflineAllTimePassbookViewModel(
     private val preferencesRepository: OfflinePreferencesRepository,
     private val localAttendanceRepository: LocalAttendanceRepository,
     private val drillDownRepository: DrillDownRepository
-) : ViewModel() {
+) : ViewModel(), com.synfusion.attendance.backup.RefreshableViewModel {
 
     private val _state = MutableStateFlow(OfflineAllTimePassbookState())
     val state: StateFlow<OfflineAllTimePassbookState> = _state
@@ -70,6 +70,20 @@ class OfflineAllTimePassbookViewModel(
     private var cachedDefaultWage = 500.0
 
     init {
+        com.synfusion.attendance.backup.DatabaseLifecycleCoordinator.registerViewModel(this)
+        loadData()
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        com.synfusion.attendance.backup.DatabaseLifecycleCoordinator.unregisterViewModel(this)
+    }
+
+    override fun cancelActiveJobs() {
+        loadJob?.cancel()
+    }
+
+    override fun refreshOnRestore() {
         loadData()
     }
 
@@ -82,8 +96,11 @@ class OfflineAllTimePassbookViewModel(
         loadData()
     }
 
+    private var loadJob: kotlinx.coroutines.Job? = null
+
     private fun loadData() {
-        viewModelScope.launch {
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
             _state.update { it.copy(isLoading = true, errorMessage = null) }
             try {
                 val user = withContext(Dispatchers.IO) { localAttendanceRepository.getUser() }

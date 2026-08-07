@@ -59,7 +59,7 @@ class OfflineStatsViewModel(
     private val preferencesRepository: OfflinePreferencesRepository,
     private val localAttendanceRepository: LocalAttendanceRepository,
     private val drillDownRepository: DrillDownRepository
-) : ViewModel() {
+) : ViewModel(), com.synfusion.attendance.backup.RefreshableViewModel {
 
     private val _statsState = MutableStateFlow(OfflineStatsState())
     val statsState: StateFlow<OfflineStatsState> = _statsState
@@ -67,9 +67,23 @@ class OfflineStatsViewModel(
     private var cachedDefaultWage: Double = 500.0
 
     init {
+        com.synfusion.attendance.backup.DatabaseLifecycleCoordinator.registerViewModel(this)
         viewModelScope.launch {
             loadStats()
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        com.synfusion.attendance.backup.DatabaseLifecycleCoordinator.unregisterViewModel(this)
+    }
+
+    override fun cancelActiveJobs() {
+        loadJob?.cancel()
+    }
+
+    override fun refreshOnRestore() {
+        loadStats(showLoadingIndicator = true)
     }
 
     fun refresh() {

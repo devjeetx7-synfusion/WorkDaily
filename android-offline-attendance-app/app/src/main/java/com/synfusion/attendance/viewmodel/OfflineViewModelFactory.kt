@@ -3,7 +3,6 @@ package com.synfusion.attendance.viewmodel
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.synfusion.attendance.data.AttendanceDatabase
 import com.synfusion.attendance.data.DrillDownRepository
 import com.synfusion.attendance.data.LocalAttendanceRepository
 import com.synfusion.attendance.data.OfflinePreferencesRepository
@@ -13,13 +12,8 @@ class OfflineViewModelFactory(
     private val context: Context
 ) : ViewModelProvider.Factory {
 
-    private val db = AttendanceDatabase.getInstance(context)
-    private val localAttendanceRepository = LocalAttendanceRepository(
-        userDao = db.userDao(),
-        attendanceDao = db.attendanceDao(),
-        summaryDao = db.summaryDao()
-    )
-    private val drillDownRepository = DrillDownRepository(attendanceDao = db.attendanceDao())
+    private val localAttendanceRepository = LocalAttendanceRepository(context)
+    private val drillDownRepository = DrillDownRepository(context)
 
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(OfflineAuthViewModel::class.java)) {

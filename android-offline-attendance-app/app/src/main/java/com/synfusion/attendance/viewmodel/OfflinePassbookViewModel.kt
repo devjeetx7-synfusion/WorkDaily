@@ -59,15 +59,29 @@ data class OfflinePassbookState(
 class OfflinePassbookViewModel(
     private val preferencesRepository: OfflinePreferencesRepository,
     private val localAttendanceRepository: LocalAttendanceRepository
-) : ViewModel() {
+) : ViewModel(), com.synfusion.attendance.backup.RefreshableViewModel {
 
     private val _state = MutableStateFlow(OfflinePassbookState())
     val state: StateFlow<OfflinePassbookState> = _state
 
     init {
+        com.synfusion.attendance.backup.DatabaseLifecycleCoordinator.registerViewModel(this)
         viewModelScope.launch {
             setupListeners()
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        com.synfusion.attendance.backup.DatabaseLifecycleCoordinator.unregisterViewModel(this)
+    }
+
+    override fun cancelActiveJobs() {
+        loadJob?.cancel()
+    }
+
+    override fun refreshOnRestore() {
+        setupListeners(showLoadingIndicator = true)
     }
 
     fun refresh() {

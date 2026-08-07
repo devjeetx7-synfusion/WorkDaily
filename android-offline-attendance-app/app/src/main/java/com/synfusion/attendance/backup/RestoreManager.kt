@@ -59,8 +59,26 @@ class RestoreManager(private val context: Context) {
                         return@withContext null
                     }
 
+                    // Redesigned Restore Lifecycle Sequence:
+                    // 1. Stop active collectors & cancel restore-sensitive jobs
+                    progressTracker.updateProgress(60f, "Stopping active database collectors & jobs...")
+                    DatabaseLifecycleCoordinator.stopAndCancelEverything()
+
+                    // 2. Wait for all database transactions/queries to finish/cancel
+                    kotlinx.coroutines.delay(300)
+
+                    // 3. Close the temporary database safely
+                    tempDb.close()
+
+                    // 4. Swap data to production database securely (this closes the production db via resetInstance() and renames files)
                     progressTracker.updateProgress(70f, "Applying atomic database swap...")
                     TempDatabaseManager.swapToProduction(context, tempDb)
+
+                    // 5. Recreate production database instance cleanly
+                    com.synfusion.attendance.data.AttendanceDatabase.getInstance(context)
+
+                    // 6. Refresh ViewModels (re-query data and trigger new flow subscription collections)
+                    DatabaseLifecycleCoordinator.refreshViewModels()
 
                     progressTracker.updateProgress(80f, "Applying remaining registry modules dynamically...")
 

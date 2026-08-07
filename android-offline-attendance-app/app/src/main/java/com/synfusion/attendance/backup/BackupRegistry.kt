@@ -50,7 +50,26 @@ class DatabaseBackupModule : BackupModule {
         val tempDb = TempDatabaseManager.createTempDatabase(context)
         try {
             val counts = JsonImporter.importDatabase(tempDb, backupWorkingDir, merge, logger)
+
+            // Redesigned Restore Lifecycle Sequence:
+            // 1. Stop active collectors & cancel restore-sensitive jobs
+            DatabaseLifecycleCoordinator.stopAndCancelEverything()
+
+            // 2. Wait for all database transactions/queries to finish/cancel
+            kotlinx.coroutines.delay(300)
+
+            // 3. Close the temporary database safely
+            tempDb.close()
+
+            // 4. Swap data to production database securely (this closes production db via resetInstance() and renames files)
             TempDatabaseManager.swapToProduction(context, tempDb)
+
+            // 5. Recreate production database instance cleanly
+            AttendanceDatabase.getInstance(context)
+
+            // 6. Refresh ViewModels (re-query data and trigger new flow subscription collections)
+            DatabaseLifecycleCoordinator.refreshViewModels()
+
             return counts
         } finally {
             tempDb.close()

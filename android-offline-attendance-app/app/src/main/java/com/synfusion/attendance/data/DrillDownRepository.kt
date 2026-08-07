@@ -1,5 +1,6 @@
 package com.synfusion.attendance.data
 
+import android.content.Context
 import com.synfusion.attendance.data.daos.AttendanceDao
 import com.synfusion.attendance.data.entities.AttendanceEntity
 import kotlinx.coroutines.Dispatchers
@@ -10,8 +11,11 @@ enum class DrillDownType {
 }
 
 class DrillDownRepository(
-    private val attendanceDao: AttendanceDao
+    private val context: Context
 ) {
+    private val attendanceDao: AttendanceDao
+        get() = AttendanceDatabase.getInstance(context).attendanceDao()
+
     suspend fun getDrillDownRecords(
         type: DrillDownType,
         monthPrefix: String?, // Format: "YYYY-MM", or null for All Time

@@ -21,7 +21,7 @@ sealed class OfflineLoginState {
 class OfflineAuthViewModel(
     val repository: OfflinePreferencesRepository,
     private val localAttendanceRepository: LocalAttendanceRepository
-) : ViewModel() {
+) : ViewModel(), com.synfusion.attendance.backup.RefreshableViewModel {
 
     private val _loginState = MutableStateFlow<OfflineLoginState>(OfflineLoginState.Idle)
     val loginState: StateFlow<OfflineLoginState> = _loginState
@@ -29,8 +29,11 @@ class OfflineAuthViewModel(
     val userRoleFlow = repository.userRoleFlow
     val authTokenFlow = repository.authTokenFlow
 
+    private var checkJob: kotlinx.coroutines.Job? = null
+
     init {
-        viewModelScope.launch {
+        com.synfusion.attendance.backup.DatabaseLifecycleCoordinator.registerViewModel(this)
+        checkJob = viewModelScope.launch {
             val user = localAttendanceRepository.getUser()
             if (user != null) {
                 repository.saveAuthToken(user.id)
@@ -39,8 +42,24 @@ class OfflineAuthViewModel(
         }
     }
 
+    override fun onCleared() {
+        super.onCleared()
+        com.synfusion.attendance.backup.DatabaseLifecycleCoordinator.unregisterViewModel(this)
+    }
+
+    override fun cancelActiveJobs() {
+        checkJob?.cancel()
+    }
+
+    override fun refreshOnRestore() {
+        checkJob = viewModelScope.launch {
+            checkForUserAndLogin()
+        }
+    }
+
     fun checkForUserAndLogin() {
-        viewModelScope.launch {
+        checkJob?.cancel()
+        checkJob = viewModelScope.launch {
             val user = localAttendanceRepository.getUser()
             if (user != null) {
                 repository.saveAuthToken(user.id)
