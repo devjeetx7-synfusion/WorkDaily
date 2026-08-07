@@ -44,9 +44,11 @@ class MainActivity : ComponentActivity() {
                 val languageState by repository.languageFlow.collectAsState(initial = "en")
                 val activeLanguage = languageState ?: "en"
 
-                val localizedContext = LocalizationManager.applyLanguage(LocalContext.current, activeLanguage)
+                val baseActivityContext = LocalContext.current
+                val localizedContext = LocalizationManager.applyLanguage(baseActivityContext, activeLanguage)
+                val wrappedContext = com.synfusion.attendance.utils.LocalizedContextWrapper(baseActivityContext, localizedContext)
 
-                CompositionLocalProvider(LocalContext provides localizedContext) {
+                CompositionLocalProvider(LocalContext provides wrappedContext) {
                     DailyWorkTheme(darkTheme = isDarkMode) {
                         Surface(
                             modifier = Modifier.fillMaxSize(),
