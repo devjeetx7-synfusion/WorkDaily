@@ -95,6 +95,10 @@ fun LanguageSelectionScreen(
                 scope.launch {
                     selectedLang?.let {
                         repository.saveLanguage(it)
+                        // Apply system-wide language immediately
+                        androidx.appcompat.app.AppCompatDelegate.setApplicationLocales(
+                            androidx.core.os.LocaleListCompat.forLanguageTags(it)
+                        )
                         onLanguageSelected()
                     }
                 }

@@ -195,6 +195,9 @@ class OfflineSettingsViewModel(
             _state.update { it.copy(isSaving = true) }
             try {
                 repository.saveLanguage(newLang)
+                androidx.appcompat.app.AppCompatDelegate.setApplicationLocales(
+                    androidx.core.os.LocaleListCompat.forLanguageTags(newLang)
+                )
                 _state.update { it.copy(
                     language = newLang,
                     savedMessage = "Language saved successfully!",

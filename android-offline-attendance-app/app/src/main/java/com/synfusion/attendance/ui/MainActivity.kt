@@ -1,7 +1,7 @@
 package com.synfusion.attendance.ui
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
+import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
@@ -30,33 +30,33 @@ import kotlinx.coroutines.launch
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalContext
 
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         val repository = OfflinePreferencesRepository(applicationContext)
         val factory = OfflineViewModelFactory(repository, applicationContext)
 
-        lifecycleScope.launch {
-            setContent {
-                val userThemePreference by repository.darkModeFlow.collectAsState(initial = null)
-                val isDarkMode = userThemePreference ?: isSystemInDarkTheme()
-                val languageState by repository.languageFlow.collectAsState(initial = "en")
-                val activeLanguage = languageState ?: "en"
+        // Read language synchronously to avoid initial mismatch and flicker
+        val savedLanguage = kotlinx.coroutines.runBlocking { repository.languageFlow.first() } ?: "en"
+        val currentLocales = androidx.appcompat.app.AppCompatDelegate.getApplicationLocales()
+        val currentLang = if (!currentLocales.isEmpty) currentLocales.get(0)?.language else null
+        if (currentLang != savedLanguage) {
+            androidx.appcompat.app.AppCompatDelegate.setApplicationLocales(
+                androidx.core.os.LocaleListCompat.forLanguageTags(savedLanguage)
+            )
+        }
 
-                val baseActivityContext = LocalContext.current
-                val localizedContext = LocalizationManager.applyLanguage(baseActivityContext, activeLanguage)
-                val wrappedContext = com.synfusion.attendance.utils.LocalizedContextWrapper(baseActivityContext, localizedContext)
+        setContent {
+            val userThemePreference by repository.darkModeFlow.collectAsState(initial = null)
+            val isDarkMode = userThemePreference ?: isSystemInDarkTheme()
 
-                CompositionLocalProvider(LocalContext provides wrappedContext) {
-                    DailyWorkTheme(darkTheme = isDarkMode) {
-                        Surface(
-                            modifier = Modifier.fillMaxSize(),
-                            color = MaterialTheme.colorScheme.background
-                        ) {
-                            OfflineDailyWorkApp(factory)
-                        }
-                    }
+            DailyWorkTheme(darkTheme = isDarkMode) {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    OfflineDailyWorkApp(factory)
                 }
             }
         }
