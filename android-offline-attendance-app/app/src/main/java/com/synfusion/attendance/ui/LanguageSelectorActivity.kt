@@ -1,7 +1,7 @@
 package com.synfusion.attendance.ui
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
+import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -27,44 +27,48 @@ import androidx.lifecycle.lifecycleScope
 import com.synfusion.attendance.data.OfflinePreferencesRepository
 import com.synfusion.attendance.ui.theme.DailyWorkTheme
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
 
-import com.synfusion.attendance.utils.LocalizationManager
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.ui.platform.LocalContext
-
-class LanguageSelectorActivity : ComponentActivity() {
+class LanguageSelectorActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val repository = OfflinePreferencesRepository(applicationContext)
+
+        // Read language synchronously to avoid initial mismatch and flicker
+        val savedLanguage = kotlinx.coroutines.runBlocking { repository.languageFlow.first() } ?: "en"
+        val currentLocales = androidx.appcompat.app.AppCompatDelegate.getApplicationLocales()
+        val currentLang = if (!currentLocales.isEmpty) currentLocales.get(0)?.language else null
+        if (currentLang != savedLanguage) {
+            androidx.appcompat.app.AppCompatDelegate.setApplicationLocales(
+                androidx.core.os.LocaleListCompat.forLanguageTags(savedLanguage)
+            )
+        }
 
         setContent {
             val userThemePreference by repository.darkModeFlow.collectAsState(initial = null)
             val isDarkMode = userThemePreference ?: isSystemInDarkTheme()
 
-            val languageState by repository.languageFlow.collectAsState(initial = "en")
+            val languageState by repository.languageFlow.collectAsState(initial = savedLanguage)
             val activeLanguage = languageState ?: "en"
 
-            val baseActivityContext = LocalContext.current
-            val localizedContext = LocalizationManager.applyLanguage(baseActivityContext, activeLanguage)
-            val wrappedContext = com.synfusion.attendance.utils.LocalizedContextWrapper(baseActivityContext, localizedContext)
-
-            CompositionLocalProvider(LocalContext provides wrappedContext) {
-                DailyWorkTheme(darkTheme = isDarkMode) {
-                    Surface(
-                        modifier = Modifier.fillMaxSize(),
-                        color = MaterialTheme.colorScheme.background
-                    ) {
-                        LanguageSelectorScreen(
-                            currentLang = activeLanguage,
-                            onLanguageSelected = { lang ->
-                                lifecycleScope.launch {
-                                    repository.saveLanguage(lang)
-                                    finish()
-                                }
-                            },
-                            onBack = { finish() }
-                        )
-                    }
+            DailyWorkTheme(darkTheme = isDarkMode) {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    LanguageSelectorScreen(
+                        currentLang = activeLanguage,
+                        onLanguageSelected = { lang ->
+                            lifecycleScope.launch {
+                                repository.saveLanguage(lang)
+                                androidx.appcompat.app.AppCompatDelegate.setApplicationLocales(
+                                    androidx.core.os.LocaleListCompat.forLanguageTags(lang)
+                                )
+                                finish()
+                            }
+                        },
+                        onBack = { finish() }
+                    )
                 }
             }
         }
