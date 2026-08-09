@@ -228,7 +228,7 @@
     <string name="total_half_days">Total Half Days</string>
     <string name="financial_stats">Financial Stats</string>
     <string name="joined_date_label">Joined %1$s</string>
-    <string name="worked_ratio_label">Worked %1$d out of %2$d passed days this month</string>
+    <string name="worked_ratio_label">Worked %1$s out of %2$d passed days this month</string>
     <string name="backup_and_restore">Backup &amp; Restore</string>
     <string name="backup_now">Backup Now</string>
     <string name="restore_backup">Restore Backup</string>
