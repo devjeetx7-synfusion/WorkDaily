@@ -227,7 +227,7 @@
     <string name="total_half_days">कुल हाफ डे</string>
     <string name="financial_stats">वित्तीय आंकड़े</string>
     <string name="joined_date_label">%1$s को शामिल हुए</string>
-    <string name="worked_ratio_label">इस महीने के %2$d बीते दिनों में से %1$d दिन काम किया</string>
+    <string name="worked_ratio_label">इस महीने के %2$d बीते दिनों में से %1$s दिन काम किया</string>
     <string name="backup_and_restore">बैकअप और पुनर्स्थापना</string>
     <string name="backup_now">अभी बैकअप लें</string>
     <string name="restore_backup">बैकअप पुनर्स्थापित करें</string>

@@ -362,7 +362,7 @@ fun PassbookScreen(
                                     Spacer(modifier = Modifier.height(12.dp))
                                     LinearProgressIndicator(progress = state.attendanceRate / 100f, modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape), color = MaterialTheme.colorScheme.primary, trackColor = MaterialTheme.colorScheme.surfaceVariant)
                                     Spacer(modifier = Modifier.height(8.dp))
-                                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.worked_ratio_label, state.totalDailyWorks, state.passedDays), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center, fontWeight = FontWeight.Medium)
+                                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.worked_ratio_label, AmountFormatter.format(state.totalDailyWorks), state.passedDays), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center, fontWeight = FontWeight.Medium)
                                 }
                             }
                         }
