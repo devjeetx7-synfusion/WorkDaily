@@ -15,6 +15,12 @@ interface SummaryDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSummary(summary: SummaryEntity)
 
+    @Query("SELECT * FROM summaries")
+    suspend fun getAllSummaries(): List<SummaryEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertSummaries(summaries: List<SummaryEntity>)
+
     @Query("DELETE FROM summaries")
     suspend fun clearAll()
 }

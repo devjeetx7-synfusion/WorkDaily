@@ -30,6 +30,11 @@ abstract class AttendanceDatabase : RoomDatabase() {
         @Volatile
         private var INSTANCE: AttendanceDatabase? = null
 
+        @Volatile
+        private var isSwapping = false
+
+        private val dbLock = Any()
+
         val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("DROP TABLE IF EXISTS workers")
@@ -37,29 +42,48 @@ abstract class AttendanceDatabase : RoomDatabase() {
         }
 
         fun getInstance(context: android.content.Context): AttendanceDatabase {
-            return INSTANCE ?: synchronized(this) {
-                val instance = androidx.room.Room.databaseBuilder(
-                    context.applicationContext,
-                    AttendanceDatabase::class.java,
-                    "synfusion_offline_attendance_db"
-                )
-                .setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING)
-                .addMigrations(MIGRATION_1_2)
-                .fallbackToDestructiveMigration()
-                .build()
-                INSTANCE = instance
-                instance
+            synchronized(dbLock) {
+                if (isSwapping) {
+                    throw IllegalStateException("Cannot perform this operation because the connection pool is currently locked for restore database swap.")
+                }
+                return INSTANCE ?: run {
+                    val instance = androidx.room.Room.databaseBuilder(
+                        context.applicationContext,
+                        AttendanceDatabase::class.java,
+                        "synfusion_offline_attendance_db"
+                    )
+                    .setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING)
+                    .addMigrations(MIGRATION_1_2)
+                    .fallbackToDestructiveMigration()
+                    .build()
+                    INSTANCE = instance
+                    instance
+                }
             }
         }
 
-        @Synchronized
-        fun resetInstance() {
-            try {
-                INSTANCE?.close()
-            } catch (e: Exception) {
-                // ignore
+        fun beginSwap() {
+            synchronized(dbLock) {
+                isSwapping = true
+                resetInstance()
             }
-            INSTANCE = null
+        }
+
+        fun endSwap() {
+            synchronized(dbLock) {
+                isSwapping = false
+            }
+        }
+
+        fun resetInstance() {
+            synchronized(dbLock) {
+                try {
+                    INSTANCE?.close()
+                } catch (e: Exception) {
+                    // ignore
+                }
+                INSTANCE = null
+            }
         }
     }
 }
