@@ -1,6 +1,7 @@
 package com.synfusion.attendance.ui
 
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
@@ -121,6 +122,11 @@ fun LoginScreen(
     val status by progressTracker.status.collectAsState(initial = "")
 
     var isOperating by remember { mutableStateOf(false) }
+
+    BackHandler(enabled = isOperating) {
+        // Block back button during restore
+    }
+
     var restorePreview by remember { mutableStateOf<BackupManifest?>(null) }
     var restoreFileToApply by remember { mutableStateOf<File?>(null) }
 
@@ -192,22 +198,21 @@ fun LoginScreen(
                                     val report = restoreManager.performRestore(file, false, progressTracker)
                                     if (report != null) {
                                         operationSuccess = true
-                                        // Auto-login since the backup is restored!
-                                        com.synfusion.attendance.data.AttendanceDatabase.resetInstance()
-                                        authViewModel.checkForUserAndLogin()
+                                        restoreManager.triggerCleanRestart()
                                     } else {
                                         errorMessage = "Failed to restore backup database."
                                         operationSuccess = false
+                                        isOperating = false
                                     }
                                     file.delete()
                                 } else {
                                     errorMessage = "Internal backup file error."
                                     operationSuccess = false
+                                    isOperating = false
                                 }
                             } catch (e: Exception) {
                                 errorMessage = e.localizedMessage ?: "Restore process failed."
                                 operationSuccess = false
-                            } finally {
                                 isOperating = false
                             }
                         }
@@ -247,16 +252,15 @@ fun LoginScreen(
                                     val report = restoreManager.performRestore(file, false, progressTracker)
                                     if (report != null) {
                                         operationSuccess = true
-                                        com.synfusion.attendance.data.AttendanceDatabase.resetInstance()
-                                        authViewModel.checkForUserAndLogin()
+                                        restoreManager.triggerCleanRestart()
                                     } else {
                                         errorMessage = "Failed to restore backup database."
                                         operationSuccess = false
+                                        isOperating = false
                                     }
                                 } catch (e: Exception) {
                                     errorMessage = e.localizedMessage ?: "Restore process failed."
                                     operationSuccess = false
-                                } finally {
                                     isOperating = false
                                 }
                             }

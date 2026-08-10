@@ -4,6 +4,7 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.synfusion.attendance.data.AttendanceDatabase
 import com.synfusion.attendance.data.entities.AttendanceEntity
+import com.synfusion.attendance.data.entities.SummaryEntity
 import com.synfusion.attendance.data.entities.UserEntity
 import java.io.File
 import java.nio.charset.StandardCharsets
@@ -47,6 +48,22 @@ object JsonImporter {
                 }
                 counts["attendance"] = imported
             }
+        }
+
+        // 3. Import Summary Records
+        val summaryFile = File(dbDir, "summary.json")
+        if (summaryFile.exists()) {
+            summaryFile.reader(StandardCharsets.UTF_8).use { reader ->
+                val type = object : TypeToken<List<SummaryEntity>>() {}.type
+                val summaries = gson.fromJson<List<SummaryEntity>>(reader, type) ?: emptyList()
+                if (!merge) {
+                    db.summaryDao().clearAll()
+                }
+                db.summaryDao().insertSummaries(summaries)
+                counts["summaries"] = summaries.size
+            }
+        } else {
+            counts["summaries"] = 0
         }
 
         return counts

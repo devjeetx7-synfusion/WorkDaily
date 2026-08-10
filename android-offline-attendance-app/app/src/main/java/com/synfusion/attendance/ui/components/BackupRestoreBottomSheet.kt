@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -139,12 +140,19 @@ fun BackupRestoreBottomSheet(
         }
     )
 
+    BackHandler(enabled = isOperating) {
+        // Blocks physical back button during restore
+    }
+
     ModalBottomSheet(
         onDismissRequest = { if (!isOperating) onDismiss() },
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        sheetState = rememberModalBottomSheetState(
+            skipPartiallyExpanded = true,
+            confirmValueChange = { !isOperating }
+        ),
         containerColor = MaterialTheme.colorScheme.background,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-        dragHandle = { BottomSheetDefaults.DragHandle() }
+        dragHandle = { if (!isOperating) BottomSheetDefaults.DragHandle() }
     ) {
         Column(
             modifier = Modifier
@@ -410,6 +418,9 @@ fun BackupRestoreBottomSheet(
                                         operationSuccess = report != null
                                         if (report == null) {
                                             errorMessage = "Restore verification or execution failed."
+                                            isOperating = false
+                                        } else {
+                                            restoreManager.triggerCleanRestart()
                                         }
                                         file.delete()
                                     } else {
@@ -420,7 +431,8 @@ fun BackupRestoreBottomSheet(
                                 }
                             },
                             modifier = Modifier.weight(1.5f).height(50.dp),
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(12.dp),
+                            enabled = !isOperating
                         ) {
                             Text("Start Restore", fontWeight = FontWeight.Bold)
                         }

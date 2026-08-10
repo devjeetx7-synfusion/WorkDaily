@@ -38,13 +38,14 @@ object JsonExporter {
         recordCounts["attendance"] = attendances.size
         logger.info("Exported ${attendances.size} attendance records.")
 
-        // 3. Export Summary (empty or dummy if unused, but we'll export whatever summary records there are if they exist, or since we have SummaryDao, we can fetch if possible. Note we don't have list method on SummaryDao except getSummaryById, but let's see if we can read current summaries or use a query. Or we can reconstruct/export database entities dynamically if needed.)
-        // Note: SummaryDao doesn't have list method. Let's make a query or just write empty since summaries are fully re-generatable from attendance! Let's check SummaryDao. No summary list query. So let's write empty array.
+        // 3. Export Summary
         val summaryFile = File(dbDir, "summary.json")
+        val summaries = db.summaryDao().getAllSummaries()
         summaryFile.writer(StandardCharsets.UTF_8).use { writer ->
-            gson.toJson(emptyList<SummaryEntity>(), writer)
+            gson.toJson(summaries, writer)
         }
-        recordCounts["summaries"] = 0
+        recordCounts["summaries"] = summaries.size
+        logger.info("Exported ${summaries.size} summary records.")
 
         // Custom features check: leave, calendar, notifications, settings
         // Since we are offline personal app, these tables aren't present.

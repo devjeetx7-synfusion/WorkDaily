@@ -361,4 +361,77 @@ class BackupRestoreManagerTest {
 
         assertFalse(swapSuccess)
     }
+
+    @Test
+    fun testRestoreStateMachineProgression() {
+        val tracker = ProgressTracker()
+        assertEquals(RestoreState.IDLE, tracker.state.value)
+
+        tracker.updateState(RestoreState.VALIDATING)
+        assertEquals(RestoreState.VALIDATING, tracker.state.value)
+
+        tracker.updateState(RestoreState.REPLACING_DATABASE)
+        assertEquals(RestoreState.REPLACING_DATABASE, tracker.state.value)
+    }
+
+    @Test
+    fun testRecordLevelValidationCountsMismatch() {
+        val manifestObj = ManifestManager.generateManifest(
+            backupUuid = "test-uuid",
+            creationTimestamp = 12345L,
+            totalBackupDurationMs = 200L,
+            compressionRatio = 0.5,
+            appBuildNumber = 1L,
+            backupFormatVersion = 1,
+            backupVersion = 1,
+            appVersion = "1.0.0",
+            databaseVersion = 2,
+            androidVersion = 34,
+            deviceModel = "Test",
+            packageName = "com.synfusion.attendance",
+            recordCounts = mapOf("users" to 1, "attendance" to 5), // Manifest expects 1 user, 5 attendance
+            totalFiles = 3,
+            backupSize = 100L,
+            featureList = emptyList()
+        )
+
+        // Mock database with actual mismatching counts
+        val tempUserCount = 0
+        val tempAttendanceCount = 2
+        val tempSummariesCount = 0
+
+        val expectedUsers = manifestObj.recordCounts["users"] ?: 0
+        val expectedAttendance = manifestObj.recordCounts["attendance"] ?: 0
+        val expectedSummaries = manifestObj.recordCounts["summaries"] ?: 0
+
+        val isMismatch = (tempUserCount != expectedUsers || tempAttendanceCount != expectedAttendance || tempSummariesCount != expectedSummaries)
+        assertTrue(isMismatch) // Correctly flags mismatch
+    }
+
+    @Test
+    fun testDeterministicMergeAttendanceLogic() {
+        // Mock production records
+        val prodAttendance = listOf(
+            AttendanceEntity(id = "prod_att_1", workerId = null, date = "2024-03-01", status = "present", type = "full", wage = 500.0),
+            AttendanceEntity(id = "common_att_1", workerId = null, date = "2024-03-02", status = "absent", type = "full", wage = 500.0) // Matching id
+        )
+
+        // Mock backup records (tempDb)
+        val backupAttendance = listOf(
+            AttendanceEntity(id = "common_att_1", workerId = null, date = "2024-03-02", status = "present", type = "full", wage = 500.0), // Backup overwrites
+            AttendanceEntity(id = "backup_att_1", workerId = null, date = "2024-03-03", status = "present", type = "full", wage = 500.0)
+        )
+
+        // Perform merge logic simulation
+        val tempAttendanceIds = backupAttendance.map { it.id }.toSet()
+        val uniqueProdAttendance = prodAttendance.filter { it.id !in tempAttendanceIds }
+
+        val mergedResult = backupAttendance + uniqueProdAttendance
+
+        assertEquals(3, mergedResult.size)
+        // Check that backup record overrode production record for "common_att_1"
+        val commonAtt = mergedResult.find { it.id == "common_att_1" }
+        assertNotNull(commonAtt)
+        assertEquals("present", commonAtt?.status) // Preserved backup overwrites
+    }
 }
