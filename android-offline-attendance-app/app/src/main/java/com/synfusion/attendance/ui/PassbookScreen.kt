@@ -46,7 +46,14 @@ import com.synfusion.attendance.utils.collectAsStateWithLifecycle
 import com.synfusion.attendance.utils.PdfData
 import com.synfusion.attendance.utils.PdfLog
 import com.synfusion.attendance.utils.AmountFormatter
+import com.synfusion.attendance.utils.PdfExportManager
+import com.synfusion.attendance.utils.PdfExportState
+import com.synfusion.attendance.ui.components.PdfExportLoadingDialog
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.DisposableEffect
 import androidx.core.content.FileProvider
+import kotlinx.coroutines.launch
 import java.net.URLEncoder
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -70,9 +77,18 @@ fun PassbookScreen(
     val monthNumericStr = sdfMonthNumeric.format(state.selectedMonthDate)
     val yearNumericStr = sdfYearNumeric.format(state.selectedMonthDate)
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val exportManager = remember { PdfExportManager(context, viewModel.localAttendanceRepository) }
+    val exportState by exportManager.exportState.collectAsStateWithLifecycle(initialValue = PdfExportState.Idle)
 
     LaunchedEffect(Unit) {
         viewModel.refresh()
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            exportManager.resetState()
+        }
     }
 
     fun generatePdfData(): PdfData {
@@ -143,17 +159,23 @@ fun PassbookScreen(
     }
 
     fun exportPDF() {
-        val file = PassbookPdfGenerator.generatePdf(context, generatePdfData())
-        if (file != null) {
-            val uri = FileProvider.getUriForFile(context, "com.synfusion.attendance.fileprovider", file)
-            val intent = Intent(Intent.ACTION_VIEW).apply {
-                setDataAndType(uri, "application/pdf")
-                flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-            }
-            try {
-                context.startActivity(Intent.createChooser(intent, "Open PDF"))
-            } catch (e: Exception) {
-                android.widget.Toast.makeText(context, "No PDF viewer found", android.widget.Toast.LENGTH_SHORT).show()
+        scope.launch {
+            exportManager.exportMonthlyPdf(state.selectedMonthDate) { file ->
+                scope.launch {
+                    kotlinx.coroutines.delay(600)
+                    exportManager.resetState()
+                    val uri = FileProvider.getUriForFile(context, "com.synfusion.attendance.fileprovider", file)
+                    val intent = Intent(Intent.ACTION_SEND).apply {
+                        type = "application/pdf"
+                        putExtra(Intent.EXTRA_STREAM, uri)
+                        flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    }
+                    try {
+                        context.startActivity(Intent.createChooser(intent, "Share PDF"))
+                    } catch (e: Exception) {
+                        android.widget.Toast.makeText(context, "No app found to share PDF", android.widget.Toast.LENGTH_SHORT).show()
+                    }
+                }
             }
         }
     }
@@ -509,6 +531,12 @@ fun PassbookScreen(
             contentColor = MaterialTheme.colorScheme.primary
         )
     }
+
+    PdfExportLoadingDialog(
+        state = exportState,
+        onCancel = { exportManager.resetState() },
+        onDismissError = { exportManager.resetState() }
+    )
 }
 
 @Composable

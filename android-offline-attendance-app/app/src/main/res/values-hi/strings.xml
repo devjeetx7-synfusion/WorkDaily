@@ -316,4 +316,27 @@
     <string name="pdf_present_half_value">%1$dउ / %2$dहा</string>
     <string name="show_more">और देखें</string>
     <string name="show_less">कम दिखाएं</string>
+
+    <!-- PDF Export & Loading UX Localization Strings -->
+    <string name="pdf_all_time_passbook">सर्वकालिक पासबुक</string>
+    <string name="pdf_total_records">कुल रिकॉर्ड: %1$d</string>
+    <string name="pdf_period">अवधि: %1$s - %2$s</string>
+    <string name="pdf_overall_summary">समग्र सारांश</string>
+    <string name="pdf_earnings">कुल कमाई</string>
+    <string name="pdf_salary">कुल वेतन</string>
+    <string name="pdf_overtime">कुल ओवरटाइम</string>
+    <string name="pdf_advance">कुल अग्रिम</string>
+    <string name="pdf_present">उपस्थित दिन</string>
+    <string name="pdf_half">हाफ डे दिन</string>
+    <string name="pdf_absent">अनुपस्थित दिन</string>
+    <string name="pdf_working_days">कुल कार्य दिवस</string>
+    <string name="pdf_page">पृष्ठ %1$d</string>
+    <string name="pdf_year">वर्ष: %1$s</string>
+    <string name="pdf_month">महीना: %1$s</string>
+    <string name="pdf_export_preparing">निर्यात की तैयारी हो रही है...</string>
+    <string name="pdf_export_collecting">रिकॉर्ड एकत्र किए जा रहे हैं...</string>
+    <string name="pdf_export_generating">पीडीएफ जनरेट हो रहा है...</string>
+    <string name="pdf_export_finalizing">अंतिम रूप दिया जा रहा है...</string>
+    <string name="pdf_export_success">सफल!</string>
+    <string name="pdf_export_error">त्रुटि: %1$s</string>
 </resources>

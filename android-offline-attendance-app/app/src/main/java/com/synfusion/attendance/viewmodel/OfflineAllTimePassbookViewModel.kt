@@ -60,7 +60,7 @@ data class OfflineAllTimePassbookState(
 
 class OfflineAllTimePassbookViewModel(
     private val preferencesRepository: OfflinePreferencesRepository,
-    private val localAttendanceRepository: LocalAttendanceRepository,
+    val localAttendanceRepository: LocalAttendanceRepository,
     private val drillDownRepository: DrillDownRepository
 ) : ViewModel(), com.synfusion.attendance.backup.RefreshableViewModel {
 
@@ -221,10 +221,9 @@ class OfflineAllTimePassbookViewModel(
     }
 
     private fun getMonthName(month: Int): String {
-        return when(month) {
-            1 -> "January"; 2 -> "February"; 3 -> "March"; 4 -> "April"; 5 -> "May"; 6 -> "June"
-            7 -> "July"; 8 -> "August"; 9 -> "September"; 10 -> "October"; 11 -> "November"; 12 -> "December"
-            else -> ""
-        }
+        val cal = java.util.Calendar.getInstance()
+        cal.set(java.util.Calendar.MONTH, month - 1)
+        val sdf = java.text.SimpleDateFormat("MMMM", java.util.Locale.getDefault())
+        return sdf.format(cal.time)
     }
 }
