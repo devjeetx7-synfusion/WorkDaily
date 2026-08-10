@@ -27,11 +27,14 @@ data class PdfData(
     val totalManDays: Double,
     val totalPresent: Int,
     val totalHalfDays: Int,
+    val totalAbsent: Int, // added
     val totalOvertimeHours: Int,
     val totalOvertimeEarnings: Double,
     val grossEarned: Double,
     val advanceDeducted: Double,
     val netPayable: Double,
+    val periodStr: String, // added
+    val generatedAtStr: String, // added
     val logs: List<PdfLog>
 )
 
@@ -48,59 +51,322 @@ data class PdfLog(
 
 object PassbookPdfGenerator {
 
-    private const val PAGE_WIDTH = 842 // A4 Landscape width at 72 PPI
-    private const val PAGE_HEIGHT = 595 // A4 Landscape height at 72 PPI
-    private const val MARGIN = 40f
+    private const val PAGE_WIDTH = 595 // A4 Portrait width at 72 PPI
+    private const val PAGE_HEIGHT = 842 // A4 Portrait height at 72 PPI
+    private const val MARGIN = 36f
+
+    // Typography constants
+    private const val FONT_TITLE_SIZE = 18f
+    private const val FONT_SUBTITLE_SIZE = 11f
+    private const val FONT_SECTION_SIZE = 12f
+    private const val FONT_BODY_BOLD_SIZE = 8.5f
+    private const val FONT_BODY_NORMAL_SIZE = 8f
+    private const val FONT_FOOTER_SIZE = 8f
 
     // Theme colors
-    private val colorHeaderBg = Color.parseColor("#13B28A") // Green Primary
-    private val colorHeaderText = Color.WHITE
-    private val colorHeaderSubText = Color.parseColor("#F8FAFB") // Light for contrast
-    private val colorSummaryTitle = Color.parseColor("#1E293B") // TextPrimary
-    private val colorTableHeadBg = Color.parseColor("#13B28A") // Green Primary
-    private val colorPositive = Color.parseColor("#16a34a") // Green
-    private val colorNegative = Color.parseColor("#dc2626") // Red
-    private val colorHalfDay = Color.parseColor("#f97316") // Orange
-    private val colorAdvance = Color.parseColor("#f97316") // Orange
-    private val colorOvertime = Color.parseColor("#3b82f6") // Blue
-    private val colorStripedRow = Color.parseColor("#F8FAFB") // Background theme color
-    private val colorBorder = Color.parseColor("#F1F5F9") // Border theme color
+    private val colorPrimary = Color.parseColor("#13B28A") // Emerald Green Primary
+    private val colorTextPrimary = Color.parseColor("#0F172A") // Slate 900
+    private val colorTextSecondary = Color.parseColor("#475569") // Slate 600
+    private val colorBorder = Color.parseColor("#E2E8F0") // Slate 200
+    private val colorLightBg = Color.parseColor("#F8FAFB") // Light clean bg
+    private val colorWhite = Color.WHITE
+
+    private val colorPresent = Color.parseColor("#0F9F7A")
+    private val colorAbsent = Color.parseColor("#DC2626")
+    private val colorHalfDay = Color.parseColor("#EA580C")
+    private val colorOvertime = Color.parseColor("#2563EB")
+    private val colorAdvance = Color.parseColor("#EA580C")
+
+    private class PdfRenderContext(
+        val context: Context,
+        val document: PdfDocument,
+        val title: String,
+        val subtitle: String
+    ) {
+        var pageNumber = 1
+        var yPos = 0f
+        var page: PdfDocument.Page? = null
+        var canvas: Canvas? = null
+
+        val paintTextBold = Paint().apply {
+            typeface = Typeface.create("sans-serif", Typeface.BOLD)
+            isAntiAlias = true
+        }
+        val paintTextNormal = Paint().apply {
+            typeface = Typeface.create("sans-serif", Typeface.NORMAL)
+            isAntiAlias = true
+        }
+        val paintRectBorder = Paint().apply {
+            color = colorBorder
+            style = Paint.Style.STROKE
+            strokeWidth = 0.5f
+        }
+        val paintRectFill = Paint().apply {
+            style = Paint.Style.FILL
+        }
+        val textPaintNormal = TextPaint().apply {
+            typeface = Typeface.create("sans-serif", Typeface.NORMAL)
+            isAntiAlias = true
+            textSize = FONT_BODY_NORMAL_SIZE
+        }
+        val textPaintBold = TextPaint().apply {
+            typeface = Typeface.create("sans-serif", Typeface.BOLD)
+            isAntiAlias = true
+            textSize = FONT_BODY_BOLD_SIZE
+        }
+
+        fun startNewPage() {
+            if (page != null) {
+                drawFooter()
+                document.finishPage(page)
+            }
+            page = document.startPage(PdfDocument.PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, pageNumber).create())
+            canvas = page!!.canvas
+            yPos = MARGIN
+            drawHeader()
+            pageNumber++
+        }
+
+        fun checkPageBreak(requiredHeight: Float, onNewPageTableHeaders: (() -> Unit)? = null) {
+            // Leaves safe space for footer and bottom margin
+            if (yPos + requiredHeight > PAGE_HEIGHT - MARGIN - 30f) {
+                startNewPage()
+                onNewPageTableHeaders?.invoke()
+            }
+        }
+
+        fun drawHeader() {
+            val canvas = this.canvas ?: return
+
+            val logoDrawable = try {
+                context.resources.getDrawable(R.mipmap.ic_launcher_foreground, null)
+            } catch (e: Exception) {
+                null
+            }
+
+            val textStartX = if (logoDrawable != null) {
+                val logoSize = 44f
+                logoDrawable.setBounds(MARGIN.toInt(), yPos.toInt(), (MARGIN + logoSize).toInt(), (yPos + logoSize).toInt())
+                logoDrawable.draw(canvas)
+                MARGIN + logoSize + 12f
+            } else {
+                MARGIN
+            }
+
+            // Line 1: WorkDaily
+            paintTextBold.color = colorPrimary
+            paintTextBold.textSize = FONT_TITLE_SIZE
+            paintTextBold.textAlign = Paint.Align.LEFT
+            canvas.drawText("WorkDaily", textStartX, yPos + 18f, paintTextBold)
+
+            // Line 2: User Name
+            paintTextNormal.color = colorTextPrimary
+            paintTextNormal.textSize = FONT_SUBTITLE_SIZE
+            paintTextNormal.textAlign = Paint.Align.LEFT
+            canvas.drawText(subtitle, textStartX, yPos + 34f, paintTextNormal)
+
+            // Line 3: Report title
+            paintTextBold.color = colorTextSecondary
+            paintTextBold.textSize = FONT_SUBTITLE_SIZE
+            paintTextBold.textAlign = Paint.Align.RIGHT
+            canvas.drawText(title, PAGE_WIDTH - MARGIN, yPos + 24f, paintTextBold)
+
+            // Separator
+            yPos += 52f
+            paintRectBorder.color = colorBorder
+            canvas.drawLine(MARGIN, yPos, PAGE_WIDTH - MARGIN, yPos, paintRectBorder)
+            yPos += 16f
+        }
+
+        fun drawFooter() {
+            val canvas = this.canvas ?: return
+            val footerY = PAGE_HEIGHT - 25f
+
+            paintRectBorder.color = colorBorder
+            canvas.drawLine(MARGIN, footerY - 10f, PAGE_WIDTH - MARGIN, footerY - 10f, paintRectBorder)
+
+            paintTextNormal.color = colorTextSecondary
+            paintTextNormal.textSize = FONT_FOOTER_SIZE
+
+            // Left
+            paintTextNormal.textAlign = Paint.Align.LEFT
+            canvas.drawText(context.getString(R.string.pdf_generated_by), MARGIN, footerY, paintTextNormal)
+
+            // Right
+            paintTextNormal.textAlign = Paint.Align.RIGHT
+            val pageLabel = context.getString(R.string.pdf_page, pageNumber)
+            canvas.drawText(pageLabel, PAGE_WIDTH - MARGIN, footerY, paintTextNormal)
+        }
+
+        fun finish() {
+            if (page != null) {
+                drawFooter()
+                document.finishPage(page)
+            }
+        }
+    }
+
+    private fun drawTableHeaders(renderContext: PdfRenderContext, headers: Array<String>, colWidths: FloatArray) {
+        val headerHeight = 22f
+        renderContext.paintRectFill.color = colorPrimary
+        renderContext.canvas?.drawRect(MARGIN, renderContext.yPos, PAGE_WIDTH - MARGIN, renderContext.yPos + headerHeight, renderContext.paintRectFill)
+
+        renderContext.paintTextBold.color = colorWhite
+        renderContext.paintTextBold.textSize = 8.5f
+
+        var currentX = MARGIN
+        for (i in headers.indices) {
+            val align = when (i) {
+                0, 1 -> Paint.Align.CENTER
+                2, 3, 4 -> Paint.Align.RIGHT
+                else -> Paint.Align.LEFT
+            }
+            renderContext.paintTextBold.textAlign = align
+            val textX = when (align) {
+                Paint.Align.CENTER -> currentX + colWidths[i] / 2f
+                Paint.Align.RIGHT -> currentX + colWidths[i] - 6f
+                else -> currentX + 6f
+            }
+            renderContext.canvas?.drawText(headers[i], textX, renderContext.yPos + 14f, renderContext.paintTextBold)
+            renderContext.canvas?.drawRect(currentX, renderContext.yPos, currentX + colWidths[i], renderContext.yPos + headerHeight, renderContext.paintRectBorder)
+            currentX += colWidths[i]
+        }
+        renderContext.yPos += headerHeight
+    }
+
+    private fun drawClosingBranding(renderContext: PdfRenderContext, name: String) {
+        val canvas = renderContext.canvas ?: return
+        val brandingHeight = 120f
+
+        renderContext.checkPageBreak(brandingHeight)
+
+        // Separator line
+        renderContext.paintRectBorder.color = colorBorder
+        canvas.drawLine(MARGIN, renderContext.yPos, PAGE_WIDTH - MARGIN, renderContext.yPos, renderContext.paintRectBorder)
+        renderContext.yPos += 20f
+
+        val logoDrawable = try {
+            renderContext.context.resources.getDrawable(R.mipmap.ic_launcher_foreground, null)
+        } catch (e: Exception) {
+            null
+        }
+
+        if (logoDrawable != null) {
+            val logoSize = 40f
+            val logoLeft = (PAGE_WIDTH - logoSize) / 2f
+            logoDrawable.setBounds(logoLeft.toInt(), renderContext.yPos.toInt(), (logoLeft + logoSize).toInt(), (renderContext.yPos + logoSize).toInt())
+            logoDrawable.draw(canvas)
+            renderContext.yPos += logoSize + 10f
+        }
+
+        renderContext.paintTextBold.color = colorPrimary
+        renderContext.paintTextBold.textSize = 12f
+        renderContext.paintTextBold.textAlign = Paint.Align.CENTER
+        canvas.drawText("WorkDaily", PAGE_WIDTH / 2f, renderContext.yPos, renderContext.paintTextBold)
+        renderContext.yPos += 14f
+
+        renderContext.paintTextNormal.color = colorTextSecondary
+        renderContext.paintTextNormal.textSize = 9f
+        renderContext.paintTextNormal.textAlign = Paint.Align.CENTER
+        canvas.drawText(name, PAGE_WIDTH / 2f, renderContext.yPos, renderContext.paintTextNormal)
+        renderContext.yPos += 14f
+
+        val digitalLabel = try {
+            renderContext.context.getString(R.string.pdf_digital_attendance_passbook)
+        } catch (e: Exception) {
+            "Digital Attendance & Passbook"
+        }
+        val offlineLabel = try {
+            renderContext.context.getString(R.string.pdf_generated_from_offline)
+        } catch (e: Exception) {
+            "Generated from WorkDaily Offline"
+        }
+
+        canvas.drawText(digitalLabel, PAGE_WIDTH / 2f, renderContext.yPos, renderContext.paintTextNormal)
+        renderContext.yPos += 14f
+        canvas.drawText(offlineLabel, PAGE_WIDTH / 2f, renderContext.yPos, renderContext.paintTextNormal)
+    }
 
     fun generatePdf(context: Context, data: PdfData): File? {
         val document = PdfDocument()
-        var pageNumber = 1
-        var yPos = 0f
+        val titleStr = context.getString(R.string.pdf_subtitle_passbook).uppercase()
+        val renderContext = PdfRenderContext(context, document, titleStr, data.name)
 
-        val paintHeaderBg = Paint().apply { color = colorHeaderBg; style = Paint.Style.FILL }
-        // Using "sans-serif" typeface to ensure maximum compatibility and Devanagari character support across all Android devices.
-        val paintTextBold = Paint().apply { typeface = Typeface.create("sans-serif", Typeface.BOLD); isAntiAlias = true }
-        val paintTextNormal = Paint().apply { typeface = Typeface.create("sans-serif", Typeface.NORMAL); isAntiAlias = true }
-        val paintRectBorder = Paint().apply { color = colorBorder; style = Paint.Style.STROKE; strokeWidth = 0.5f }
-        val paintRectFill = Paint().apply { style = Paint.Style.FILL }
+        renderContext.startNewPage()
+        val canvas = renderContext.canvas!!
 
-        val textPaint = TextPaint().apply { typeface = Typeface.create("sans-serif", Typeface.NORMAL); isAntiAlias = true; textSize = 9f }
+        // Period & Metadata
+        renderContext.paintTextNormal.color = colorTextSecondary
+        renderContext.paintTextNormal.textSize = FONT_BODY_NORMAL_SIZE
+        renderContext.paintTextNormal.textAlign = Paint.Align.LEFT
+        val periodLabel = context.getString(R.string.pdf_period, data.periodStr.substringBefore("—").trim(), data.periodStr.substringAfter("—").trim())
+        canvas.drawText(periodLabel, MARGIN, renderContext.yPos, renderContext.paintTextNormal)
 
-        // Localized string values
-        val appNameStr = context.getString(R.string.app_name)
-        val monthLabelFormat = context.getString(R.string.pdf_month_label)
-        val generatedByStr = context.getString(R.string.pdf_generated_by)
+        renderContext.paintTextNormal.textAlign = Paint.Align.RIGHT
+        canvas.drawText(data.generatedAtStr, PAGE_WIDTH - MARGIN, renderContext.yPos, renderContext.paintTextNormal)
+        renderContext.yPos += 20f
+
+        // Month Summary Section
         val summaryTitleStr = context.getString(R.string.pdf_summary_title)
-        val ledgerTitleStr = context.getString(R.string.pdf_ledger_title)
-        val rsStr = context.getString(R.string.pdf_rs)
-        val hrsStr = context.getString(R.string.pdf_hrs)
-        val presentStr = context.getString(R.string.present_1)
-        val halfDayStr = context.getString(R.string.half_day)
-        val absentStr = context.getString(R.string.absent_1)
+        renderContext.paintTextBold.color = colorTextPrimary
+        renderContext.paintTextBold.textSize = FONT_SECTION_SIZE
+        renderContext.paintTextBold.textAlign = Paint.Align.LEFT
+        canvas.drawText(summaryTitleStr, MARGIN, renderContext.yPos, renderContext.paintTextBold)
+        renderContext.yPos += 10f
 
-        val summaryHeaders = arrayOf(
-            context.getString(R.string.pdf_daily_wage),
-            context.getString(R.string.pdf_total_days),
-            context.getString(R.string.pdf_present_half),
-            context.getString(R.string.pdf_ot_hours),
-            context.getString(R.string.pdf_ot_earned),
-            context.getString(R.string.pdf_gross_total),
-            context.getString(R.string.pdf_net_payable)
+        val colWidth = (PAGE_WIDTH - 2 * MARGIN) / 4f
+        val summaryRowHeight = 36f
+
+        val rsStr = context.getString(R.string.pdf_rs)
+
+        val baseSalary = data.grossEarned - data.totalOvertimeEarnings
+        val items = listOf(
+            Pair(context.getString(R.string.pdf_earnings), "$rsStr ${AmountFormatter.format(data.grossEarned)}"),
+            Pair(context.getString(R.string.salary), "$rsStr ${AmountFormatter.format(baseSalary)}"),
+            Pair(context.getString(R.string.overtime), "$rsStr ${AmountFormatter.format(data.totalOvertimeEarnings)}"),
+            Pair(context.getString(R.string.pdf_advance), "$rsStr ${AmountFormatter.format(data.advanceDeducted)}"),
+            Pair(context.getString(R.string.present_1), data.totalPresent.toString()),
+            Pair(context.getString(R.string.half_day), data.totalHalfDays.toString()),
+            Pair(context.getString(R.string.absent_1), data.totalAbsent.toString()),
+            Pair(context.getString(R.string.pdf_working_days), AmountFormatter.format(data.totalManDays))
         )
+
+        for (row in 0 until 2) {
+            val yT = renderContext.yPos + row * summaryRowHeight
+            for (col in 0 until 4) {
+                val idx = row * 4 + col
+                val item = items[idx]
+                val xL = MARGIN + col * colWidth
+
+                renderContext.paintRectFill.color = if (idx % 2 == 0) colorLightBg else colorWhite
+                canvas.drawRect(xL, yT, xL + colWidth, yT + summaryRowHeight, renderContext.paintRectFill)
+                canvas.drawRect(xL, yT, xL + colWidth, yT + summaryRowHeight, renderContext.paintRectBorder)
+
+                renderContext.paintTextNormal.color = colorTextSecondary
+                renderContext.paintTextNormal.textSize = 7f
+                renderContext.paintTextNormal.textAlign = Paint.Align.CENTER
+                canvas.drawText(item.first, xL + colWidth / 2f, yT + 12f, renderContext.paintTextNormal)
+
+                renderContext.paintTextBold.color = when (idx) {
+                    0 -> colorPresent
+                    3 -> colorHalfDay
+                    4 -> colorPresent
+                    6 -> colorAbsent
+                    else -> colorTextPrimary
+                }
+                renderContext.paintTextBold.textSize = 9f
+                canvas.drawText(item.second, xL + colWidth / 2f, yT + 26f, renderContext.paintTextBold)
+            }
+        }
+        renderContext.yPos += summaryRowHeight * 2 + 25f
+
+        // Ledger Table Section
+        val ledgerTitleStr = context.getString(R.string.pdf_ledger_title)
+        renderContext.paintTextBold.color = colorTextPrimary
+        renderContext.paintTextBold.textSize = FONT_SECTION_SIZE
+        renderContext.paintTextBold.textAlign = Paint.Align.LEFT
+        canvas.drawText(ledgerTitleStr, MARGIN, renderContext.yPos, renderContext.paintTextBold)
+        renderContext.yPos += 10f
 
         val logHeaders = arrayOf(
             context.getString(R.string.pdf_col_date),
@@ -108,208 +374,111 @@ object PassbookPdfGenerator {
             context.getString(R.string.pdf_col_wage),
             context.getString(R.string.pdf_col_overtime),
             context.getString(R.string.pdf_col_advance),
-            context.getString(R.string.pdf_col_balance),
             context.getString(R.string.pdf_col_notes)
         )
 
-        fun drawHeader(canvas: Canvas) {
-            val headerHeight = 80f
-            canvas.drawRect(0f, 0f, PAGE_WIDTH.toFloat(), headerHeight, paintHeaderBg)
+        val colWidths = floatArrayOf(65f, 75f, 65f, 75f, 65f, 178f)
 
-            paintTextBold.color = colorHeaderText
-            paintTextBold.textSize = 24f
-            paintTextBold.textAlign = Paint.Align.LEFT
-            canvas.drawText(appNameStr, MARGIN, 45f, paintTextBold)
+        drawTableHeaders(renderContext, logHeaders, colWidths)
 
-            paintTextNormal.color = colorHeaderSubText
-            paintTextNormal.textSize = 10f
-            canvas.drawText(data.subtitle, MARGIN, 63f, paintTextNormal)
+        val presentStr = context.getString(R.string.present_1)
+        val halfDayStr = context.getString(R.string.half_day)
+        val absentStr = context.getString(R.string.absent_1)
 
-            val rightAlign = PAGE_WIDTH - MARGIN
-            paintTextBold.textAlign = Paint.Align.RIGHT
-            canvas.drawText(String.format(monthLabelFormat, data.monthYearStr), rightAlign, 45f, paintTextBold)
-        }
-
-        fun drawTableHeaders(canvas: Canvas, y: Float, colWidths: FloatArray, headers: Array<String>) {
-            val headerHeight = 25f
-            paintRectFill.color = colorTableHeadBg
-            canvas.drawRect(MARGIN, y, PAGE_WIDTH - MARGIN, y + headerHeight, paintRectFill)
-
-            paintTextBold.color = Color.WHITE
-            paintTextBold.textSize = 9f
-            paintTextBold.textAlign = Paint.Align.CENTER
-
-            var currentX = MARGIN
-            for (i in headers.indices) {
-                canvas.drawText(headers[i], currentX + colWidths[i] / 2f, y + 16f, paintTextBold)
-                canvas.drawRect(currentX, y, currentX + colWidths[i], y + headerHeight, paintRectBorder)
-                currentX += colWidths[i]
-            }
-        }
-
-        fun drawFooter(c: Canvas) {
-            val footerPaint = Paint().apply { typeface = Typeface.create("sans-serif", Typeface.NORMAL); color = Color.GRAY; textSize = 8f; isAntiAlias = true }
-            c.drawText(generatedByStr, MARGIN, PAGE_HEIGHT - 20f, footerPaint)
-        }
-
-        var page = document.startPage(PdfDocument.PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, pageNumber).create())
-        var canvas = page.canvas
-        drawHeader(canvas)
-        yPos = 100f
-
-        // Financial Summary Section
-        paintTextBold.color = colorSummaryTitle
-        paintTextBold.textSize = 14f
-        paintTextBold.textAlign = Paint.Align.LEFT
-        canvas.drawText(summaryTitleStr, MARGIN, yPos, paintTextBold)
-        yPos += 10f
-
-        val summaryTableWidth = PAGE_WIDTH - (MARGIN * 2)
-        val summaryCols = floatArrayOf(summaryTableWidth * 0.14f, summaryTableWidth * 0.14f, summaryTableWidth * 0.14f, summaryTableWidth * 0.14f, summaryTableWidth * 0.14f, summaryTableWidth * 0.15f, summaryTableWidth * 0.15f)
-
-        drawTableHeaders(canvas, yPos, summaryCols, summaryHeaders)
-        yPos += 25f
-
-        // Summary row
-        paintTextNormal.color = Color.BLACK
-        paintTextNormal.textSize = 10f
-        paintTextNormal.textAlign = Paint.Align.CENTER
-        val summaryRowHeight = 30f
-
-        val summaryValues = arrayOf(
-            "$rsStr ${AmountFormatter.format(data.dailyWage)}",
-            "${data.totalManDays}",
-            context.getString(R.string.pdf_present_half_value, data.totalPresent, data.totalHalfDays),
-            "${data.totalOvertimeHours} $hrsStr",
-            "$rsStr ${AmountFormatter.format(data.totalOvertimeEarnings)}",
-            "$rsStr ${AmountFormatter.format(data.grossEarned)}",
-            "$rsStr ${AmountFormatter.format(data.netPayable)}"
-        )
-
-        var curX = MARGIN
-        for (i in summaryValues.indices) {
-            if (i == 6) {
-                paintTextBold.color = if (data.netPayable >= 0) colorPositive else colorNegative
-                paintTextBold.textAlign = Paint.Align.CENTER
-                paintTextBold.textSize = 11f
-                canvas.drawText(summaryValues[i], curX + summaryCols[i] / 2f, yPos + 18f, paintTextBold)
-            } else {
-                canvas.drawText(summaryValues[i], curX + summaryCols[i] / 2f, yPos + 18f, paintTextNormal)
-            }
-            canvas.drawRect(curX, yPos, curX + summaryCols[i], yPos + summaryRowHeight, paintRectBorder)
-            curX += summaryCols[i]
-        }
-
-        yPos += summaryRowHeight + 30f
-
-        // Detailed Logs Section
-        paintTextBold.color = Color.BLACK
-        paintTextBold.textAlign = Paint.Align.LEFT
-        paintTextBold.textSize = 14f
-        canvas.drawText(ledgerTitleStr, MARGIN, yPos, paintTextBold)
-        yPos += 10f
-
-        val logCols = floatArrayOf(
-            summaryTableWidth * 0.10f, // Date
-            summaryTableWidth * 0.10f, // Status
-            summaryTableWidth * 0.10f, // Wage
-            summaryTableWidth * 0.10f, // Overtime
-            summaryTableWidth * 0.10f, // Advance
-            summaryTableWidth * 0.10f, // Balance
-            summaryTableWidth * 0.40f  // Notes
-        )
-
-        drawTableHeaders(canvas, yPos, logCols, logHeaders)
-        yPos += 25f
-
-        // Draw logs with multi-page handling and text wrapping for notes
         for ((index, log) in data.logs.withIndex()) {
-            // Measure note height
             val safeNote = if (log.note.isBlank()) "-" else log.note
-            val noteWidth = logCols[6] - 10f
-            val staticLayout = StaticLayout.Builder.obtain(safeNote, 0, safeNote.length, textPaint, noteWidth.toInt())
+            val noteColWidth = colWidths[5] - 10f
+            val staticLayout = StaticLayout.Builder.obtain(safeNote, 0, safeNote.length, renderContext.textPaintNormal, noteColWidth.toInt())
                 .setAlignment(Layout.Alignment.ALIGN_NORMAL)
                 .setLineSpacing(0f, 1f)
                 .setIncludePad(false)
                 .build()
 
-            val rowHeight = Math.max(22f, staticLayout.height + 10f)
+            val rowHeight = Math.max(20f, staticLayout.height + 8f)
 
-            if (yPos + rowHeight > PAGE_HEIGHT - MARGIN - 30f) {
-                drawFooter(canvas)
-                document.finishPage(page)
-                pageNumber++
-                page = document.startPage(PdfDocument.PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, pageNumber).create())
-                canvas = page.canvas
-                drawHeader(canvas)
-                paintTextNormal.color = Color.BLACK
-                paintTextBold.color = Color.BLACK
-                yPos = 100f
-                drawTableHeaders(canvas, yPos, logCols, logHeaders)
-                yPos += 25f
+            renderContext.checkPageBreak(rowHeight) {
+                drawTableHeaders(renderContext, logHeaders, colWidths)
             }
 
-            paintRectFill.color = if (index % 2 == 0) Color.WHITE else colorStripedRow
-            canvas.drawRect(MARGIN, yPos, PAGE_WIDTH - MARGIN, yPos + rowHeight, paintRectFill)
+            val currentCanvas = renderContext.canvas!!
+            renderContext.paintRectFill.color = if (index % 2 == 0) colorWhite else colorLightBg
+            currentCanvas.drawRect(MARGIN, renderContext.yPos, PAGE_WIDTH - MARGIN, renderContext.yPos + rowHeight, renderContext.paintRectFill)
 
-            val vals = arrayOf(log.date, log.status, log.dailyWage, log.overtime, log.advanceAmount, log.runningBalance)
-            curX = MARGIN
-            paintTextNormal.textSize = 9f
-            paintTextNormal.textAlign = Paint.Align.CENTER
+            val vals = arrayOf(
+                log.date,
+                log.status,
+                log.dailyWage,
+                log.overtime,
+                log.advanceAmount
+            )
+
+            var curX = MARGIN
+            renderContext.paintTextNormal.textSize = 8f
 
             for (i in vals.indices) {
+                val align = when (i) {
+                    0, 1 -> Paint.Align.CENTER
+                    2, 3, 4 -> Paint.Align.RIGHT
+                    else -> Paint.Align.LEFT
+                }
+                renderContext.paintTextNormal.textAlign = align
+
+                val textX = when (align) {
+                    Paint.Align.CENTER -> curX + colWidths[i] / 2f
+                    Paint.Align.RIGHT -> curX + colWidths[i] - 6f
+                    else -> curX + 6f
+                }
+
                 when (i) {
                     1 -> { // Status
                         if (vals[i].contains("Present") || vals[i].contains(presentStr)) {
-                            paintTextNormal.color = colorPositive
+                            renderContext.paintTextNormal.color = colorPresent
                         } else if (vals[i].contains("Half Day") || vals[i].contains(halfDayStr)) {
-                            paintTextNormal.color = colorHalfDay
+                            renderContext.paintTextNormal.color = colorHalfDay
                         } else if (vals[i].contains("Absent") || vals[i].contains(absentStr)) {
-                            paintTextNormal.color = colorNegative
+                            renderContext.paintTextNormal.color = colorAbsent
                         } else {
-                            paintTextNormal.color = Color.BLACK
+                            renderContext.paintTextNormal.color = colorTextPrimary
                         }
                     }
                     3 -> { // Overtime
-                        if (vals[i].isNotBlank() && vals[i] != "-" && vals[i] != "0" && !vals[i].startsWith("$rsStr 0")) {
-                            paintTextNormal.color = colorOvertime
+                        if (vals[i].isNotBlank() && vals[i] != "-") {
+                            renderContext.paintTextNormal.color = colorOvertime
                         } else {
-                            paintTextNormal.color = Color.BLACK
+                            renderContext.paintTextNormal.color = colorTextPrimary
                         }
                     }
                     4 -> { // Advance
-                        if (vals[i].isNotBlank() && vals[i] != "-" && vals[i] != "0" && !vals[i].startsWith("$rsStr 0")) {
-                            paintTextNormal.color = colorAdvance
+                        if (vals[i].isNotBlank() && vals[i] != "-") {
+                            renderContext.paintTextNormal.color = colorHalfDay
                         } else {
-                            paintTextNormal.color = Color.BLACK
+                            renderContext.paintTextNormal.color = colorTextPrimary
                         }
                     }
-                    5 -> { // Balance
-                        paintTextNormal.color = colorPositive
-                    }
-                    else -> paintTextNormal.color = Color.BLACK
+                    else -> renderContext.paintTextNormal.color = colorTextPrimary
                 }
 
-                val textBaseline = yPos + (rowHeight / 2f) - ((paintTextNormal.descent() + paintTextNormal.ascent()) / 2f)
-                canvas.drawText(vals[i], curX + logCols[i] / 2f, textBaseline, paintTextNormal)
-                canvas.drawRect(curX, yPos, curX + logCols[i], yPos + rowHeight, paintRectBorder)
-                curX += logCols[i]
+                val textBaseline = renderContext.yPos + (rowHeight / 2f) - ((renderContext.paintTextNormal.descent() + renderContext.paintTextNormal.ascent()) / 2f)
+                currentCanvas.drawText(vals[i], textX, textBaseline, renderContext.paintTextNormal)
+                currentCanvas.drawRect(curX, renderContext.yPos, curX + colWidths[i], renderContext.yPos + rowHeight, renderContext.paintRectBorder)
+                curX += colWidths[i]
             }
 
-            // Draw Wrapped Note
-            textPaint.color = Color.BLACK
-            canvas.save()
+            // Notes
+            renderContext.textPaintNormal.color = colorTextPrimary
+            currentCanvas.save()
             val noteYOffset = (rowHeight - staticLayout.height) / 2f
-            canvas.translate(curX + 5f, yPos + noteYOffset)
-            staticLayout.draw(canvas)
-            canvas.restore()
-            canvas.drawRect(curX, yPos, curX + logCols[6], yPos + rowHeight, paintRectBorder)
+            currentCanvas.translate(curX + 5f, renderContext.yPos + noteYOffset)
+            staticLayout.draw(currentCanvas)
+            currentCanvas.restore()
+            currentCanvas.drawRect(curX, renderContext.yPos, curX + colWidths[5], renderContext.yPos + rowHeight, renderContext.paintRectBorder)
 
-            yPos += rowHeight
+            renderContext.yPos += rowHeight
         }
 
-        drawFooter(canvas)
-        document.finishPage(page)
+        drawClosingBranding(renderContext, data.name)
+
+        renderContext.finish()
 
         val fileName = "passbook_${data.userId}_${data.yearNumericStr}-${data.monthNumericStr}.pdf"
         val cachePath = File(context.cacheDir, "docs")
@@ -330,142 +499,38 @@ object PassbookPdfGenerator {
 
     fun generateAllTimePdf(context: Context, data: AllTimePassbookPdfModel): File? {
         val document = PdfDocument()
-        var pageNumber = 1
-        var yPos = 0f
+        val titleStr = context.getString(R.string.pdf_all_time_passbook).uppercase()
+        val renderContext = PdfRenderContext(context, document, titleStr, data.workerName)
 
-        val paintHeaderBg = Paint().apply { color = colorHeaderBg; style = Paint.Style.FILL }
-        val paintTextBold = Paint().apply { typeface = Typeface.create("sans-serif", Typeface.BOLD); isAntiAlias = true }
-        val paintTextNormal = Paint().apply { typeface = Typeface.create("sans-serif", Typeface.NORMAL); isAntiAlias = true }
-        val paintRectBorder = Paint().apply { color = colorBorder; style = Paint.Style.STROKE; strokeWidth = 0.5f }
-        val paintRectFill = Paint().apply { style = Paint.Style.FILL }
+        renderContext.startNewPage()
+        val canvas = renderContext.canvas!!
 
-        val textPaint = TextPaint().apply { typeface = Typeface.create("sans-serif", Typeface.NORMAL); isAntiAlias = true; textSize = 8f }
+        // Period & Metadata
+        renderContext.paintTextNormal.color = colorTextSecondary
+        renderContext.paintTextNormal.textSize = FONT_BODY_NORMAL_SIZE
+        renderContext.paintTextNormal.textAlign = Paint.Align.LEFT
+        val periodLabel = context.getString(R.string.pdf_period, data.firstRecordDateStr, data.latestRecordDateStr)
+        canvas.drawText(periodLabel, MARGIN, renderContext.yPos, renderContext.paintTextNormal)
 
-        // Localized string values
-        val appNameStr = context.getString(R.string.app_name)
-        val allTimePassbookTitle = context.getString(R.string.pdf_all_time_passbook)
-        val totalRecordsStr = context.getString(R.string.pdf_total_records, data.totalRecordsCount)
-        val periodStr = context.getString(R.string.pdf_period, data.firstRecordDateStr, data.latestRecordDateStr)
-        val generatedByStr = context.getString(R.string.pdf_generated_by)
+        renderContext.paintTextNormal.textAlign = Paint.Align.RIGHT
+        canvas.drawText(data.generatedAtStr, PAGE_WIDTH - MARGIN, renderContext.yPos, renderContext.paintTextNormal)
+        renderContext.yPos += 20f
+
+        // Overall Summary Section
         val summaryTitleStr = context.getString(R.string.pdf_overall_summary)
+        renderContext.paintTextBold.color = colorTextPrimary
+        renderContext.paintTextBold.textSize = FONT_SECTION_SIZE
+        renderContext.paintTextBold.textAlign = Paint.Align.LEFT
+        canvas.drawText(summaryTitleStr, MARGIN, renderContext.yPos, renderContext.paintTextBold)
+        renderContext.yPos += 10f
+
+        val colWidth = (PAGE_WIDTH - 2 * MARGIN) / 4f
+        val summaryRowHeight = 36f
+
         val rsStr = context.getString(R.string.pdf_rs)
         val hrsStr = context.getString(R.string.pdf_hrs)
-        val presentStr = context.getString(R.string.present_1)
-        val halfDayStr = context.getString(R.string.half_day)
-        val absentStr = context.getString(R.string.absent_1)
 
-        val logHeaders = arrayOf(
-            context.getString(R.string.pdf_col_date),
-            context.getString(R.string.pdf_col_status),
-            context.getString(R.string.pdf_col_wage),
-            context.getString(R.string.pdf_col_overtime),
-            context.getString(R.string.pdf_col_advance),
-            context.getString(R.string.pdf_col_notes)
-        )
-
-        // Column widths for 515f width table
-        val logCols = floatArrayOf(
-            65f,  // Date
-            70f,  // Status
-            65f,  // Wage
-            75f,  // Overtime
-            65f,  // Advance
-            175f  // Notes
-        )
-
-        var page = document.startPage(PdfDocument.PageInfo.Builder(595, 842, pageNumber).create())
-        var canvas = page.canvas
-
-        fun drawHeader(canvas: Canvas, isFirstPage: Boolean) {
-            if (isFirstPage) {
-                val headerHeight = 80f
-                canvas.drawRect(0f, 0f, 595f, headerHeight, paintHeaderBg)
-
-                paintTextBold.color = colorHeaderText
-                paintTextBold.textSize = 22f
-                paintTextBold.textAlign = Paint.Align.LEFT
-                canvas.drawText(appNameStr, MARGIN, 45f, paintTextBold)
-
-                paintTextNormal.color = colorHeaderSubText
-                paintTextNormal.textSize = 10f
-                canvas.drawText(data.workerName, MARGIN, 63f, paintTextNormal)
-
-                paintTextBold.textAlign = Paint.Align.RIGHT
-                paintTextBold.textSize = 14f
-                canvas.drawText(allTimePassbookTitle, 595f - MARGIN, 45f, paintTextBold)
-
-                paintTextNormal.color = colorHeaderSubText
-                paintTextNormal.textSize = 9f
-                canvas.drawText(totalRecordsStr, 595f - MARGIN, 63f, paintTextNormal)
-            } else {
-                val headerHeight = 45f
-                canvas.drawRect(0f, 0f, 595f, headerHeight, paintHeaderBg)
-
-                paintTextBold.color = colorHeaderText
-                paintTextBold.textSize = 12f
-                paintTextBold.textAlign = Paint.Align.LEFT
-                canvas.drawText("$appNameStr - $allTimePassbookTitle", MARGIN, 27f, paintTextBold)
-
-                paintTextNormal.color = colorHeaderSubText
-                paintTextNormal.textSize = 9f
-                paintTextNormal.textAlign = Paint.Align.RIGHT
-                canvas.drawText(data.workerName, 595f - MARGIN, 27f, paintTextNormal)
-            }
-        }
-
-        fun drawFooter(c: Canvas, pNum: Int) {
-            val footerPaint = Paint().apply { typeface = Typeface.create("sans-serif", Typeface.NORMAL); color = Color.GRAY; textSize = 8f; isAntiAlias = true }
-            footerPaint.textAlign = Paint.Align.LEFT
-            c.drawText(generatedByStr, MARGIN, 842f - 20f, footerPaint)
-
-            footerPaint.textAlign = Paint.Align.RIGHT
-            val pageLabel = context.getString(R.string.pdf_page, pNum)
-            c.drawText(pageLabel, 595f - MARGIN, 842f - 20f, footerPaint)
-        }
-
-        fun drawTableHeaders(canvas: Canvas, y: Float) {
-            val headerHeight = 22f
-            paintRectFill.color = colorTableHeadBg
-            canvas.drawRect(MARGIN, y, 595f - MARGIN, y + headerHeight, paintRectFill)
-
-            paintTextBold.color = Color.WHITE
-            paintTextBold.textSize = 8.5f
-            paintTextBold.textAlign = Paint.Align.CENTER
-
-            var currentX = MARGIN
-            for (i in logHeaders.indices) {
-                canvas.drawText(logHeaders[i], currentX + logCols[i] / 2f, y + 14f, paintTextBold)
-                canvas.drawRect(currentX, y, currentX + logCols[i], y + headerHeight, paintRectBorder)
-                currentX += logCols[i]
-            }
-        }
-
-        // Initialize Page 1
-        drawHeader(canvas, isFirstPage = true)
-        yPos = 100f
-
-        // Metadata block (Period)
-        paintTextNormal.color = Color.DKGRAY
-        paintTextNormal.textSize = 9f
-        paintTextNormal.textAlign = Paint.Align.LEFT
-        canvas.drawText(periodStr, MARGIN, yPos, paintTextNormal)
-
-        paintTextNormal.textAlign = Paint.Align.RIGHT
-        canvas.drawText(data.generatedAtStr, 595f - MARGIN, yPos, paintTextNormal)
-        yPos += 20f
-
-        // Overall Summary section
-        paintTextBold.color = colorSummaryTitle
-        paintTextBold.textSize = 12f
-        paintTextBold.textAlign = Paint.Align.LEFT
-        canvas.drawText(summaryTitleStr, MARGIN, yPos, paintTextBold)
-        yPos += 8f
-
-        // Draw Summary Box Grid: 4 columns, 2 rows
-        val boxWidth = 515f / 4f
-        val boxHeight = 35f
-
-        val summaryItems = arrayOf(
+        val items = listOf(
             Pair(context.getString(R.string.pdf_earnings), "$rsStr ${AmountFormatter.format(data.totalEarnings)}"),
             Pair(context.getString(R.string.pdf_salary), "$rsStr ${AmountFormatter.format(data.totalSalary)}"),
             Pair(context.getString(R.string.pdf_overtime), "$rsStr ${AmountFormatter.format(data.totalOvertime)}"),
@@ -477,103 +542,86 @@ object PassbookPdfGenerator {
         )
 
         for (row in 0 until 2) {
+            val yT = renderContext.yPos + row * summaryRowHeight
             for (col in 0 until 4) {
-                val index = row * 4 + col
-                val item = summaryItems[index]
+                val idx = row * 4 + col
+                val item = items[idx]
+                val xL = MARGIN + col * colWidth
 
-                val xL = MARGIN + col * boxWidth
-                val yT = yPos + row * boxHeight
+                renderContext.paintRectFill.color = if (idx % 2 == 0) colorLightBg else colorWhite
+                canvas.drawRect(xL, yT, xL + colWidth, yT + summaryRowHeight, renderContext.paintRectFill)
+                canvas.drawRect(xL, yT, xL + colWidth, yT + summaryRowHeight, renderContext.paintRectBorder)
 
-                // Draw background and border
-                paintRectFill.color = colorStripedRow
-                canvas.drawRect(xL, yT, xL + boxWidth, yT + boxHeight, paintRectFill)
-                canvas.drawRect(xL, yT, xL + boxWidth, yT + boxHeight, paintRectBorder)
+                renderContext.paintTextNormal.color = colorTextSecondary
+                renderContext.paintTextNormal.textSize = 7f
+                renderContext.paintTextNormal.textAlign = Paint.Align.CENTER
+                canvas.drawText(item.first, xL + colWidth / 2f, yT + 12f, renderContext.paintTextNormal)
 
-                // Label
-                paintTextNormal.color = Color.GRAY
-                paintTextNormal.textSize = 7f
-                paintTextNormal.textAlign = Paint.Align.CENTER
-                canvas.drawText(item.first, xL + boxWidth / 2f, yT + 12f, paintTextNormal)
-
-                // Value
-                paintTextBold.color = if (index == 0) colorPositive else if (index == 3) colorHalfDay else colorSummaryTitle
-                paintTextBold.textSize = 9.5f
-                paintTextBold.textAlign = Paint.Align.CENTER
-                canvas.drawText(item.second, xL + boxWidth / 2f, yT + 26f, paintTextBold)
-            }
-        }
-        yPos += boxHeight * 2 + 25f
-
-        // Chronological List rendering
-        var activeTableHeadersMonthKey: String? = null
-
-        fun checkPageBreak(requiredHeight: Float, inRecordTableOfKey: String? = null) {
-            if (yPos + requiredHeight > 842f - 40f - 25f) {
-                // start new page
-                drawFooter(canvas, pageNumber)
-                document.finishPage(page)
-                pageNumber++
-                page = document.startPage(PdfDocument.PageInfo.Builder(595, 842, pageNumber).create())
-                canvas = page.canvas
-                drawHeader(canvas, isFirstPage = false)
-                yPos = 65f
-
-                // If we were in the middle of a month's records, repeat table headers on new page!
-                if (inRecordTableOfKey != null) {
-                    drawTableHeaders(canvas, yPos)
-                    yPos += 22f
+                renderContext.paintTextBold.color = when (idx) {
+                    0 -> colorPresent
+                    3 -> colorHalfDay
+                    4 -> colorPresent
+                    6 -> colorAbsent
+                    else -> colorTextPrimary
                 }
+                renderContext.paintTextBold.textSize = 9f
+                canvas.drawText(item.second, xL + colWidth / 2f, yT + 26f, renderContext.paintTextBold)
             }
         }
+        renderContext.yPos += summaryRowHeight * 2 + 25f
+
+        val logHeaders = arrayOf(
+            context.getString(R.string.pdf_col_date),
+            context.getString(R.string.pdf_col_status),
+            context.getString(R.string.pdf_col_wage),
+            context.getString(R.string.pdf_col_overtime),
+            context.getString(R.string.pdf_col_advance),
+            context.getString(R.string.pdf_col_notes)
+        )
+        val colWidths = floatArrayOf(65f, 75f, 65f, 75f, 65f, 178f)
 
         // Render Year Groups
         for (yearGroup in data.years) {
-            // Check page break for Year Header
-            checkPageBreak(30f)
-            paintTextBold.color = colorSummaryTitle
-            paintTextBold.textSize = 12f
-            paintTextBold.textAlign = Paint.Align.LEFT
+            renderContext.checkPageBreak(30f)
+            renderContext.paintTextBold.color = colorTextPrimary
+            renderContext.paintTextBold.textSize = FONT_SECTION_SIZE
+            renderContext.paintTextBold.textAlign = Paint.Align.LEFT
             val yearHeaderStr = context.getString(R.string.pdf_year, yearGroup.year)
-            canvas.drawText(yearHeaderStr, MARGIN, yPos + 15f, paintTextBold)
-            yPos += 25f
+            renderContext.canvas?.drawText(yearHeaderStr, MARGIN, renderContext.yPos + 15f, renderContext.paintTextBold)
+            renderContext.yPos += 25f
 
             for (monthGroup in yearGroup.months) {
-                val monthKey = "${yearGroup.year}_${monthGroup.monthName}"
+                renderContext.checkPageBreak(80f)
 
-                // Check page break for Month Header + Monthly Summary row + Table Header
-                checkPageBreak(55f)
+                val currentCanvas = renderContext.canvas!!
 
-                paintTextBold.color = colorSummaryTitle
-                paintTextBold.textSize = 10f
+                // Month Title
+                renderContext.paintTextBold.color = colorPrimary
+                renderContext.paintTextBold.textSize = 10f
                 val monthHeaderStr = context.getString(R.string.pdf_month, monthGroup.monthName)
-                canvas.drawText(monthHeaderStr, MARGIN, yPos + 12f, paintTextBold)
-                yPos += 18f
+                currentCanvas.drawText(monthHeaderStr, MARGIN, renderContext.yPos + 12f, renderContext.paintTextBold)
+                renderContext.yPos += 18f
 
-                // Draw monthly summary bar
-                val mSummaryHeight = 20f
-                paintRectFill.color = Color.parseColor("#E6F4F1") // very light tint
-                canvas.drawRect(MARGIN, yPos, 595f - MARGIN, yPos + mSummaryHeight, paintRectFill)
-                canvas.drawRect(MARGIN, yPos, 595f - MARGIN, yPos + mSummaryHeight, paintRectBorder)
+                // Monthly Summary bar
+                val mSummaryHeight = 22f
+                renderContext.paintRectFill.color = Color.parseColor("#E6F4F1")
+                currentCanvas.drawRect(MARGIN, renderContext.yPos, PAGE_WIDTH - MARGIN, renderContext.yPos + mSummaryHeight, renderContext.paintRectFill)
+                currentCanvas.drawRect(MARGIN, renderContext.yPos, PAGE_WIDTH - MARGIN, renderContext.yPos + mSummaryHeight, renderContext.paintRectBorder)
 
-                paintTextNormal.color = Color.DKGRAY
-                paintTextNormal.textSize = 7.5f
-                paintTextNormal.textAlign = Paint.Align.LEFT
+                renderContext.paintTextNormal.color = colorTextPrimary
+                renderContext.paintTextNormal.textSize = 7.5f
+                renderContext.paintTextNormal.textAlign = Paint.Align.LEFT
                 val mSumStr = "Earn: $rsStr${AmountFormatter.format(monthGroup.totalEarnings)}  |  Sal: $rsStr${AmountFormatter.format(monthGroup.totalSalary)}  |  OT: $rsStr${AmountFormatter.format(monthGroup.totalOvertime)}  |  Adv: $rsStr${AmountFormatter.format(monthGroup.totalAdvance)}  |  P: ${monthGroup.presentCount}  |  H: ${monthGroup.halfCount}  |  A: ${monthGroup.absentCount}"
-                canvas.drawText(mSumStr, MARGIN + 8f, yPos + 13f, paintTextNormal)
-                yPos += mSummaryHeight + 10f
+                currentCanvas.drawText(mSumStr, MARGIN + 8f, renderContext.yPos + 14f, renderContext.paintTextNormal)
+                renderContext.yPos += mSummaryHeight + 10f
 
-                // Draw Table Headers for Month
-                checkPageBreak(25f, inRecordTableOfKey = null)
-                drawTableHeaders(canvas, yPos)
-                yPos += 22f
-                activeTableHeadersMonthKey = monthKey
+                // Table Headers
+                drawTableHeaders(renderContext, logHeaders, colWidths)
 
-                // Render records
                 for ((index, record) in monthGroup.records.withIndex()) {
-                    // Pre-measure notes
                     val safeNote = if (record.note.isBlank()) "-" else record.note
-                    val noteColWidth = logCols[5] - 10f
-                    val staticLayout = StaticLayout.Builder.obtain(safeNote, 0, safeNote.length, textPaint, noteColWidth.toInt())
+                    val noteColWidth = colWidths[5] - 10f
+                    val staticLayout = StaticLayout.Builder.obtain(safeNote, 0, safeNote.length, renderContext.textPaintNormal, noteColWidth.toInt())
                         .setAlignment(Layout.Alignment.ALIGN_NORMAL)
                         .setLineSpacing(0f, 1f)
                         .setIncludePad(false)
@@ -581,14 +629,14 @@ object PassbookPdfGenerator {
 
                     val rowHeight = Math.max(18f, staticLayout.height + 8f)
 
-                    // Page break check for row
-                    checkPageBreak(rowHeight, inRecordTableOfKey = activeTableHeadersMonthKey)
+                    renderContext.checkPageBreak(rowHeight) {
+                        drawTableHeaders(renderContext, logHeaders, colWidths)
+                    }
 
-                    // Draw row background (striped)
-                    paintRectFill.color = if (index % 2 == 0) Color.WHITE else colorStripedRow
-                    canvas.drawRect(MARGIN, yPos, 595f - MARGIN, yPos + rowHeight, paintRectFill)
+                    val rowCanvas = renderContext.canvas!!
+                    renderContext.paintRectFill.color = if (index % 2 == 0) colorWhite else colorLightBg
+                    rowCanvas.drawRect(MARGIN, renderContext.yPos, PAGE_WIDTH - MARGIN, renderContext.yPos + rowHeight, renderContext.paintRectFill)
 
-                    // Map values for row
                     val otText = if (record.overtimeAmount > 0) {
                         if (record.overtimeHours > 0) "${record.overtimeHours} $hrsStr / $rsStr ${AmountFormatter.format(record.overtimeAmount)}"
                         else "$rsStr ${AmountFormatter.format(record.overtimeAmount)}"
@@ -603,55 +651,65 @@ object PassbookPdfGenerator {
                     )
 
                     var curX = MARGIN
-                    paintTextNormal.textSize = 8f
-                    paintTextNormal.textAlign = Paint.Align.CENTER
+                    renderContext.paintTextNormal.textSize = 8f
 
                     for (i in rVals.indices) {
-                        when(i) {
+                        val align = when (i) {
+                            0, 1 -> Paint.Align.CENTER
+                            2, 3, 4 -> Paint.Align.RIGHT
+                            else -> Paint.Align.LEFT
+                        }
+                        renderContext.paintTextNormal.textAlign = align
+
+                        val textX = when (align) {
+                            Paint.Align.CENTER -> curX + colWidths[i] / 2f
+                            Paint.Align.RIGHT -> curX + colWidths[i] - 6f
+                            else -> curX + 6f
+                        }
+
+                        when (i) {
                             1 -> { // Status
                                 if (record.statusRaw == "present") {
-                                    paintTextNormal.color = if (record.isHalfDay) colorHalfDay else colorPositive
+                                    renderContext.paintTextNormal.color = if (record.isHalfDay) colorHalfDay else colorPresent
                                 } else if (record.statusRaw == "absent") {
-                                    paintTextNormal.color = colorNegative
+                                    renderContext.paintTextNormal.color = colorAbsent
                                 } else {
-                                    paintTextNormal.color = Color.BLACK
+                                    renderContext.paintTextNormal.color = colorTextPrimary
                                 }
                             }
                             3 -> { // OT
-                                paintTextNormal.color = if (record.overtimeAmount > 0) colorOvertime else Color.BLACK
+                                renderContext.paintTextNormal.color = if (record.overtimeAmount > 0) colorOvertime else colorTextPrimary
                             }
                             4 -> { // Advance
-                                paintTextNormal.color = if (record.advanceAmount > 0) colorAdvance else Color.BLACK
+                                renderContext.paintTextNormal.color = if (record.advanceAmount > 0) colorHalfDay else colorTextPrimary
                             }
-                            else -> paintTextNormal.color = Color.BLACK
+                            else -> renderContext.paintTextNormal.color = colorTextPrimary
                         }
 
-                        val textBaseline = yPos + (rowHeight / 2f) - ((paintTextNormal.descent() + paintTextNormal.ascent()) / 2f)
-                        canvas.drawText(rVals[i], curX + logCols[i] / 2f, textBaseline, paintTextNormal)
-                        canvas.drawRect(curX, yPos, curX + logCols[i], yPos + rowHeight, paintRectBorder)
-                        curX += logCols[i]
+                        val textBaseline = renderContext.yPos + (rowHeight / 2f) - ((renderContext.paintTextNormal.descent() + renderContext.paintTextNormal.ascent()) / 2f)
+                        rowCanvas.drawText(rVals[i], textX, textBaseline, renderContext.paintTextNormal)
+                        rowCanvas.drawRect(curX, renderContext.yPos, curX + colWidths[i], renderContext.yPos + rowHeight, renderContext.paintRectBorder)
+                        curX += colWidths[i]
                     }
 
-                    // Draw Wrapped Notes
-                    textPaint.color = Color.BLACK
-                    canvas.save()
+                    // Notes
+                    renderContext.textPaintNormal.color = colorTextPrimary
+                    rowCanvas.save()
                     val noteYOffset = (rowHeight - staticLayout.height) / 2f
-                    canvas.translate(curX + 5f, yPos + noteYOffset)
-                    staticLayout.draw(canvas)
-                    canvas.restore()
-                    canvas.drawRect(curX, yPos, curX + logCols[5], yPos + rowHeight, paintRectBorder)
+                    rowCanvas.translate(curX + 5f, renderContext.yPos + noteYOffset)
+                    staticLayout.draw(rowCanvas)
+                    rowCanvas.restore()
+                    rowCanvas.drawRect(curX, renderContext.yPos, curX + colWidths[5], renderContext.yPos + rowHeight, renderContext.paintRectBorder)
 
-                    yPos += rowHeight
+                    renderContext.yPos += rowHeight
                 }
-
-                // Add small space after table
-                yPos += 15f
+                renderContext.yPos += 15f
             }
         }
 
-        // Draw last page footer
-        drawFooter(canvas, pageNumber)
-        document.finishPage(page)
+        drawClosingBranding(renderContext, data.workerName)
+
+        renderContext.finish()
 
         val fileName = "all_time_passbook_${data.workerName.replace(" ", "_")}.pdf"
         val cachePath = File(context.cacheDir, "docs")

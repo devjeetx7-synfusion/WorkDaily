@@ -340,4 +340,6 @@
     <string name="pdf_export_finalizing">Finalizing...</string>
     <string name="pdf_export_success">Success!</string>
     <string name="pdf_export_error">Error: %1$s</string>
+    <string name="pdf_digital_attendance_passbook">Digital Attendance &amp; Passbook</string>
+    <string name="pdf_generated_from_offline">Generated from WorkDaily Offline</string>
 </resources>

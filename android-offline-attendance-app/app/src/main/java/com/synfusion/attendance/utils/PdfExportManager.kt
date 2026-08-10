@@ -67,9 +67,7 @@ class PdfExportManager(
             val absentStr = context.getString(com.synfusion.attendance.R.string.absent_1)
 
             val sortedLogs = calcResult.logs.sortedBy { it.date }.map { log ->
-                val dailyEarned = log.baseEarnings
                 val advanceAmt = log.advanceAmount ?: 0.0
-                val otAmt = log.overtimeAmount
 
                 val otPdfText = if (log.overtimeAmount > 0) {
                     if (log.overtimeHours > 0) "${log.overtimeHours} $hrsStr / $rsStr ${AmountFormatter.format(log.overtimeAmount)}"
@@ -106,6 +104,17 @@ class PdfExportManager(
                 origPdfLog.copy(runningBalance = "$rsStr ${AmountFormatter.format(currentRunningBalance)}")
             }
 
+            val calendar = java.util.Calendar.getInstance()
+            calendar.time = selectedMonthDate
+            calendar.set(java.util.Calendar.DAY_OF_MONTH, 1)
+            val firstDay = calendar.time
+            calendar.set(java.util.Calendar.DAY_OF_MONTH, calendar.getActualMaximum(java.util.Calendar.DAY_OF_MONTH))
+            val lastDay = calendar.time
+
+            val sdfPeriod = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
+            val periodStr = "${sdfPeriod.format(firstDay)} — ${sdfPeriod.format(lastDay)}"
+            val generatedAtStr = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(Date())
+
             val pdfData = PdfData(
                 title = "WorkDaily",
                 subtitle = context.getString(com.synfusion.attendance.R.string.pdf_subtitle_passbook),
@@ -120,11 +129,14 @@ class PdfExportManager(
                 totalManDays = calcResult.totalWorks,
                 totalPresent = calcResult.present,
                 totalHalfDays = calcResult.half,
+                totalAbsent = calcResult.absent,
                 totalOvertimeHours = calcResult.logs.sumOf { it.overtimeHours },
                 totalOvertimeEarnings = calcResult.logs.sumOf { it.overtimeAmount },
                 grossEarned = calcResult.totalEarnings,
                 advanceDeducted = calcResult.totalAdv,
                 netPayable = calcResult.netBalance,
+                periodStr = periodStr,
+                generatedAtStr = generatedAtStr,
                 logs = sortedLogsWithBalance
             )
 
@@ -163,7 +175,6 @@ class PdfExportManager(
             val user = withContext(Dispatchers.IO) { localAttendanceRepository.getUser() }
             val cachedDefaultWage = user?.dailyWage ?: 500.0
             val name = user?.name ?: "User"
-            val workType = user?.role ?: "Worker"
 
             val records = withContext(Dispatchers.IO) { localAttendanceRepository.getPersonalAttendance() }
 
