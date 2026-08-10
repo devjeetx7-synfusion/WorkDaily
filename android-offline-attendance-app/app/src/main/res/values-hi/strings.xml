@@ -339,4 +339,6 @@
     <string name="pdf_export_finalizing">अंतिम रूप दिया जा रहा है...</string>
     <string name="pdf_export_success">सफल!</string>
     <string name="pdf_export_error">त्रुटि: %1$s</string>
+    <string name="pdf_digital_attendance_passbook">डिजिटल उपस्थिति और पासबुक</string>
+    <string name="pdf_generated_from_offline">WorkDaily ऑफ़लाइन से जनरेट किया गया</string>
 </resources>

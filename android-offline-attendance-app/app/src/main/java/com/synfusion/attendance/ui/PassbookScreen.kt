@@ -71,11 +71,7 @@ fun PassbookScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle(initialValue = OfflinePassbookState(isLoading = true))
     val sdfMonth = SimpleDateFormat("MMMM yyyy", Locale.getDefault())
-    val sdfMonthNumeric = SimpleDateFormat("MM", Locale.getDefault())
-    val sdfYearNumeric = SimpleDateFormat("yyyy", Locale.getDefault())
     val monthYearStr = sdfMonth.format(state.selectedMonthDate)
-    val monthNumericStr = sdfMonthNumeric.format(state.selectedMonthDate)
-    val yearNumericStr = sdfYearNumeric.format(state.selectedMonthDate)
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val exportManager = remember { PdfExportManager(context, viewModel.localAttendanceRepository) }
@@ -91,74 +87,10 @@ fun PassbookScreen(
         }
     }
 
-    fun generatePdfData(): PdfData {
-        var currentRunningBalance = 0.0
-        var totalOTHours = 0
-        var totalOTEarnings = 0.0
-
-        val rsStr = context.getString(com.synfusion.attendance.R.string.pdf_rs)
-        val hrsStr = context.getString(com.synfusion.attendance.R.string.pdf_hrs)
-        val halfDayStr = context.getString(com.synfusion.attendance.R.string.half_day)
-        val presentStr = context.getString(com.synfusion.attendance.R.string.present_1)
-        val absentStr = context.getString(com.synfusion.attendance.R.string.absent_1)
-
-        val sortedLogs = state.logs.sortedBy { it.date }.map { log ->
-            val dailyEarned = log.baseEarnings
-            val advanceAmt = log.advanceAmount ?: 0.0
-            val otAmt = log.overtimeAmount
-
-            totalOTHours += log.overtimeHours
-            totalOTEarnings += otAmt
-
-            currentRunningBalance += (dailyEarned + otAmt) - advanceAmt
-
-            val otPdfText = if (log.overtimeAmount > 0) {
-                if (log.overtimeHours > 0) "${log.overtimeHours} $hrsStr / $rsStr ${AmountFormatter.format(log.overtimeAmount)}"
-                else "$rsStr ${AmountFormatter.format(log.overtimeAmount)}"
-            } else "-"
-
-            val statusText = if (log.status == "present") {
-                if (log.type == "half") halfDayStr else presentStr
-            } else if (log.status == "absent") {
-                absentStr
-            } else "-"
-
-            PdfLog(
-                date = log.date.split("-").reversed().joinToString("/"),
-                status = statusText,
-                workType = state.workType,
-                dailyWage = "$rsStr ${AmountFormatter.format(state.dailyWage)}",
-                overtime = otPdfText,
-                advanceAmount = if (log.status == "advance" || advanceAmt > 0) "$rsStr ${AmountFormatter.format(advanceAmt)}" else "-",
-                runningBalance = "$rsStr ${AmountFormatter.format(currentRunningBalance)}",
-                note = log.note ?: ""
-            )
-        }
-
-        return PdfData(
-            title = "WorkDaily",
-            subtitle = context.getString(com.synfusion.attendance.R.string.pdf_subtitle_passbook),
-            name = state.name,
-            userId = "personal",
-            role = state.workType,
-            monthYearStr = monthYearStr,
-            monthNumericStr = monthNumericStr,
-            yearNumericStr = yearNumericStr,
-            contractorName = "Admin",
-            dailyWage = state.dailyWage,
-            totalManDays = state.totalDailyWorks,
-            totalPresent = state.presentDays,
-            totalHalfDays = state.halfDays,
-            totalOvertimeHours = totalOTHours,
-            totalOvertimeEarnings = totalOTEarnings,
-            grossEarned = state.grossEarned,
-            advanceDeducted = state.totalAdvance,
-            netPayable = state.finalBalance,
-            logs = sortedLogs
-        )
-    }
+    val isExporting = exportState != PdfExportState.Idle && exportState !is PdfExportState.Success && exportState !is PdfExportState.Error
 
     fun exportPDF() {
+        if (isExporting) return
         scope.launch {
             exportManager.exportMonthlyPdf(state.selectedMonthDate) { file ->
                 scope.launch {
@@ -181,55 +113,74 @@ fun PassbookScreen(
     }
 
     fun shareViaWhatsApp() {
-        val text = """
-            👷 *Official Passbook*
+        if (isExporting) return
+        scope.launch {
+            exportManager.exportMonthlyPdf(state.selectedMonthDate) { file ->
+                scope.launch {
+                    kotlinx.coroutines.delay(600)
+                    exportManager.resetState()
 
-            👤 *Name:* ${state.name}
-            📅 *Month:* $monthYearStr
-            📊 *Attendance Summary:*
-            ✅ Present: ${state.presentDays} days
-            🕒 Half Days: ${state.halfDays} days
-            ❌ Absent: ${state.absentDays} days
-            📈 *Total Days worked:* ${state.totalDailyWorks}
+                    val officialPassbookLabel = context.getString(com.synfusion.attendance.R.string.pdf_subtitle_passbook)
+                    val nameLabel = context.getString(com.synfusion.attendance.R.string.full_name)
+                    val monthLabel = context.getString(com.synfusion.attendance.R.string.passbook_month)
+                    val attendanceSummaryLabel = context.getString(com.synfusion.attendance.R.string.attendance_breakdown)
+                    val presentLabel = context.getString(com.synfusion.attendance.R.string.present_1)
+                    val halfDayLabel = context.getString(com.synfusion.attendance.R.string.half_day)
+                    val absentLabel = context.getString(com.synfusion.attendance.R.string.absent_1)
+                    val totalDaysWorkedLabel = context.getString(com.synfusion.attendance.R.string.total_man_days)
+                    val financialSummaryLabel = context.getString(com.synfusion.attendance.R.string.financial_summary)
+                    val dailyWageLabel = context.getString(com.synfusion.attendance.R.string.daily_wage)
+                    val grossEarnedLabel = context.getString(com.synfusion.attendance.R.string.gross_earned)
+                    val advanceDeductedLabel = context.getString(com.synfusion.attendance.R.string.total_advance)
+                    val netPayableLabel = context.getString(com.synfusion.attendance.R.string.net_payable)
+                    val appName = context.getString(com.synfusion.attendance.R.string.app_name)
 
-            💰 *Financial Summary:*
-            💵 Daily Wage: ₹${AmountFormatter.format(state.dailyWage)}
-            💸 Gross Earned: ₹${AmountFormatter.format(state.grossEarned)}
-            📉 Advance Deducted: ₹${AmountFormatter.format(state.totalAdvance)}
-            ━━━━━━━━━━━━━━━━━━
-            🏆 *Net Payable: ₹${AmountFormatter.format(state.finalBalance)}*
-            ━━━━━━━━━━━━━━━━━━
+                    val text = """
+                        👷 *$officialPassbookLabel*
 
-            _Generated automatically via WorkDaily App_ 📱
-        """.trimIndent()
+                        👤 *$nameLabel:* ${state.name}
+                        📅 *$monthLabel:* $monthYearStr
+                        📊 *$attendanceSummaryLabel:*
+                        ✅ $presentLabel: ${state.presentDays}
+                        🕒 $halfDayLabel: ${state.halfDays}
+                        ❌ $absentLabel: ${state.absentDays}
+                        📈 *$totalDaysWorkedLabel:* ${state.totalDailyWorks}
 
-        val file = PassbookPdfGenerator.generatePdf(context, generatePdfData())
-        val intent = Intent(Intent.ACTION_SEND).apply {
-            type = "application/pdf"
-            if (file != null) {
-                val uri = FileProvider.getUriForFile(context, "com.synfusion.attendance.fileprovider", file)
-                putExtra(Intent.EXTRA_STREAM, uri)
-                flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-            }
-            putExtra(Intent.EXTRA_TEXT, text)
-            setPackage("com.whatsapp")
-        }
-        try {
-            context.startActivity(intent)
-        } catch (e: Exception) {
-            val fallbackIntent = Intent(Intent.ACTION_SEND).apply {
-                type = "application/pdf"
-                if (file != null) {
+                        💰 *$financialSummaryLabel:*
+                        💵 $dailyWageLabel: ₹${AmountFormatter.format(state.dailyWage)}
+                        💸 $grossEarnedLabel: ₹${AmountFormatter.format(state.grossEarned)}
+                        📉 $advanceDeductedLabel: ₹${AmountFormatter.format(state.totalAdvance)}
+                        ━━━━━━━━━━━━━━━━━━
+                        🏆 *$netPayableLabel: ₹${AmountFormatter.format(state.finalBalance)}*
+                        ━━━━━━━━━━━━━━━━━━
+
+                        _Generated automatically via $appName App_ 📱
+                    """.trimIndent()
+
                     val uri = FileProvider.getUriForFile(context, "com.synfusion.attendance.fileprovider", file)
-                    putExtra(Intent.EXTRA_STREAM, uri)
-                    flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    val intent = Intent(Intent.ACTION_SEND).apply {
+                        type = "application/pdf"
+                        putExtra(Intent.EXTRA_STREAM, uri)
+                        putExtra(Intent.EXTRA_TEXT, text)
+                        flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                        setPackage("com.whatsapp")
+                    }
+                    try {
+                        context.startActivity(intent)
+                    } catch (e: Exception) {
+                        val fallbackIntent = Intent(Intent.ACTION_SEND).apply {
+                            type = "application/pdf"
+                            putExtra(Intent.EXTRA_STREAM, uri)
+                            putExtra(Intent.EXTRA_TEXT, text)
+                            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                        }
+                        try {
+                            context.startActivity(Intent.createChooser(fallbackIntent, "Share PDF"))
+                        } catch (ex: Exception) {
+                            android.widget.Toast.makeText(context, "No app found to share PDF", android.widget.Toast.LENGTH_SHORT).show()
+                        }
+                    }
                 }
-                putExtra(Intent.EXTRA_TEXT, text)
-            }
-            try {
-                context.startActivity(Intent.createChooser(fallbackIntent, "Share PDF"))
-            } catch (ex: Exception) {
-                android.widget.Toast.makeText(context, "No app found to share PDF", android.widget.Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -333,9 +284,10 @@ fun PassbookScreen(
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                 OutlinedButton(
                                     onClick = { exportPDF() },
+                                    enabled = !isExporting,
                                     modifier = Modifier.weight(1f).height(48.dp),
                                     shape = RoundedCornerShape(12.dp),
-                                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, if (isExporting) MaterialTheme.colorScheme.outline else MaterialTheme.colorScheme.primary),
                                     colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
                                 ) {
                                     Icon(Icons.Default.PictureAsPdf, contentDescription = null, modifier = Modifier.size(18.dp))
@@ -345,9 +297,10 @@ fun PassbookScreen(
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Button(
                                     onClick = { shareViaWhatsApp() },
+                                    enabled = !isExporting,
                                     modifier = Modifier.weight(1f).height(48.dp),
                                     shape = RoundedCornerShape(12.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366))
+                                    colors = ButtonDefaults.buttonColors(containerColor = if (isExporting) MaterialTheme.colorScheme.outline else Color(0xFF25D366))
                                 ) {
                                     Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color.White)
                                     Spacer(modifier = Modifier.width(8.dp))

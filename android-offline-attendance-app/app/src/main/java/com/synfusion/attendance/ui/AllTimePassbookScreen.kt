@@ -61,7 +61,10 @@ fun AllTimePassbookScreen(
         }
     }
 
+    val isExporting = exportState != PdfExportState.Idle && exportState !is PdfExportState.Success && exportState !is PdfExportState.Error
+
     fun exportAllTimePDF() {
+        if (isExporting) return
         scope.launch {
             exportManager.exportAllTimePdf { file ->
                 scope.launch {
@@ -93,7 +96,10 @@ fun AllTimePassbookScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { exportAllTimePDF() }) {
+                    IconButton(
+                        onClick = { exportAllTimePDF() },
+                        enabled = !isExporting
+                    ) {
                         Icon(Icons.Default.PictureAsPdf, contentDescription = "Export All Time PDF")
                     }
                 },
