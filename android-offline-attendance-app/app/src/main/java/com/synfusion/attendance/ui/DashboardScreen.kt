@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import com.synfusion.attendance.ui.components.ShimmerBox
 import com.synfusion.attendance.ui.components.ShimmerCircle
 import com.synfusion.attendance.ui.components.ShimmerTextLine
+import com.synfusion.attendance.ui.components.ExpandableNoteText
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -337,22 +338,29 @@ fun DashboardScreen(
 
         if (showPassbookBottomSheet) {
             val passbookViewModel: OfflinePassbookViewModel = viewModel(factory = factory)
+            val sheetShape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
             ModalBottomSheet(
                 onDismissRequest = { showPassbookBottomSheet = false },
                 sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
                 modifier = Modifier.fillMaxHeight(),
                 containerColor = MaterialTheme.colorScheme.background,
-                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                shape = sheetShape,
                 dragHandle = { BottomSheetDefaults.DragHandle() }
             ) {
-                PassbookScreen(
-                    viewModel = passbookViewModel,
-                    onNavigateBack = { showPassbookBottomSheet = false },
-                    onNavigateToCalendar = {
-                        showPassbookBottomSheet = false
-                        selectedTab = 1
-                    }
-                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(sheetShape)
+                ) {
+                    PassbookScreen(
+                        viewModel = passbookViewModel,
+                        onNavigateBack = { showPassbookBottomSheet = false },
+                        onNavigateToCalendar = {
+                            showPassbookBottomSheet = false
+                            selectedTab = 1
+                        }
+                    )
+                }
             }
         }
 
@@ -691,7 +699,11 @@ fun PersonalDailyLog(state: OfflineDashboardState, dashboardViewModel: OfflineDa
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Description, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text(note, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            ExpandableNoteText(
+                                text = note,
+                                style = MaterialTheme.typography.bodyMedium.copy(fontSize = 12.sp),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
                     }
                 }

@@ -6,6 +6,7 @@ import androidx.compose.animation.core.tween
 import com.synfusion.attendance.ui.components.ShimmerBox
 import com.synfusion.attendance.ui.components.ShimmerCircle
 import com.synfusion.attendance.ui.components.ShimmerTextLine
+import com.synfusion.attendance.ui.components.ExpandableNoteText
 import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -447,7 +448,6 @@ fun PassbookScreen(
                             items(state.logs) { log ->
                                 val dateParts = log.date.split("-").reversed()
                                 val displayDate = if (dateParts.size == 3) "${dateParts[0]}/${dateParts[1]}/${dateParts[2]}" else log.date
-                                var expanded by remember { mutableStateOf(false) }
 
                                 Column(
                                     modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(12.dp)).padding(14.dp)
@@ -483,37 +483,16 @@ fun PassbookScreen(
                                                     Text("₹${AmountFormatter.format(log.advanceAmount)} " + androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.advance), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay())
                                                 }
                                             }
-
-                                            if (!log.note.isNullOrEmpty()) {
-                                                Spacer(modifier = Modifier.width(8.dp))
-                                                Box(
-                                                    modifier = Modifier
-                                                        .size(24.dp)
-                                                        .clip(CircleShape)
-                                                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                                                        .clickable { expanded = !expanded },
-                                                    contentAlignment = Alignment.Center
-                                                ) {
-                                                    Icon(
-                                                        imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                                                        contentDescription = "Expand note",
-                                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                        modifier = Modifier.size(16.dp)
-                                                    )
-                                                }
-                                            }
                                         }
                                     }
 
                                     if (!log.note.isNullOrEmpty()) {
                                         Spacer(modifier = Modifier.height(8.dp))
-                                        Text(
+                                        ExpandableNoteText(
                                             text = "Note: ${log.note}",
-                                            fontSize = 11.sp,
+                                            style = MaterialTheme.typography.bodyMedium.copy(fontSize = 11.sp),
                                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            modifier = Modifier.fillMaxWidth(),
-                                            maxLines = if (expanded) Int.MAX_VALUE else 1,
-                                            overflow = TextOverflow.Ellipsis
+                                            modifier = Modifier.fillMaxWidth()
                                         )
                                     }
                                 }

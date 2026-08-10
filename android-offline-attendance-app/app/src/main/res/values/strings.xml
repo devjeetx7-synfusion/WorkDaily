@@ -315,4 +315,6 @@
     <string name="pdf_rs">Rs.</string>
     <string name="pdf_hrs">hrs</string>
     <string name="pdf_present_half_value">%1$dP / %2$dH</string>
+    <string name="show_more">Show more</string>
+    <string name="show_less">Show less</string>
 </resources>

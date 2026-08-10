@@ -1,6 +1,7 @@
 package com.synfusion.attendance.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -49,15 +50,20 @@ fun DrillDownBottomSheet(
         }
     }
 
+    val sheetShape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = MaterialTheme.colorScheme.background,
         dragHandle = { BottomSheetDefaults.DragHandle() },
-        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        shape = sheetShape,
         modifier = Modifier.fillMaxHeight(0.9f)
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .clip(sheetShape)
+        ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -120,6 +126,7 @@ fun DrillDownBottomSheet(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
                     .background(MaterialTheme.colorScheme.surface)
                     .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
                     .padding(16.dp)
@@ -152,6 +159,10 @@ fun DrillDownRecordItem(log: OfflinePassbookLog) {
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+            .clickable(
+                interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
+                indication = null // keep it non-interactive-looking if there is no action, but still consume events
+            ) {}
             .padding(12.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
@@ -159,7 +170,11 @@ fun DrillDownRecordItem(log: OfflinePassbookLog) {
         Column(modifier = Modifier.weight(1f)) {
             Text(formattedDate, fontWeight = FontWeight.Bold, fontSize = 16.sp)
             if (!log.note.isNullOrBlank()) {
-                Text(log.note, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                ExpandableNoteText(
+                    text = log.note,
+                    style = MaterialTheme.typography.bodyMedium.copy(fontSize = 12.sp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
             if (log.overtimeHours > 0) {
                 Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.all_ot_drilldown, log.overtimeHours.toString(), AmountFormatter.format(log.overtimeAmount)), fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
