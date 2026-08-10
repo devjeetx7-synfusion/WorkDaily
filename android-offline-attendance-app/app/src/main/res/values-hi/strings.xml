@@ -314,4 +314,6 @@
     <string name="pdf_rs">रु.</string>
     <string name="pdf_hrs">घंटे</string>
     <string name="pdf_present_half_value">%1$dउ / %2$dहा</string>
+    <string name="show_more">और देखें</string>
+    <string name="show_less">कम दिखाएं</string>
 </resources>

@@ -41,6 +41,7 @@ fun AllTimePassbookScreen(
     onNavigateBack: () -> Unit
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle(initialValue = OfflineAllTimePassbookState())
+    val expandedMonths = remember { mutableStateMapOf<String, Boolean>() }
 
     Scaffold(
         topBar = {
@@ -95,8 +96,14 @@ fun AllTimePassbookScreen(
                             }
                         }
                     } else {
-                        items(state.yearGroups) { yearGroup ->
-                            YearGroupItem(yearGroup)
+                        items(state.yearGroups, key = { it.year }) { yearGroup ->
+                            YearGroupItem(
+                                yearGroup = yearGroup,
+                                expandedMonths = expandedMonths,
+                                onToggleMonth = { monthKey ->
+                                    expandedMonths[monthKey] = !(expandedMonths[monthKey] ?: false)
+                                }
+                            )
                         }
                     }
                 }
@@ -146,7 +153,11 @@ fun EmploymentSummarySection(state: com.synfusion.attendance.viewmodel.OfflineAl
             ),
             elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
+            Column(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(16.dp))
+                    .padding(16.dp)
+            ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -249,7 +260,11 @@ fun EmploymentSummarySection(state: com.synfusion.attendance.viewmodel.OfflineAl
             ),
             elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
+            Column(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(16.dp))
+                    .padding(16.dp)
+            ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -310,20 +325,32 @@ fun EmploymentSummarySection(state: com.synfusion.attendance.viewmodel.OfflineAl
 }
 
 @Composable
-fun YearGroupItem(yearGroup: com.synfusion.attendance.viewmodel.AllTimeYearGroup) {
+fun YearGroupItem(
+    yearGroup: com.synfusion.attendance.viewmodel.AllTimeYearGroup,
+    expandedMonths: Map<String, Boolean>,
+    onToggleMonth: (String) -> Unit
+) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(yearGroup.year, fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
 
         yearGroup.months.forEach { monthGroup ->
-            MonthGroupItem(monthGroup = monthGroup)
+            val monthKey = "${yearGroup.year}_${monthGroup.month}"
+            MonthGroupItem(
+                monthGroup = monthGroup,
+                expanded = expandedMonths[monthKey] ?: false,
+                onToggle = { onToggleMonth(monthKey) }
+            )
             Spacer(modifier = Modifier.height(12.dp))
         }
     }
 }
 
 @Composable
-fun MonthGroupItem(monthGroup: com.synfusion.attendance.viewmodel.AllTimeGroup) {
-    var expanded by remember { mutableStateOf(false) }
+fun MonthGroupItem(
+    monthGroup: com.synfusion.attendance.viewmodel.AllTimeGroup,
+    expanded: Boolean,
+    onToggle: () -> Unit
+) {
     val rotation by animateFloatAsState(if (expanded) 180f else 0f)
 
     ElevatedCard(
@@ -334,11 +361,15 @@ fun MonthGroupItem(monthGroup: com.synfusion.attendance.viewmodel.AllTimeGroup) 
         ),
         elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+        ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { expanded = !expanded }
+                    .clickable { onToggle() }
                     .padding(16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
