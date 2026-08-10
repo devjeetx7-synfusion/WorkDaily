@@ -33,6 +33,14 @@ import com.synfusion.attendance.utils.collectAsStateWithLifecycle
 import com.synfusion.attendance.viewmodel.OfflineAllTimePassbookViewModel
 import com.synfusion.attendance.viewmodel.OfflineAllTimePassbookState
 import com.synfusion.attendance.ui.components.DrillDownRecordItem
+import com.synfusion.attendance.utils.PdfExportManager
+import com.synfusion.attendance.utils.PdfExportState
+import com.synfusion.attendance.ui.components.PdfExportLoadingDialog
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.FileProvider
+import android.content.Intent
+import kotlinx.coroutines.launch
+import androidx.compose.material.icons.filled.PictureAsPdf
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,6 +50,38 @@ fun AllTimePassbookScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle(initialValue = OfflineAllTimePassbookState())
     val expandedMonths = remember { mutableStateMapOf<String, Boolean>() }
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val exportManager = remember { PdfExportManager(context, viewModel.localAttendanceRepository) }
+    val exportState by exportManager.exportState.collectAsStateWithLifecycle(initialValue = PdfExportState.Idle)
+
+    DisposableEffect(Unit) {
+        onDispose {
+            exportManager.resetState()
+        }
+    }
+
+    fun exportAllTimePDF() {
+        scope.launch {
+            exportManager.exportAllTimePdf { file ->
+                scope.launch {
+                    kotlinx.coroutines.delay(600)
+                    exportManager.resetState()
+                    val uri = FileProvider.getUriForFile(context, "com.synfusion.attendance.fileprovider", file)
+                    val intent = Intent(Intent.ACTION_SEND).apply {
+                        type = "application/pdf"
+                        putExtra(Intent.EXTRA_STREAM, uri)
+                        flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    }
+                    try {
+                        context.startActivity(Intent.createChooser(intent, "Share All Time PDF"))
+                    } catch (e: Exception) {
+                        android.widget.Toast.makeText(context, "No app found to share PDF", android.widget.Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -50,6 +90,11 @@ fun AllTimePassbookScreen(
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { exportAllTimePDF() }) {
+                        Icon(Icons.Default.PictureAsPdf, contentDescription = "Export All Time PDF")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -136,6 +181,12 @@ fun AllTimePassbookScreen(
             }
         }
     }
+
+    PdfExportLoadingDialog(
+        state = exportState,
+        onCancel = { exportManager.resetState() },
+        onDismissError = { exportManager.resetState() }
+    )
 }
 
 @Composable

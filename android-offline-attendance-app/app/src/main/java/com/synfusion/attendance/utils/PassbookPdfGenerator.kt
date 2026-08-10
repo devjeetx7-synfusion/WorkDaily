@@ -327,4 +327,346 @@ object PassbookPdfGenerator {
             null
         }
     }
+
+    fun generateAllTimePdf(context: Context, data: AllTimePassbookPdfModel): File? {
+        val document = PdfDocument()
+        var pageNumber = 1
+        var yPos = 0f
+
+        val paintHeaderBg = Paint().apply { color = colorHeaderBg; style = Paint.Style.FILL }
+        val paintTextBold = Paint().apply { typeface = Typeface.create("sans-serif", Typeface.BOLD); isAntiAlias = true }
+        val paintTextNormal = Paint().apply { typeface = Typeface.create("sans-serif", Typeface.NORMAL); isAntiAlias = true }
+        val paintRectBorder = Paint().apply { color = colorBorder; style = Paint.Style.STROKE; strokeWidth = 0.5f }
+        val paintRectFill = Paint().apply { style = Paint.Style.FILL }
+
+        val textPaint = TextPaint().apply { typeface = Typeface.create("sans-serif", Typeface.NORMAL); isAntiAlias = true; textSize = 8f }
+
+        // Localized string values
+        val appNameStr = context.getString(R.string.app_name)
+        val allTimePassbookTitle = context.getString(R.string.pdf_all_time_passbook)
+        val totalRecordsStr = context.getString(R.string.pdf_total_records, data.totalRecordsCount)
+        val periodStr = context.getString(R.string.pdf_period, data.firstRecordDateStr, data.latestRecordDateStr)
+        val generatedByStr = context.getString(R.string.pdf_generated_by)
+        val summaryTitleStr = context.getString(R.string.pdf_overall_summary)
+        val rsStr = context.getString(R.string.pdf_rs)
+        val hrsStr = context.getString(R.string.pdf_hrs)
+        val presentStr = context.getString(R.string.present_1)
+        val halfDayStr = context.getString(R.string.half_day)
+        val absentStr = context.getString(R.string.absent_1)
+
+        val logHeaders = arrayOf(
+            context.getString(R.string.pdf_col_date),
+            context.getString(R.string.pdf_col_status),
+            context.getString(R.string.pdf_col_wage),
+            context.getString(R.string.pdf_col_overtime),
+            context.getString(R.string.pdf_col_advance),
+            context.getString(R.string.pdf_col_notes)
+        )
+
+        // Column widths for 515f width table
+        val logCols = floatArrayOf(
+            65f,  // Date
+            70f,  // Status
+            65f,  // Wage
+            75f,  // Overtime
+            65f,  // Advance
+            175f  // Notes
+        )
+
+        var page = document.startPage(PdfDocument.PageInfo.Builder(595, 842, pageNumber).create())
+        var canvas = page.canvas
+
+        fun drawHeader(canvas: Canvas, isFirstPage: Boolean) {
+            if (isFirstPage) {
+                val headerHeight = 80f
+                canvas.drawRect(0f, 0f, 595f, headerHeight, paintHeaderBg)
+
+                paintTextBold.color = colorHeaderText
+                paintTextBold.textSize = 22f
+                paintTextBold.textAlign = Paint.Align.LEFT
+                canvas.drawText(appNameStr, MARGIN, 45f, paintTextBold)
+
+                paintTextNormal.color = colorHeaderSubText
+                paintTextNormal.textSize = 10f
+                canvas.drawText(data.workerName, MARGIN, 63f, paintTextNormal)
+
+                paintTextBold.textAlign = Paint.Align.RIGHT
+                paintTextBold.textSize = 14f
+                canvas.drawText(allTimePassbookTitle, 595f - MARGIN, 45f, paintTextBold)
+
+                paintTextNormal.color = colorHeaderSubText
+                paintTextNormal.textSize = 9f
+                canvas.drawText(totalRecordsStr, 595f - MARGIN, 63f, paintTextNormal)
+            } else {
+                val headerHeight = 45f
+                canvas.drawRect(0f, 0f, 595f, headerHeight, paintHeaderBg)
+
+                paintTextBold.color = colorHeaderText
+                paintTextBold.textSize = 12f
+                paintTextBold.textAlign = Paint.Align.LEFT
+                canvas.drawText("$appNameStr - $allTimePassbookTitle", MARGIN, 27f, paintTextBold)
+
+                paintTextNormal.color = colorHeaderSubText
+                paintTextNormal.textSize = 9f
+                paintTextNormal.textAlign = Paint.Align.RIGHT
+                canvas.drawText(data.workerName, 595f - MARGIN, 27f, paintTextNormal)
+            }
+        }
+
+        fun drawFooter(c: Canvas, pNum: Int) {
+            val footerPaint = Paint().apply { typeface = Typeface.create("sans-serif", Typeface.NORMAL); color = Color.GRAY; textSize = 8f; isAntiAlias = true }
+            footerPaint.textAlign = Paint.Align.LEFT
+            c.drawText(generatedByStr, MARGIN, 842f - 20f, footerPaint)
+
+            footerPaint.textAlign = Paint.Align.RIGHT
+            val pageLabel = context.getString(R.string.pdf_page, pNum)
+            c.drawText(pageLabel, 595f - MARGIN, 842f - 20f, footerPaint)
+        }
+
+        fun drawTableHeaders(canvas: Canvas, y: Float) {
+            val headerHeight = 22f
+            paintRectFill.color = colorTableHeadBg
+            canvas.drawRect(MARGIN, y, 595f - MARGIN, y + headerHeight, paintRectFill)
+
+            paintTextBold.color = Color.WHITE
+            paintTextBold.textSize = 8.5f
+            paintTextBold.textAlign = Paint.Align.CENTER
+
+            var currentX = MARGIN
+            for (i in logHeaders.indices) {
+                canvas.drawText(logHeaders[i], currentX + logCols[i] / 2f, y + 14f, paintTextBold)
+                canvas.drawRect(currentX, y, currentX + logCols[i], y + headerHeight, paintRectBorder)
+                currentX += logCols[i]
+            }
+        }
+
+        // Initialize Page 1
+        drawHeader(canvas, isFirstPage = true)
+        yPos = 100f
+
+        // Metadata block (Period)
+        paintTextNormal.color = Color.DKGRAY
+        paintTextNormal.textSize = 9f
+        paintTextNormal.textAlign = Paint.Align.LEFT
+        canvas.drawText(periodStr, MARGIN, yPos, paintTextNormal)
+
+        paintTextNormal.textAlign = Paint.Align.RIGHT
+        canvas.drawText(data.generatedAtStr, 595f - MARGIN, yPos, paintTextNormal)
+        yPos += 20f
+
+        // Overall Summary section
+        paintTextBold.color = colorSummaryTitle
+        paintTextBold.textSize = 12f
+        paintTextBold.textAlign = Paint.Align.LEFT
+        canvas.drawText(summaryTitleStr, MARGIN, yPos, paintTextBold)
+        yPos += 8f
+
+        // Draw Summary Box Grid: 4 columns, 2 rows
+        val boxWidth = 515f / 4f
+        val boxHeight = 35f
+
+        val summaryItems = arrayOf(
+            Pair(context.getString(R.string.pdf_earnings), "$rsStr ${AmountFormatter.format(data.totalEarnings)}"),
+            Pair(context.getString(R.string.pdf_salary), "$rsStr ${AmountFormatter.format(data.totalSalary)}"),
+            Pair(context.getString(R.string.pdf_overtime), "$rsStr ${AmountFormatter.format(data.totalOvertime)}"),
+            Pair(context.getString(R.string.pdf_advance), "$rsStr ${AmountFormatter.format(data.totalAdvance)}"),
+            Pair(context.getString(R.string.pdf_present), data.totalPresent.toString()),
+            Pair(context.getString(R.string.pdf_half), data.totalHalfDays.toString()),
+            Pair(context.getString(R.string.pdf_absent), data.totalAbsent.toString()),
+            Pair(context.getString(R.string.pdf_working_days), AmountFormatter.format(data.totalWorkingDays))
+        )
+
+        for (row in 0 until 2) {
+            for (col in 0 until 4) {
+                val index = row * 4 + col
+                val item = summaryItems[index]
+
+                val xL = MARGIN + col * boxWidth
+                val yT = yPos + row * boxHeight
+
+                // Draw background and border
+                paintRectFill.color = colorStripedRow
+                canvas.drawRect(xL, yT, xL + boxWidth, yT + boxHeight, paintRectFill)
+                canvas.drawRect(xL, yT, xL + boxWidth, yT + boxHeight, paintRectBorder)
+
+                // Label
+                paintTextNormal.color = Color.GRAY
+                paintTextNormal.textSize = 7f
+                paintTextNormal.textAlign = Paint.Align.CENTER
+                canvas.drawText(item.first, xL + boxWidth / 2f, yT + 12f, paintTextNormal)
+
+                // Value
+                paintTextBold.color = if (index == 0) colorPositive else if (index == 3) colorHalfDay else colorSummaryTitle
+                paintTextBold.textSize = 9.5f
+                paintTextBold.textAlign = Paint.Align.CENTER
+                canvas.drawText(item.second, xL + boxWidth / 2f, yT + 26f, paintTextBold)
+            }
+        }
+        yPos += boxHeight * 2 + 25f
+
+        // Chronological List rendering
+        var activeTableHeadersMonthKey: String? = null
+
+        fun checkPageBreak(requiredHeight: Float, inRecordTableOfKey: String? = null) {
+            if (yPos + requiredHeight > 842f - 40f - 25f) {
+                // start new page
+                drawFooter(canvas, pageNumber)
+                document.finishPage(page)
+                pageNumber++
+                page = document.startPage(PdfDocument.PageInfo.Builder(595, 842, pageNumber).create())
+                canvas = page.canvas
+                drawHeader(canvas, isFirstPage = false)
+                yPos = 65f
+
+                // If we were in the middle of a month's records, repeat table headers on new page!
+                if (inRecordTableOfKey != null) {
+                    drawTableHeaders(canvas, yPos)
+                    yPos += 22f
+                }
+            }
+        }
+
+        // Render Year Groups
+        for (yearGroup in data.years) {
+            // Check page break for Year Header
+            checkPageBreak(30f)
+            paintTextBold.color = colorSummaryTitle
+            paintTextBold.textSize = 12f
+            paintTextBold.textAlign = Paint.Align.LEFT
+            val yearHeaderStr = context.getString(R.string.pdf_year, yearGroup.year)
+            canvas.drawText(yearHeaderStr, MARGIN, yPos + 15f, paintTextBold)
+            yPos += 25f
+
+            for (monthGroup in yearGroup.months) {
+                val monthKey = "${yearGroup.year}_${monthGroup.monthName}"
+
+                // Check page break for Month Header + Monthly Summary row + Table Header
+                checkPageBreak(55f)
+
+                paintTextBold.color = colorSummaryTitle
+                paintTextBold.textSize = 10f
+                val monthHeaderStr = context.getString(R.string.pdf_month, monthGroup.monthName)
+                canvas.drawText(monthHeaderStr, MARGIN, yPos + 12f, paintTextBold)
+                yPos += 18f
+
+                // Draw monthly summary bar
+                val mSummaryHeight = 20f
+                paintRectFill.color = Color.parseColor("#E6F4F1") // very light tint
+                canvas.drawRect(MARGIN, yPos, 595f - MARGIN, yPos + mSummaryHeight, paintRectFill)
+                canvas.drawRect(MARGIN, yPos, 595f - MARGIN, yPos + mSummaryHeight, paintRectBorder)
+
+                paintTextNormal.color = Color.DKGRAY
+                paintTextNormal.textSize = 7.5f
+                paintTextNormal.textAlign = Paint.Align.LEFT
+                val mSumStr = "Earn: $rsStr${AmountFormatter.format(monthGroup.totalEarnings)}  |  Sal: $rsStr${AmountFormatter.format(monthGroup.totalSalary)}  |  OT: $rsStr${AmountFormatter.format(monthGroup.totalOvertime)}  |  Adv: $rsStr${AmountFormatter.format(monthGroup.totalAdvance)}  |  P: ${monthGroup.presentCount}  |  H: ${monthGroup.halfCount}  |  A: ${monthGroup.absentCount}"
+                canvas.drawText(mSumStr, MARGIN + 8f, yPos + 13f, paintTextNormal)
+                yPos += mSummaryHeight + 10f
+
+                // Draw Table Headers for Month
+                checkPageBreak(25f, inRecordTableOfKey = null)
+                drawTableHeaders(canvas, yPos)
+                yPos += 22f
+                activeTableHeadersMonthKey = monthKey
+
+                // Render records
+                for ((index, record) in monthGroup.records.withIndex()) {
+                    // Pre-measure notes
+                    val safeNote = if (record.note.isBlank()) "-" else record.note
+                    val noteColWidth = logCols[5] - 10f
+                    val staticLayout = StaticLayout.Builder.obtain(safeNote, 0, safeNote.length, textPaint, noteColWidth.toInt())
+                        .setAlignment(Layout.Alignment.ALIGN_NORMAL)
+                        .setLineSpacing(0f, 1f)
+                        .setIncludePad(false)
+                        .build()
+
+                    val rowHeight = Math.max(18f, staticLayout.height + 8f)
+
+                    // Page break check for row
+                    checkPageBreak(rowHeight, inRecordTableOfKey = activeTableHeadersMonthKey)
+
+                    // Draw row background (striped)
+                    paintRectFill.color = if (index % 2 == 0) Color.WHITE else colorStripedRow
+                    canvas.drawRect(MARGIN, yPos, 595f - MARGIN, yPos + rowHeight, paintRectFill)
+
+                    // Map values for row
+                    val otText = if (record.overtimeAmount > 0) {
+                        if (record.overtimeHours > 0) "${record.overtimeHours} $hrsStr / $rsStr ${AmountFormatter.format(record.overtimeAmount)}"
+                        else "$rsStr ${AmountFormatter.format(record.overtimeAmount)}"
+                    } else "-"
+
+                    val rVals = arrayOf(
+                        record.dateStr,
+                        record.statusStr,
+                        "$rsStr ${AmountFormatter.format(record.baseEarnings)}",
+                        otText,
+                        if (record.advanceAmount > 0) "$rsStr ${AmountFormatter.format(record.advanceAmount)}" else "-"
+                    )
+
+                    var curX = MARGIN
+                    paintTextNormal.textSize = 8f
+                    paintTextNormal.textAlign = Paint.Align.CENTER
+
+                    for (i in rVals.indices) {
+                        when(i) {
+                            1 -> { // Status
+                                if (record.statusRaw == "present") {
+                                    paintTextNormal.color = if (record.isHalfDay) colorHalfDay else colorPositive
+                                } else if (record.statusRaw == "absent") {
+                                    paintTextNormal.color = colorNegative
+                                } else {
+                                    paintTextNormal.color = Color.BLACK
+                                }
+                            }
+                            3 -> { // OT
+                                paintTextNormal.color = if (record.overtimeAmount > 0) colorOvertime else Color.BLACK
+                            }
+                            4 -> { // Advance
+                                paintTextNormal.color = if (record.advanceAmount > 0) colorAdvance else Color.BLACK
+                            }
+                            else -> paintTextNormal.color = Color.BLACK
+                        }
+
+                        val textBaseline = yPos + (rowHeight / 2f) - ((paintTextNormal.descent() + paintTextNormal.ascent()) / 2f)
+                        canvas.drawText(rVals[i], curX + logCols[i] / 2f, textBaseline, paintTextNormal)
+                        canvas.drawRect(curX, yPos, curX + logCols[i], yPos + rowHeight, paintRectBorder)
+                        curX += logCols[i]
+                    }
+
+                    // Draw Wrapped Notes
+                    textPaint.color = Color.BLACK
+                    canvas.save()
+                    val noteYOffset = (rowHeight - staticLayout.height) / 2f
+                    canvas.translate(curX + 5f, yPos + noteYOffset)
+                    staticLayout.draw(canvas)
+                    canvas.restore()
+                    canvas.drawRect(curX, yPos, curX + logCols[5], yPos + rowHeight, paintRectBorder)
+
+                    yPos += rowHeight
+                }
+
+                // Add small space after table
+                yPos += 15f
+            }
+        }
+
+        // Draw last page footer
+        drawFooter(canvas, pageNumber)
+        document.finishPage(page)
+
+        val fileName = "all_time_passbook_${data.workerName.replace(" ", "_")}.pdf"
+        val cachePath = File(context.cacheDir, "docs")
+        cachePath.mkdirs()
+        val file = File(cachePath, fileName)
+
+        return try {
+            val fos = FileOutputStream(file)
+            document.writeTo(fos)
+            document.close()
+            fos.close()
+            file
+        } catch (e: Exception) {
+            document.close()
+            null
+        }
+    }
 }

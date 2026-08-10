@@ -317,4 +317,27 @@
     <string name="pdf_present_half_value">%1$dP / %2$dH</string>
     <string name="show_more">Show more</string>
     <string name="show_less">Show less</string>
+
+    <!-- PDF Export & Loading UX Localization Strings -->
+    <string name="pdf_all_time_passbook">All Time Passbook</string>
+    <string name="pdf_total_records">Total Records: %1$d</string>
+    <string name="pdf_period">Period: %1$s - %2$s</string>
+    <string name="pdf_overall_summary">Overall Summary</string>
+    <string name="pdf_earnings">Total Earnings</string>
+    <string name="pdf_salary">Total Salary</string>
+    <string name="pdf_overtime">Total Overtime</string>
+    <string name="pdf_advance">Total Advance</string>
+    <string name="pdf_present">Present Days</string>
+    <string name="pdf_half">Half Days</string>
+    <string name="pdf_absent">Absent Days</string>
+    <string name="pdf_working_days">Total Working Days</string>
+    <string name="pdf_page">Page %1$d</string>
+    <string name="pdf_year">Year: %1$s</string>
+    <string name="pdf_month">Month: %1$s</string>
+    <string name="pdf_export_preparing">Preparing export...</string>
+    <string name="pdf_export_collecting">Collecting records...</string>
+    <string name="pdf_export_generating">Generating PDF...</string>
+    <string name="pdf_export_finalizing">Finalizing...</string>
+    <string name="pdf_export_success">Success!</string>
+    <string name="pdf_export_error">Error: %1$s</string>
 </resources>

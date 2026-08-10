@@ -58,7 +58,7 @@ data class OfflinePassbookState(
 
 class OfflinePassbookViewModel(
     private val preferencesRepository: OfflinePreferencesRepository,
-    private val localAttendanceRepository: LocalAttendanceRepository
+    val localAttendanceRepository: LocalAttendanceRepository
 ) : ViewModel(), com.synfusion.attendance.backup.RefreshableViewModel {
 
     private val _state = MutableStateFlow(OfflinePassbookState())
