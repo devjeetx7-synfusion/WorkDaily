@@ -391,4 +391,20 @@
     <string name="error_generic_link">लिंक खोलने में त्रुटि</string>
     <string name="error_no_email_app">कोई ईमेल ऐप नहीं मिला</string>
     <string name="error_generic_email">ईमेल खोलने में त्रुटि</string>
+
+    <!-- Notification Settings Strings -->
+    <string name="notification_settings">नोटिफिकेशन सेटिंग्स</string>
+    <string name="master_notifications">मुख्य नोटिफिकेशन चालू करें</string>
+    <string name="master_notifications_desc">सभी नोटिफिकेशन को चालू या बंद करें</string>
+    <string name="attendance_reminders">उपस्थिति रिमाइंडर</string>
+    <string name="attendance_reminders_desc">जब आप उपस्थिति दर्ज करना भूल जाएं तो रिमाइंडर प्राप्त करें</string>
+    <string name="weekly_reports">साप्ताहिक रिपोर्ट</string>
+    <string name="weekly_reports_desc">अपने काम और कमाई का साप्ताहिक सारांश प्राप्त करें</string>
+    <string name="monthly_reports">मासिक रिपोर्ट</string>
+    <string name="monthly_reports_desc">मासिक सारांश और वित्तीय विवरण प्राप्त करें</string>
+    <string name="earnings_notifications">कमाई की सूचनाएं</string>
+    <string name="earnings_notifications_desc">ओवरटाइम और एडवांस अलर्ट</string>
+    <string name="funny_notifications">मजाकिया और प्रेरणादायक</string>
+    <string name="funny_notifications_desc">मजाकिया रोस्ट और प्रेरणादायक संदेश</string>
+    <string name="notification_style">नोटिफिकेशन का प्रकार</string>
 </resources>

@@ -35,6 +35,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.ui.draw.clip
+import android.content.Context
 import android.content.Intent
 import androidx.compose.foundation.border
 import androidx.compose.foundation.rememberScrollState
@@ -65,11 +66,17 @@ fun SettingsScreen(
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
 
-
-
+    val permissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (!isGranted) {
+            Toast.makeText(context, "Notification permission denied. Some reminders may not be shown.", Toast.LENGTH_LONG).show()
+        }
+    }
 
     var showDeveloperSheet by remember { mutableStateOf(false) }
     var showBackupSheet by remember { mutableStateOf(false) }
+    var showNotificationTestCenter by remember { mutableStateOf(false) }
 
     LaunchedEffect(state.savedMessage) {
         state.savedMessage?.let { msg ->
@@ -218,7 +225,7 @@ fun SettingsScreen(
             }
 
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.profile_settings), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 4.dp))
+                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.app_preferences), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 4.dp))
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
@@ -268,6 +275,206 @@ fun SettingsScreen(
                                     }
                                 }
                                 Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Notification Settings Card
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.notification_settings), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 4.dp))
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+                ) {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        // Master Switch
+                        Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                                Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
+                                    Icon(Icons.Default.Notifications, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column {
+                                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.master_notifications), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.master_notifications_desc), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                            Switch(
+                                checked = state.isNotificationsMasterEnabled,
+                                onCheckedChange = { checked ->
+                                    viewModel.toggleNotificationsMaster(checked)
+                                    if (checked) {
+                                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                                            val permissionCheck = androidx.core.content.ContextCompat.checkSelfPermission(
+                                                context,
+                                                android.Manifest.permission.POST_NOTIFICATIONS
+                                            )
+                                            if (permissionCheck != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                                                permissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                                            }
+                                        }
+                                        com.synfusion.attendance.utils.NotificationScheduler.schedulePeriodicWork(context)
+                                    } else {
+                                        com.synfusion.attendance.utils.NotificationScheduler.cancelAllScheduledWork(context)
+                                    }
+                                }
+                            )
+                        }
+
+                        AnimatedVisibility(visible = state.isNotificationsMasterEnabled) {
+                            Column {
+                                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+                                // Attendance Reminders Toggle
+                                Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                                        Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
+                                            Icon(Icons.Default.CalendarToday, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                        }
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Column {
+                                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.attendance_reminders), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.attendance_reminders_desc), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
+                                    }
+                                    Switch(checked = state.isNotificationsAttendanceEnabled, onCheckedChange = { viewModel.toggleNotificationsAttendance(it) })
+                                }
+
+                                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+                                // Weekly Reports Toggle
+                                Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                                        Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
+                                            Icon(Icons.Default.Assessment, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                        }
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Column {
+                                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.weekly_reports), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.weekly_reports_desc), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
+                                    }
+                                    Switch(checked = state.isNotificationsWeeklyEnabled, onCheckedChange = { viewModel.toggleNotificationsWeekly(it) })
+                                }
+
+                                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+                                // Monthly Reports Toggle
+                                Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                                        Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
+                                            Icon(Icons.Default.PieChart, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                        }
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Column {
+                                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.monthly_reports), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.monthly_reports_desc), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
+                                    }
+                                    Switch(checked = state.isNotificationsMonthlyEnabled, onCheckedChange = { viewModel.toggleNotificationsMonthly(it) })
+                                }
+
+                                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+                                // Earnings Notifications Toggle
+                                Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                                        Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
+                                            Icon(Icons.Default.MonetizationOn, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                        }
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Column {
+                                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.earnings_notifications), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.earnings_notifications_desc), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
+                                    }
+                                    Switch(checked = state.isNotificationsEarningsEnabled, onCheckedChange = { viewModel.toggleNotificationsEarnings(it) })
+                                }
+
+                                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+                                // Funny Notifications Toggle
+                                Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                                        Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
+                                            Icon(Icons.Default.SentimentVerySatisfied, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                        }
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Column {
+                                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.funny_notifications), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.funny_notifications_desc), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
+                                    }
+                                    Switch(checked = state.isNotificationsFunnyEnabled, onCheckedChange = { viewModel.toggleNotificationsFunny(it) })
+                                }
+
+                                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+                                // Style Selection
+                                var showStyleDialog by remember { mutableStateOf(false) }
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().clickable { showStyleDialog = true }.padding(16.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                                        Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
+                                            Icon(Icons.Default.Palette, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                        }
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Column {
+                                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.notification_style), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                            Text(state.notificationStyle, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
+                                    }
+                                    Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+
+                                if (showStyleDialog) {
+                                    val styles = listOf("Professional", "Friendly", "Funny", "Random")
+                                    AlertDialog(
+                                        onDismissRequest = { showStyleDialog = false },
+                                        title = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.notification_style), fontWeight = FontWeight.Bold) },
+                                        text = {
+                                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                                styles.forEach { styleOpt ->
+                                                    Row(
+                                                        modifier = Modifier
+                                                            .fillMaxWidth()
+                                                            .clickable {
+                                                                viewModel.changeNotificationStyle(styleOpt)
+                                                                showStyleDialog = false
+                                                            }
+                                                            .padding(vertical = 12.dp, horizontal = 8.dp),
+                                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                                        verticalAlignment = Alignment.CenterVertically
+                                                    ) {
+                                                        Text(styleOpt, fontSize = 16.sp, fontWeight = if (state.notificationStyle == styleOpt) FontWeight.Bold else FontWeight.Normal)
+                                                        if (state.notificationStyle == styleOpt) {
+                                                            Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        confirmButton = {
+                                            TextButton(onClick = { showStyleDialog = false }) {
+                                                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.close))
+                                            }
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+                        Row(modifier = Modifier.fillMaxWidth().clickable { showNotificationTestCenter = true }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
+                                    Icon(Icons.Default.BugReport, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column {
+                                    Text("Notification Center", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                    Text("Developer Diagnostics & Test Panel", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
                             }
                         }
                     }
@@ -446,6 +653,12 @@ fun SettingsScreen(
         if (showDeveloperSheet) {
             DeveloperContactBottomSheet(onDismiss = { showDeveloperSheet = false })
         }
+        if (showNotificationTestCenter) {
+            NotificationTestCenterBottomSheet(
+                viewModel = viewModel,
+                onDismiss = { showNotificationTestCenter = false }
+            )
+        }
         if (showBackupSheet) {
             com.synfusion.attendance.ui.components.BackupRestoreBottomSheet(onDismiss = { showBackupSheet = false })
         }
@@ -519,6 +732,8 @@ fun SettingsScreen(
                 },
                 onLogoutWithoutBackup = {
                     showLogoutBottomSheet = false
+                    com.synfusion.attendance.utils.NotificationScheduler.cancelAllScheduledWork(context)
+                    com.synfusion.attendance.utils.LocalNotificationManager.clearNotificationLogs(context)
                     viewModel.logout()
                     onLogout()
                 }
@@ -576,6 +791,8 @@ fun SettingsScreen(
                     TextButton(
                         onClick = {
                             backupSuccessDialogDetails = null
+                            com.synfusion.attendance.utils.NotificationScheduler.cancelAllScheduledWork(context)
+                            com.synfusion.attendance.utils.LocalNotificationManager.clearNotificationLogs(context)
                             viewModel.logout()
                             onLogout()
                         }
@@ -585,6 +802,317 @@ fun SettingsScreen(
                 }
             )
         }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun NotificationTestCenterBottomSheet(
+    viewModel: OfflineSettingsViewModel,
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+
+    val settingsState = viewModel.state.collectAsState().value
+    val masterEnabled = settingsState.isNotificationsMasterEnabled
+    val permissionGranted = androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled()
+
+    val repository = remember { com.synfusion.attendance.data.LocalAttendanceRepository(context) }
+    var placeholders by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
+    var todayMarked by remember { mutableStateOf("NOT MARKED") }
+
+    LaunchedEffect(Unit) {
+        val user = repository.getUser()
+        val allRecords = repository.getPersonalAttendance()
+        val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+        placeholders = com.synfusion.attendance.utils.NotificationRuleEngine.buildPlaceholders(user, allRecords, todayStr)
+        val todayRecord = allRecords.find { it.date == todayStr && it.status != "advance" }
+        todayMarked = if (todayRecord != null) "MARKED (${todayRecord.status.uppercase()})" else "NOT MARKED"
+    }
+
+    var logs by remember { mutableStateOf(com.synfusion.attendance.utils.LocalNotificationManager.getNotificationLogs(context)) }
+
+    var previewTitle by remember { mutableStateOf("WorkDaily") }
+    var previewMessage by remember { mutableStateOf("Choose a category to preview below.") }
+    var showPreviewCard by remember { mutableStateOf(false) }
+
+    val testCategories = remember {
+        listOf(
+            TestCategoryItem("Today's Attendance", "daily_attendance", "आज की Attendance", com.synfusion.attendance.utils.NotificationMessagePool.dailyAttendanceMessages),
+            TestCategoryItem("2 Days Missed", "missed_two_days", "लगातार 2 दिन Missed", com.synfusion.attendance.utils.NotificationMessagePool.missedTwoDaysMessages),
+            TestCategoryItem("3 Days Missed", "missed_three_days", "लगातार 3 दिन Missed", com.synfusion.attendance.utils.NotificationMessagePool.missedThreeDaysMessages),
+            TestCategoryItem("7 Days Missed", "missed_seven_plus", "सावधान! 7 दिन Missed", com.synfusion.attendance.utils.NotificationMessagePool.missedSevenPlusDaysMessages),
+            TestCategoryItem("10 Days Missed", "missed_ten_days", "गंभीर चेतावनी!", com.synfusion.attendance.utils.NotificationMessagePool.missedTenPlusDaysMessages),
+            TestCategoryItem("Weekly Report", "weekly_report", "Weekly Report 📊", com.synfusion.attendance.utils.NotificationMessagePool.weeklyReportMessages),
+            TestCategoryItem("Monthly Report", "monthly_report", "Monthly Summary 📅", com.synfusion.attendance.utils.NotificationMessagePool.monthlyReportMessages),
+            TestCategoryItem("Earnings", "earnings", "कमाई अपडेट 💵", com.synfusion.attendance.utils.NotificationMessagePool.earningsMessages),
+            TestCategoryItem("Overtime", "overtime", "ओवरटाइम धमाका 💪", com.synfusion.attendance.utils.NotificationMessagePool.earningsMessages.filter { it.contains("overtime") || it.contains("घंटे") }.ifEmpty { com.synfusion.attendance.utils.NotificationMessagePool.earningsMessages }),
+            TestCategoryItem("Advance", "advance", "एडवांस अपडेट 💰", com.synfusion.attendance.utils.NotificationMessagePool.earningsMessages.filter { it.contains("advance") || it.contains("अग्रिम") }.ifEmpty { com.synfusion.attendance.utils.NotificationMessagePool.earningsMessages }),
+            TestCategoryItem("Yearly Report", "yearly_report", "सालाना रिपोर्ट 🏆", com.synfusion.attendance.utils.NotificationMessagePool.yearlyReportMessages),
+            TestCategoryItem("Funny", "funny", "ओए भाई सुनो! 😂", com.synfusion.attendance.utils.NotificationMessagePool.funnyRoastMessages),
+            TestCategoryItem("Motivational", "motivational", "जीत की तैयारी! 🌟", com.synfusion.attendance.utils.NotificationMessagePool.motivationalMessages),
+            TestCategoryItem("Streak", "streak", "Consistency Streak! 🔥", com.synfusion.attendance.utils.NotificationMessagePool.motivationalMessages)
+        )
+    }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        dragHandle = { BottomSheetDefaults.DragHandle() }
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 12.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
+                    Icon(Icons.Default.BugReport, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Text("Notification Test Center", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+            }
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+
+            // 1. Diagnostics Panel
+            Text("Why didn't I receive notification? (Diagnostics)", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+            ) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    DiagnosticItemRow("Notifications Enabled", if (masterEnabled) "YES" else "NO")
+                    DiagnosticItemRow("Notification Permission", if (permissionGranted) "GRANTED ✓" else "DENIED ✗")
+                    DiagnosticItemRow("Scheduler Status", if (masterEnabled) "ACTIVE (Every 1 Hour)" else "INACTIVE")
+                    DiagnosticItemRow("Today's Attendance Status", todayMarked)
+                    DiagnosticItemRow("Eligible Time Window", "6:00 PM - 10:00 PM")
+                    DiagnosticItemRow("Device Battery Optimization", "Normal")
+                    DiagnosticItemRow("Next Eligible Notification", if (todayMarked.startsWith("NOT MARKED")) "Today's Attendance Reminder (6-10 PM)" else "Weekly / Monthly Report (Time Triggered)")
+                    DiagnosticItemRow("Skip Reason if Any", if (!masterEnabled) "Master disabled" else if (!permissionGranted) "Permission denied" else if (todayMarked.startsWith("MARKED")) "Attendance already marked for today" else "None (Ready for 6:00 PM Window)")
+                    DiagnosticItemRow("Latest Evaluation Execution", if (logs.isNotEmpty()) logs.first().time else "Never")
+                    DiagnosticItemRow("Last Notification Sent", if (logs.isNotEmpty()) logs.first().category.uppercase() else "None")
+                }
+            }
+
+            // Reset Rotation & Clear logs controls
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Button(
+                    onClick = {
+                        val prefs = context.getSharedPreferences("notification_selector_history", Context.MODE_PRIVATE)
+                        prefs.edit().clear().apply()
+                        Toast.makeText(context, "Rotation history reset successfully!", Toast.LENGTH_SHORT).show()
+                    },
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.1f), contentColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Reset Rotation History", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                }
+
+                Button(
+                    onClick = {
+                        val randomCat = testCategories.random()
+                        previewTitle = "Random: " + randomCat.displayName
+                        val evaluated = com.synfusion.attendance.utils.NotificationMessageSelector.selectMessage(
+                            context, randomCat.category, randomCat.pool, placeholders
+                        )
+                        previewMessage = evaluated.ifEmpty { "No templates available" }
+                        showPreviewCard = true
+                    },
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+                ) {
+                    Icon(Icons.Default.Shuffle, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Preview Random", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+
+            // Calculated Variables Section
+            Text("Calculated Variables Map", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)),
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+            ) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    placeholders.forEach { (key, value) ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text("{$key}", fontSize = 12.sp, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace, color = MaterialTheme.colorScheme.primary)
+                            Text(value.ifEmpty { "None" }, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+
+            // 2. Preview Panel (Top anchored or visible upon selection)
+            if (showPreviewCard) {
+                Text("Notification Preview", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                // Draw mockup phone drawer card
+                Card(
+                    modifier = Modifier.fillMaxWidth().border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(16.dp)),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)), // Dark premium phone drawer background
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(modifier = Modifier.size(24.dp).background(Color(0xFF0EA5E9), androidx.compose.foundation.shape.CircleShape), contentAlignment = Alignment.Center) {
+                                    Icon(Icons.Default.Notifications, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
+                                }
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("WorkDaily", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            }
+                            Box(modifier = Modifier.size(8.dp).background(Color(0xFF22C55E), androidx.compose.foundation.shape.CircleShape)) // green dot
+                        }
+                        Text(text = previewTitle, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                        Text(text = previewMessage, color = Color(0xFFCBD5E1), fontSize = 13.sp, lineHeight = 18.sp)
+                    }
+                }
+            }
+
+            // 3. Test Categories List
+            Text("Available Notifications Categories", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                testCategories.forEach { cat ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(cat.displayName, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                Text("Category: ${cat.category}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Button(
+                                    onClick = {
+                                        previewTitle = cat.titlePrefix
+                                        val evaluated = com.synfusion.attendance.utils.NotificationMessageSelector.selectMessage(
+                                            context, cat.category, cat.pool, placeholders
+                                        )
+                                        previewMessage = evaluated.ifEmpty { "No templates available" }
+                                        showPreviewCard = true
+                                    },
+                                    shape = RoundedCornerShape(8.dp),
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), contentColor = MaterialTheme.colorScheme.primary)
+                                ) {
+                                    Text("Preview", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                }
+
+                                Button(
+                                    onClick = {
+                                        val evaluated = com.synfusion.attendance.utils.NotificationMessageSelector.selectMessage(
+                                            context, cat.category, cat.pool, placeholders
+                                        )
+                                        val messageToSend = evaluated.ifEmpty { "No templates available" }
+                                        val channelId = when (cat.category) {
+                                            "daily_attendance", "missed_two_days", "missed_three_days", "missed_seven_plus", "missed_ten_days", "long_absence" -> com.synfusion.attendance.utils.LocalNotificationManager.CHANNEL_ATTENDANCE
+                                            "weekly_report", "monthly_report", "yearly_report" -> com.synfusion.attendance.utils.LocalNotificationManager.CHANNEL_REPORTS
+                                            "earnings", "overtime", "advance" -> com.synfusion.attendance.utils.LocalNotificationManager.CHANNEL_EARNINGS
+                                            else -> com.synfusion.attendance.utils.LocalNotificationManager.CHANNEL_FUN_MOTIVATION
+                                        }
+
+                                        com.synfusion.attendance.utils.LocalNotificationManager.sendNotification(
+                                            context = context,
+                                            channelId = channelId,
+                                            title = cat.titlePrefix,
+                                            message = messageToSend,
+                                            category = cat.category,
+                                            reason = "Manual developer preview test trigger"
+                                        )
+                                        // Refresh history
+                                        logs = com.synfusion.attendance.utils.LocalNotificationManager.getNotificationLogs(context)
+                                        Toast.makeText(context, "Test notification triggered!", Toast.LENGTH_SHORT).show()
+                                    },
+                                    shape = RoundedCornerShape(8.dp),
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                                ) {
+                                    Text("Send Test", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 4. Execution Logs History
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Text("Developer Notification History Logs", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                if (logs.isNotEmpty()) {
+                    TextButton(onClick = {
+                        com.synfusion.attendance.utils.LocalNotificationManager.clearNotificationLogs(context)
+                        logs = emptyList()
+                    }) {
+                        Text("Clear Logs", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    }
+                }
+            }
+
+            if (logs.isEmpty()) {
+                Box(modifier = Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) {
+                    Text("No send history logs logged yet.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            } else {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    logs.forEach { log ->
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                    Text(log.category.uppercase(), fontWeight = FontWeight.Bold, fontSize = 11.sp, color = MaterialTheme.colorScheme.primary)
+                                    Text(log.time, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                Text(log.message, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
+                                Text("Reason: ${log.reason}", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(48.dp))
+        }
+    }
+}
+
+data class TestCategoryItem(
+    val displayName: String,
+    val category: String,
+    val titlePrefix: String,
+    val pool: List<String>
+)
+
+@Composable
+fun DiagnosticItemRow(label: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(label, fontSize = 12.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(value, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
     }
 }
 

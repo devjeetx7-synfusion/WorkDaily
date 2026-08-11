@@ -1,0 +1,95 @@
+package com.synfusion.attendance.utils
+
+import android.content.Context
+import androidx.work.*
+import com.synfusion.attendance.data.LocalAttendanceRepository
+import kotlinx.coroutines.flow.first
+import java.util.Calendar
+import java.util.concurrent.TimeUnit
+
+class NotificationWorker(
+    appContext: Context,
+    workerParams: WorkerParameters
+) : CoroutineWorker(appContext, workerParams) {
+
+    override suspend fun doWork(): Result {
+        try {
+            val repository = LocalAttendanceRepository(applicationContext)
+
+            // Abort if no active user profile exists in database (User Isolation)
+            val activeUser = repository.getUser() ?: return Result.success()
+
+            val prefsRepo = com.synfusion.attendance.data.OfflinePreferencesRepository(applicationContext)
+
+            // Let's check master toggles before running evaluation
+            val masterEnabled = prefsRepo.notificationsMasterFlow.first()
+            if (!masterEnabled) {
+                return Result.success()
+            }
+
+            // Check if active hours check is met
+            // Daily Attendance reminder eligibility is 6:00 PM (18) to 10:00 PM (22)
+            val calendar = Calendar.getInstance()
+            val hour = calendar.get(Calendar.HOUR_OF_DAY)
+            val isEligibleWindow = hour in 18..22
+
+            // Run evaluation with style setting
+            val style = prefsRepo.notificationStyleFlow.first()
+            val evalResult = NotificationRuleEngine.evaluateAllRules(applicationContext, repository, style)
+
+            if (evalResult.triggerNotification) {
+                // Determine category filters enabled
+                val catEnabled = when (evalResult.category) {
+                    "daily_attendance", "missed_two_days", "missed_three_days", "missed_seven_plus", "missed_ten_days", "long_absence" -> {
+                        isEligibleWindow && prefsRepo.notificationsAttendanceFlow.first()
+                    }
+                    "weekly_report" -> prefsRepo.notificationsWeeklyFlow.first()
+                    "monthly_report", "yearly_report" -> prefsRepo.notificationsMonthlyFlow.first()
+                    "funny" -> prefsRepo.notificationsFunnyFlow.first()
+                    else -> true
+                }
+
+                if (catEnabled) {
+                    LocalNotificationManager.sendNotification(
+                        context = applicationContext,
+                        channelId = evalResult.channelId,
+                        title = evalResult.title,
+                        message = evalResult.message,
+                        category = evalResult.category,
+                        reason = evalResult.reason
+                    )
+                }
+            }
+        } catch (e: Exception) {
+            // Never crash, safely return success (could try retry if important, but background reminders can skip)
+        }
+        return Result.success()
+    }
+}
+
+object NotificationScheduler {
+
+    private const val WORK_NAME = "WorkDailyNotificationWork"
+
+    fun schedulePeriodicWork(context: Context) {
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.NOT_REQUIRED)
+            .build()
+
+        val periodicRequest = PeriodicWorkRequestBuilder<NotificationWorker>(
+            1, TimeUnit.HOURS // Run once every hour to check rules
+        )
+        .setConstraints(constraints)
+        .build()
+
+        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+            WORK_NAME,
+            ExistingPeriodicWorkPolicy.KEEP, // Keep existing to maintain scheduled timing
+            periodicRequest
+        )
+    }
+
+    fun cancelAllScheduledWork(context: Context) {
+        WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME)
+    }
+}

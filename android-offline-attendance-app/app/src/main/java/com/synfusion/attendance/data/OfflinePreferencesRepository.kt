@@ -20,6 +20,15 @@ class OfflinePreferencesRepository(private val context: Context) {
 
         val ONBOARDING_COMPLETED_KEY = booleanPreferencesKey("onboarding_completed")
         val SPLASH_ENABLED_KEY = booleanPreferencesKey("splash_enabled")
+
+        // Notification Settings Keys
+        val NOTIFICATIONS_MASTER_KEY = booleanPreferencesKey("notifications_master_enabled")
+        val NOTIFICATIONS_ATTENDANCE_KEY = booleanPreferencesKey("notifications_attendance_reminders")
+        val NOTIFICATIONS_WEEKLY_KEY = booleanPreferencesKey("notifications_weekly_reports")
+        val NOTIFICATIONS_MONTHLY_KEY = booleanPreferencesKey("notifications_monthly_reports")
+        val NOTIFICATIONS_EARNINGS_KEY = booleanPreferencesKey("notifications_earnings_notifications")
+        val NOTIFICATIONS_FUNNY_KEY = booleanPreferencesKey("notifications_funny_notifications")
+        val NOTIFICATION_STYLE_KEY = stringPreferencesKey("notification_style_preference")
     }
 
     val userRoleFlow: Flow<String?> = context.offlineDataStore.data.map { preferences ->
@@ -48,6 +57,35 @@ class OfflinePreferencesRepository(private val context: Context) {
 
     val splashEnabledFlow: Flow<Boolean> = context.offlineDataStore.data.map { preferences ->
         preferences[SPLASH_ENABLED_KEY] ?: true
+    }
+
+    // Notification Settings Flows
+    val notificationsMasterFlow: Flow<Boolean> = context.offlineDataStore.data.map { preferences ->
+        preferences[NOTIFICATIONS_MASTER_KEY] ?: true
+    }
+
+    val notificationsAttendanceFlow: Flow<Boolean> = context.offlineDataStore.data.map { preferences ->
+        preferences[NOTIFICATIONS_ATTENDANCE_KEY] ?: true
+    }
+
+    val notificationsWeeklyFlow: Flow<Boolean> = context.offlineDataStore.data.map { preferences ->
+        preferences[NOTIFICATIONS_WEEKLY_KEY] ?: true
+    }
+
+    val notificationsMonthlyFlow: Flow<Boolean> = context.offlineDataStore.data.map { preferences ->
+        preferences[NOTIFICATIONS_MONTHLY_KEY] ?: true
+    }
+
+    val notificationsEarningsFlow: Flow<Boolean> = context.offlineDataStore.data.map { preferences ->
+        preferences[NOTIFICATIONS_EARNINGS_KEY] ?: true
+    }
+
+    val notificationsFunnyFlow: Flow<Boolean> = context.offlineDataStore.data.map { preferences ->
+        preferences[NOTIFICATIONS_FUNNY_KEY] ?: true
+    }
+
+    val notificationStyleFlow: Flow<String> = context.offlineDataStore.data.map { preferences ->
+        preferences[NOTIFICATION_STYLE_KEY] ?: "Friendly"
     }
 
     suspend fun saveUserRole(role: String) {
@@ -89,6 +127,49 @@ class OfflinePreferencesRepository(private val context: Context) {
     suspend fun saveSplashEnabledPreference(enabled: Boolean) {
         context.offlineDataStore.edit { preferences ->
             preferences[SPLASH_ENABLED_KEY] = enabled
+        }
+    }
+
+    // Notification Saving Functions
+    suspend fun saveNotificationsMaster(enabled: Boolean) {
+        context.offlineDataStore.edit { preferences ->
+            preferences[NOTIFICATIONS_MASTER_KEY] = enabled
+        }
+    }
+
+    suspend fun saveNotificationsAttendance(enabled: Boolean) {
+        context.offlineDataStore.edit { preferences ->
+            preferences[NOTIFICATIONS_ATTENDANCE_KEY] = enabled
+        }
+    }
+
+    suspend fun saveNotificationsWeekly(enabled: Boolean) {
+        context.offlineDataStore.edit { preferences ->
+            preferences[NOTIFICATIONS_WEEKLY_KEY] = enabled
+        }
+    }
+
+    suspend fun saveNotificationsMonthly(enabled: Boolean) {
+        context.offlineDataStore.edit { preferences ->
+            preferences[NOTIFICATIONS_MONTHLY_KEY] = enabled
+        }
+    }
+
+    suspend fun saveNotificationsEarnings(enabled: Boolean) {
+        context.offlineDataStore.edit { preferences ->
+            preferences[NOTIFICATIONS_EARNINGS_KEY] = enabled
+        }
+    }
+
+    suspend fun saveNotificationsFunny(enabled: Boolean) {
+        context.offlineDataStore.edit { preferences ->
+            preferences[NOTIFICATIONS_FUNNY_KEY] = enabled
+        }
+    }
+
+    suspend fun saveNotificationStyle(style: String) {
+        context.offlineDataStore.edit { preferences ->
+            preferences[NOTIFICATION_STYLE_KEY] = style
         }
     }
 
