@@ -388,4 +388,8 @@
     <string name="terms_contact_title">7. Contact Information</string>
     <string name="terms_contact_desc">For support or inquiries regarding these Terms &amp; Conditions, contact SynFusion at workdaily.synfusion@gmail.com.</string>
 <string name="how_to_use">How to Use</string>
+    <string name="error_opening_link">No app found to open link</string>
+    <string name="error_generic_link">Error opening link</string>
+    <string name="error_no_email_app">No email app found</string>
+    <string name="error_generic_email">Error opening email</string>
 </resources>
