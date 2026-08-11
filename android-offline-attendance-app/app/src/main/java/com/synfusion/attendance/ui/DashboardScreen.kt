@@ -1,5 +1,9 @@
 package com.synfusion.attendance.ui
 
+import com.synfusion.attendance.ui.screens.HowToUseScreen
+import com.synfusion.attendance.ui.screens.PrivacyPolicyScreen
+import com.synfusion.attendance.ui.screens.TermsConditionsScreen
+
 import androidx.compose.foundation.background
 import com.synfusion.attendance.ui.components.ShimmerBox
 import com.synfusion.attendance.ui.components.ShimmerCircle
@@ -272,6 +276,7 @@ fun DashboardScreen(
                             SettingsScreen(
                                 viewModel = settingsViewModel,
                                 onLogout = onLogout,
+                                onNavigate = { route: String -> bottomNavController.navigate(route) },
                                 scrollState = settingsScrollState
                             )
                         }
@@ -296,6 +301,16 @@ fun DashboardScreen(
                     onNavigateBack = { bottomNavController.navigateUp() }
                 )
             }
+            composable("how_to_use") {
+                HowToUseScreen(onNavigateBack = { bottomNavController.navigateUp() })
+            }
+            composable("privacy_policy") {
+                PrivacyPolicyScreen(onNavigateBack = { bottomNavController.navigateUp() })
+            }
+            composable("terms_conditions") {
+                TermsConditionsScreen(onNavigateBack = { bottomNavController.navigateUp() })
+            }
+
         }
 
         if (showAdvanceDialog) {
