@@ -82,7 +82,7 @@ object PassbookPdfGenerator {
         val title: String,
         val subtitle: String
     ) {
-        var pageNumber = 1
+        var pageNumber = 0
         var yPos = 0f
         var page: PdfDocument.Page? = null
         var canvas: Canvas? = null
@@ -119,6 +119,7 @@ object PassbookPdfGenerator {
                 drawFooter()
                 document.finishPage(page)
             }
+            pageNumber++
             page = document.startPage(PdfDocument.PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, pageNumber).create())
             canvas = page!!.canvas
             yPos = MARGIN
@@ -128,7 +129,6 @@ object PassbookPdfGenerator {
             } else {
                 drawContinuationHeader()
             }
-            pageNumber++
         }
 
         fun checkPageBreak(requiredHeight: Float, onNewPageTableHeaders: (() -> Unit)? = null) {
@@ -143,7 +143,7 @@ object PassbookPdfGenerator {
             val canvas = this.canvas ?: return
 
             val logoDrawable = try {
-                context.resources.getDrawable(R.mipmap.ic_launcher_foreground, null)
+                context.resources.getDrawable(R.drawable.logo_transparent, null)
             } catch (e: Exception) {
                 null
             }
@@ -267,10 +267,11 @@ object PassbookPdfGenerator {
     }
 
     private fun drawClosingBranding(renderContext: PdfRenderContext, name: String) {
-        val canvas = renderContext.canvas ?: return
         val brandingHeight = 100f
 
         renderContext.checkPageBreak(brandingHeight)
+
+        val canvas = renderContext.canvas ?: return
 
         // Separator line
         renderContext.paintRectBorder.color = colorBorder
@@ -278,7 +279,7 @@ object PassbookPdfGenerator {
         renderContext.yPos += 20f
 
         val logoDrawable = try {
-            renderContext.context.resources.getDrawable(R.mipmap.ic_launcher_foreground, null)
+            renderContext.context.resources.getDrawable(R.drawable.logo_transparent, null)
         } catch (e: Exception) {
             null
         }
