@@ -20,6 +20,11 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
+
+import com.synfusion.attendance.ui.components.InstagramIcon
+import com.synfusion.attendance.ui.components.TelegramIcon
+import com.synfusion.attendance.ui.components.YouTubeIcon
+
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -813,7 +818,7 @@ fun DeveloperContactBottomSheet(onDismiss: () -> Unit) {
 
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text("SynFusion", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                Text("@getsynfusiom", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("@getsynfusion", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text("workdaily.synfusion@gmail.com", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
 
@@ -823,26 +828,26 @@ fun DeveloperContactBottomSheet(onDismiss: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 ContactIconItem(
-                    icon = Icons.Default.CameraAlt,
+                    icon = InstagramIcon,
                     contentDescription = "Instagram",
                     onClick = {
-                        com.synfusion.attendance.ui.components.SafeExternalLinkHandler.openLink(context, "https://www.instagram.com/getsynfusiom")
+                        com.synfusion.attendance.ui.components.SafeExternalLinkHandler.openLink(context, "https://www.instagram.com/getsynfusion")
                     }
                 )
 
                 ContactIconItem(
-                    icon = Icons.Default.Send,
+                    icon = TelegramIcon,
                     contentDescription = "Telegram",
                     onClick = {
-                        com.synfusion.attendance.ui.components.SafeExternalLinkHandler.openLink(context, "https://t.me/getsynfusiom")
+                        com.synfusion.attendance.ui.components.SafeExternalLinkHandler.openLink(context, "https://t.me/getsynfusion")
                     }
                 )
 
                 ContactIconItem(
-                    icon = Icons.Default.PlayArrow,
+                    icon = YouTubeIcon,
                     contentDescription = "YouTube",
                     onClick = {
-                        com.synfusion.attendance.ui.components.SafeExternalLinkHandler.openLink(context, "https://www.youtube.com/@getsynfusiom")
+                        com.synfusion.attendance.ui.components.SafeExternalLinkHandler.openLink(context, "https://www.youtube.com/@getsynfusion")
                     }
                 )
 
