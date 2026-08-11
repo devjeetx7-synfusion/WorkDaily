@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">WorkDaily</string>
     <string name="select_language">भाषा चुनें / Select Language</string>
@@ -175,7 +175,7 @@
     <string name="must_be_14">14+ होना चाहिए</string>
     <string name="custom_work_type">कस्टम कार्य प्रकार *</string>
 
-    <!-- Premium Redesign -->
+
     <string name="premium_choose_plan">अपनी योजना चुनें</string>
     <string name="premium_restore_purchases">खरीदारी पुनर्स्थापित करें</string>
     <string name="premium_manage_subscription">सदस्यता प्रबंधित करें</string>
@@ -200,7 +200,7 @@
     <string name="premium_best_value">सर्वश्रेष्ठ मूल्य</string>
     <string name="premium_one_time">एक बार</string>
 
-    <!-- Premium Lock Overlay -->
+
     <string name="premium_feature_title">प्रीमियम सुविधाएं अनलॉक करें</string>
     <string name="upgrade_to_premium">प्रीमियम खरीदें</string>
     <string name="buy_premium_btn">प्रीमियम खरीदें</string>
@@ -210,7 +210,7 @@
     <string name="premium_lock_badge">प्रीमियम</string>
     <string name="unlock_unlimited_workers">असीमित कर्मचारी अनलॉक करें</string>
 
-    <!-- Phase 1 Additional Localization Resources -->
+
     <string name="holiday">छुट्टी</string>
     <string name="leave">अवकाश</string>
     <string name="overtime">ओवरटाइम</string>
@@ -291,7 +291,7 @@
     <string name="app_language">ऐप भाषा</string>
     <string name="apply_settings">सेटिंग्स लागू करें</string>
 
-    <!-- PDF Localization Resources -->
+
     <string name="pdf_daily_wage">दैनिक मजदूरी</string>
     <string name="pdf_total_days">कुल दिन</string>
     <string name="pdf_present_half">उपस्थित/हाफ डे</string>
@@ -317,7 +317,7 @@
     <string name="show_more">और देखें</string>
     <string name="show_less">कम दिखाएं</string>
 
-    <!-- PDF Export & Loading UX Localization Strings -->
+
     <string name="pdf_all_time_passbook">सर्वकालिक पासबुक</string>
     <string name="pdf_total_records">कुल रिकॉर्ड: %1$d</string>
     <string name="pdf_period">अवधि: %1$s - %2$s</string>
@@ -341,4 +341,50 @@
     <string name="pdf_export_error">त्रुटि: %1$s</string>
     <string name="pdf_digital_attendance_passbook">डिजिटल उपस्थिति और पासबुक</string>
     <string name="pdf_generated_from_offline">WorkDaily ऑफ़लाइन से जनरेट किया गया</string>
+<string name="htu_getting_started_title">1. शुरू करना</string>
+    <string name="htu_getting_started_desc">एप्लिकेशन खोलें, अपना प्रारंभिक सेटअप पूरा करें, अपनी उपयोगकर्ता प्रोफ़ाइल कॉन्फ़िगर करें, और अपनी दैनिक मजदूरी और काम के घंटे जैसी बुनियादी प्राथमिकताएँ सेट करें।</string>
+    <string name="htu_attendance_title">2. उपस्थिति (Attendance)</string>
+    <string name="htu_attendance_desc">अपनी उपस्थिति को प्रतिदिन उपस्थित (Present), आधा दिन (Half Day), या अनुपस्थित (Absent) के रूप में दर्ज करें। आप अपने दिनांक-आधारित उपस्थिति रिकॉर्ड आसानी से देख और संपादित कर सकते हैं।</string>
+    <string name="htu_earnings_title">3. कमाई (Earnings)</string>
+    <string name="htu_earnings_desc">यह आपकी दैनिक मजदूरी कॉन्फ़िगरेशन, मूल वेतन, ओवरटाइम घंटे, अग्रिम (advances) और समग्र उपस्थिति के आधार पर आपकी कमाई की गणना करता है।</string>
+    <string name="htu_calendar_title">4. कैलेंडर (Calendar)</string>
+    <string name="htu_calendar_desc">विशिष्ट तिथियों का चयन करने और रंग-कोडित संकेतकों के साथ अपने उपस्थिति रिकॉर्ड देखने के लिए कैलेंडर खोलें।</string>
+    <string name="htu_passbook_title">5. पासबुक (Passbook)</string>
+    <string name="htu_passbook_desc">कमाई, ओवरटाइम, अग्रिम राशि और व्यक्तिगत नोट्स सहित अपने दैनिक रिकॉर्ड की समीक्षा करें। आप खोज सकते हैं, सॉर्ट कर सकते हैं और अपना पूरा मासिक सारांश देख सकते हैं।</string>
+    <string name="htu_all_time_passbook_title">6. ऑल टाइम पासबुक (All Time Passbook)</string>
+    <string name="htu_all_time_passbook_desc">आपके पूर्ण ऐतिहासिक रिकॉर्ड वर्ष और माह के अनुसार व्यवस्थित। विस्तृत उपस्थिति और वित्तीय सारांश देखने के लिए मासिक ब्लॉक का विस्तार करें या सिकोड़ें।</string>
+    <string name="htu_statistics_title">7. सांख्यिकी (Statistics)</string>
+    <string name="htu_statistics_desc">अपनी समग्र कमाई और उपस्थिति के आँकड़े देखें। अपने वित्तीय सारांशों में गहराई से जाएँ और विशिष्ट रिकॉर्ड की जाँच करें।</string>
+    <string name="htu_backup_restore_title">8. बैकअप और रिस्टोर</string>
+    <string name="htu_backup_restore_desc">बैकअप बनाकर अपने डेटा को सुरक्षित रखें। आप इन फ़ाइलों को साझा या सहेज सकते हैं, और अपने रिकॉर्ड को सुरक्षित रूप से पुनर्प्राप्त करने के लिए उन्हें बाद में पुनर्स्थापित कर सकते हैं।</string>
+    <string name="htu_pdf_export_title">9. पीडीएफ एक्सपोर्ट (PDF Export)</string>
+    <string name="htu_pdf_export_desc">अपनी मासिक पासबुक या ऑल टाइम पासबुक के लिए पेशेवर पीडीएफ रिपोर्ट तैयार करें और उन्हें तुरंत व्हाट्सएप या अन्य ऐप के माध्यम से साझा करें।</string>
+    <string name="htu_language_title">10. भाषा (Language)</string>
+    <string name="htu_language_desc">पूरी तरह से स्थानीयकृत यूज़र इंटरफ़ेस के लिए अंग्रेजी और हिंदी भाषाओं के बीच स्विच करें।</string>
+    <string name="htu_settings_title">11. सेटिंग्स (Settings)</string>
+    <string name="htu_settings_desc">अपनी ऐप प्राथमिकताओं को प्रबंधित करें, डेवलपर से संपर्क करें, गोपनीयता नीति (Privacy Policy) और नियम व शर्तें (Terms &amp; Conditions) पढ़ें, और अधिक सहायता विषय एक्सप्लोर करें।</string>
+    <string name="privacy_intro">यह गोपनीयता नीति बताती है कि WorkDaily आपकी जानकारी कैसे एकत्र, उपयोग और सुरक्षित करता है।</string>
+    <string name="privacy_local_data_title">1. स्थानीय डेटा स्टोरेज (Local Data Storage)</string>
+    <string name="privacy_local_data_desc">WorkDaily को एक ऑफ़लाइन-प्रथम एप्लिकेशन के रूप में डिज़ाइन किया गया है। आपके सभी उपस्थिति रिकॉर्ड, कमाई का डेटा, नोट्स और उपयोगकर्ता प्रोफ़ाइल जानकारी आपके डिवाइस पर रूम डेटाबेस और डेटास्टोर प्राथमिकताओं के माध्यम से सुरक्षित रूप से संग्रहीत की जाती है। हम आपके स्थानीय डेटा को किसी बाहरी सर्वर पर प्रसारित नहीं करते हैं।</string>
+    <string name="privacy_user_sharing_title">2. उपयोगकर्ता द्वारा साझाकरण (User-Initiated Sharing)</string>
+    <string name="privacy_user_sharing_desc">आपका डेटा आपके डिवाइस से तभी बाहर जाता है जब आप स्पष्ट रूप से इसे साझा करना चुनते हैं। उदाहरण के लिए, जब आप कोई बैकअप फ़ाइल बनाते और साझा करते हैं, या पीडीएफ के माध्यम से अपनी पासबुक एक्सपोर्ट और साझा करते हैं।</string>
+    <string name="privacy_third_party_title">3. थर्ड-पार्टी ऐप्स (Third-Party Apps)</string>
+    <string name="privacy_third_party_desc">जब आप व्हाट्सएप, ईमेल या फ़ाइल मैनेजर जैसे थर्ड-पार्टी ऐप का उपयोग करके अपने बैकअप या पीडीएफ साझा करना चुनते हैं, तो वे ऐप अपनी गोपनीयता नीतियों द्वारा शासित होते हैं।</string>
+    <string name="privacy_contact_title">4. हमसे संपर्क करें</string>
+    <string name="privacy_contact_desc">यदि इस गोपनीयता नीति के बारे में आपके कोई प्रश्न हैं, तो कृपया workdaily.synfusion@gmail.com पर SynFusion से संपर्क करें।</string>
+    <string name="terms_acceptance_title">1. शर्तों की स्वीकृति (Acceptance of Terms)</string>
+    <string name="terms_acceptance_desc">WorkDaily तक पहुँच कर और उसका उपयोग करके, आप इस समझौते के नियमों और प्रावधानों से बंधे होने के लिए सहमत हैं।</string>
+    <string name="terms_use_title">2. WorkDaily का उपयोग (Use of WorkDaily)</string>
+    <string name="terms_use_desc">WorkDaily ऑफ़लाइन उपस्थिति और कमाई पर नज़र रखने के लिए उपकरण प्रदान करता है। यह व्यक्तिगत, ऑफ़लाइन उपयोग के लिए है।</string>
+    <string name="terms_responsibilities_title">3. उपयोगकर्ता की जिम्मेदारियाँ (User Responsibilities)</string>
+    <string name="terms_responsibilities_desc">एप्लिकेशन में आपके द्वारा दर्ज किए गए उपस्थिति रिकॉर्ड, अग्रिम प्रविष्टियों और मजदूरी कॉन्फ़िगरेशन की सटीकता के लिए आप पूरी तरह से जिम्मेदार हैं।</string>
+    <string name="terms_financial_title">4. कमाई और गणना अस्वीकरण (Earnings and Calculation Disclaimer)</string>
+    <string name="terms_financial_desc">WorkDaily की गणना उपयोगकर्ता द्वारा दर्ज किए गए मानों के आधार पर सुविधा के लिए प्रदान की जाती है। इन्हें गारंटीकृत लेखांकन या पेरोल परिणाम नहीं माना जाना चाहिए। अंतिम राशि को सत्यापित करने के लिए उपयोगकर्ता स्वयं जिम्मेदार रहता है।</string>
+    <string name="terms_backup_title">5. बैकअप और रिस्टोर की जिम्मेदारी</string>
+    <string name="terms_backup_desc">चूंकि सभी डेटा ऑफ़लाइन संग्रहीत होता है, इसलिए डिवाइस की विफलता, ऐप हटाने या उपयोगकर्ता की त्रुटि के कारण डेटा हानि के लिए SynFusion जिम्मेदार नहीं है। आप नियमित रूप से अपनी बैकअप फ़ाइलें बनाने और सुरक्षित करने के लिए जिम्मेदार हैं।</string>
+    <string name="terms_branding_title">6. बौद्धिक संपदा और ब्रांडिंग (Intellectual Property &amp; Branding)</string>
+    <string name="terms_branding_desc">WorkDaily SynFusion द्वारा विकसित एक उत्पाद है। WorkDaily ब्रांडिंग और उससे जुड़ी सभी संपत्तियां SynFusion की बौद्धिक संपदा हैं।</string>
+    <string name="terms_contact_title">7. संपर्क जानकारी (Contact Information)</string>
+    <string name="terms_contact_desc">इन नियमों और शर्तों के संबंध में समर्थन या पूछताछ के लिए, workdaily.synfusion@gmail.com पर SynFusion से संपर्क करें।</string>
+<string name="how_to_use">उपयोग कैसे करें</string>
 </resources>

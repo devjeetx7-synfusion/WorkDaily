@@ -53,15 +53,16 @@ import androidx.compose.foundation.layout.safeDrawing
 fun SettingsScreen(
     viewModel: OfflineSettingsViewModel,
     onLogout: () -> Unit,
+    onNavigate: (String) -> Unit,
     scrollState: androidx.compose.foundation.ScrollState = androidx.compose.foundation.rememberScrollState()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle(initialValue = OfflineSettingsState())
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
 
-    var showHowToUseSheet by remember { mutableStateOf(false) }
-    var showPrivacySheet by remember { mutableStateOf(false) }
-    var showTermsSheet by remember { mutableStateOf(false) }
+
+
+
     var showDeveloperSheet by remember { mutableStateOf(false) }
     var showBackupSheet by remember { mutableStateOf(false) }
 
@@ -347,7 +348,7 @@ fun SettingsScreen(
                     border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
                 ) {
                     Column(modifier = Modifier.fillMaxWidth()) {
-                        Row(modifier = Modifier.fillMaxWidth().clickable { showHowToUseSheet = true }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Row(modifier = Modifier.fillMaxWidth().clickable { onNavigate("how_to_use") }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
                                     Icon(Icons.Default.Info, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
@@ -360,7 +361,7 @@ fun SettingsScreen(
                             }
                         }
                         HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
-                        Row(modifier = Modifier.fillMaxWidth().clickable { showPrivacySheet = true }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Row(modifier = Modifier.fillMaxWidth().clickable { onNavigate("privacy_policy") }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
                                     Icon(Icons.Default.Security, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
@@ -373,7 +374,7 @@ fun SettingsScreen(
                             }
                         }
                         HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
-                        Row(modifier = Modifier.fillMaxWidth().clickable { showTermsSheet = true }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Row(modifier = Modifier.fillMaxWidth().clickable { onNavigate("terms_conditions") }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
                                     Icon(Icons.Default.Description, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
@@ -434,15 +435,9 @@ fun SettingsScreen(
                 }
             )
         }
-        if (showHowToUseSheet) {
-            HowToUseBottomSheet(onDismiss = { showHowToUseSheet = false })
-        }
-        if (showPrivacySheet) {
-            PrivacyPolicyBottomSheet(onDismiss = { showPrivacySheet = false })
-        }
-        if (showTermsSheet) {
-            TermsConditionsBottomSheet(onDismiss = { showTermsSheet = false })
-        }
+
+
+
         if (showDeveloperSheet) {
             DeveloperContactBottomSheet(onDismiss = { showDeveloperSheet = false })
         }
@@ -668,49 +663,7 @@ fun LogoutBottomSheet(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun HowToUseBottomSheet(onDismiss: () -> Unit) {
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-        dragHandle = { BottomSheetDefaults.DragHandle() }
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 16.dp)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
-                    Icon(Icons.Default.Info, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                }
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.how_to_use_dailywork), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-            }
-            HorizontalDivider(color = MaterialTheme.colorScheme.outline)
-            Text(
-                text = "WorkDaily helps users manage personal attendance, daily wages, advances, payments, notes, and records.\n\n• Personal users can track their own attendance, work days, payments, and notes safely.\n\nPassbook and reports help users review records clearly.",
-                fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                lineHeight = 20.sp
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Button(
-                onClick = onDismiss,
-                modifier = Modifier.fillMaxWidth().height(50.dp),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.close), fontWeight = FontWeight.Bold)
-            }
-            Spacer(modifier = Modifier.height(32.dp))
-        }
-    }
-}
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -800,6 +753,7 @@ fun TermsConditionsBottomSheet(onDismiss: () -> Unit) {
     }
 }
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DeveloperContactBottomSheet(onDismiss: () -> Unit) {
@@ -827,16 +781,22 @@ fun DeveloperContactBottomSheet(onDismiss: () -> Unit) {
                     .border(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), androidx.compose.foundation.shape.CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Default.Person,
-                    contentDescription = "Developer Avatar",
-                    modifier = Modifier.size(50.dp),
-                    tint = MaterialTheme.colorScheme.primary
+                coil.compose.AsyncImage(
+                    model = coil.request.ImageRequest.Builder(context)
+                        .data("https://i.postimg.cc/tRFX32BV/IMG-20260724-202445.png")
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = "Dharmjeet Singh Profile",
+                    modifier = Modifier.fillMaxSize().clip(androidx.compose.foundation.shape.CircleShape),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                    error = coil.compose.rememberAsyncImagePainter(model = Icons.Default.Person),
+                    placeholder = coil.compose.rememberAsyncImagePainter(model = Icons.Default.Person)
                 )
             }
 
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text("SynFusion", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                Text("Dharmjeet Singh", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                Text("@devjeetd7 | SynFusion", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text("workdaily.synfusion@gmail.com", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
 
@@ -846,13 +806,13 @@ fun DeveloperContactBottomSheet(onDismiss: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 ContactIconItem(
-                    icon = Icons.Default.Chat,
-                    contentDescription = "WhatsApp",
+                    icon = Icons.Default.Code,
+                    contentDescription = "GitHub",
                     onClick = {
                         try {
-                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://wa.me/918250000000")))
+                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/devjeetx7-synfusion")))
                         } catch (e: Exception) {
-                            Toast.makeText(context, "No app found to handle WhatsApp", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "No app found to handle GitHub link", Toast.LENGTH_SHORT).show()
                         }
                     }
                 )
@@ -874,9 +834,21 @@ fun DeveloperContactBottomSheet(onDismiss: () -> Unit) {
                     contentDescription = "Telegram",
                     onClick = {
                         try {
-                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/synfusion_coder")))
+                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/getsynfusion")))
                         } catch (e: Exception) {
                             Toast.makeText(context, "No app found to handle Telegram", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                )
+
+                ContactIconItem(
+                    icon = Icons.Default.PlayArrow,
+                    contentDescription = "YouTube",
+                    onClick = {
+                        try {
+                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.youtube.com/@getsynfusiom")))
+                        } catch (e: Exception) {
+                            Toast.makeText(context, "No app found to handle YouTube", Toast.LENGTH_SHORT).show()
                         }
                     }
                 )
@@ -886,9 +858,9 @@ fun DeveloperContactBottomSheet(onDismiss: () -> Unit) {
                     contentDescription = "Email",
                     onClick = {
                         try {
-                            context.startActivity(Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:devjeetx7@gmail.com")))
+                            context.startActivity(Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:workdaily.synfusion@gmail.com")))
                         } catch (e: Exception) {
-                            Toast.makeText(context, "No app found to handle Email", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "No email app found", Toast.LENGTH_SHORT).show()
                         }
                     }
                 )

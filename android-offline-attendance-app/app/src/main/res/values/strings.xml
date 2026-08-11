@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">WorkDaily</string>
     <string name="default_web_client_id">811601656329-a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6.apps.googleusercontent.com</string>
@@ -176,7 +176,7 @@
     <string name="must_be_14">Must be 14+</string>
     <string name="custom_work_type">Custom Work Type *</string>
 
-    <!-- Premium Redesign -->
+
     <string name="premium_choose_plan">Choose Your Plan</string>
     <string name="premium_restore_purchases">Restore Purchases</string>
     <string name="premium_manage_subscription">Manage Subscription</string>
@@ -201,7 +201,7 @@
     <string name="premium_best_value">Best Value</string>
     <string name="premium_one_time">One-time</string>
 
-    <!-- Premium Lock Overlay -->
+
     <string name="premium_feature_title">Unlock Premium Features</string>
     <string name="upgrade_to_premium">Buy Premium</string>
     <string name="buy_premium_btn">Buy Premium</string>
@@ -211,7 +211,7 @@
     <string name="premium_lock_badge">PREMIUM</string>
     <string name="unlock_unlimited_workers">Unlock Unlimited Workers</string>
 
-    <!-- Phase 1 Additional Localization Resources -->
+
     <string name="holiday">Holiday</string>
     <string name="leave">Leave</string>
     <string name="overtime">Overtime</string>
@@ -292,7 +292,7 @@
     <string name="app_language">App Language</string>
     <string name="apply_settings">Apply Settings</string>
 
-    <!-- PDF Localization Resources -->
+
     <string name="pdf_daily_wage">Daily Wage</string>
     <string name="pdf_total_days">Total Days</string>
     <string name="pdf_present_half">Present/Half</string>
@@ -318,7 +318,7 @@
     <string name="show_more">Show more</string>
     <string name="show_less">Show less</string>
 
-    <!-- PDF Export & Loading UX Localization Strings -->
+
     <string name="pdf_all_time_passbook">All Time Passbook</string>
     <string name="pdf_total_records">Total Records: %1$d</string>
     <string name="pdf_period">Period: %1$s - %2$s</string>
@@ -342,4 +342,50 @@
     <string name="pdf_export_error">Error: %1$s</string>
     <string name="pdf_digital_attendance_passbook">Digital Attendance &amp; Passbook</string>
     <string name="pdf_generated_from_offline">Generated from WorkDaily Offline</string>
+<string name="htu_getting_started_title">1. Getting Started</string>
+    <string name="htu_getting_started_desc">Open the application, complete your initial setup, configure your user profile, and set basic preferences like your daily wage and working hours.</string>
+    <string name="htu_attendance_title">2. Attendance</string>
+    <string name="htu_attendance_desc">Mark your attendance daily as Present, Half Day, or Absent. You can view, edit, and keep track of your date-based attendance records easily.</string>
+    <string name="htu_earnings_title">3. Earnings</string>
+    <string name="htu_earnings_desc">Calculates your earnings based on your daily wage configuration, base salary, overtime hours, advances, and overall attendance.</string>
+    <string name="htu_calendar_title">4. Calendar</string>
+    <string name="htu_calendar_desc">Open the Calendar to select specific dates and view your attendance records with color-coded indicators.</string>
+    <string name="htu_passbook_title">5. Passbook</string>
+    <string name="htu_passbook_desc">Review your daily records including earnings, overtime, advance amounts, and personal notes. You can search, sort, and view your complete monthly summary.</string>
+    <string name="htu_all_time_passbook_title">6. All Time Passbook</string>
+    <string name="htu_all_time_passbook_desc">Your full historical records organized by year and month. Expand or collapse monthly blocks to view detailed attendance and financial summaries.</string>
+    <string name="htu_statistics_title">7. Statistics</string>
+    <string name="htu_statistics_desc">Visualize your overall earnings and attendance statistics. Dive deep into your financial summaries and drill-down into specific records.</string>
+    <string name="htu_backup_restore_title">8. Backup &amp; Restore</string>
+    <string name="htu_backup_restore_desc">Keep your data safe by creating backups. You can share or save these files, and restore them later to recover your records safely.</string>
+    <string name="htu_pdf_export_title">9. PDF Export</string>
+    <string name="htu_pdf_export_desc">Generate professional PDF reports for your Monthly Passbook or All Time Passbook and share them instantly via WhatsApp or other apps.</string>
+    <string name="htu_language_title">10. Language</string>
+    <string name="htu_language_desc">Switch between English and Hindi languages for a fully localized user interface.</string>
+    <string name="htu_settings_title">11. Settings</string>
+    <string name="htu_settings_desc">Manage your app preferences, contact the developer, read the Privacy Policy and Terms &amp; Conditions, and explore more help topics.</string>
+    <string name="privacy_intro">This Privacy Policy explains how WorkDaily collects, uses, and protects your information.</string>
+    <string name="privacy_local_data_title">1. Local Data Storage</string>
+    <string name="privacy_local_data_desc">WorkDaily is designed as an offline-first application. All your attendance records, earnings data, notes, and user profile information are securely stored locally on your device via Room database and DataStore preferences. We do not transmit your local data to any external server.</string>
+    <string name="privacy_user_sharing_title">2. User-Initiated Sharing</string>
+    <string name="privacy_user_sharing_desc">Your data only leaves your device when you explicitly choose to share it. For instance, when you create and share a backup file, or export and share your Passbook via PDF.</string>
+    <string name="privacy_third_party_title">3. Third-Party Apps</string>
+    <string name="privacy_third_party_desc">When you choose to share your backups or PDFs using third-party apps like WhatsApp, Email, or File Managers, those apps are governed by their own privacy policies.</string>
+    <string name="privacy_contact_title">4. Contact Us</string>
+    <string name="privacy_contact_desc">If you have questions about this Privacy Policy, please contact SynFusion at workdaily.synfusion@gmail.com.</string>
+    <string name="terms_acceptance_title">1. Acceptance of Terms</string>
+    <string name="terms_acceptance_desc">By accessing and using WorkDaily, you accept and agree to be bound by the terms and provisions of this agreement.</string>
+    <string name="terms_use_title">2. Use of WorkDaily</string>
+    <string name="terms_use_desc">WorkDaily provides tools for tracking offline attendance and earnings. It is intended for personal, offline use.</string>
+    <string name="terms_responsibilities_title">3. User Responsibilities</string>
+    <string name="terms_responsibilities_desc">You are fully responsible for the accuracy of the attendance records, advance entries, and wage configurations you enter into the application.</string>
+    <string name="terms_financial_title">4. Earnings and Calculation Disclaimer</string>
+    <string name="terms_financial_desc">WorkDaily calculations are provided for convenience based on user-entered values. They should not be considered guaranteed accounting or payroll results. The user remains responsible for verifying final amounts.</string>
+    <string name="terms_backup_title">5. Backup &amp; Restore Responsibility</string>
+    <string name="terms_backup_desc">Since all data is stored offline, SynFusion is not responsible for data loss due to device failure, app deletion, or user error. You are responsible for routinely creating and securing your backup files.</string>
+    <string name="terms_branding_title">6. Intellectual Property &amp; Branding</string>
+    <string name="terms_branding_desc">WorkDaily is a product developed by SynFusion. The WorkDaily branding and all associated assets remain the intellectual property of SynFusion.</string>
+    <string name="terms_contact_title">7. Contact Information</string>
+    <string name="terms_contact_desc">For support or inquiries regarding these Terms &amp; Conditions, contact SynFusion at workdaily.synfusion@gmail.com.</string>
+<string name="how_to_use">How to Use</string>
 </resources>
