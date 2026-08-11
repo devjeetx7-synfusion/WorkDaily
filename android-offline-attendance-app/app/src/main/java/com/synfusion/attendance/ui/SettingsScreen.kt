@@ -823,13 +823,7 @@ fun DeveloperContactBottomSheet(onDismiss: () -> Unit) {
                     icon = Icons.Default.CameraAlt,
                     contentDescription = "Instagram",
                     onClick = {
-                        try {
-                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.instagram.com/getsynfusiom")))
-                        } catch (e: ActivityNotFoundException) {
-                            Toast.makeText(context, "No app found to handle Instagram", Toast.LENGTH_SHORT).show()
-                        } catch (e: Exception) {
-                            Toast.makeText(context, "Error opening Instagram", Toast.LENGTH_SHORT).show()
-                        }
+                        com.synfusion.attendance.ui.components.SafeExternalLinkHandler.openLink(context, "https://www.instagram.com/getsynfusiom")
                     }
                 )
 
@@ -837,13 +831,7 @@ fun DeveloperContactBottomSheet(onDismiss: () -> Unit) {
                     icon = Icons.Default.Send,
                     contentDescription = "Telegram",
                     onClick = {
-                        try {
-                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/getsynfusiom")))
-                        } catch (e: ActivityNotFoundException) {
-                            Toast.makeText(context, "No app found to handle Telegram", Toast.LENGTH_SHORT).show()
-                        } catch (e: Exception) {
-                            Toast.makeText(context, "Error opening Telegram", Toast.LENGTH_SHORT).show()
-                        }
+                        com.synfusion.attendance.ui.components.SafeExternalLinkHandler.openLink(context, "https://t.me/getsynfusiom")
                     }
                 )
 
@@ -851,13 +839,7 @@ fun DeveloperContactBottomSheet(onDismiss: () -> Unit) {
                     icon = Icons.Default.PlayArrow,
                     contentDescription = "YouTube",
                     onClick = {
-                        try {
-                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.youtube.com/@getsynfusiom")))
-                        } catch (e: ActivityNotFoundException) {
-                            Toast.makeText(context, "No app found to handle YouTube", Toast.LENGTH_SHORT).show()
-                        } catch (e: Exception) {
-                            Toast.makeText(context, "Error opening YouTube", Toast.LENGTH_SHORT).show()
-                        }
+                        com.synfusion.attendance.ui.components.SafeExternalLinkHandler.openLink(context, "https://www.youtube.com/@getsynfusiom")
                     }
                 )
 
@@ -865,13 +847,7 @@ fun DeveloperContactBottomSheet(onDismiss: () -> Unit) {
                     icon = Icons.Default.Email,
                     contentDescription = "Email",
                     onClick = {
-                        try {
-                            context.startActivity(Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:workdaily.synfusion@gmail.com")))
-                        } catch (e: ActivityNotFoundException) {
-                            Toast.makeText(context, "No email app found", Toast.LENGTH_SHORT).show()
-                        } catch (e: Exception) {
-                            Toast.makeText(context, "Error opening Email", Toast.LENGTH_SHORT).show()
-                        }
+                        com.synfusion.attendance.ui.components.SafeExternalLinkHandler.openEmail(context, "workdaily.synfusion@gmail.com")
                     }
                 )
             }
