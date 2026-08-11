@@ -781,22 +781,36 @@ fun DeveloperContactBottomSheet(onDismiss: () -> Unit) {
                     .border(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), androidx.compose.foundation.shape.CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                coil.compose.AsyncImage(
+                coil.compose.SubcomposeAsyncImage(
                     model = coil.request.ImageRequest.Builder(context)
-                        .data("https://i.postimg.cc/tRFX32BV/IMG-20260724-202445.png")
+                        .data("https://i.postimg.cc/7PNN0DMg/file-000000006e788243a3aaf94a91b6f9db.png")
                         .crossfade(true)
                         .build(),
-                    contentDescription = "Dharmjeet Singh Profile",
+                    contentDescription = "SynFusion Profile",
                     modifier = Modifier.fillMaxSize().clip(androidx.compose.foundation.shape.CircleShape),
                     contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                    error = coil.compose.rememberAsyncImagePainter(model = Icons.Default.Person),
-                    placeholder = coil.compose.rememberAsyncImagePainter(model = Icons.Default.Person)
+                    loading = {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = "Loading Profile",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(24.dp)
+                        )
+                    },
+                    error = {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = "Error Loading Profile",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(24.dp)
+                        )
+                    }
                 )
             }
 
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text("Dharmjeet Singh", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                Text("@devjeetd7 | SynFusion", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("SynFusion", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                Text("@getsynfusiom", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text("workdaily.synfusion@gmail.com", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
 
@@ -806,25 +820,15 @@ fun DeveloperContactBottomSheet(onDismiss: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 ContactIconItem(
-                    icon = Icons.Default.Code,
-                    contentDescription = "GitHub",
-                    onClick = {
-                        try {
-                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/devjeetx7-synfusion")))
-                        } catch (e: Exception) {
-                            Toast.makeText(context, "No app found to handle GitHub link", Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                )
-
-                ContactIconItem(
                     icon = Icons.Default.CameraAlt,
                     contentDescription = "Instagram",
                     onClick = {
                         try {
-                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.instagram.com/devjeetx7")))
-                        } catch (e: Exception) {
+                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.instagram.com/getsynfusiom")))
+                        } catch (e: ActivityNotFoundException) {
                             Toast.makeText(context, "No app found to handle Instagram", Toast.LENGTH_SHORT).show()
+                        } catch (e: Exception) {
+                            Toast.makeText(context, "Error opening Instagram", Toast.LENGTH_SHORT).show()
                         }
                     }
                 )
@@ -834,9 +838,11 @@ fun DeveloperContactBottomSheet(onDismiss: () -> Unit) {
                     contentDescription = "Telegram",
                     onClick = {
                         try {
-                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/getsynfusion")))
-                        } catch (e: Exception) {
+                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/getsynfusiom")))
+                        } catch (e: ActivityNotFoundException) {
                             Toast.makeText(context, "No app found to handle Telegram", Toast.LENGTH_SHORT).show()
+                        } catch (e: Exception) {
+                            Toast.makeText(context, "Error opening Telegram", Toast.LENGTH_SHORT).show()
                         }
                     }
                 )
@@ -847,8 +853,10 @@ fun DeveloperContactBottomSheet(onDismiss: () -> Unit) {
                     onClick = {
                         try {
                             context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.youtube.com/@getsynfusiom")))
-                        } catch (e: Exception) {
+                        } catch (e: ActivityNotFoundException) {
                             Toast.makeText(context, "No app found to handle YouTube", Toast.LENGTH_SHORT).show()
+                        } catch (e: Exception) {
+                            Toast.makeText(context, "Error opening YouTube", Toast.LENGTH_SHORT).show()
                         }
                     }
                 )
@@ -859,8 +867,10 @@ fun DeveloperContactBottomSheet(onDismiss: () -> Unit) {
                     onClick = {
                         try {
                             context.startActivity(Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:workdaily.synfusion@gmail.com")))
-                        } catch (e: Exception) {
+                        } catch (e: ActivityNotFoundException) {
                             Toast.makeText(context, "No email app found", Toast.LENGTH_SHORT).show()
+                        } catch (e: Exception) {
+                            Toast.makeText(context, "Error opening Email", Toast.LENGTH_SHORT).show()
                         }
                     }
                 )
