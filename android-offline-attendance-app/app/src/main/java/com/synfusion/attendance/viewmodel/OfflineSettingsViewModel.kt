@@ -36,7 +36,14 @@ data class OfflineSettingsState(
     val triggerRestart: Boolean = false,
     val isLanguageEnabled: Boolean = true,
     val isLanguageActivityEnabled: Boolean = true,
-    val isRoleUiEnabled: Boolean = false
+    val isRoleUiEnabled: Boolean = false,
+    val isNotificationsMasterEnabled: Boolean = true,
+    val isNotificationsAttendanceEnabled: Boolean = true,
+    val isNotificationsWeeklyEnabled: Boolean = true,
+    val isNotificationsMonthlyEnabled: Boolean = true,
+    val isNotificationsEarningsEnabled: Boolean = true,
+    val isNotificationsFunnyEnabled: Boolean = true,
+    val notificationStyle: String = "Friendly"
 )
 
 class OfflineSettingsViewModel(
@@ -68,6 +75,41 @@ class OfflineSettingsViewModel(
         viewModelScope.launch {
             repository.languageFlow.collect { lang ->
                 _state.update { it.copy(language = lang ?: "en") }
+            }
+        }
+        viewModelScope.launch {
+            repository.notificationsMasterFlow.collect { enabled ->
+                _state.update { it.copy(isNotificationsMasterEnabled = enabled) }
+            }
+        }
+        viewModelScope.launch {
+            repository.notificationsAttendanceFlow.collect { enabled ->
+                _state.update { it.copy(isNotificationsAttendanceEnabled = enabled) }
+            }
+        }
+        viewModelScope.launch {
+            repository.notificationsWeeklyFlow.collect { enabled ->
+                _state.update { it.copy(isNotificationsWeeklyEnabled = enabled) }
+            }
+        }
+        viewModelScope.launch {
+            repository.notificationsMonthlyFlow.collect { enabled ->
+                _state.update { it.copy(isNotificationsMonthlyEnabled = enabled) }
+            }
+        }
+        viewModelScope.launch {
+            repository.notificationsEarningsFlow.collect { enabled ->
+                _state.update { it.copy(isNotificationsEarningsEnabled = enabled) }
+            }
+        }
+        viewModelScope.launch {
+            repository.notificationsFunnyFlow.collect { enabled ->
+                _state.update { it.copy(isNotificationsFunnyEnabled = enabled) }
+            }
+        }
+        viewModelScope.launch {
+            repository.notificationStyleFlow.collect { style ->
+                _state.update { it.copy(notificationStyle = style) }
             }
         }
     }
@@ -117,6 +159,48 @@ class OfflineSettingsViewModel(
     fun toggleReminders(enabled: Boolean) {
         viewModelScope.launch {
             repository.saveRemindersPreference(enabled)
+        }
+    }
+
+    fun toggleNotificationsMaster(enabled: Boolean) {
+        viewModelScope.launch {
+            repository.saveNotificationsMaster(enabled)
+        }
+    }
+
+    fun toggleNotificationsAttendance(enabled: Boolean) {
+        viewModelScope.launch {
+            repository.saveNotificationsAttendance(enabled)
+        }
+    }
+
+    fun toggleNotificationsWeekly(enabled: Boolean) {
+        viewModelScope.launch {
+            repository.saveNotificationsWeekly(enabled)
+        }
+    }
+
+    fun toggleNotificationsMonthly(enabled: Boolean) {
+        viewModelScope.launch {
+            repository.saveNotificationsMonthly(enabled)
+        }
+    }
+
+    fun toggleNotificationsEarnings(enabled: Boolean) {
+        viewModelScope.launch {
+            repository.saveNotificationsEarnings(enabled)
+        }
+    }
+
+    fun toggleNotificationsFunny(enabled: Boolean) {
+        viewModelScope.launch {
+            repository.saveNotificationsFunny(enabled)
+        }
+    }
+
+    fun changeNotificationStyle(style: String) {
+        viewModelScope.launch {
+            repository.saveNotificationStyle(style)
         }
     }
 

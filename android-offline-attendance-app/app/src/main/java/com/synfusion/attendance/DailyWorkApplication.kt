@@ -13,6 +13,10 @@ class DailyWorkApplication : Application() {
         setupCrashHandler()
         // Initialize SQLite database eagerly
         AttendanceDatabase.getInstance(this)
+
+        // Initialize notification channels and schedule local background engine
+        com.synfusion.attendance.utils.LocalNotificationManager.initChannels(this)
+        com.synfusion.attendance.utils.NotificationScheduler.schedulePeriodicWork(this)
     }
 
     private fun setupCrashHandler() {
