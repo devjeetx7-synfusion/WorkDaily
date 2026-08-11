@@ -43,6 +43,9 @@ class NetworkMonitor(context: Context) {
         } catch (e: SecurityException) {
             Log.e("NetworkMonitor", "SecurityException registering network callback", e)
             trySend(checkCurrentState())
+        } catch (e: Exception) {
+            Log.e("NetworkMonitor", "Exception registering network callback", e)
+            trySend(checkCurrentState())
         }
 
         // Send initial state
