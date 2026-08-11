@@ -785,6 +785,9 @@ fun DeveloperContactBottomSheet(onDismiss: () -> Unit) {
                     model = coil.request.ImageRequest.Builder(context)
                         .data("https://i.postimg.cc/7PNN0DMg/file-000000006e788243a3aaf94a91b6f9db.png")
                         .crossfade(true)
+                        .networkCachePolicy(coil.request.CachePolicy.ENABLED)
+                        .diskCachePolicy(coil.request.CachePolicy.ENABLED)
+                        .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
                         .build(),
                     contentDescription = "SynFusion Profile",
                     modifier = Modifier.fillMaxSize().clip(androidx.compose.foundation.shape.CircleShape),
