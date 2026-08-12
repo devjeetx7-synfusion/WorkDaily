@@ -86,10 +86,20 @@ fun SettingsScreen(
         contract = androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         isPostPermissionsGranted = isGranted
+        val systemEnabled = isAppNotificationsEnabled && isGranted
+
         if (!isGranted) {
             Toast.makeText(context, context.getString(com.synfusion.attendance.R.string.notif_disabled_desc), Toast.LENGTH_LONG).show()
-        } else if (state.isRemindersEnabled) {
+        }
+
+        if (state.isRemindersEnabled != systemEnabled) {
+            viewModel.toggleReminders(systemEnabled)
+        }
+
+        if (systemEnabled) {
             com.synfusion.attendance.utils.NotificationScheduler.schedulePeriodicWork(context)
+        } else {
+            com.synfusion.attendance.utils.NotificationScheduler.cancelAllScheduledWork(context)
         }
     }
 
@@ -99,11 +109,24 @@ fun SettingsScreen(
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
-                isAppNotificationsEnabled = androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled()
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                    isPostPermissionsGranted = androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                val actualAppNotificationsEnabled = androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled()
+                val actualPostPermissionsGranted = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                    androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED
                 } else {
-                    isPostPermissionsGranted = true
+                    true
+                }
+
+                isAppNotificationsEnabled = actualAppNotificationsEnabled
+                isPostPermissionsGranted = actualPostPermissionsGranted
+
+                val systemEnabled = actualAppNotificationsEnabled && actualPostPermissionsGranted
+                if (state.isRemindersEnabled != systemEnabled) {
+                    viewModel.toggleReminders(systemEnabled)
+                    if (systemEnabled) {
+                        com.synfusion.attendance.utils.NotificationScheduler.schedulePeriodicWork(context)
+                    } else {
+                        com.synfusion.attendance.utils.NotificationScheduler.cancelAllScheduledWork(context)
+                    }
                 }
             }
         }
@@ -333,6 +356,7 @@ fun SettingsScreen(
 
 
                         // Reminders Switch
+                        val isSystemEnabled = isAppNotificationsEnabled && isPostPermissionsGranted
                         Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
                                 Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
@@ -341,65 +365,39 @@ fun SettingsScreen(
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column {
                                     Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.reminders), fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                    val statusText = if (state.isRemindersEnabled) {
-                                        if (!isAppNotificationsEnabled) {
-                                            androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.notif_status_disabled)
-                                        } else if (!isPostPermissionsGranted) {
-                                            androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.notif_status_permission_required)
-                                        } else {
-                                            androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.notif_status_enabled)
-                                        }
+                                    val statusText = if (isSystemEnabled) {
+                                        androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.notif_status_enabled)
                                     } else {
                                         androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.notif_status_disabled)
                                     }
-                                    Text(statusText, fontSize = 11.sp, color = if (state.isRemindersEnabled && (!isAppNotificationsEnabled || !isPostPermissionsGranted)) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(statusText, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
                             Switch(
-                                checked = state.isRemindersEnabled,
+                                checked = isSystemEnabled,
                                 onCheckedChange = { checked ->
-                                    viewModel.toggleReminders(checked)
                                     if (checked) {
-                                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                                            val permissionCheck = androidx.core.content.ContextCompat.checkSelfPermission(
-                                                context,
-                                                android.Manifest.permission.POST_NOTIFICATIONS
-                                            )
-                                            if (permissionCheck != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                                                permissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
-                                            } else {
-                                                com.synfusion.attendance.utils.NotificationScheduler.schedulePeriodicWork(context)
+                                        if (!isAppNotificationsEnabled) {
+                                            val intent = Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                                                putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
                                             }
+                                            context.getActivity()?.startActivity(intent)
+                                        } else if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU && !isPostPermissionsGranted) {
+                                            permissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
                                         } else {
+                                            // fallback just in case
+                                            viewModel.toggleReminders(true)
                                             com.synfusion.attendance.utils.NotificationScheduler.schedulePeriodicWork(context)
                                         }
                                     } else {
-                                        com.synfusion.attendance.utils.NotificationScheduler.cancelAllScheduledWork(context)
-                                    }
-                                }
-                            )
-                        }
-
-                        if (state.isRemindersEnabled && (!isAppNotificationsEnabled || !isPostPermissionsGranted)) {
-                            Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.End) {
-                                TextButton(onClick = {
-                                    if (!isAppNotificationsEnabled) {
+                                        // Direct to system settings to disable
                                         val intent = Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
                                             putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
                                         }
                                         context.getActivity()?.startActivity(intent)
-                                    } else if (!isPostPermissionsGranted && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                                        permissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
                                     }
-                                }) {
-                                    val btnText = if (!isAppNotificationsEnabled) {
-                                        androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.open_notif_settings)
-                                    } else {
-                                        androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.allow_notifications)
-                                    }
-                                    Text(btnText, fontSize = 14.sp)
                                 }
-                            }
+                            )
                         }
 
                         HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
@@ -770,12 +768,14 @@ fun NotificationTestCenterBottomSheet(
     DisposableEffect(lifecycleOwner) {
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
             if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
-                permissionGranted = androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled()
-                systemPostPermissionGranted = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                val actualAppNotificationsEnabled = androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled()
+                val actualPostPermissionsGranted = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
                     androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED
                 } else {
                     true
                 }
+                permissionGranted = actualAppNotificationsEnabled
+                systemPostPermissionGranted = actualPostPermissionsGranted
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
