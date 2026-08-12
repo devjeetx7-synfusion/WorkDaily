@@ -86,10 +86,20 @@ fun SettingsScreen(
         contract = androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         isPostPermissionsGranted = isGranted
+        val systemEnabled = isAppNotificationsEnabled && isGranted
+
         if (!isGranted) {
             Toast.makeText(context, context.getString(com.synfusion.attendance.R.string.notif_disabled_desc), Toast.LENGTH_LONG).show()
-        } else if (state.isRemindersEnabled) {
+        }
+
+        if (state.isRemindersEnabled != systemEnabled) {
+            viewModel.toggleReminders(systemEnabled)
+        }
+
+        if (systemEnabled) {
             com.synfusion.attendance.utils.NotificationScheduler.schedulePeriodicWork(context)
+        } else {
+            com.synfusion.attendance.utils.NotificationScheduler.cancelAllScheduledWork(context)
         }
     }
 
@@ -99,11 +109,24 @@ fun SettingsScreen(
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
-                isAppNotificationsEnabled = androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled()
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                    isPostPermissionsGranted = androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                val actualAppNotificationsEnabled = androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled()
+                val actualPostPermissionsGranted = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                    androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED
                 } else {
-                    isPostPermissionsGranted = true
+                    true
+                }
+
+                isAppNotificationsEnabled = actualAppNotificationsEnabled
+                isPostPermissionsGranted = actualPostPermissionsGranted
+
+                val systemEnabled = actualAppNotificationsEnabled && actualPostPermissionsGranted
+                if (state.isRemindersEnabled != systemEnabled) {
+                    viewModel.toggleReminders(systemEnabled)
+                    if (systemEnabled) {
+                        com.synfusion.attendance.utils.NotificationScheduler.schedulePeriodicWork(context)
+                    } else {
+                        com.synfusion.attendance.utils.NotificationScheduler.cancelAllScheduledWork(context)
+                    }
                 }
             }
         }
@@ -371,6 +394,9 @@ fun SettingsScreen(
                                                 viewModel.toggleReminders(true)
                                                 com.synfusion.attendance.utils.NotificationScheduler.schedulePeriodicWork(context)
                                             }
+                                            context.getActivity()?.startActivity(intent)
+                                        } else if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU && !isPostPermissionsGranted) {
+                                            permissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
                                         } else {
                                             viewModel.toggleReminders(true)
                                             com.synfusion.attendance.utils.NotificationScheduler.schedulePeriodicWork(context)
@@ -751,12 +777,14 @@ fun NotificationTestCenterBottomSheet(
     DisposableEffect(lifecycleOwner) {
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
             if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
-                permissionGranted = androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled()
-                systemPostPermissionGranted = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                val actualAppNotificationsEnabled = androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled()
+                val actualPostPermissionsGranted = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
                     androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED
                 } else {
                     true
                 }
+                permissionGranted = actualAppNotificationsEnabled
+                systemPostPermissionGranted = actualPostPermissionsGranted
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
