@@ -395,19 +395,6 @@
 
     <!-- Notification Settings Strings -->
     <string name="notification_settings">Notification Settings</string>
-    <string name="master_notifications">Master Notifications</string>
-    <string name="master_notifications_desc">Enable or disable all notifications</string>
-    <string name="attendance_reminders">Attendance Reminders</string>
-    <string name="attendance_reminders_desc">Get reminders when you forget to mark attendance</string>
-    <string name="weekly_reports">Weekly Reports</string>
-    <string name="weekly_reports_desc">Receive weekly summaries of your work and earnings</string>
-    <string name="monthly_reports">Monthly Reports</string>
-    <string name="monthly_reports_desc">Receive monthly summaries and financial breakdowns</string>
-    <string name="earnings_notifications">Earnings Notifications</string>
-    <string name="earnings_notifications_desc">Overtime and advance alerts</string>
-    <string name="funny_notifications">Funny &amp; Motivation</string>
-    <string name="funny_notifications_desc">Funny roasts and motivational comeback messages</string>
-    <string name="notification_style">Notification Style</string>
 
     <string name="notif_permission_required">Notification permission is required</string>
     <string name="notif_permission_desc">Android has not granted WorkDaily permission to display notifications.</string>
