@@ -99,6 +99,12 @@ object LocalNotificationManager {
             .setAutoCancel(true)
 
         try {
+            val notificationManager = NotificationManagerCompat.from(context)
+            if (!notificationManager.areNotificationsEnabled()) {
+                logNotificationHistory(context, category, message, "Permission Denied: System Notifications Disabled")
+                return
+            }
+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 if (androidx.core.content.ContextCompat.checkSelfPermission(
                         context,
@@ -106,12 +112,25 @@ object LocalNotificationManager {
                     ) != android.content.pm.PackageManager.PERMISSION_GRANTED
                 ) {
                     // Log fail internally, do not fire
-                    logNotificationHistory(context, category, message, "Permission Denied: $reason")
+                    logNotificationHistory(context, category, message, "Permission Denied: POST_NOTIFICATIONS missing")
                     return
                 }
             }
 
-            val notificationManager = NotificationManagerCompat.from(context)
+            // Check channel
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                val channel = manager.getNotificationChannel(channelId)
+                if (channel == null) {
+                    logNotificationHistory(context, category, message, "Failed: Channel $channelId does not exist")
+                    return
+                }
+                if (channel.importance == NotificationManager.IMPORTANCE_NONE) {
+                    logNotificationHistory(context, category, message, "Permission Denied: Channel disabled")
+                    return
+                }
+            }
+
             val notificationId = System.currentTimeMillis().toInt()
             notificationManager.notify(notificationId, builder.build())
 
