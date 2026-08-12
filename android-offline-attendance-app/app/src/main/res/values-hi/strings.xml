@@ -407,4 +407,22 @@
     <string name="funny_notifications">मजाकिया और प्रेरणादायक</string>
     <string name="funny_notifications_desc">मजाकिया रोस्ट और प्रेरणादायक संदेश</string>
     <string name="notification_style">नोटिफिकेशन का प्रकार</string>
+
+    <string name="notif_permission_required">नोटिफिकेशन की अनुमति आवश्यक है</string>
+    <string name="notif_permission_desc">Android ने WorkDaily को नोटिफिकेशन दिखाने की अनुमति नहीं दी है।</string>
+    <string name="allow_notifications">अनुमति दें</string>
+    <string name="notif_disabled">नोटिफिकेशन बंद हैं</string>
+    <string name="notif_disabled_desc">WorkDaily तब तक नोटिफिकेशन नहीं दिखा सकता जब तक आप Android सेटिंग्स में नोटिफिकेशन चालू नहीं करते।</string>
+    <string name="open_notif_settings">नोटिफिकेशन सेटिंग्स खोलें</string>
+    <string name="notif_channel_disabled">नोटिफिकेशन चैनल बंद है</string>
+    <string name="notif_channel_disabled_desc">आवश्यक नोटिफिकेशन चैनल बंद है। कृपया इसे सेटिंग्स में चालू करें।</string>
+    <string name="notif_system_status">नोटिफिकेशन सिस्टम</string>
+    <string name="notif_status_enabled">चालू</string>
+    <string name="notif_status_permission_required">अनुमति आवश्यक</string>
+    <string name="notif_status_disabled">बंद</string>
+    <string name="dev_test">डेवलपर टेस्ट</string>
+    <string name="preview_notification">नोटिफिकेशन प्रीव्यू</string>
+    <string name="run_diagnostics">डायग्नोस्टिक्स चलाएं</string>
+    <string name="test_notif_success">टेस्ट नोटिफिकेशन सफलतापूर्वक भेजा गया।</string>
+    <string name="notif_sent_successfully">टेस्ट नोटिफिकेशन सफलतापूर्वक भेजा गया।</string>
 </resources>

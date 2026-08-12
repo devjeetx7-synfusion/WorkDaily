@@ -291,6 +291,51 @@ fun SettingsScreen(
                     border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
                 ) {
                     Column(modifier = Modifier.fillMaxWidth()) {
+                        // Status Row
+                        val isAppNotificationsEnabled = androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled()
+                        val isPostPermissionsGranted = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                            androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                        } else {
+                            true
+                        }
+
+                        Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                                Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
+                                    Icon(Icons.Default.Info, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column {
+                                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.notif_system_status), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                    val statusText = if (!isAppNotificationsEnabled) {
+                                        androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.notif_status_disabled)
+                                    } else if (!isPostPermissionsGranted) {
+                                        androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.notif_status_permission_required)
+                                    } else {
+                                        androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.notif_status_enabled)
+                                    }
+                                    Text(statusText, fontSize = 11.sp, color = if (!isAppNotificationsEnabled || !isPostPermissionsGranted) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                            if (!isAppNotificationsEnabled) {
+                                TextButton(onClick = {
+                                    val intent = Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                                        putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
+                                    }
+                                    context.startActivity(intent)
+                                }) {
+                                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.open_notif_settings), fontSize = 12.sp)
+                                }
+                            } else if (!isPostPermissionsGranted && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                                TextButton(onClick = {
+                                    permissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                                }) {
+                                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.allow_notifications), fontSize = 12.sp)
+                                }
+                            }
+                        }
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+
                         // Master Switch
                         Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
@@ -816,11 +861,52 @@ fun NotificationTestCenterBottomSheet(
 
     val settingsState = viewModel.state.collectAsState().value
     val masterEnabled = settingsState.isNotificationsMasterEnabled
-    val permissionGranted = androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled()
+    var permissionGranted by remember { mutableStateOf(androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled()) }
+    var systemPostPermissionGranted by remember {
+        mutableStateOf(
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED
+            } else {
+                true
+            }
+        )
+    }
+
+    // Refresh permissions on resume just in case
+    val lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                permissionGranted = androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled()
+                systemPostPermissionGranted = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                    androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                } else {
+                    true
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
 
     val repository = remember { com.synfusion.attendance.data.LocalAttendanceRepository(context) }
     var placeholders by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
     var todayMarked by remember { mutableStateOf("NOT MARKED") }
+
+    var showDiagnosticDialog by remember { mutableStateOf(false) }
+    var diagnosticDialogTitle by remember { mutableStateOf("") }
+    var diagnosticDialogDesc by remember { mutableStateOf("") }
+    var diagnosticDialogActionText by remember { mutableStateOf("") }
+    var diagnosticDialogAction by remember { mutableStateOf<() -> Unit>({}) }
+
+    val permissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        systemPostPermissionGranted = isGranted
+        permissionGranted = androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled()
+    }
 
     LaunchedEffect(Unit) {
         val user = repository.getUser()
@@ -887,14 +973,15 @@ fun NotificationTestCenterBottomSheet(
                 border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
             ) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    DiagnosticItemRow("Notifications Enabled", if (masterEnabled) "YES" else "NO")
-                    DiagnosticItemRow("Notification Permission", if (permissionGranted) "GRANTED ✓" else "DENIED ✗")
+                    DiagnosticItemRow("Master Notifications", if (masterEnabled) "YES ✓" else "NO ✕")
+                    DiagnosticItemRow("App Notifications Enabled", if (permissionGranted) "YES ✓" else "NO ✕")
+                    DiagnosticItemRow("POST_NOTIFICATIONS", if (systemPostPermissionGranted) "GRANTED ✓" else "DENIED ✕")
                     DiagnosticItemRow("Scheduler Status", if (masterEnabled) "ACTIVE (Every 1 Hour)" else "INACTIVE")
                     DiagnosticItemRow("Today's Attendance Status", todayMarked)
                     DiagnosticItemRow("Eligible Time Window", "6:00 PM - 10:00 PM")
                     DiagnosticItemRow("Device Battery Optimization", "Normal")
                     DiagnosticItemRow("Next Eligible Notification", if (todayMarked.startsWith("NOT MARKED")) "Today's Attendance Reminder (6-10 PM)" else "Weekly / Monthly Report (Time Triggered)")
-                    DiagnosticItemRow("Skip Reason if Any", if (!masterEnabled) "Master disabled" else if (!permissionGranted) "Permission denied" else if (todayMarked.startsWith("MARKED")) "Attendance already marked for today" else "None (Ready for 6:00 PM Window)")
+                    DiagnosticItemRow("Skip Reason if Any", if (!masterEnabled) "Master disabled" else if (!permissionGranted || !systemPostPermissionGranted) "Permission denied" else if (todayMarked.startsWith("MARKED")) "Attendance already marked for today" else "None (Ready for 6:00 PM Window)")
                     DiagnosticItemRow("Latest Evaluation Execution", if (logs.isNotEmpty()) logs.first().time else "Never")
                     DiagnosticItemRow("Last Notification Sent", if (logs.isNotEmpty()) logs.first().category.uppercase() else "None")
                 }
@@ -1002,7 +1089,7 @@ fun NotificationTestCenterBottomSheet(
                                 Text("Category: ${cat.category}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
 
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Button(
                                     onClick = {
                                         previewTitle = cat.titlePrefix
@@ -1016,21 +1103,76 @@ fun NotificationTestCenterBottomSheet(
                                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
                                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), contentColor = MaterialTheme.colorScheme.primary)
                                 ) {
-                                    Text("Preview", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.preview_notification), fontSize = 11.sp, fontWeight = FontWeight.Bold)
                                 }
 
                                 Button(
                                     onClick = {
-                                        val evaluated = com.synfusion.attendance.utils.NotificationMessageSelector.selectMessage(
-                                            context, cat.category, cat.pool, placeholders
-                                        )
-                                        val messageToSend = evaluated.ifEmpty { "No templates available" }
                                         val channelId = when (cat.category) {
                                             "daily_attendance", "missed_two_days", "missed_three_days", "missed_seven_plus", "missed_ten_days", "long_absence" -> com.synfusion.attendance.utils.LocalNotificationManager.CHANNEL_ATTENDANCE
                                             "weekly_report", "monthly_report", "yearly_report" -> com.synfusion.attendance.utils.LocalNotificationManager.CHANNEL_REPORTS
                                             "earnings", "overtime", "advance" -> com.synfusion.attendance.utils.LocalNotificationManager.CHANNEL_EARNINGS
                                             else -> com.synfusion.attendance.utils.LocalNotificationManager.CHANNEL_FUN_MOTIVATION
                                         }
+
+                                        // Refresh permissions
+                                        val isAppNotificationsEnabled = androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled()
+                                        val isPostPermissionsGranted = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                                            androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                                        } else {
+                                            true
+                                        }
+
+                                        if (!isAppNotificationsEnabled) {
+                                            diagnosticDialogTitle = context.getString(com.synfusion.attendance.R.string.notif_disabled)
+                                            diagnosticDialogDesc = context.getString(com.synfusion.attendance.R.string.notif_disabled_desc)
+                                            diagnosticDialogActionText = context.getString(com.synfusion.attendance.R.string.open_notif_settings)
+                                            diagnosticDialogAction = {
+                                                val intent = Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                                                    putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
+                                                }
+                                                context.startActivity(intent)
+                                            }
+                                            showDiagnosticDialog = true
+                                            return@Button
+                                        }
+
+                                        if (!isPostPermissionsGranted && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                                            diagnosticDialogTitle = context.getString(com.synfusion.attendance.R.string.notif_permission_required)
+                                            diagnosticDialogDesc = context.getString(com.synfusion.attendance.R.string.notif_permission_desc)
+                                            diagnosticDialogActionText = context.getString(com.synfusion.attendance.R.string.allow_notifications)
+                                            diagnosticDialogAction = {
+                                                permissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                                            }
+                                            showDiagnosticDialog = true
+                                            return@Button
+                                        }
+
+                                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                                            val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+                                            val channel = manager.getNotificationChannel(channelId)
+                                            if (channel != null && channel.importance == android.app.NotificationManager.IMPORTANCE_NONE) {
+                                                diagnosticDialogTitle = context.getString(com.synfusion.attendance.R.string.notif_channel_disabled)
+                                                diagnosticDialogDesc = context.getString(com.synfusion.attendance.R.string.notif_channel_disabled_desc)
+                                                diagnosticDialogActionText = context.getString(com.synfusion.attendance.R.string.open_notif_settings)
+                                                diagnosticDialogAction = {
+                                                    val intent = Intent(android.provider.Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS).apply {
+                                                        putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
+                                                        putExtra(android.provider.Settings.EXTRA_CHANNEL_ID, channel.id)
+                                                    }
+                                                    context.startActivity(intent)
+                                                }
+                                                showDiagnosticDialog = true
+                                                return@Button
+                                            } else if (channel == null) {
+                                                com.synfusion.attendance.utils.LocalNotificationManager.initChannels(context)
+                                            }
+                                        }
+
+                                        val evaluated = com.synfusion.attendance.utils.NotificationMessageSelector.selectMessage(
+                                            context, cat.category, cat.pool, placeholders
+                                        )
+                                        val messageToSend = evaluated.ifEmpty { "No templates available" }
 
                                         com.synfusion.attendance.utils.LocalNotificationManager.sendNotification(
                                             context = context,
@@ -1040,14 +1182,15 @@ fun NotificationTestCenterBottomSheet(
                                             category = cat.category,
                                             reason = "Manual developer preview test trigger"
                                         )
+
                                         // Refresh history
                                         logs = com.synfusion.attendance.utils.LocalNotificationManager.getNotificationLogs(context)
-                                        Toast.makeText(context, "Test notification triggered!", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, context.getString(com.synfusion.attendance.R.string.notif_sent_successfully), Toast.LENGTH_SHORT).show()
                                     },
                                     shape = RoundedCornerShape(8.dp),
                                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
                                 ) {
-                                    Text("Send Test", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.dev_test), fontSize = 11.sp, fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
@@ -1094,6 +1237,27 @@ fun NotificationTestCenterBottomSheet(
 
             Spacer(modifier = Modifier.height(48.dp))
         }
+    }
+
+    if (showDiagnosticDialog) {
+        AlertDialog(
+            onDismissRequest = { showDiagnosticDialog = false },
+            title = { Text(diagnosticDialogTitle, fontWeight = FontWeight.Bold) },
+            text = { Text(diagnosticDialogDesc) },
+            confirmButton = {
+                Button(onClick = {
+                    showDiagnosticDialog = false
+                    diagnosticDialogAction()
+                }) {
+                    Text(diagnosticDialogActionText)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDiagnosticDialog = false }) {
+                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.cancel))
+                }
+            }
+        )
     }
 }
 

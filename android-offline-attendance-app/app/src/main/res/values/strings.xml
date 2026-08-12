@@ -408,4 +408,22 @@
     <string name="funny_notifications">Funny &amp; Motivation</string>
     <string name="funny_notifications_desc">Funny roasts and motivational comeback messages</string>
     <string name="notification_style">Notification Style</string>
+
+    <string name="notif_permission_required">Notification permission is required</string>
+    <string name="notif_permission_desc">Android has not granted WorkDaily permission to display notifications.</string>
+    <string name="allow_notifications">Allow Notifications</string>
+    <string name="notif_disabled">Notifications are disabled</string>
+    <string name="notif_disabled_desc">WorkDaily cannot display notifications until notifications are enabled in Android settings.</string>
+    <string name="open_notif_settings">Open Notification Settings</string>
+    <string name="notif_channel_disabled">Notification channel is disabled</string>
+    <string name="notif_channel_disabled_desc">The required notification channel is disabled. Please enable it in settings.</string>
+    <string name="notif_system_status">Notification System</string>
+    <string name="notif_status_enabled">Enabled</string>
+    <string name="notif_status_permission_required">Permission Required</string>
+    <string name="notif_status_disabled">Disabled</string>
+    <string name="dev_test">Developer Test</string>
+    <string name="preview_notification">Preview Notification</string>
+    <string name="run_diagnostics">Run Diagnostics</string>
+    <string name="test_notif_success">Test notification sent successfully.</string>
+    <string name="notif_sent_successfully">Test notification sent successfully.</string>
 </resources>
