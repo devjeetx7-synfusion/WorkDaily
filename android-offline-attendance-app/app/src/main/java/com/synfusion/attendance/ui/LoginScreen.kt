@@ -1,4 +1,17 @@
 package com.synfusion.attendance.ui
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.core.content.ContextCompat
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import android.content.Intent
+import android.provider.Settings
+import com.synfusion.attendance.utils.getActivity
+
 
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
@@ -306,12 +319,116 @@ fun LoginScreen(
         )
     }
 
+    val lifecycleOwner = LocalLifecycleOwner.current
+    var showPermissionDialog by remember { mutableStateOf(false) }
+    var isPostPermissionsGranted by remember {
+        mutableStateOf(
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+            } else {
+                true
+            }
+        )
+    }
+
+    var showOpenSettingsButton by remember { mutableStateOf(false) }
+
+    val permissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        isPostPermissionsGranted = isGranted
+        if (isGranted) {
+            showPermissionDialog = false
+            onLoginSuccess()
+        } else {
+            val activity = context.getActivity()
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && activity != null) {
+                val shouldShowRationale = androidx.core.app.ActivityCompat.shouldShowRequestPermissionRationale(activity, Manifest.permission.POST_NOTIFICATIONS)
+                if (!shouldShowRationale) {
+                    // Permanently denied
+                    showOpenSettingsButton = true
+                } else {
+                    showPermissionDialog = false
+                    onLoginSuccess() // Denied but not permanently, just continue
+                }
+            } else {
+                showPermissionDialog = false
+                onLoginSuccess()
+            }
+        }
+    }
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    isPostPermissionsGranted = ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+                } else {
+                    isPostPermissionsGranted = true
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
     val startText = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.create_offline_workspace)
 
     LaunchedEffect(loginState) {
         if (loginState is OfflineLoginState.Success) {
-            onLoginSuccess()
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !isPostPermissionsGranted) {
+                showPermissionDialog = true
+            } else {
+                onLoginSuccess()
+            }
         }
+    }
+
+    if (showPermissionDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showPermissionDialog = false
+                onLoginSuccess()
+            },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Notifications, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.allow_notifications), fontWeight = FontWeight.Bold)
+                }
+            },
+            text = {
+                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.login_notif_desc))
+            },
+            confirmButton = {
+                if (showOpenSettingsButton) {
+                    Button(onClick = {
+                        val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                            putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                        }
+                        context.getActivity()?.startActivity(intent)
+                    }) {
+                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.open_notif_settings))
+                    }
+                } else {
+                    Button(onClick = {
+                        permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    }) {
+                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.allow_notifications))
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showPermissionDialog = false
+                    onLoginSuccess()
+                }) {
+                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.continue_word))
+                }
+            }
+        )
     }
 
     Box(

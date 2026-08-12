@@ -7,6 +7,11 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.flow.Flow
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
+
+
 
 @Composable
 fun <T> Flow<T>.collectAsStateWithLifecycle(
@@ -19,4 +24,16 @@ fun <T> Flow<T>.collectAsStateWithLifecycle(
             this@collectAsStateWithLifecycle.collect { value = it }
         }
     }
+}
+
+
+fun Context.getActivity(): Activity? {
+    var currentContext = this
+    while (currentContext is ContextWrapper) {
+        if (currentContext is Activity) {
+            return currentContext
+        }
+        currentContext = currentContext.baseContext
+    }
+    return null
 }

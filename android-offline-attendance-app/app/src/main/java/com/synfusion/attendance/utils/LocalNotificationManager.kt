@@ -120,11 +120,17 @@ object LocalNotificationManager {
             // Check channel
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-                val channel = manager.getNotificationChannel(channelId)
+                var channel = manager.getNotificationChannel(channelId)
+                if (channel == null) {
+                    initChannels(context) // Re-init if missing
+                    channel = manager.getNotificationChannel(channelId)
+                }
+
                 if (channel == null) {
                     logNotificationHistory(context, category, message, "Failed: Channel $channelId does not exist")
                     return
                 }
+
                 if (channel.importance == NotificationManager.IMPORTANCE_NONE) {
                     logNotificationHistory(context, category, message, "Permission Denied: Channel disabled")
                     return
