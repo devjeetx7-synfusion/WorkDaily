@@ -356,7 +356,7 @@ fun SettingsScreen(
 
 
                         // Reminders Switch
-                        val isSystemEnabled = isAppNotificationsEnabled && isPostPermissionsGranted
+                        val actualNotificationState = state.isRemindersEnabled && isAppNotificationsEnabled && isPostPermissionsGranted
                         Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
                                 Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
@@ -365,7 +365,7 @@ fun SettingsScreen(
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column {
                                     Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.reminders), fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                    val statusText = if (isSystemEnabled) {
+                                    val statusText = if (actualNotificationState) {
                                         androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.notif_status_enabled)
                                     } else {
                                         androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.notif_status_disabled)
@@ -374,27 +374,36 @@ fun SettingsScreen(
                                 }
                             }
                             Switch(
-                                checked = isSystemEnabled,
+                                checked = actualNotificationState,
                                 onCheckedChange = { checked ->
                                     if (checked) {
+                                        // Request system permissions if needed.
                                         if (!isAppNotificationsEnabled) {
                                             val intent = Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
                                                 putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
                                             }
                                             context.getActivity()?.startActivity(intent)
+                                        } else if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                                            val permissionCheck = androidx.core.content.ContextCompat.checkSelfPermission(
+                                                context,
+                                                android.Manifest.permission.POST_NOTIFICATIONS
+                                            )
+                                            if (permissionCheck != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                                                permissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                                            } else {
+                                                viewModel.toggleReminders(true)
+                                                com.synfusion.attendance.utils.NotificationScheduler.schedulePeriodicWork(context)
+                                            }
+                                            context.getActivity()?.startActivity(intent)
                                         } else if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU && !isPostPermissionsGranted) {
                                             permissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
                                         } else {
-                                            // fallback just in case
                                             viewModel.toggleReminders(true)
                                             com.synfusion.attendance.utils.NotificationScheduler.schedulePeriodicWork(context)
                                         }
                                     } else {
-                                        // Direct to system settings to disable
-                                        val intent = Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-                                            putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
-                                        }
-                                        context.getActivity()?.startActivity(intent)
+                                        viewModel.toggleReminders(false)
+                                        com.synfusion.attendance.utils.NotificationScheduler.cancelAllScheduledWork(context)
                                     }
                                 }
                             )
