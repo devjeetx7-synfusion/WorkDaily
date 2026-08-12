@@ -22,6 +22,12 @@ class NotificationWorker(
             val prefsRepo = com.synfusion.attendance.data.OfflinePreferencesRepository(applicationContext)
 
             // Check system permissions first
+            // Let's check master toggles before running evaluation
+            val masterEnabled = prefsRepo.remindersFlow.first()
+            if (!masterEnabled) {
+                return Result.success() // Reminders OFF
+            }
+
             val notifManager = androidx.core.app.NotificationManagerCompat.from(applicationContext)
             if (!notifManager.areNotificationsEnabled()) {
                 LocalNotificationManager.sendNotification(
@@ -52,11 +58,6 @@ class NotificationWorker(
                 }
             }
 
-            // Let's check master toggles before running evaluation
-            val masterEnabled = prefsRepo.remindersFlow.first()
-            if (!masterEnabled) {
-                return Result.success()
-            }
 
             // Check if active hours check is met
             // Daily Attendance reminder eligibility is 6:00 PM (18) to 10:00 PM (22)

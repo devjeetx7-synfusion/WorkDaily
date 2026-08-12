@@ -412,4 +412,7 @@
     <string name="run_diagnostics">डायग्नोस्टिक्स चलाएं</string>
     <string name="test_notif_success">टेस्ट नोटिफिकेशन सफलतापूर्वक भेजा गया।</string>
     <string name="notif_sent_successfully">टेस्ट नोटिफिकेशन सफलतापूर्वक भेजा गया।</string>
+
+    <string name="login_notif_desc">उपस्थिति अनुस्मारक, रिपोर्ट और महत्वपूर्ण WorkDaily अपडेट प्राप्त करने के लिए नोटिफिकेशन चालू करें।</string>
+    <string name="continue_word">जारी रखें</string>
 </resources>

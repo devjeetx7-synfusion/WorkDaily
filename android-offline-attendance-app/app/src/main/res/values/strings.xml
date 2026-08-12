@@ -413,4 +413,7 @@
     <string name="run_diagnostics">Run Diagnostics</string>
     <string name="test_notif_success">Test notification sent successfully.</string>
     <string name="notif_sent_successfully">Test notification sent successfully.</string>
+
+    <string name="login_notif_desc">Enable notifications to receive attendance reminders, reports and important WorkDaily updates.</string>
+    <string name="continue_word">Continue</string>
 </resources>
