@@ -155,8 +155,13 @@ fun SettingsScreen(
             val intent = Intent(context, MainActivity::class.java).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
             }
-            context.startActivity(intent)
-            (context as? android.app.Activity)?.finish()
+            val activity = context.getActivity()
+            if (activity != null) {
+                activity.startActivity(intent)
+                activity.finish()
+            } else {
+                context.startActivity(intent)
+            }
         }
     }
     var showLogoutBottomSheet by remember { mutableStateOf(false) }
@@ -323,7 +328,7 @@ fun SettingsScreen(
                             HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
                             Row(modifier = Modifier.fillMaxWidth().clickable {
                                 val intent = android.content.Intent(context, LanguageSelectorActivity::class.java)
-                                context.startActivity(intent)
+                                context.getActivity()?.startActivity(intent)
                             }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
@@ -377,24 +382,22 @@ fun SettingsScreen(
                                 checked = actualNotificationState,
                                 onCheckedChange = { checked ->
                                     if (checked) {
-                                        // Request system permissions if needed.
                                         if (!isAppNotificationsEnabled) {
-                                            val intent = Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-                                                putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
+                                            try {
+                                                val intent = Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                                                    putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
+                                                }
+                                                context.getActivity()?.startActivity(intent)
+                                            } catch (e: Exception) {
+                                                try {
+                                                    val fallbackIntent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                                        data = android.net.Uri.fromParts("package", context.packageName, null)
+                                                    }
+                                                    context.getActivity()?.startActivity(fallbackIntent)
+                                                } catch (ex: Exception) {
+                                                    Toast.makeText(context, "Unable to open settings", Toast.LENGTH_SHORT).show()
+                                                }
                                             }
-                                            context.getActivity()?.startActivity(intent)
-                                        } else if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                                            val permissionCheck = androidx.core.content.ContextCompat.checkSelfPermission(
-                                                context,
-                                                android.Manifest.permission.POST_NOTIFICATIONS
-                                            )
-                                            if (permissionCheck != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                                                permissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
-                                            } else {
-                                                viewModel.toggleReminders(true)
-                                                com.synfusion.attendance.utils.NotificationScheduler.schedulePeriodicWork(context)
-                                            }
-                                            context.getActivity()?.startActivity(intent)
                                         } else if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU && !isPostPermissionsGranted) {
                                             permissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
                                         } else {
@@ -481,7 +484,7 @@ fun SettingsScreen(
                                             putExtra(Intent.EXTRA_STREAM, uri)
                                             flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
                                         }
-                                        context.startActivity(Intent.createChooser(intent, "Share Backup"))
+                                        context.getActivity()?.startActivity(Intent.createChooser(intent, "Share Backup"))
                                     },
                                     modifier = Modifier.weight(1f),
                                     shape = RoundedCornerShape(8.dp)
@@ -724,7 +727,7 @@ fun SettingsScreen(
                                 putExtra(Intent.EXTRA_STREAM, uri)
                                 flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
                             }
-                            context.startActivity(Intent.createChooser(intent, "Share Backup ZIP"))
+                            context.getActivity()?.startActivity(Intent.createChooser(intent, "Share Backup ZIP"))
                         }
                     ) {
                         Icon(Icons.Default.Share, null, modifier = Modifier.size(16.dp))
@@ -757,7 +760,6 @@ fun NotificationTestCenterBottomSheet(
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope()
 
     val settingsState = viewModel.state.collectAsState().value
     val masterEnabled = settingsState.isRemindersEnabled
@@ -1035,10 +1037,21 @@ fun NotificationTestCenterBottomSheet(
                                             diagnosticDialogDesc = context.getString(com.synfusion.attendance.R.string.notif_disabled_desc)
                                             diagnosticDialogActionText = context.getString(com.synfusion.attendance.R.string.open_notif_settings)
                                             diagnosticDialogAction = {
-                                                val intent = Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-                                                    putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
+                                                try {
+                                                    val intent = Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                                                        putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
+                                                    }
+                                                    context.getActivity()?.startActivity(intent)
+                                                } catch (e: Exception) {
+                                                    try {
+                                                        val fallbackIntent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                                            data = android.net.Uri.fromParts("package", context.packageName, null)
+                                                        }
+                                                        context.getActivity()?.startActivity(fallbackIntent)
+                                                    } catch (ex: Exception) {
+                                                        Toast.makeText(context, "Unable to open settings", Toast.LENGTH_SHORT).show()
+                                                    }
                                                 }
-                                                context.startActivity(intent)
                                             }
                                             showDiagnosticDialog = true
                                             return@Button
@@ -1063,11 +1076,29 @@ fun NotificationTestCenterBottomSheet(
                                                 diagnosticDialogDesc = context.getString(com.synfusion.attendance.R.string.notif_channel_disabled_desc)
                                                 diagnosticDialogActionText = context.getString(com.synfusion.attendance.R.string.open_notif_settings)
                                                 diagnosticDialogAction = {
-                                                    val intent = Intent(android.provider.Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS).apply {
-                                                        putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
-                                                        putExtra(android.provider.Settings.EXTRA_CHANNEL_ID, channel.id)
+                                                    try {
+                                                        val intent = Intent(android.provider.Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS).apply {
+                                                            putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
+                                                            putExtra(android.provider.Settings.EXTRA_CHANNEL_ID, channel.id)
+                                                        }
+                                                        context.getActivity()?.startActivity(intent)
+                                                    } catch (e: Exception) {
+                                                        try {
+                                                            val intent = Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                                                                putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
+                                                            }
+                                                            context.getActivity()?.startActivity(intent)
+                                                        } catch (ex: Exception) {
+                                                            try {
+                                                                val fallbackIntent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                                                    data = android.net.Uri.fromParts("package", context.packageName, null)
+                                                                }
+                                                                context.getActivity()?.startActivity(fallbackIntent)
+                                                            } catch (exc: Exception) {
+                                                                Toast.makeText(context, "Unable to open settings", Toast.LENGTH_SHORT).show()
+                                                            }
+                                                        }
                                                     }
-                                                    context.startActivity(intent)
                                                 }
                                                 showDiagnosticDialog = true
                                                 return@Button
