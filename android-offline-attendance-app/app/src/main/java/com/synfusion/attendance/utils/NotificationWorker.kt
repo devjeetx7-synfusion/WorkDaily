@@ -53,7 +53,7 @@ class NotificationWorker(
             }
 
             // Let's check master toggles before running evaluation
-            val masterEnabled = prefsRepo.notificationsMasterFlow.first()
+            val masterEnabled = prefsRepo.remindersFlow.first()
             if (!masterEnabled) {
                 return Result.success()
             }
@@ -65,31 +65,27 @@ class NotificationWorker(
             val isEligibleWindow = hour in 18..22
 
             // Run evaluation with style setting
-            val style = prefsRepo.notificationStyleFlow.first()
-            val evalResult = NotificationRuleEngine.evaluateAllRules(applicationContext, repository, style)
+            val evalResult = NotificationRuleEngine.evaluateAllRules(applicationContext, repository, "Friendly")
 
             if (evalResult.triggerNotification) {
                 // Determine category filters enabled
-                val catEnabled = when (evalResult.category) {
-                    "daily_attendance", "missed_two_days", "missed_three_days", "missed_seven_plus", "missed_ten_days", "long_absence" -> {
-                        isEligibleWindow && prefsRepo.notificationsAttendanceFlow.first()
-                    }
-                    "weekly_report" -> prefsRepo.notificationsWeeklyFlow.first()
-                    "monthly_report", "yearly_report" -> prefsRepo.notificationsMonthlyFlow.first()
-                    "funny" -> prefsRepo.notificationsFunnyFlow.first()
-                    else -> true
+                val isDailyAttendanceType = evalResult.category in listOf(
+                    "daily_attendance", "missed_two_days", "missed_three_days",
+                    "missed_seven_plus", "missed_ten_days", "long_absence"
+                )
+
+                if (isDailyAttendanceType && !isEligibleWindow) {
+                    return Result.success() // Wait for eligible window
                 }
 
-                if (catEnabled) {
-                    LocalNotificationManager.sendNotification(
-                        context = applicationContext,
-                        channelId = evalResult.channelId,
-                        title = evalResult.title,
-                        message = evalResult.message,
-                        category = evalResult.category,
-                        reason = evalResult.reason
-                    )
-                }
+                LocalNotificationManager.sendNotification(
+                    context = applicationContext,
+                    channelId = evalResult.channelId,
+                    title = evalResult.title,
+                    message = evalResult.message,
+                    category = evalResult.category,
+                    reason = evalResult.reason
+                )
             }
         } catch (e: Exception) {
             // Never crash, safely return success (could try retry if important, but background reminders can skip)

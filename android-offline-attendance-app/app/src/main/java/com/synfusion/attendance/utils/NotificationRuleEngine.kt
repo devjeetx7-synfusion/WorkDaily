@@ -23,6 +23,12 @@ object NotificationRuleEngine {
         // 1. Fetch User Data
         val user: UserEntity? = kotlinx.coroutines.runBlocking { repository.getUser() }
 
+        if (user == null) {
+            return RuleEvaluationResult(false, LocalNotificationManager.CHANNEL_ATTENDANCE, "", "", "", "No active user")
+        }
+
+        val userId = user.id
+
         // 2. Fetch Attendance Records
         val allRecords = kotlinx.coroutines.runBlocking { repository.getPersonalAttendance() }
         val todayRecord = allRecords.find { it.date == todayStr && it.status != "advance" }
@@ -36,11 +42,11 @@ object NotificationRuleEngine {
         var channel = LocalNotificationManager.CHANNEL_ATTENDANCE
         var reason = "No rules triggered"
 
-        val canSendDaily = pref.getString(KEY_LAST_ATTENDANCE_DATE, "") != todayStr
+        val canSendDaily = pref.getString("${KEY_LAST_ATTENDANCE_DATE}_$userId", "") != todayStr
         if (todayRecord == null && canSendDaily) {
             // Attendance not marked for today
             val consecutiveMissed = calculateConsecutiveMissedDays(allRecords, todayStr)
-            val milestoneSet = pref.getStringSet(KEY_SENT_MILESTONES, emptySet()) ?: emptySet()
+            val milestoneSet = pref.getStringSet("${KEY_SENT_MILESTONES}_$userId", emptySet()) ?: emptySet()
 
             when {
                 consecutiveMissed >= 30 && !milestoneSet.contains("30") -> {
@@ -49,7 +55,7 @@ object NotificationRuleEngine {
                         context, triggerCategory, NotificationMessagePool.longAbsenceMessages, placeholders
                     )
                     reason = "30 consecutive missed days milestone"
-                    saveSentMilestone(pref, "30")
+                    saveSentMilestone(pref, userId, "30")
                 }
                 consecutiveMissed >= 14 && !milestoneSet.contains("14") -> {
                     triggerCategory = "missed_seven_plus"
@@ -57,7 +63,7 @@ object NotificationRuleEngine {
                         context, triggerCategory, NotificationMessagePool.missedSevenPlusDaysMessages, placeholders
                     )
                     reason = "14 consecutive missed days milestone"
-                    saveSentMilestone(pref, "14")
+                    saveSentMilestone(pref, userId, "14")
                 }
                 consecutiveMissed >= 10 && !milestoneSet.contains("10") -> {
                     triggerCategory = "missed_ten_days"
@@ -65,7 +71,7 @@ object NotificationRuleEngine {
                         context, triggerCategory, NotificationMessagePool.missedTenPlusDaysMessages, placeholders
                     )
                     reason = "10 consecutive missed days milestone"
-                    saveSentMilestone(pref, "10")
+                    saveSentMilestone(pref, userId, "10")
                 }
                 consecutiveMissed >= 7 && !milestoneSet.contains("7") -> {
                     triggerCategory = "missed_seven_plus"
@@ -73,7 +79,7 @@ object NotificationRuleEngine {
                         context, triggerCategory, NotificationMessagePool.missedSevenPlusDaysMessages, placeholders
                     )
                     reason = "7 consecutive missed days milestone"
-                    saveSentMilestone(pref, "7")
+                    saveSentMilestone(pref, userId, "7")
                 }
                 consecutiveMissed >= 3 && !milestoneSet.contains("3") -> {
                     triggerCategory = "missed_three_days"
@@ -81,7 +87,7 @@ object NotificationRuleEngine {
                         context, triggerCategory, NotificationMessagePool.missedThreeDaysMessages, placeholders
                     )
                     reason = "3 consecutive missed days milestone"
-                    saveSentMilestone(pref, "3")
+                    saveSentMilestone(pref, userId, "3")
                 }
                 consecutiveMissed >= 2 && !milestoneSet.contains("2") -> {
                     triggerCategory = "missed_two_days"
@@ -89,36 +95,20 @@ object NotificationRuleEngine {
                         context, triggerCategory, NotificationMessagePool.missedTwoDaysMessages, placeholders
                     )
                     reason = "2 consecutive missed days milestone"
-                    saveSentMilestone(pref, "2")
+                    saveSentMilestone(pref, userId, "2")
                 }
                 else -> {
                     // Normal daily reminder
-                    if (style == "Funny") {
-                        triggerCategory = "funny"
-                        message = NotificationMessageSelector.selectMessage(
-                            context, triggerCategory, NotificationMessagePool.funnyRoastMessages, placeholders
-                        )
-                        channel = LocalNotificationManager.CHANNEL_FUN_MOTIVATION
-                        reason = "Today's attendance missing (Funny Style)"
-                    } else if (style == "Random" && Random().nextBoolean()) {
-                        triggerCategory = "funny"
-                        message = NotificationMessageSelector.selectMessage(
-                            context, triggerCategory, NotificationMessagePool.funnyRoastMessages, placeholders
-                        )
-                        channel = LocalNotificationManager.CHANNEL_FUN_MOTIVATION
-                        reason = "Today's attendance missing (Random Funny)"
-                    } else {
-                        triggerCategory = "daily_attendance"
-                        message = NotificationMessageSelector.selectMessage(
-                            context, triggerCategory, NotificationMessagePool.dailyAttendanceMessages, placeholders
-                        )
-                        reason = "Today's attendance missing"
-                    }
+                    triggerCategory = "daily_attendance"
+                    message = NotificationMessageSelector.selectMessage(
+                        context, triggerCategory, NotificationMessagePool.dailyAttendanceMessages, placeholders
+                    )
+                    reason = "Today's attendance missing"
                 }
             }
 
             if (triggerCategory != null) {
-                pref.edit().putString(KEY_LAST_ATTENDANCE_DATE, todayStr).apply()
+                pref.edit().putString("${KEY_LAST_ATTENDANCE_DATE}_$userId", todayStr).apply()
                 return RuleEvaluationResult(true, channel, "आज की Attendance", message, triggerCategory, reason)
             }
         }
@@ -127,12 +117,12 @@ object NotificationRuleEngine {
         val calendar = Calendar.getInstance()
         val isSunday = calendar.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY
         val currentWeekStr = "${calendar.get(Calendar.YEAR)}-W${calendar.get(Calendar.WEEK_OF_YEAR)}"
-        if (isSunday && pref.getString(KEY_LAST_WEEKLY_DATE, "") != currentWeekStr) {
+        if (isSunday && pref.getString("${KEY_LAST_WEEKLY_DATE}_$userId", "") != currentWeekStr) {
             triggerCategory = "weekly_report"
             message = NotificationMessageSelector.selectMessage(
                 context, triggerCategory, NotificationMessagePool.weeklyReportMessages, placeholders
             )
-            pref.edit().putString(KEY_LAST_WEEKLY_DATE, currentWeekStr).apply()
+            pref.edit().putString("${KEY_LAST_WEEKLY_DATE}_$userId", currentWeekStr).apply()
             return RuleEvaluationResult(
                 true,
                 LocalNotificationManager.CHANNEL_REPORTS,
@@ -146,12 +136,12 @@ object NotificationRuleEngine {
         // Rule C: Monthly Report on 1st of Month
         val isFirstOfMonth = calendar.get(Calendar.DAY_OF_MONTH) == 1
         val currentMonthStr = SimpleDateFormat("yyyy-MM", Locale.getDefault()).format(Date())
-        if (isFirstOfMonth && pref.getString(KEY_LAST_MONTH_DATE, "") != currentMonthStr) {
+        if (isFirstOfMonth && pref.getString("${KEY_LAST_MONTH_DATE}_$userId", "") != currentMonthStr) {
             triggerCategory = "monthly_report"
             message = NotificationMessageSelector.selectMessage(
                 context, triggerCategory, NotificationMessagePool.monthlyReportMessages, placeholders
             )
-            pref.edit().putString(KEY_LAST_MONTH_DATE, currentMonthStr).apply()
+            pref.edit().putString("${KEY_LAST_MONTH_DATE}_$userId", currentMonthStr).apply()
             return RuleEvaluationResult(
                 true,
                 LocalNotificationManager.CHANNEL_REPORTS,
@@ -165,12 +155,12 @@ object NotificationRuleEngine {
         // Rule D: Yearly Report on 1st January
         val isFirstOfYear = calendar.get(Calendar.DAY_OF_MONTH) == 1 && calendar.get(Calendar.MONTH) == Calendar.JANUARY
         val currentYearStr = calendar.get(Calendar.YEAR).toString()
-        if (isFirstOfYear && pref.getString(KEY_LAST_YEAR_DATE, "") != currentYearStr) {
+        if (isFirstOfYear && pref.getString("${KEY_LAST_YEAR_DATE}_$userId", "") != currentYearStr) {
             triggerCategory = "yearly_report"
             message = NotificationMessageSelector.selectMessage(
                 context, triggerCategory, NotificationMessagePool.yearlyReportMessages, placeholders
             )
-            pref.edit().putString(KEY_LAST_YEAR_DATE, currentYearStr).apply()
+            pref.edit().putString("${KEY_LAST_YEAR_DATE}_$userId", currentYearStr).apply()
             return RuleEvaluationResult(
                 true,
                 LocalNotificationManager.CHANNEL_REPORTS,
@@ -184,10 +174,10 @@ object NotificationRuleEngine {
         return RuleEvaluationResult(false, channel, "", "", "", reason)
     }
 
-    private fun saveSentMilestone(pref: android.content.SharedPreferences, day: String) {
-        val milestoneSet = pref.getStringSet(KEY_SENT_MILESTONES, emptySet())?.toMutableSet() ?: mutableSetOf()
+    private fun saveSentMilestone(pref: android.content.SharedPreferences, userId: String, day: String) {
+        val milestoneSet = pref.getStringSet("${KEY_SENT_MILESTONES}_$userId", emptySet())?.toMutableSet() ?: mutableSetOf()
         milestoneSet.add(day)
-        pref.edit().putStringSet(KEY_SENT_MILESTONES, milestoneSet).apply()
+        pref.edit().putStringSet("${KEY_SENT_MILESTONES}_$userId", milestoneSet).apply()
     }
 
     fun buildPlaceholders(user: UserEntity?, allRecords: List<AttendanceEntity>, todayStr: String): Map<String, String> {
