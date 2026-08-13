@@ -79,4 +79,16 @@ class NotificationSystemTest {
         assertEquals("500", placeholders["advance"])
         assertEquals("2,200", placeholders["netPayable"])
     }
+
+    @Test
+    fun testConsolidatedNotificationChannelConfiguration() {
+        // Verify that the consolidated channel ID is correct and stable
+        assertEquals("offline_attendance_reminders", LocalNotificationManager.CHANNEL_OFFLINE_ATTENDANCE)
+
+        // Verify that all backwards-compatible channel aliases resolve to the same consolidated channel ID
+        assertEquals(LocalNotificationManager.CHANNEL_OFFLINE_ATTENDANCE, LocalNotificationManager.CHANNEL_ATTENDANCE)
+        assertEquals(LocalNotificationManager.CHANNEL_OFFLINE_ATTENDANCE, LocalNotificationManager.CHANNEL_REPORTS)
+        assertEquals(LocalNotificationManager.CHANNEL_OFFLINE_ATTENDANCE, LocalNotificationManager.CHANNEL_EARNINGS)
+        assertEquals(LocalNotificationManager.CHANNEL_OFFLINE_ATTENDANCE, LocalNotificationManager.CHANNEL_FUN_MOTIVATION)
+    }
 }

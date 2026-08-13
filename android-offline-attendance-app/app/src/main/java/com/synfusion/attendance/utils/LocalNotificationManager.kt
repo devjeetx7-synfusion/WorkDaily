@@ -18,10 +18,13 @@ import java.util.Locale
 
 object LocalNotificationManager {
 
-    const val CHANNEL_ATTENDANCE = "attendance_reminders"
-    const val CHANNEL_REPORTS = "reports"
-    const val CHANNEL_EARNINGS = "earnings"
-    const val CHANNEL_FUN_MOTIVATION = "funny_motivation"
+    const val CHANNEL_OFFLINE_ATTENDANCE = "offline_attendance_reminders"
+
+    // For backwards compatibility and automatic mapping of existing references
+    const val CHANNEL_ATTENDANCE = CHANNEL_OFFLINE_ATTENDANCE
+    const val CHANNEL_REPORTS = CHANNEL_OFFLINE_ATTENDANCE
+    const val CHANNEL_EARNINGS = CHANNEL_OFFLINE_ATTENDANCE
+    const val CHANNEL_FUN_MOTIVATION = CHANNEL_OFFLINE_ATTENDANCE
 
     private const val PREFS_HISTORY = "notification_send_history_logs"
     private const val KEY_LOGS = "logs_list"
@@ -31,47 +34,57 @@ object LocalNotificationManager {
             val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
             val attendanceChannel = NotificationChannel(
-                CHANNEL_ATTENDANCE,
-                "Attendance Reminders",
+                CHANNEL_OFFLINE_ATTENDANCE,
+                "Offline Attendance Reminders",
                 NotificationManager.IMPORTANCE_DEFAULT
             ).apply {
-                description = "Daily attendance pending reminders and misses"
-            }
-
-            val reportsChannel = NotificationChannel(
-                CHANNEL_REPORTS,
-                "Reports",
-                NotificationManager.IMPORTANCE_DEFAULT
-            ).apply {
-                description = "Weekly, monthly and yearly summaries and progress reports"
-            }
-
-            val earningsChannel = NotificationChannel(
-                CHANNEL_EARNINGS,
-                "Earnings",
-                NotificationManager.IMPORTANCE_DEFAULT
-            ).apply {
-                description = "Wages, overtime and advance updates"
-            }
-
-            val funChannel = NotificationChannel(
-                CHANNEL_FUN_MOTIVATION,
-                "Funny & Motivation",
-                NotificationManager.IMPORTANCE_DEFAULT
-            ).apply {
-                description = "Funny reminders and motivational comeback quotes"
+                description = "Daily attendance pending reminders, misses, reports and earnings updates"
             }
 
             manager.createNotificationChannel(attendanceChannel)
-            manager.createNotificationChannel(reportsChannel)
-            manager.createNotificationChannel(earningsChannel)
-            manager.createNotificationChannel(funChannel)
+
+            // Safely delete old legacy/unused channels to clean up system settings
+            try {
+                manager.deleteNotificationChannel("attendance_reminders")
+                manager.deleteNotificationChannel("reports")
+                manager.deleteNotificationChannel("earnings")
+                manager.deleteNotificationChannel("funny_motivation")
+            } catch (e: Exception) {
+                // Safe fallback if deletion is blocked or fails
+            }
         }
+    }
+
+    fun areNotificationsFullyEnabled(context: Context): Boolean {
+        val notifManager = NotificationManagerCompat.from(context)
+        if (!notifManager.areNotificationsEnabled()) {
+            return false
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (androidx.core.content.ContextCompat.checkSelfPermission(
+                    context,
+                    android.Manifest.permission.POST_NOTIFICATIONS
+                ) != android.content.pm.PackageManager.PERMISSION_GRANTED
+            ) {
+                return false
+            }
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            val channel = manager.getNotificationChannel(CHANNEL_OFFLINE_ATTENDANCE)
+            if (channel != null && channel.importance == NotificationManager.IMPORTANCE_NONE) {
+                return false
+            }
+        }
+
+        return true
     }
 
     fun sendNotification(
         context: Context,
-        channelId: String,
+        channelId: String, // Kept for signature compatibility but mapped to consolidated channel
         title: String,
         message: String,
         category: String,
@@ -82,15 +95,19 @@ object LocalNotificationManager {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
 
+        val notificationId = System.currentTimeMillis().toInt()
+
         val pendingIntent = PendingIntent.getActivity(
             context,
-            System.currentTimeMillis().toInt(),
+            notificationId,
             intent,
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
-        val builder = NotificationCompat.Builder(context, channelId)
-            .setSmallIcon(R.mipmap.ic_launcher) // Use app launcher icon safely
+        val targetChannelId = CHANNEL_OFFLINE_ATTENDANCE
+
+        val builder = NotificationCompat.Builder(context, targetChannelId)
+            .setSmallIcon(com.synfusion.attendance.R.mipmap.ic_launcher) // Use app launcher icon safely
             .setContentTitle(title)
             .setContentText(message)
             .setStyle(NotificationCompat.BigTextStyle().bigText(message))
@@ -99,8 +116,14 @@ object LocalNotificationManager {
             .setAutoCancel(true)
 
         try {
-            val notificationManager = NotificationManagerCompat.from(context)
-            if (!notificationManager.areNotificationsEnabled()) {
+            // Check if title and message are both empty - if so, only log history and return
+            if (title.isBlank() && message.isBlank()) {
+                logNotificationHistory(context, category, message, reason)
+                return
+            }
+
+            val notificationManagerCompat = NotificationManagerCompat.from(context)
+            if (!notificationManagerCompat.areNotificationsEnabled()) {
                 logNotificationHistory(context, category, message, "Permission Denied: System Notifications Disabled")
                 return
             }
@@ -120,14 +143,14 @@ object LocalNotificationManager {
             // Check channel
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-                var channel = manager.getNotificationChannel(channelId)
+                var channel = manager.getNotificationChannel(targetChannelId)
                 if (channel == null) {
                     initChannels(context) // Re-init if missing
-                    channel = manager.getNotificationChannel(channelId)
+                    channel = manager.getNotificationChannel(targetChannelId)
                 }
 
                 if (channel == null) {
-                    logNotificationHistory(context, category, message, "Failed: Channel $channelId does not exist")
+                    logNotificationHistory(context, category, message, "Failed: Channel $targetChannelId does not exist")
                     return
                 }
 
@@ -137,8 +160,9 @@ object LocalNotificationManager {
                 }
             }
 
-            val notificationId = System.currentTimeMillis().toInt()
-            notificationManager.notify(notificationId, builder.build())
+            // Use the standard NotificationManager system API directly to post
+            val systemManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            systemManager.notify(notificationId, builder.build())
 
             // Add to execution logs
             logNotificationHistory(context, category, message, reason)
@@ -147,7 +171,7 @@ object LocalNotificationManager {
         }
     }
 
-    private fun logNotificationHistory(
+    fun logNotificationHistory(
         context: Context,
         category: String,
         message: String,

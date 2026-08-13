@@ -28,8 +28,7 @@ class NotificationWorker(
                 return Result.success() // Reminders OFF
             }
 
-            val notifManager = androidx.core.app.NotificationManagerCompat.from(applicationContext)
-            if (!notifManager.areNotificationsEnabled()) {
+            if (!LocalNotificationManager.areNotificationsFullyEnabled(applicationContext)) {
                 LocalNotificationManager.sendNotification(
                     context = applicationContext,
                     channelId = "",
@@ -39,23 +38,6 @@ class NotificationWorker(
                     reason = "SKIPPED_NOTIFICATION_PERMISSION_DENIED"
                 )
                 return Result.success()
-            }
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                if (androidx.core.content.ContextCompat.checkSelfPermission(
-                        applicationContext,
-                        android.Manifest.permission.POST_NOTIFICATIONS
-                    ) != android.content.pm.PackageManager.PERMISSION_GRANTED
-                ) {
-                    LocalNotificationManager.sendNotification(
-                        context = applicationContext,
-                        channelId = "",
-                        title = "",
-                        message = "",
-                        category = "worker",
-                        reason = "SKIPPED_NOTIFICATION_PERMISSION_DENIED"
-                    )
-                    return Result.success()
-                }
             }
 
 
