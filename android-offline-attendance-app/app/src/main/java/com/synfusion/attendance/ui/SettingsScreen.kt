@@ -15,8 +15,16 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -340,6 +348,126 @@ fun SettingsScreen(
                         }
                         if (state.dailyWage > 0) {
                             Text(text = "₹${AmountFormatter.format(state.dailyWage)} / day", fontSize = 14.sp, color = Color(0xFF16A34A), fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+
+            // Premium "Stay Connected" Section with WhatsApp Follow Card
+            val startStayConnectedAnimation = remember { mutableStateOf(false) }
+            LaunchedEffect(Unit) {
+                startStayConnectedAnimation.value = true
+            }
+            val cardStayConnectedAlpha by animateFloatAsState(
+                targetValue = if (startStayConnectedAnimation.value) 1f else 0f,
+                animationSpec = tween(durationMillis = 350, easing = LinearOutSlowInEasing),
+                label = "stayConnectedAlpha"
+            )
+            val cardStayConnectedTranslationY by animateFloatAsState(
+                targetValue = if (startStayConnectedAnimation.value) 0f else 15f,
+                animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
+                label = "stayConnectedTranslation"
+            )
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .graphicsLayer {
+                        alpha = cardStayConnectedAlpha
+                        translationY = cardStayConnectedTranslationY
+                    },
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.stay_connected),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(start = 4.dp)
+                )
+
+                val isDark = isSystemInDarkTheme()
+                val glassBgColor = if (isDark) Color(0xFF25D366).copy(alpha = 0.12f) else Color(0xFF25D366).copy(alpha = 0.08f)
+                val glassBorderColor = if (isDark) Color(0xFF25D366).copy(alpha = 0.25f) else Color(0xFF25D366).copy(alpha = 0.15f)
+                val iconContainerColor = if (isDark) Color(0xFF25D366).copy(alpha = 0.2f) else Color(0xFF25D366).copy(alpha = 0.12f)
+
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = glassBgColor),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, glassBorderColor)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(48.dp)
+                                .clip(androidx.compose.foundation.shape.CircleShape)
+                                .background(iconContainerColor),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = com.synfusion.attendance.ui.components.WhatsAppIcon,
+                                contentDescription = "WhatsApp Logo",
+                                tint = Color.White,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.whatsapp_channel),
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.follow_workdaily_desc),
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        val buttonInteractionSource = remember { MutableInteractionSource() }
+                        val isButtonPressed by buttonInteractionSource.collectIsPressedAsState()
+                        val buttonScale by animateFloatAsState(
+                            targetValue = if (isButtonPressed) 0.95f else 1f,
+                            animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
+                            label = "btnScale"
+                        )
+
+                        Button(
+                            onClick = {
+                                com.synfusion.attendance.ui.components.SafeExternalLinkHandler.openLink(
+                                    context,
+                                    "https://whatsapp.com/channel/0029Vb8bS4U23n3lJwvpbP3H"
+                                )
+                            },
+                            shape = androidx.compose.foundation.shape.CircleShape,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF11824A),
+                                contentColor = Color.White
+                            ),
+                            elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp),
+                            interactionSource = buttonInteractionSource,
+                            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 10.dp),
+                            modifier = Modifier
+                                .graphicsLayer {
+                                    scaleX = buttonScale
+                                    scaleY = buttonScale
+                                }
+                                .defaultMinSize(minWidth = 80.dp, minHeight = 44.dp)
+                        ) {
+                            Text(
+                                text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.follow_channel),
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold
+                            )
                         }
                     }
                 }
