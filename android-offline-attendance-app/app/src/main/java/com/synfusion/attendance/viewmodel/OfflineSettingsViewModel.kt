@@ -36,7 +36,10 @@ data class OfflineSettingsState(
     val triggerRestart: Boolean = false,
     val isLanguageEnabled: Boolean = true,
     val isLanguageActivityEnabled: Boolean = true,
-    val isRoleUiEnabled: Boolean = false
+    val isRoleUiEnabled: Boolean = false,
+    val lastBackupTime: Long? = null,
+    val lastBackupSize: Long? = null,
+    val lastBackupLoc: String? = null
 )
 
 class OfflineSettingsViewModel(
@@ -68,6 +71,29 @@ class OfflineSettingsViewModel(
         viewModelScope.launch {
             repository.languageFlow.collect { lang ->
                 _state.update { it.copy(language = lang ?: "en") }
+            }
+        }
+        viewModelScope.launch {
+            repository.profilePhotoPathFlow.collect { path ->
+                _state.update { it.copy(
+                    profileImageUrl = path ?: "",
+                    originalProfileImageUrl = path ?: ""
+                ) }
+            }
+        }
+        viewModelScope.launch {
+            repository.lastBackupTimeFlow.collect { time ->
+                _state.update { it.copy(lastBackupTime = time) }
+            }
+        }
+        viewModelScope.launch {
+            repository.lastBackupSizeFlow.collect { size ->
+                _state.update { it.copy(lastBackupSize = size) }
+            }
+        }
+        viewModelScope.launch {
+            repository.lastBackupLocFlow.collect { loc ->
+                _state.update { it.copy(lastBackupLoc = loc) }
             }
         }
     }
@@ -143,11 +169,17 @@ class OfflineSettingsViewModel(
         _state.update { it.copy(profileImageUri = uri) }
     }
 
+    fun onRemoveProfilePhoto() {
+        _state.update { it.copy(profileImageUrl = "") }
+    }
+
     fun discardChanges() {
         _state.update { it.copy(
             name = it.originalName,
             dailyWage = it.originalWage,
-            phone = it.originalPhone
+            phone = it.originalPhone,
+            profileImageUrl = it.originalProfileImageUrl,
+            profileImageUri = null
         ) }
     }
 
@@ -159,6 +191,39 @@ class OfflineSettingsViewModel(
             try {
                 val user = withContext(Dispatchers.IO) {
                     localAttendanceRepository.getUser()
+                }
+                val userId = user?.id ?: "default_user"
+                val photoFileName = "${userId}_profile_photo.jpg"
+
+                // Photo selection/removal handling
+                val selectedUri = currentState.profileImageUri
+                if (selectedUri != null) {
+                    val context = repository.context
+                    val photosDir = java.io.File(context.filesDir, "profile_photos")
+                    if (!photosDir.exists()) {
+                        photosDir.mkdirs()
+                    }
+                    val destFile = java.io.File(photosDir, photoFileName)
+                    if (destFile.exists()) {
+                        destFile.delete()
+                    }
+                    withContext(Dispatchers.IO) {
+                        context.contentResolver.openInputStream(selectedUri)?.use { inputStream ->
+                            java.io.FileOutputStream(destFile).use { outputStream ->
+                                inputStream.copyTo(outputStream)
+                            }
+                        }
+                    }
+                    repository.saveProfilePhotoPath(destFile.absolutePath)
+                } else if (currentState.profileImageUrl.isEmpty() && currentState.originalProfileImageUrl.isNotEmpty()) {
+                    // Image was removed
+                    val context = repository.context
+                    val photosDir = java.io.File(context.filesDir, "profile_photos")
+                    val destFile = java.io.File(photosDir, photoFileName)
+                    if (destFile.exists()) {
+                        destFile.delete()
+                    }
+                    repository.saveProfilePhotoPath(null)
                 }
                 if (user != null) {
                     val updated = user.copy(
@@ -183,7 +248,7 @@ class OfflineSettingsViewModel(
                 }
             } catch (e: Exception) {
                 _state.update { it.copy(
-                    savedMessage = "Failed to update profile.",
+                    savedMessage = "Failed to update profile: ${e.localizedMessage}",
                     isSaving = false
                 ) }
             }

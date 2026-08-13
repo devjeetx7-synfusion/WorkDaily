@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.map
 
 val Context.offlineDataStore: DataStore<Preferences> by preferencesDataStore(name = "synfusion_user_prefs")
 
-class OfflinePreferencesRepository(private val context: Context) {
+class OfflinePreferencesRepository(val context: Context) {
 
     companion object {
         val ROLE_KEY = stringPreferencesKey("user_role")
@@ -20,10 +20,30 @@ class OfflinePreferencesRepository(private val context: Context) {
 
         val ONBOARDING_COMPLETED_KEY = booleanPreferencesKey("onboarding_completed")
         val SPLASH_ENABLED_KEY = booleanPreferencesKey("splash_enabled")
+        val PROFILE_PHOTO_PATH_KEY = stringPreferencesKey("profile_photo_path")
+        val LAST_BACKUP_TIME_KEY = longPreferencesKey("last_backup_time")
+        val LAST_BACKUP_SIZE_KEY = longPreferencesKey("last_backup_size")
+        val LAST_BACKUP_LOC_KEY = stringPreferencesKey("last_backup_loc")
     }
 
     val userRoleFlow: Flow<String?> = context.offlineDataStore.data.map { preferences ->
         preferences[ROLE_KEY]
+    }
+
+    val lastBackupTimeFlow: Flow<Long?> = context.offlineDataStore.data.map { preferences ->
+        preferences[LAST_BACKUP_TIME_KEY]
+    }
+
+    val lastBackupSizeFlow: Flow<Long?> = context.offlineDataStore.data.map { preferences ->
+        preferences[LAST_BACKUP_SIZE_KEY]
+    }
+
+    val lastBackupLocFlow: Flow<String?> = context.offlineDataStore.data.map { preferences ->
+        preferences[LAST_BACKUP_LOC_KEY]
+    }
+
+    val profilePhotoPathFlow: Flow<String?> = context.offlineDataStore.data.map { preferences ->
+        preferences[PROFILE_PHOTO_PATH_KEY]
     }
 
     val authTokenFlow: Flow<String?> = context.offlineDataStore.data.map { preferences ->
@@ -89,6 +109,24 @@ class OfflinePreferencesRepository(private val context: Context) {
     suspend fun saveSplashEnabledPreference(enabled: Boolean) {
         context.offlineDataStore.edit { preferences ->
             preferences[SPLASH_ENABLED_KEY] = enabled
+        }
+    }
+
+    suspend fun saveProfilePhotoPath(path: String?) {
+        context.offlineDataStore.edit { preferences ->
+            if (path != null) {
+                preferences[PROFILE_PHOTO_PATH_KEY] = path
+            } else {
+                preferences.remove(PROFILE_PHOTO_PATH_KEY)
+            }
+        }
+    }
+
+    suspend fun saveBackupMetadata(timestamp: Long, size: Long, location: String) {
+        context.offlineDataStore.edit { preferences ->
+            preferences[LAST_BACKUP_TIME_KEY] = timestamp
+            preferences[LAST_BACKUP_SIZE_KEY] = size
+            preferences[LAST_BACKUP_LOC_KEY] = location
         }
     }
 
