@@ -1,0 +1,1912 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html>
+<html b:css='false' b:defaultwidgetversion='2' b:layoutsversion='3' expr:dir='data:blog.languageDirection' expr:lang='data:blog.locale.language' xmlns='http://www.w3.org/1999/xhtml' xmlns:b='http://www.google.com/2005/gml/b' xmlns:data='http://www.google.com/2005/gml/data' xmlns:expr='http://www.google.com/2005/gml/expr'>
+<head>
+  <meta charset='utf-8'/>
+  <meta content='width=device-width, initial-scale=1, shrink-to-fit=no' name='viewport'/>
+
+  <!-- SEO & Social Meta Tags -->
+  <title><data:view.title/></title>
+  <meta expr:content='data:blog.metaDescription ?: data:blog.title' name='description'/>
+
+  <!-- Open Graph / Facebook -->
+  <meta expr:content='data:view.title' property='og:title'/>
+  <meta expr:content='data:blog.metaDescription ?: data:blog.title' property='og:description'/>
+  <meta expr:content='data:view.url' property='og:url'/>
+  <meta content='website' property='og:type'/>
+  <meta expr:content='data:blog.title' property='og:site_name'/>
+
+  <!-- Fonts -->
+  <link href='https://fonts.googleapis.com' rel='preconnect'/>
+  <link crossorigin='anonymous' href='https://fonts.gstatic.com' rel='preconnect'/>
+  <link href='https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap' rel='stylesheet'/>
+
+  <b:skin><![CDATA[
+  /*
+   * WorkDaily Premium App-Landing Blogger Theme
+   * Built for SynFusion's WorkDaily productivity system
+   * Under the handle @getsynfusion
+   */
+
+  /* Color System */
+  :root {
+    --mint-primary: #0F9F7A;
+    --mint-light: #EBFDF7;
+    --mint-hover: #0D8F6D;
+    --blue-secondary: #2563EB;
+    --blue-light: #EFF6FF;
+    --orange-tertiary: #EA580C;
+    --orange-light: #FFF7ED;
+    --purple-leave: #7C3AED;
+    --purple-light: #F5F3FF;
+
+    --bg-light: #F8FAFB;
+    --surface-light: #FFFFFF;
+    --text-primary: #0F172A;
+    --text-secondary: #475569;
+    --text-muted: #94A3B8;
+    --border-light: #E2E8F0;
+    --card-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.04), 0 2px 8px -1px rgba(15, 23, 42, 0.02);
+    --hover-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.08), 0 10px 10px -5px rgba(15, 23, 42, 0.04);
+    --glass-bg: rgba(255, 255, 255, 0.85);
+    --glass-border: rgba(255, 255, 255, 0.6);
+  }
+
+  /* Reset & Base Styles */
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 80px;
+    background-color: var(--bg-light);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    overflow-x: hidden;
+    line-height: 1.6;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+    transition: all 0.2s ease-in-out;
+  }
+
+  /* Container layout */
+  .container {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 0 24px;
+    width: 100%;
+  }
+
+  /* Typography Utilities */
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+  }
+
+  .text-gradient {
+    background: linear-gradient(135deg, var(--mint-primary) 0%, var(--blue-secondary) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* Layout Sections spacing */
+  section {
+    padding: 100px 0;
+    position: relative;
+  }
+
+  .section-tag {
+    display: inline-block;
+    padding: 6px 16px;
+    border-radius: 99px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--mint-primary);
+    background-color: var(--mint-light);
+    margin-bottom: 16px;
+  }
+
+  .section-title {
+    font-size: 38px;
+    margin-bottom: 16px;
+    max-width: 700px;
+  }
+
+  .section-subtitle {
+    font-size: 18px;
+    color: var(--text-secondary);
+    max-width: 650px;
+    margin-bottom: 48px;
+  }
+
+  /* BUTTONS */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 14px 28px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    border: none;
+    gap: 8px;
+  }
+
+  .btn-primary {
+    background-color: var(--mint-primary);
+    color: #FFFFFF;
+    box-shadow: 0 4px 14px rgba(15, 159, 122, 0.25);
+  }
+
+  .btn-primary:hover {
+    background-color: var(--mint-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(15, 159, 122, 0.35);
+  }
+
+  .btn-secondary {
+    background-color: #FFFFFF;
+    color: var(--text-primary);
+    border: 1px solid var(--border-light);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+  }
+
+  .btn-secondary:hover {
+    background-color: var(--bg-light);
+    border-color: var(--text-muted);
+    transform: translateY(-2px);
+  }
+
+  /* STICKY HEADER */
+  header.site-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1000;
+    background-color: transparent;
+    border-bottom: 1px solid transparent;
+    transition: all 0.3s ease;
+  }
+
+  header.site-header.scrolled {
+    background-color: var(--glass-bg);
+    border-bottom: 1px solid var(--border-light);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 4px 30px rgba(15, 23, 42, 0.03);
+  }
+
+  .header-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 80px;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--text-primary);
+  }
+
+  .logo svg {
+    width: 32px;
+    height: 32px;
+    fill: var(--mint-primary);
+  }
+
+  .nav-menu {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    list-style: none;
+  }
+
+  .nav-link {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+
+  .nav-link:hover, .nav-link.active {
+    color: var(--mint-primary);
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  /* Hamburger / Mobile Nav Button */
+  .menu-toggle {
+    display: none;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 24px;
+    height: 18px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    z-index: 1001;
+  }
+
+  .menu-toggle span {
+    display: block;
+    width: 100%;
+    height: 2px;
+    background-color: var(--text-primary);
+    border-radius: 2px;
+    transition: all 0.3s ease;
+  }
+
+  /* HERO SECTION */
+  .hero-section {
+    padding-top: 180px;
+    padding-bottom: 100px;
+    background: radial-gradient(circle at 90% 10%, rgba(15, 159, 122, 0.06) 0%, rgba(37, 99, 247, 0.03) 50%, transparent 100%);
+    overflow: hidden;
+  }
+
+  .hero-grid {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 48px;
+    align-items: center;
+  }
+
+  .hero-content h1 {
+    font-size: 56px;
+    line-height: 1.15;
+    margin-bottom: 24px;
+    letter-spacing: -0.03em;
+  }
+
+  .hero-description {
+    font-size: 20px;
+    color: var(--text-secondary);
+    margin-bottom: 36px;
+    line-height: 1.5;
+  }
+
+  .hero-actions {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 40px;
+  }
+
+  /* Hero Mockup Design (High End Custom CSS) */
+  .hero-mockup-container {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .phone-frame {
+    width: 320px;
+    height: 640px;
+    background-color: #020617;
+    border: 12px solid #1E293B;
+    border-radius: 40px;
+    box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Phone Island / Notch */
+  .phone-notch {
+    width: 110px;
+    height: 25px;
+    background-color: #1E293B;
+    border-bottom-left-radius: 16px;
+    border-bottom-right-radius: 16px;
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+  }
+
+  .phone-screen {
+    flex: 1;
+    background-color: var(--bg-light);
+    padding: 30px 16px 16px 16px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    font-size: 12px;
+  }
+
+  /* Mockup App Components */
+  .mockup-app-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+
+  .mockup-user-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .mockup-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: var(--mint-primary);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+  }
+
+  .mockup-username {
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  .mockup-user-role {
+    font-size: 10px;
+    color: var(--text-secondary);
+  }
+
+  .mockup-card {
+    background: #FFFFFF;
+    border-radius: 16px;
+    padding: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+    border: 1px solid var(--border-light);
+    margin-bottom: 12px;
+  }
+
+  .mockup-card-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .mockup-stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .mockup-stat-num {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--mint-primary);
+  }
+
+  /* Mockup Calendar UI */
+  .mockup-calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    text-align: center;
+  }
+
+  .mockup-cal-day {
+    padding: 6px 0;
+    border-radius: 6px;
+    font-weight: 500;
+    font-size: 9px;
+  }
+
+  .mockup-cal-day.present {
+    background-color: var(--mint-light);
+    color: var(--mint-primary);
+    font-weight: 700;
+  }
+
+  .mockup-cal-day.absent {
+    background-color: #FEE2E2;
+    color: #EF4444;
+    font-weight: 700;
+  }
+
+  .mockup-cal-day.half {
+    background-color: var(--orange-light);
+    color: var(--orange-tertiary);
+    font-weight: 700;
+  }
+
+  /* Floating elements outside phone to feel premium */
+  .floating-card {
+    position: absolute;
+    background-color: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    z-index: 10;
+  }
+
+  .fc-1 {
+    bottom: 80px;
+    left: -40px;
+    animation: float1 4s ease-in-out infinite alternate;
+  }
+
+  .fc-2 {
+    top: 80px;
+    right: -40px;
+    animation: float2 4.5s ease-in-out infinite alternate;
+  }
+
+  @keyframes float1 {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(-15px); }
+  }
+  @keyframes float2 {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(15px); }
+  }
+
+  /* TRUST SECTION */
+  .trust-section {
+    padding: 60px 0;
+    background-color: #FFFFFF;
+    border-top: 1px solid var(--border-light);
+    border-bottom: 1px solid var(--border-light);
+  }
+
+  .trust-grid {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 32px;
+  }
+
+  .trust-heading {
+    flex: 1;
+    min-width: 280px;
+  }
+
+  .trust-heading h2 {
+    font-size: 28px;
+    line-height: 1.3;
+  }
+
+  .trust-stats {
+    display: flex;
+    gap: 48px;
+    flex-wrap: wrap;
+  }
+
+  .stat-block {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .stat-val {
+    font-size: 36px;
+    font-weight: 800;
+    color: var(--mint-primary);
+  }
+
+  .stat-lbl {
+    font-size: 14px;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+
+  /* FEATURES SECTION */
+  .features-section {
+    background-color: var(--bg-light);
+  }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px;
+  }
+
+  .feature-card {
+    background-color: var(--surface-light);
+    border: 1px solid var(--border-light);
+    border-radius: 20px;
+    padding: 32px;
+    box-shadow: var(--card-shadow);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .feature-card:hover {
+    transform: translateY(-8px);
+    box-shadow: var(--hover-shadow);
+    border-color: var(--mint-primary);
+  }
+
+  .feature-icon-wrap {
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+    background-color: var(--mint-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 24px;
+    color: var(--mint-primary);
+  }
+
+  .feature-icon-wrap svg {
+    width: 28px;
+    height: 28px;
+    fill: currentColor;
+  }
+
+  .feature-card h3 {
+    font-size: 20px;
+    margin-bottom: 12px;
+    color: var(--text-primary);
+  }
+
+  .feature-card p {
+    color: var(--text-secondary);
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  /* APP PREVIEW SECTION (Tab-based Showcase) */
+  .preview-section {
+    background-color: #FFFFFF;
+  }
+
+  .preview-wrapper {
+    display: grid;
+    grid-template-columns: 0.9fr 1.1fr;
+    gap: 64px;
+    align-items: center;
+  }
+
+  .preview-nav-tabs {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .preview-tab {
+    padding: 24px;
+    border-radius: 16px;
+    cursor: pointer;
+    border-left: 4px solid transparent;
+    transition: all 0.3s ease;
+    background-color: transparent;
+  }
+
+  .preview-tab:hover {
+    background-color: var(--bg-light);
+  }
+
+  .preview-tab.active {
+    background-color: var(--mint-light);
+    border-left-color: var(--mint-primary);
+  }
+
+  .preview-tab h3 {
+    font-size: 18px;
+    margin-bottom: 6px;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .preview-tab.active h3 {
+    color: var(--mint-primary);
+  }
+
+  .preview-tab p {
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+
+  /* Slides Display Container */
+  .preview-mockup-wrap {
+    background-color: var(--bg-light);
+    border-radius: 32px;
+    padding: 48px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 1px solid var(--border-light);
+    min-height: 540px;
+    position: relative;
+  }
+
+  .preview-slide {
+    display: none;
+    width: 100%;
+    animation: fadeScale 0.4s ease-out forwards;
+  }
+
+  .preview-slide.active {
+    display: block;
+  }
+
+  @keyframes fadeScale {
+    0% { opacity: 0; transform: scale(0.96); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+
+  /* Slide UI Mockups inside Phone Screen */
+  .phone-screen-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 20px;
+  }
+
+  /* DOWNLOAD CONVERSION ZONE */
+  .download-section {
+    background-color: var(--bg-light);
+  }
+
+  .download-box {
+    background: linear-gradient(135deg, #0C4A3E 0%, #03213B 100%);
+    border-radius: 32px;
+    padding: 64px;
+    color: #FFFFFF;
+    position: relative;
+    overflow: hidden;
+    box-shadow: var(--hover-shadow);
+  }
+
+  .download-box-wrap {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 48px;
+    align-items: center;
+    position: relative;
+    z-index: 2;
+  }
+
+  .download-box h2 {
+    font-size: 44px;
+    margin-bottom: 16px;
+  }
+
+  .download-box p {
+    font-size: 18px;
+    color: #A7F3D0;
+    margin-bottom: 32px;
+  }
+
+  .download-buttons {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 32px;
+  }
+
+  .btn-store {
+    background-color: #FFFFFF;
+    color: #020617;
+    border-radius: 12px;
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 700;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  }
+
+  .btn-store:hover {
+    transform: translateY(-2px);
+    background-color: var(--bg-light);
+  }
+
+  .btn-store svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  /* WhatsApp Channel Follow Box (Glassmorphic) */
+  .whatsapp-glass-card {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 24px;
+    padding: 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    box-shadow: 0 16px 32px rgba(0, 0, 0, 0.15);
+  }
+
+  .wa-badge {
+    background-color: #25D366;
+    color: #FFFFFF;
+    padding: 4px 12px;
+    border-radius: 99px;
+    font-size: 12px;
+    font-weight: 700;
+    align-self: flex-start;
+  }
+
+  .whatsapp-glass-card h3 {
+    font-size: 22px;
+    color: #FFFFFF;
+  }
+
+  .whatsapp-glass-card p {
+    font-size: 14px;
+    color: #E2E8F0;
+    margin-bottom: 0;
+  }
+
+  .btn-whatsapp {
+    background-color: #25D366;
+    color: #FFFFFF;
+    font-weight: 700;
+    box-shadow: 0 4px 14px rgba(37, 211, 102, 0.3);
+  }
+
+  .btn-whatsapp:hover {
+    background-color: #20BA5A;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(37, 211, 102, 0.4);
+  }
+
+  /* BLOG PREVIEW GRID & INNER POST */
+  .blog-section {
+    background-color: #FFFFFF;
+  }
+
+  .blog-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px;
+  }
+
+  .blog-card {
+    background-color: #FFFFFF;
+    border: 1px solid var(--border-light);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: var(--card-shadow);
+    display: flex;
+    flex-direction: column;
+    transition: all 0.25s ease;
+  }
+
+  .blog-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--hover-shadow);
+  }
+
+  .blog-thumb-wrap {
+    height: 200px;
+    background-color: var(--bg-light);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .blog-thumb-wrap svg {
+    width: 64px;
+    height: 64px;
+    color: var(--mint-primary);
+  }
+
+  .blog-card-content {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+
+  .blog-card-meta {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+    font-weight: 500;
+  }
+
+  .blog-card h3 {
+    font-size: 18px;
+    margin-bottom: 12px;
+    color: var(--text-primary);
+    line-height: 1.4;
+  }
+
+  .blog-card-desc {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+    flex: 1;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .blog-read-link {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--mint-primary);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .blog-read-link:hover {
+    color: var(--mint-hover);
+  }
+
+  /* INNER BLOG POST VIEW */
+  .blog-container {
+    max-width: 900px;
+    margin: 140px auto 100px auto;
+    padding: 0 24px;
+  }
+
+  .post-header {
+    margin-bottom: 40px;
+    text-align: center;
+  }
+
+  .post-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--mint-primary);
+    font-weight: 600;
+    margin-bottom: 24px;
+  }
+
+  .post-back-btn svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .post-title {
+    font-size: 42px;
+    line-height: 1.2;
+    margin-bottom: 20px;
+  }
+
+  .post-meta {
+    font-size: 15px;
+    color: var(--text-secondary);
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+  }
+
+  .post-body {
+    background-color: #FFFFFF;
+    border: 1px solid var(--border-light);
+    border-radius: 24px;
+    padding: 48px;
+    box-shadow: var(--card-shadow);
+    font-size: 17px;
+    color: #1E293B;
+    line-height: 1.8;
+  }
+
+  .post-body h2 {
+    font-size: 26px;
+    margin-top: 36px;
+    margin-bottom: 16px;
+  }
+
+  .post-body p {
+    margin-bottom: 24px;
+  }
+
+  .post-body ul, .post-body ol {
+    margin-bottom: 24px;
+    padding-left: 24px;
+  }
+
+  .post-body li {
+    margin-bottom: 8px;
+  }
+
+  .post-body blockquote {
+    border-left: 4px solid var(--mint-primary);
+    padding-left: 20px;
+    font-style: italic;
+    color: var(--text-secondary);
+    margin: 32px 0;
+  }
+
+  /* FOOTER */
+  .site-footer {
+    background-color: #0F172A;
+    color: #94A3B8;
+    padding: 80px 0 40px 0;
+    border-top: 1px solid #1E293B;
+  }
+
+  .footer-grid {
+    display: grid;
+    grid-template-columns: 1.5fr repeat(3, 1fr);
+    gap: 48px;
+    margin-bottom: 60px;
+  }
+
+  .footer-brand {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .footer-brand .logo {
+    color: #FFFFFF;
+  }
+
+  .footer-desc {
+    font-size: 15px;
+    line-height: 1.6;
+    max-width: 320px;
+  }
+
+  .social-channels {
+    display: flex;
+    gap: 16px;
+  }
+
+  .social-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #1E293B;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #FFFFFF;
+    border: 1px solid #334155;
+  }
+
+  .social-btn:hover {
+    background-color: var(--mint-primary);
+    border-color: var(--mint-primary);
+    transform: translateY(-2px);
+  }
+
+  .social-btn svg {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+  }
+
+  .footer-col h4 {
+    color: #FFFFFF;
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 24px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .footer-links {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    list-style: none;
+  }
+
+  .footer-link {
+    font-size: 15px;
+  }
+
+  .footer-link:hover {
+    color: #FFFFFF;
+  }
+
+  .footer-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 40px;
+    border-top: 1px solid #1E293B;
+    font-size: 14px;
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+
+  /* MOBILE RESPONSIVE ADAPTATIONS */
+  @media (max-width: 1024px) {
+    .hero-grid {
+      grid-template-columns: 1fr;
+      gap: 60px;
+      text-align: center;
+    }
+
+    .hero-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .hero-actions {
+      justify-content: center;
+    }
+
+    .features-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .preview-wrapper {
+      grid-template-columns: 1fr;
+      gap: 40px;
+    }
+
+    .download-box-wrap {
+      grid-template-columns: 1fr;
+      gap: 40px;
+      text-align: center;
+    }
+
+    .download-buttons {
+      justify-content: center;
+    }
+
+    .whatsapp-glass-card {
+      align-self: center;
+      width: 100%;
+      max-width: 500px;
+    }
+
+    .blog-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 768px) {
+    .menu-toggle {
+      display: flex;
+    }
+
+    .nav-menu {
+      position: fixed;
+      top: 80px;
+      left: -100%;
+      width: 100%;
+      height: calc(100vh - 80px);
+      background-color: #FFFFFF;
+      flex-direction: column;
+      padding: 48px 24px;
+      gap: 32px;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 10px 15px rgba(0,0,0,0.05);
+      z-index: 999;
+    }
+
+    .nav-menu.open {
+      left: 0;
+    }
+
+    .header-actions .btn {
+      display: none;
+    }
+
+    .hero-content h1 {
+      font-size: 38px;
+    }
+
+    .hero-description {
+      font-size: 16px;
+    }
+
+    .section-title {
+      font-size: 28px;
+    }
+
+    .section-subtitle {
+      font-size: 16px;
+    }
+
+    .features-grid, .blog-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .footer-grid {
+      grid-template-columns: 1fr;
+      gap: 32px;
+    }
+
+    .post-title {
+      font-size: 28px;
+    }
+
+    .post-body {
+      padding: 24px;
+    }
+  }
+
+  /* ACCESSIBILITY & UTILITIES */
+  :focus-visible {
+    outline: 3px solid var(--blue-secondary);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+  ]]></b:skin>
+</head>
+<body>
+
+  <!-- STICKY HEADER -->
+  <header class='site-header' id='siteHeader'>
+    <div class='container'>
+      <div class='header-wrap'>
+        <a class='logo' href='#'>
+          <svg viewBox='0 0 24 24'>
+            <path d='M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z'/>
+          </svg>
+          WorkDaily
+        </a>
+
+        <nav>
+          <ul class='nav-menu' id='navMenu'>
+            <li><a class='nav-link active' href='#'>Home</a></li>
+            <li><a class='nav-link' href='#features'>Features</a></li>
+            <li><a class='nav-link' href='#preview'>App Preview</a></li>
+            <li><a class='nav-link' href='#download'>Download</a></li>
+            <li><a class='nav-link' href='#blog'>Blog</a></li>
+          </ul>
+        </nav>
+
+        <div class='header-actions'>
+          <a class='btn btn-primary' href='#download' style='padding: 10px 20px; font-size: 14px;'>Get App</a>
+          <button aria-label='Toggle Navigation' class='menu-toggle' id='menuToggle'>
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- CONDITIONAL PAGE LAYOUTS -->
+  <b:if cond='data:view.isHomepage'>
+
+    <!-- HERO SECTION -->
+    <section class='hero-section'>
+      <div class='container'>
+        <div class='hero-grid'>
+          <div class='hero-content'>
+            <span class='section-tag'>Official Release by SynFusion</span>
+            <h1>WorkDaily — Your Daily <span class='text-gradient'>Productivity</span> Companion</h1>
+            <p class='hero-description'>
+              Manage tasks. Track time. Stay focused. Effortlessly coordinate contractor attendance, daily wage worker logs, and personal earnings through an elegant, offline-first native interface.
+            </p>
+            <div class='hero-actions'>
+              <a class='btn btn-primary' href='#download'>
+                <svg style='width:20px;height:20px;fill:currentColor;' viewBox='0 0 24 24'>
+                  <path d='M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z'/>
+                </svg>
+                Download App
+              </a>
+              <a class='btn btn-secondary' href='#features'>Explore Features</a>
+            </div>
+          </div>
+
+          <!-- Simulated Premium Mobile Mockup -->
+          <div class='hero-mockup-container'>
+            <div class='phone-frame'>
+              <div class='phone-notch'></div>
+              <div class='phone-screen'>
+                <!-- Mockup App Header -->
+                <div class='mockup-app-header'>
+                  <div class='mockup-user-info'>
+                    <div class='mockup-avatar'>S</div>
+                    <div>
+                      <div class='mockup-username'>SynFusion Dev</div>
+                      <div class='mockup-user-role'>Contractor Account</div>
+                    </div>
+                  </div>
+                  <span style='background-color:#E2E8F0;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:600;'>Offline</span>
+                </div>
+
+                <!-- Mockup Earnings Stats Card -->
+                <div class='mockup-card' style='background:linear-gradient(135deg, #0F9F7A 0%, #0D8F6D 100%);color:white;'>
+                  <div class='mockup-card-title' style='color:#A7F3D0;'>This Month's Earnings</div>
+                  <div style='font-size:24px;font-weight:800;margin-bottom:4px;'>₹48,250.00</div>
+                  <div style='display:flex;justify-content:space-between;font-size:10px;color:#E6FFFA;'>
+                    <span>24 Days Worked</span>
+                    <span>99% Ratio</span>
+                  </div>
+                </div>
+
+                <!-- Mockup Calendar Attendance -->
+                <div class='mockup-card'>
+                  <div class='mockup-card-title'>Attendance Calendar</div>
+                  <div class='mockup-calendar-grid'>
+                    <span class='mockup-cal-day present'>1</span>
+                    <span class='mockup-cal-day present'>2</span>
+                    <span class='mockup-cal-day absent'>3</span>
+                    <span class='mockup-cal-day present'>4</span>
+                    <span class='mockup-cal-day present'>5</span>
+                    <span class='mockup-cal-day half'>6</span>
+                    <span class='mockup-cal-day present'>7</span>
+                    <span class='mockup-cal-day present'>8</span>
+                    <span class='mockup-cal-day present'>9</span>
+                    <span class='mockup-cal-day absent'>10</span>
+                    <span class='mockup-cal-day present'>11</span>
+                    <span class='mockup-cal-day present'>12</span>
+                    <span class='mockup-cal-day half'>13</span>
+                    <span class='mockup-cal-day present'>14</span>
+                  </div>
+                </div>
+
+                <!-- Quick Tasks -->
+                <div class='mockup-card'>
+                  <div class='mockup-card-title'>Recent Worker Updates</div>
+                  <div style='display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid #F1F5F9;'>
+                    <span style='font-weight:600;color:var(--text-primary);'>Rajesh Kumar</span>
+                    <span style='color:#0F9F7A;font-weight:700;'>Present</span>
+                  </div>
+                  <div style='display:flex;justify-content:space-between;align-items:center;padding:4px 0;'>
+                    <span style='font-weight:600;color:var(--text-primary);'>Vikram Singh</span>
+                    <span style='color:#EF4444;font-weight:700;'>Absent</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Premium Glassmorphic Floating Badges -->
+            <div class='floating-card fc-1'>
+              <div style='background-color:var(--mint-light);color:var(--mint-primary);border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;'>✓</div>
+              <div>
+                <div style='font-weight:700;font-size:14px;color:var(--text-primary);'>100% Offline Secured</div>
+                <div style='font-size:12px;color:var(--text-secondary);'>No network required</div>
+              </div>
+            </div>
+
+            <div class='floating-card fc-2'>
+              <div style='background-color:var(--blue-light);color:var(--blue-secondary);border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;'>PDF</div>
+              <div>
+                <div style='font-weight:700;font-size:14px;color:var(--text-primary);'>One-Click PDF Passbooks</div>
+                <div style='font-size:12px;color:var(--text-secondary);'>Unicode Devanagari Hindi Support</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TRUST / SOCIAL PROOF SECTION -->
+    <section class='trust-section'>
+      <div class='container'>
+        <div class='trust-grid'>
+          <div class='trust-heading'>
+            <h2>Endorsed by Thousands of Contractors and Workers Worldwide</h2>
+          </div>
+          <div class='trust-stats'>
+            <div class='stat-block'>
+              <span class='stat-val'>10K+</span>
+              <span class='stat-lbl'>Active Users</span>
+            </div>
+            <div class='stat-block'>
+              <span class='stat-val'>4.8★</span>
+              <span class='stat-lbl'>Google Play Rating</span>
+            </div>
+            <div class='stat-block'>
+              <span class='stat-val'>99%</span>
+              <span class='stat-lbl'>Productivity Boost</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FEATURES SECTION -->
+    <section class='features-section' id='features'>
+      <div class='container'>
+        <div style='text-align:center;display:flex;flex-direction:column;align-items:center;'>
+          <span class='section-tag'>Core Value</span>
+          <h2 class='section-title'>Designed Specifically for Dynamic Modern Workforce Tracking</h2>
+          <p class='section-subtitle'>WorkDaily delivers robust offline attendance management features inspired by actual workflow requirements, avoiding complex online configurations.</p>
+        </div>
+
+        <div class='features-grid'>
+          <!-- Feature Card 1 -->
+          <div class='feature-card'>
+            <div class='feature-icon-wrap'>
+              <svg viewBox='0 0 24 24'>
+                <path d='M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14H7v-2h5v2zm3-4H7v-2h8v2zm0-4H7V7h8v2z'/>
+              </svg>
+            </div>
+            <h3>Workforce Logs</h3>
+            <p>Seamlessly track and log attendances, salary balances, dynamic daily wages, and overtime hours for contract groups and teams.</p>
+          </div>
+
+          <!-- Feature Card 2 -->
+          <div class='feature-card'>
+            <div class='feature-icon-wrap' style='background-color:var(--blue-light);color:var(--blue-secondary);'>
+              <svg viewBox='0 0 24 24'>
+                <path d='M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z'/>
+              </svg>
+            </div>
+            <h3>Calendar Grid</h3>
+            <p>Quickly view, edit, and update monthly attendances via a clean, color-coded interactive grid representation.</p>
+          </div>
+
+          <!-- Feature Card 3 -->
+          <div class='feature-card'>
+            <div class='feature-icon-wrap' style='background-color:var(--orange-light);color:var(--orange-tertiary);'>
+              <svg viewBox='0 0 24 24'>
+                <path d='M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z'/>
+              </svg>
+            </div>
+            <h3>Advances &amp; Overtime</h3>
+            <p>Track advanced wage drawings and calculate custom overtime ratios automatically to ensure complete payment transparency.</p>
+          </div>
+
+          <!-- Feature Card 4 -->
+          <div class='feature-card'>
+            <div class='feature-icon-wrap' style='background-color:var(--purple-light);color:var(--purple-leave);'>
+              <svg viewBox='0 0 24 24'>
+                <path d='M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z'/>
+              </svg>
+            </div>
+            <h3>High Fidelity PDF Export</h3>
+            <p>Generate highly professional, clear A4 Monthly Passbooks and All-Time reports. Supports full Devanagari Hindi Unicode rendering.</p>
+          </div>
+
+          <!-- Feature Card 5 -->
+          <div class='feature-card'>
+            <div class='feature-icon-wrap'>
+              <svg viewBox='0 0 24 24'>
+                <path d='M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z'/>
+              </svg>
+            </div>
+            <h3>100% Offline-First Privacy</h3>
+            <p>Keep your data strictly secured inside your phone's internal private storage directory. No cloud login leak risks.</p>
+          </div>
+
+          <!-- Feature Card 6 -->
+          <div class='feature-card'>
+            <div class='feature-icon-wrap' style='background-color:var(--mint-light);color:var(--mint-primary);'>
+              <svg viewBox='0 0 24 24'>
+                <path d='M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z'/>
+              </svg>
+            </div>
+            <h3>Localized Reminders</h3>
+            <p>Receive local, friendly conversational push notifications and attendance reminders in Hinglish and Hindi on daily basis.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- APP PREVIEW SECTION -->
+    <section class='preview-section' id='preview'>
+      <div class='container'>
+        <div class='preview-wrapper'>
+          <div class='preview-nav-tabs'>
+            <span class='section-tag' style='align-self: flex-start;'>SaaS Interface</span>
+            <h2 class='section-title' style='font-size: 32px;'>Navigate WorkDaily Like a Pro</h2>
+
+            <div class='preview-tab active' data-target='slide1'>
+              <h3>
+                <svg style='width:20px;height:20px;fill:currentColor;' viewBox='0 0 24 24'>
+                  <path d='M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z'/>
+                </svg>
+                Contractor Dashboard
+              </h3>
+              <p>Monitor your entire active labor force, check today's pending logs, and view overall cost indicators on a single screen.</p>
+            </div>
+
+            <div class='preview-tab' data-target='slide2'>
+              <h3>
+                <svg style='width:20px;height:20px;fill:currentColor;' viewBox='0 0 24 24'>
+                  <path d='M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z'/>
+                </svg>
+                Dynamic Attendance Calendar
+              </h3>
+              <p>Easily manage daily entries with custom states. Fast tap interactions let you mark holiday or half-day entries instantly.</p>
+            </div>
+
+            <div class='preview-tab' data-target='slide3'>
+              <h3>
+                <svg style='width:20px;height:20px;fill:currentColor;' viewBox='0 0 24 24'>
+                  <path d='M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z'/>
+                </svg>
+                Passbook Export Engine
+              </h3>
+              <p>Generate highly comprehensive financial reports in PDF and Excel sheets directly inside background threads without freezes.</p>
+            </div>
+          </div>
+
+          <div class='preview-mockup-wrap'>
+            <!-- Slide 1 Content -->
+            <div class='preview-slide active' id='slide1'>
+              <div class='phone-frame' style='margin: 0 auto;'>
+                <div class='phone-notch'></div>
+                <div class='phone-screen' style='background-color:#F8FAFB;'>
+                  <div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;'>
+                    <div style='font-size:16px;font-weight:800;color:var(--text-primary);'>Dashboard</div>
+                    <span style='background-color:var(--mint-light);color:var(--mint-primary);padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;'>Active</span>
+                  </div>
+                  <!-- Quick Overview -->
+                  <div class='mockup-card' style='background:linear-gradient(135deg, #1E293B 0%, #0F172A 100%);color:white;'>
+                    <div class='mockup-card-title' style='color:#94A3B8;'>Overview Stats</div>
+                    <div class='mockup-stats-grid'>
+                      <div>
+                        <div style='font-size:10px;color:#94A3B8;'>Active Workers</div>
+                        <div style='font-size:16px;font-weight:700;'>18 Workers</div>
+                      </div>
+                      <div>
+                        <div style='font-size:10px;color:#94A3B8;'>Today's Cost</div>
+                        <div style='font-size:16px;font-weight:700;color:var(--mint-primary);'>₹8,500</div>
+                      </div>
+                    </div>
+                  </div>
+                  <!-- Progress Section -->
+                  <div class='mockup-card'>
+                    <div class='mockup-card-title'>Attendance Progress</div>
+                    <div style='display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;'>
+                      <span>Completed logs (14/18)</span>
+                      <span style='font-weight:700;color:var(--mint-primary);'>77%</span>
+                    </div>
+                    <div style='width:100%;height:8px;background-color:#F1F5F9;border-radius:99px;overflow:hidden;'>
+                      <div style='width:77%;height:100%;background-color:var(--mint-primary);'></div>
+                    </div>
+                  </div>
+                  <!-- Quick actions -->
+                  <div style='display:grid;grid-template-columns:1fr 1fr;gap:8px;'>
+                    <div class='mockup-card' style='text-align:center;padding:16px 8px;cursor:pointer;'>
+                      <div style='font-size:18px;margin-bottom:4px;'>👥</div>
+                      <div style='font-weight:700;font-size:11px;'>Add Worker</div>
+                    </div>
+                    <div class='mockup-card' style='text-align:center;padding:16px 8px;cursor:pointer;'>
+                      <div style='font-size:18px;margin-bottom:4px;'>📊</div>
+                      <div style='font-weight:700;font-size:11px;'>Passbook Report</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Slide 2 Content -->
+            <div class='preview-slide' id='slide2'>
+              <div class='phone-frame' style='margin: 0 auto;'>
+                <div class='phone-notch'></div>
+                <div class='phone-screen' style='background-color:#F8FAFB;'>
+                  <div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;'>
+                    <div style='font-size:16px;font-weight:800;color:var(--text-primary);'>Attendance Grid</div>
+                    <span style='background-color:var(--blue-light);color:var(--blue-secondary);padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;'>August 2026</span>
+                  </div>
+
+                  <div class='mockup-card' style='padding:8px;'>
+                    <!-- Days of Week -->
+                    <div style='display:grid;grid-template-columns:repeat(7, 1fr);text-align:center;font-weight:700;margin-bottom:8px;font-size:10px;color:var(--text-secondary);'>
+                      <span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span>
+                    </div>
+                    <div class='mockup-calendar-grid'>
+                      <span class='mockup-cal-day present'>1</span>
+                      <span class='mockup-cal-day present'>2</span>
+                      <span class='mockup-cal-day absent'>3</span>
+                      <span class='mockup-cal-day present'>4</span>
+                      <span class='mockup-cal-day present'>5</span>
+                      <span class='mockup-cal-day half'>6</span>
+                      <span class='mockup-cal-day present'>7</span>
+                      <span class='mockup-cal-day present'>8</span>
+                      <span class='mockup-cal-day present'>9</span>
+                      <span class='mockup-cal-day absent'>10</span>
+                      <span class='mockup-cal-day present'>11</span>
+                      <span class='mockup-cal-day present'>12</span>
+                      <span class='mockup-cal-day half'>13</span>
+                      <span class='mockup-cal-day present'>14</span>
+                      <span class='mockup-cal-day present'>15</span>
+                      <span class='mockup-cal-day present'>16</span>
+                      <span class='mockup-cal-day present'>17</span>
+                      <span class='mockup-cal-day present'>18</span>
+                      <span class='mockup-cal-day absent'>19</span>
+                      <span class='mockup-cal-day present'>20</span>
+                      <span class='mockup-cal-day present'>21</span>
+                    </div>
+                  </div>
+                  <!-- Selection Preview -->
+                  <div class='mockup-card'>
+                    <div style='display:flex;justify-content:space-between;align-items:center;'>
+                      <div>
+                        <div style='font-size:12px;font-weight:700;'>Selected Date: Aug 21</div>
+                        <div style='font-size:10px;color:var(--text-secondary);'>Full daily wage log tracked</div>
+                      </div>
+                      <span style='background-color:#EBFDF7;color:#0F9F7A;padding:4px 8px;border-radius:6px;font-weight:700;font-size:10px;'>Present</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Slide 3 Content -->
+            <div class='preview-slide' id='slide3'>
+              <div class='phone-frame' style='margin: 0 auto;'>
+                <div class='phone-notch'></div>
+                <div class='phone-screen' style='background-color:#F8FAFB;'>
+                  <div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;'>
+                    <div style='font-size:16px;font-weight:800;color:var(--text-primary);'>PDF Export</div>
+                    <span style='background-color:var(--orange-light);color:var(--orange-tertiary);padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;'>Report Ready</span>
+                  </div>
+                  <!-- Export Panel -->
+                  <div class='mockup-card'>
+                    <div class='mockup-card-title'>Select Report Period</div>
+                    <div style='padding:8px;background:#F8FAFB;border-radius:8px;border:1px dashed var(--border-light);text-align:center;font-weight:700;margin-bottom:12px;'>
+                      August 2026 Monthly Passbook
+                    </div>
+                    <div style='display:flex;flex-direction:column;gap:6px;'>
+                      <div style='display:flex;justify-content:space-between;font-size:11px;'>
+                        <span>Language format:</span>
+                        <span style='font-weight:700;'>Hindi (हिन्दी)</span>
+                      </div>
+                      <div style='display:flex;justify-content:space-between;font-size:11px;'>
+                        <span>File layout:</span>
+                        <span style='font-weight:700;'>Standard A4 Portrait</span>
+                      </div>
+                    </div>
+                  </div>
+                  <!-- PDF View Mockup -->
+                  <div class='mockup-card' style='border-color:var(--mint-primary);'>
+                    <div style='display:flex;align-items:center;gap:10px;'>
+                      <span style='font-size:24px;'>📄</span>
+                      <div>
+                        <div style='font-weight:700;font-size:11px;'>Aug_2026_Report.pdf</div>
+                        <div style='font-size:9px;color:var(--text-secondary);'>142 KB • Generated 2m ago</div>
+                      </div>
+                    </div>
+                  </div>
+                  <button class='btn btn-primary' style='padding:10px;border-radius:8px;width:100%;font-size:12px;margin-top:8px;'>Export Passbook PDF</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DOWNLOAD / CONVERSION ZONE -->
+    <section class='download-section' id='download'>
+      <div class='container'>
+        <div class='download-box'>
+          <div class='download-box-wrap'>
+            <div>
+              <h2>Download WorkDaily Today</h2>
+              <p>Boost your labor workforce output, track your contractor accounts offline, and eliminate standard payment misalignments completely.</p>
+
+              <div class='download-buttons'>
+                <!-- Google Play Style Button -->
+                <a class='btn btn-store' href='https://play.google.com/store' target='_blank'>
+                  <svg viewBox='0 0 24 24'>
+                    <path d='M3 5.27V18.73c0 .89.97 1.44 1.73.97l11.23-6.73a1.13 1.13 0 0 0 0-1.94L4.73 4.3c-.76-.47-1.73.08-1.73.97z' fill='#10B981'/>
+                    <path d='M17.47 11.03 5.11 3.61c-.5-.3-.91-.12-1.07.24l9.16 9.16 4.27-2.98z' fill='#3B82F6'/>
+                    <path d='M4.04 20.15c.16.36.57.54 1.07.24l12.36-7.42-4.27-2.98-9.16 10.16z' fill='#F59E0B'/>
+                  </svg>
+                  <div>
+                    <div style='font-size:10px;font-weight:500;color:var(--text-secondary);line-height:1;'>GET IT ON</div>
+                    <div style='font-size:16px;font-weight:800;color:var(--text-primary);'>Google Play</div>
+                  </div>
+                </a>
+
+                <!-- Direct APK Download -->
+                <a class='btn btn-primary' href='#download' style='background-color:#10B981;border:none;'>
+                  <svg style='width:24px;height:24px;fill:currentColor;' viewBox='0 0 24 24'>
+                    <path d='M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z'/>
+                  </svg>
+                  <div>
+                    <div style='font-size:10px;font-weight:500;line-height:1;opacity:0.8;'>DIRECT SECURE</div>
+                    <div style='font-size:16px;font-weight:800;'>Download APK</div>
+                  </div>
+                </a>
+              </div>
+
+              <div style='display:flex;align-items:center;gap:8px;font-size:13px;color:#A7F3D0;opacity:0.9;'>
+                <span>✓ Verified Secure APK</span>
+                <span>• v1.4.0 Release</span>
+                <span>• Completely Offline-Enabled</span>
+              </div>
+            </div>
+
+            <!-- WhatsApp Glassmorphic Follow Box -->
+            <div class='whatsapp-glass-card'>
+              <span class='wa-badge'>OFFICIAL CHANNEL</span>
+              <h3>SynFusion Support &amp; Updates</h3>
+              <p>Join our official WhatsApp channel to get direct customer support assistance, report bugs, request features, and get notified of updates instantly.</p>
+
+              <a class='btn btn-whatsapp' href='https://whatsapp.com/channel/0029Vb8bS4U23n3lJwvpbP3H' target='_blank'>
+                <svg style='width:24px;height:24px;fill:currentColor;' viewBox='0 0 24 24'>
+                  <path d='M12.01 2.01C6.48 2.01 2 6.48 2 12.01c0 1.77.46 3.48 1.34 5L2 22l5.12-1.34c1.47.8 3.12 1.23 4.88 1.23 5.53 0 10.01-4.47 10.01-10.01S17.54 2.01 12.01 2.01zm5.95 13.91c-.24.68-1.2 1.24-1.68 1.32-.48.08-1.04.12-3.12-.72-2.6-1.04-4.24-3.68-4.36-3.84-.12-.16-1.04-1.36-1.04-2.6 0-1.24.64-1.84.88-2.08.24-.24.52-.32.68-.32H10c.16 0 .36.04.52.4.2.48.68 1.64.72 1.76.04.12.08.28 0 .44-.08.16-.16.28-.28.44l-.44.48c-.12.16-.28.32-.08.64.2.32.88 1.44 1.88 2.32 1.28 1.12 2.36 1.48 2.68 1.64.32.16.52.12.64-.04.16-.2.68-.8.88-1.08.16-.24.36-.2.6-.08.24.12 1.56.72 1.84.88.28.16.48.24.56.36.08.16.08.76-.16 1.44z'/>
+                </svg>
+                Follow on WhatsApp
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </b:if>
+
+  <!-- NATIVE BLOGGER MAIN SECTION -->
+  <b:section id='main-section' showaddelement='yes'>
+    <b:widget id='Blog1' locked='true' title='Blog Posts' type='Blog'>
+      <b:includable id='main'>
+
+        <b:if cond='data:view.isHomepage'>
+          <!-- BLOG PREVIEW GRID (LATEST POSTS ON HOMEPAGE) -->
+          <section class='blog-section' id='blog'>
+            <div class='container'>
+              <div style='text-align:center;display:flex;flex-direction:column;align-items:center;'>
+                <span class='section-tag'>Latest Updates</span>
+                <h2 class='section-title'>Insights, Tutorials &amp; Product Logs</h2>
+                <p class='section-subtitle'>Read our official posts for productivity hacks, attendance updates, and deep-dives into local database security.</p>
+              </div>
+
+              <div class='blog-grid'>
+                <b:loop values='data:posts' var='post'>
+                  <div class='blog-card'>
+                    <div class='blog-thumb-wrap'>
+                      <b:if cond='data:post.featuredImage'>
+                        <img class='phone-screen-img' expr:src='data:post.featuredImage' expr:alt='data:post.title'/>
+                      <b:else/>
+                        <svg viewBox='0 0 24 24'>
+                          <path d='M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z'/>
+                        </svg>
+                      </b:if>
+                    </div>
+                    <div class='blog-card-content'>
+                      <div class='blog-card-meta'>
+                        <span><data:post.date/></span> • <span>SynFusion Dev</span>
+                      </div>
+                      <h3><data:post.title/></h3>
+                      <p class='blog-card-desc'><data:post.snippet/></p>
+                      <a class='blog-read-link' expr:href='data:post.url'>
+                        Read Article
+                        <svg viewBox='0 0 24 24' style='width:16px;height:16px;fill:currentColor;'>
+                          <path d='M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z'/>
+                        </svg>
+                      </a>
+                    </div>
+                  </div>
+                </b:loop>
+              </div>
+            </div>
+          </section>
+
+        <b:else/>
+          <!-- INNER PAGES VIEW -->
+          <b:if cond='data:view.isSingleItem'>
+            <!-- SINGLE ARTICLE VIEW -->
+            <b:loop values='data:posts' var='post'>
+              <article class='blog-container'>
+                <div class='post-header'>
+                  <a class='post-back-btn' expr:href='data:blog.homepageUrl'>
+                    <svg viewBox='0 0 24 24'>
+                      <path d='M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z'/>
+                    </svg>
+                    Back to Home
+                  </a>
+                  <h1 class='post-title'><data:post.title/></h1>
+                  <div class='post-meta'>
+                    <span>Published on: <data:post.date/></span> • <span>Author: SynFusion Team</span>
+                  </div>
+                </div>
+
+                <div class='post-body'>
+                  <b:if cond='data:post.featuredImage'>
+                    <div style='text-align:center;margin-bottom:32px;border-radius:16px;overflow:hidden;'>
+                      <img expr:src='data:post.featuredImage' style='max-width:100%;height:auto;border-radius:16px;'/>
+                    </div>
+                  </b:if>
+                  <data:post.body/>
+                </div>
+              </article>
+            </b:loop>
+
+          <b:else/>
+            <!-- ARCHIVE & SEARCH PAGES LISTING VIEW -->
+            <div class='blog-container' style='margin-top:140px;'>
+              <div style='text-align:center;margin-bottom:48px;'>
+                <h1 style='font-size:32px;margin-bottom:12px;'>Articles &amp; Blog Posts</h1>
+                <p style='color:var(--text-secondary);'>Browse all our guides, tutorials and product release announcements.</p>
+              </div>
+
+              <div class='blog-grid'>
+                <b:loop values='data:posts' var='post'>
+                  <div class='blog-card'>
+                    <div class='blog-thumb-wrap'>
+                      <b:if cond='data:post.featuredImage'>
+                        <img class='phone-screen-img' expr:src='data:post.featuredImage' expr:alt='data:post.title'/>
+                      <b:else/>
+                        <svg viewBox='0 0 24 24'>
+                          <path d='M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z'/>
+                        </svg>
+                      </b:if>
+                    </div>
+                    <div class='blog-card-content'>
+                      <div class='blog-card-meta'>
+                        <span><data:post.date/></span>
+                      </div>
+                      <h3><data:post.title/></h3>
+                      <p class='blog-card-desc'><data:post.snippet/></p>
+                      <a class='blog-read-link' expr:href='data:post.url'>Read Article</a>
+                    </div>
+                  </div>
+                </b:loop>
+              </div>
+            </div>
+          </b:if>
+        </b:if>
+
+      </b:includable>
+    </b:widget>
+  </b:section>
+
+  <!-- FOOTER -->
+  <footer class='site-footer'>
+    <div class='container'>
+      <div class='footer-grid'>
+        <div class='footer-brand'>
+          <a class='logo' href='#'>
+            <svg viewBox='0 0 24 24'>
+              <path d='M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z'/>
+            </svg>
+            WorkDaily
+          </a>
+          <p class='footer-desc'>A product of SynFusion. Designed to help contractors and workforce groups track attendance, calculate earnings, and generate dynamic PDF reports cleanly offline.</p>
+          <div class='social-channels'>
+            <a class='social-btn' href='https://instagram.com/getsynfusion' target='_blank' aria-label='Instagram'>
+              <svg viewBox='0 0 24 24'>
+                <path d='M7.8 2h8.4C19.4 2 22 4.6 22 7.8v8.4a5.8 5.8 0 0 1-5.8 5.8H7.8C4.6 22 2 19.4 2 16.2V7.8A5.8 5.8 0 0 1 7.8 2m-.2 2A3.6 3.6 0 0 0 4 7.6v8.8A3.6 3.6 0 0 0 7.6 20h8.8a3.6 3.6 0 0 0 3.6-3.6V7.6A3.6 3.6 0 0 0 16.4 4H7.6m8.4 2.25a.75.75 0 1 1 0 1.5.75.75 0 0 1 0-1.5M12 7.5a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9m0 2a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z'/>
+              </svg>
+            </a>
+            <a class='social-btn' href='https://t.me/getsynfusion' target='_blank' aria-label='Telegram'>
+              <svg viewBox='0 0 24 24'>
+                <path d='M9.78 18.65l.28-4.28 7.68-7.05c.32-.3-.07-.46-.5-.18L7.66 12.18l-4.11-1.32c-.9-.28-.92-.9.2-1.34l16.07-6.32c.74-.28 1.38.16 1.15 1.18l-2.73 13.08c-.2.98-.78 1.22-1.6.76l-4.2-3.14-2.02 1.98-.37 3.58z'/>
+              </svg>
+            </a>
+            <a class='social-btn' href='https://youtube.com/@getsynfusion' target='_blank' aria-label='YouTube'>
+              <svg viewBox='0 0 24 24'>
+                <path d='M23.498 6.163a3.003 3.003 0 0 0-2.11-2.108C19.524 3.545 12 3.545 12 3.545s-7.525 0-9.388.51a3.003 3.003 0 0 0-2.11 2.108C0 8.025 0 12 0 12s0 3.975.502 5.837a3.003 3.003 0 0 0 2.11 2.108c1.863.51 9.388.51 9.388.51s7.525 0 9.388-.51a3.002 3.002 0 0 0 2.11-2.108c.502-1.862.502-5.837.502-5.837s0-3.975-.502-5.837zM9.545 15.568V8.432L15.818 12l-6.273 3.568z'/>
+              </svg>
+            </a>
+          </div>
+        </div>
+
+        <div class='footer-col'>
+          <h4>Products</h4>
+          <ul class='footer-links'>
+            <li><a class='footer-link' href='#'>WorkDaily Android App</a></li>
+            <li><a class='footer-link' href='#features'>Workforce Tracking</a></li>
+            <li><a class='footer-link' href='#preview'>Interactive Passbooks</a></li>
+            <li><a class='footer-link' href='#download'>Latest APK Release</a></li>
+          </ul>
+        </div>
+
+        <div class='footer-col'>
+          <h4>Company</h4>
+          <ul class='footer-links'>
+            <li><a class='footer-link' href='#'>About SynFusion</a></li>
+            <li><a class='footer-link' href='#blog'>Official Blog</a></li>
+            <li><a class='footer-link' href='https://instagram.com/getsynfusion' target='_blank'>Contact Us</a></li>
+          </ul>
+        </div>
+
+        <div class='footer-col'>
+          <h4>Support</h4>
+          <ul class='footer-links'>
+            <li><a class='footer-link' href='mailto:workdaily.synfusion@gmail.com'>workdaily.synfusion@gmail.com</a></li>
+            <li><a class='footer-link' href='https://whatsapp.com/channel/0029Vb8bS4U23n3lJwvpbP3H' target='_blank'>WhatsApp Help Desk</a></li>
+            <li><a class='footer-link' href='#'>Privacy Policy</a></li>
+            <li><a class='footer-link' href='#'>Terms &amp; Conditions</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class='footer-bottom'>
+        <div>© 2026 WorkDaily. Developed strictly by SynFusion. All rights reserved.</div>
+        <div style='display:flex;gap:24px;'>
+          <a href='#'>Privacy Policy</a>
+          <a href='#'>Terms of Service</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- VANILLA INTERACTIVE JS -->
+  <script type='text/javascript'>
+    //<![CDATA[
+    document.addEventListener('DOMContentLoaded', function() {
+      // Sticky header transformation on scroll
+      const header = document.getElementById('siteHeader');
+      window.addEventListener('scroll', function() {
+        if (window.scrollY > 50) {
+          header.classList.add('scrolled');
+        } else {
+          header.classList.remove('scrolled');
+        }
+      });
+
+      // Mobile Navigation Drawer Toggle
+      const menuToggle = document.getElementById('menuToggle');
+      const navMenu = document.getElementById('navMenu');
+      if (menuToggle && navMenu) {
+        menuToggle.addEventListener('click', function() {
+          navMenu.classList.toggle('open');
+          menuToggle.classList.toggle('active');
+        });
+
+        // Close menu on navigation click
+        document.querySelectorAll('.nav-link').forEach(link => {
+          link.addEventListener('click', () => {
+            navMenu.classList.remove('open');
+            menuToggle.classList.remove('active');
+          });
+        });
+      }
+
+      // App Preview Section Tab Switcher
+      const tabs = document.querySelectorAll('.preview-tab');
+      const slides = document.querySelectorAll('.preview-slide');
+      if (tabs.length && slides.length) {
+        tabs.forEach(tab => {
+          tab.addEventListener('click', function() {
+            // Remove active classes
+            tabs.forEach(t => t.classList.remove('active'));
+            slides.forEach(s => s.classList.remove('active'));
+
+            // Add active class to clicked tab
+            tab.classList.add('active');
+
+            // Show target slide
+            const target = tab.getAttribute('data-target');
+            const targetSlide = document.getElementById(target);
+            if (targetSlide) {
+              targetSlide.classList.add('active');
+            }
+          });
+        });
+      }
+    });
+    //]]>
+  </script>
+
+</body>
+</html>
