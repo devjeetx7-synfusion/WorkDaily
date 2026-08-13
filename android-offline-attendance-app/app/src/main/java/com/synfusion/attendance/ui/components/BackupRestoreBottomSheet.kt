@@ -91,6 +91,15 @@ fun BackupRestoreBottomSheet(
                                 }
                             }
                         }
+
+                        // Determine the actual backup size and save persistent metadata
+                        if (tempFile.exists() && tempFile.length() > 0) {
+                            val size = tempFile.length()
+                            val timestamp = System.currentTimeMillis()
+                            val prefsRepo = com.synfusion.attendance.data.OfflinePreferencesRepository(context)
+                            prefsRepo.saveBackupMetadata(timestamp, size, "Local Storage")
+                        }
+
                         tempFile.delete()
                         operationSuccess = true
                     } catch (e: Exception) {

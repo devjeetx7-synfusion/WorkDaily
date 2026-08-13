@@ -156,7 +156,6 @@ fun SettingsScreen(
     }
     var showDeveloperSheet by remember { mutableStateOf(false) }
     var showBackupSheet by remember { mutableStateOf(false) }
-    var showNotificationTestCenter by remember { mutableStateOf(false) }
 
     LaunchedEffect(state.savedMessage) {
         state.savedMessage?.let { msg ->
@@ -267,6 +266,24 @@ fun SettingsScreen(
                     }
 
                     Box(modifier = Modifier.padding(bottom = 8.dp)) {
+                        val imageFile = remember(state.profileImageUrl) {
+                            if (state.profileImageUrl.isNotEmpty()) java.io.File(state.profileImageUrl) else null
+                        }
+                        val showLocalImage = imageFile != null && imageFile.exists()
+                        val imageRequest = remember(state.profileImageUrl, showLocalImage) {
+                            if (imageFile != null && showLocalImage) {
+                                coil.request.ImageRequest.Builder(context)
+                                    .data(imageFile)
+                                    .crossfade(true)
+                                    .memoryCacheKey("${state.profileImageUrl}_${imageFile.lastModified()}")
+                                    .diskCacheKey("${state.profileImageUrl}_${imageFile.lastModified()}")
+                                    .networkCachePolicy(coil.request.CachePolicy.DISABLED)
+                                    .diskCachePolicy(coil.request.CachePolicy.ENABLED)
+                                    .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
+                                    .build()
+                            } else null
+                        }
+
                         Box(
                             modifier = Modifier
                                 .size(90.dp)
@@ -275,12 +292,29 @@ fun SettingsScreen(
                                 .border(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), androidx.compose.foundation.shape.CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Person,
-                        contentDescription = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.profile_settings),
-                                modifier = Modifier.size(50.dp),
-                                tint = MaterialTheme.colorScheme.primary
-                            )
+                            if (showLocalImage && imageRequest != null) {
+                                coil.compose.SubcomposeAsyncImage(
+                                    model = imageRequest,
+                                    contentDescription = "Profile Photo",
+                                    modifier = Modifier.fillMaxSize().clip(androidx.compose.foundation.shape.CircleShape),
+                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                                    error = {
+                                        Icon(
+                                            imageVector = Icons.Default.Person,
+                                            contentDescription = "Default Avatar",
+                                            modifier = Modifier.size(50.dp),
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.Person,
+                                    contentDescription = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.profile_settings),
+                                    modifier = Modifier.size(50.dp),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
                         }
 
                         Box(
@@ -451,19 +485,6 @@ fun SettingsScreen(
                             )
                         }
 
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
-                        Row(modifier = Modifier.fillMaxWidth().clickable { showNotificationTestCenter = true }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
-                                    Icon(Icons.Default.BugReport, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                                }
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column {
-                                    Text("Notification Center", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                    Text("Developer Diagnostics & Test Panel", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
-                            }
-                        }
                     }
                 }
             }
@@ -477,14 +498,29 @@ fun SettingsScreen(
                     border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
                 ) {
                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        val lastDateStr = lastBackupFile?.let {
-                            SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault()).format(Date(it.lastModified()))
-                        } ?: "Never"
-                        val lastSizeStr = lastBackupFile?.let {
-                            val sizeMb = it.length() / 1024.0 / 1024.0
-                            String.format(Locale.getDefault(), "%.2f MB", sizeMb)
-                        } ?: "N/A"
-                        val lastLocStr = lastBackupFile?.let { "External Files" } ?: "N/A"
+                        val lastDateStr = if (state.lastBackupTime != null && state.lastBackupTime!! > 0L) {
+                            SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault()).format(Date(state.lastBackupTime!!))
+                        } else {
+                            lastBackupFile?.let {
+                                SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault()).format(Date(it.lastModified()))
+                            } ?: "Never"
+                        }
+
+                        val lastSizeStr = if (state.lastBackupSize != null && state.lastBackupSize!! > 0L) {
+                            val sizeKb = state.lastBackupSize!! / 1024.0
+                            if (sizeKb >= 1024.0) {
+                                String.format(Locale.getDefault(), "%.2f MB", sizeKb / 1024.0)
+                            } else {
+                                String.format(Locale.getDefault(), "%.2f KB", sizeKb)
+                            }
+                        } else {
+                            lastBackupFile?.let {
+                                val sizeMb = it.length() / 1024.0 / 1024.0
+                                String.format(Locale.getDefault(), "%.2f MB", sizeMb)
+                            } ?: "N/A"
+                        }
+
+                        val lastLocStr = state.lastBackupLoc ?: (lastBackupFile?.let { "External Files" } ?: "N/A")
 
                         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -640,12 +676,6 @@ fun SettingsScreen(
         if (showDeveloperSheet) {
             DeveloperContactBottomSheet(onDismiss = { showDeveloperSheet = false })
         }
-        if (showNotificationTestCenter) {
-            NotificationTestCenterBottomSheet(
-                viewModel = viewModel,
-                onDismiss = { showNotificationTestCenter = false }
-            )
-        }
         if (showBackupSheet) {
             com.synfusion.attendance.ui.components.BackupRestoreBottomSheet(onDismiss = { showBackupSheet = false })
         }
@@ -666,6 +696,12 @@ fun SettingsScreen(
                                     val backupDir = context.getExternalFilesDir(null) ?: context.cacheDir
                                     val backupFile = File(backupDir, "AttendanceBackup_${SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())}.zip")
                                     backupManager.performBackup(backupFile, backupProgressTracker)
+                                    if (backupFile.exists() && backupFile.length() > 0) {
+                                        val size = backupFile.length()
+                                        val timestamp = System.currentTimeMillis()
+                                        val prefsRepo = com.synfusion.attendance.data.OfflinePreferencesRepository(context)
+                                        prefsRepo.saveBackupMetadata(timestamp, size, "Local Storage")
+                                    }
                                     backupSuccessDialogDetails = backupFile
                                 } catch (e: Exception) {
                                     Toast.makeText(context, "Backup failed: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
@@ -708,6 +744,12 @@ fun SettingsScreen(
                             val backupDir = context.getExternalFilesDir(null) ?: context.cacheDir
                             val backupFile = File(backupDir, "AttendanceBackup_${SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())}.zip")
                             backupManager.performBackup(backupFile, backupProgressTracker)
+                            if (backupFile.exists() && backupFile.length() > 0) {
+                                val size = backupFile.length()
+                                val timestamp = System.currentTimeMillis()
+                                val prefsRepo = com.synfusion.attendance.data.OfflinePreferencesRepository(context)
+                                prefsRepo.saveBackupMetadata(timestamp, size, "Local Storage")
+                            }
                             backupSuccessDialogDetails = backupFile
                         } catch (e: Exception) {
                             Toast.makeText(context, "Backup failed: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
@@ -792,487 +834,6 @@ fun SettingsScreen(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun NotificationTestCenterBottomSheet(
-    viewModel: OfflineSettingsViewModel,
-    onDismiss: () -> Unit
-) {
-    val context = LocalContext.current
-
-    val settingsState = viewModel.state.collectAsState().value
-    val masterEnabled = settingsState.isRemindersEnabled
-    var permissionGranted by remember { mutableStateOf(androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled()) }
-    var systemPostPermissionGranted by remember {
-        mutableStateOf(
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED
-            } else {
-                true
-            }
-        )
-    }
-    var channelEnabled by remember {
-        mutableStateOf(
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
-                val channel = manager.getNotificationChannel(com.synfusion.attendance.utils.LocalNotificationManager.CHANNEL_OFFLINE_ATTENDANCE)
-                channel == null || channel.importance != android.app.NotificationManager.IMPORTANCE_NONE
-            } else {
-                true
-            }
-        )
-    }
-
-    // Refresh permissions on resume just in case
-    val lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
-    DisposableEffect(lifecycleOwner) {
-        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
-            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
-                val actualAppNotificationsEnabled = androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled()
-                val actualPostPermissionsGranted = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                    androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED
-                } else {
-                    true
-                }
-                val actualChannelEnabled = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                    val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
-                    val channel = manager.getNotificationChannel(com.synfusion.attendance.utils.LocalNotificationManager.CHANNEL_OFFLINE_ATTENDANCE)
-                    channel == null || channel.importance != android.app.NotificationManager.IMPORTANCE_NONE
-                } else {
-                    true
-                }
-                permissionGranted = actualAppNotificationsEnabled
-                systemPostPermissionGranted = actualPostPermissionsGranted
-                channelEnabled = actualChannelEnabled
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-        }
-    }
-
-    val repository = remember { com.synfusion.attendance.data.LocalAttendanceRepository(context) }
-    var placeholders by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
-    var todayMarked by remember { mutableStateOf("NOT MARKED") }
-
-    var showDiagnosticDialog by remember { mutableStateOf(false) }
-    var diagnosticDialogTitle by remember { mutableStateOf("") }
-    var diagnosticDialogDesc by remember { mutableStateOf("") }
-    var diagnosticDialogActionText by remember { mutableStateOf("") }
-    var diagnosticDialogAction by remember { mutableStateOf<() -> Unit>({}) }
-
-    val permissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
-        contract = androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        systemPostPermissionGranted = isGranted
-        permissionGranted = androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled()
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
-            val channel = manager.getNotificationChannel(com.synfusion.attendance.utils.LocalNotificationManager.CHANNEL_OFFLINE_ATTENDANCE)
-            channelEnabled = channel == null || channel.importance != android.app.NotificationManager.IMPORTANCE_NONE
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        val user = repository.getUser()
-        val allRecords = repository.getPersonalAttendance()
-        val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-        placeholders = com.synfusion.attendance.utils.NotificationRuleEngine.buildPlaceholders(user, allRecords, todayStr)
-        val todayRecord = allRecords.find { it.date == todayStr && it.status != "advance" }
-        todayMarked = if (todayRecord != null) "MARKED (${todayRecord.status.uppercase()})" else "NOT MARKED"
-    }
-
-    var logs by remember { mutableStateOf(com.synfusion.attendance.utils.LocalNotificationManager.getNotificationLogs(context)) }
-
-    var previewTitle by remember { mutableStateOf("WorkDaily") }
-    var previewMessage by remember { mutableStateOf("Choose a category to preview below.") }
-    var showPreviewCard by remember { mutableStateOf(false) }
-
-    val testCategories = remember {
-        listOf(
-            TestCategoryItem("Today's Attendance", "daily_attendance", "आज की Attendance", com.synfusion.attendance.utils.NotificationMessagePool.dailyAttendanceMessages),
-            TestCategoryItem("2 Days Missed", "missed_two_days", "लगातार 2 दिन Missed", com.synfusion.attendance.utils.NotificationMessagePool.missedTwoDaysMessages),
-            TestCategoryItem("3 Days Missed", "missed_three_days", "लगातार 3 दिन Missed", com.synfusion.attendance.utils.NotificationMessagePool.missedThreeDaysMessages),
-            TestCategoryItem("7 Days Missed", "missed_seven_plus", "सावधान! 7 दिन Missed", com.synfusion.attendance.utils.NotificationMessagePool.missedSevenPlusDaysMessages),
-            TestCategoryItem("10 Days Missed", "missed_ten_days", "गंभीर चेतावनी!", com.synfusion.attendance.utils.NotificationMessagePool.missedTenPlusDaysMessages),
-            TestCategoryItem("Weekly Report", "weekly_report", "Weekly Report 📊", com.synfusion.attendance.utils.NotificationMessagePool.weeklyReportMessages),
-            TestCategoryItem("Monthly Report", "monthly_report", "Monthly Summary 📅", com.synfusion.attendance.utils.NotificationMessagePool.monthlyReportMessages),
-            TestCategoryItem("Earnings", "earnings", "कमाई अपडेट 💵", com.synfusion.attendance.utils.NotificationMessagePool.earningsMessages),
-            TestCategoryItem("Overtime", "overtime", "ओवरटाइम धमाका 💪", com.synfusion.attendance.utils.NotificationMessagePool.earningsMessages.filter { it.contains("overtime") || it.contains("घंटे") }.ifEmpty { com.synfusion.attendance.utils.NotificationMessagePool.earningsMessages }),
-            TestCategoryItem("Advance", "advance", "एडवांस अपडेट 💰", com.synfusion.attendance.utils.NotificationMessagePool.earningsMessages.filter { it.contains("advance") || it.contains("अग्रिम") }.ifEmpty { com.synfusion.attendance.utils.NotificationMessagePool.earningsMessages }),
-            TestCategoryItem("Yearly Report", "yearly_report", "सालाना रिपोर्ट 🏆", com.synfusion.attendance.utils.NotificationMessagePool.yearlyReportMessages),
-            TestCategoryItem("Funny", "funny", "ओए भाई सुनो! 😂", com.synfusion.attendance.utils.NotificationMessagePool.funnyRoastMessages),
-            TestCategoryItem("Motivational", "motivational", "जीत की तैयारी! 🌟", com.synfusion.attendance.utils.NotificationMessagePool.motivationalMessages),
-            TestCategoryItem("Streak", "streak", "Consistency Streak! 🔥", com.synfusion.attendance.utils.NotificationMessagePool.motivationalMessages)
-        )
-    }
-
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-        dragHandle = { BottomSheetDefaults.DragHandle() }
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 12.dp)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
-                    Icon(Icons.Default.BugReport, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                }
-                Spacer(modifier = Modifier.width(12.dp))
-                Text("Notification Test Center", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-            }
-            HorizontalDivider(color = MaterialTheme.colorScheme.outline)
-
-            // 1. Diagnostics Panel
-            Text("Why didn't I receive notification? (Diagnostics)", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
-                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
-            ) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    DiagnosticItemRow("Reminders Preference", if (masterEnabled) "ON ✓" else "OFF ✕")
-                    DiagnosticItemRow("System Notifications", if (permissionGranted) "ENABLED ✓" else "DISABLED ✕")
-                    DiagnosticItemRow("Notification Permission", if (systemPostPermissionGranted) "GRANTED ✓" else "DENIED ✕")
-                    DiagnosticItemRow("Notification Channel", if (channelEnabled) "ENABLED ✓" else "DISABLED ✕")
-                    DiagnosticItemRow("Effective Reminders", if (masterEnabled && permissionGranted && systemPostPermissionGranted && channelEnabled) "ACTIVE ✓" else "BLOCKED ✕")
-                    DiagnosticItemRow("POST_NOTIFICATIONS", if (systemPostPermissionGranted) "GRANTED ✓" else "DENIED ✕")
-                    DiagnosticItemRow("Scheduler Status", if (masterEnabled) "ACTIVE (Every 1 Hour)" else "INACTIVE")
-                    DiagnosticItemRow("Today's Attendance Status", todayMarked)
-                    DiagnosticItemRow("Eligible Time Window", "6:00 PM - 10:00 PM")
-                    DiagnosticItemRow("Device Battery Optimization", "Normal")
-                    DiagnosticItemRow("Next Eligible Notification", if (todayMarked.startsWith("NOT MARKED")) "Today's Attendance Reminder (6-10 PM)" else "Weekly / Monthly Report (Time Triggered)")
-                    DiagnosticItemRow("Skip Reason if Any", if (!masterEnabled) "Master disabled" else if (!permissionGranted || !systemPostPermissionGranted) "Permission denied" else if (!channelEnabled) "Channel disabled" else if (todayMarked.startsWith("MARKED")) "Attendance already marked for today" else "None (Ready for 6:00 PM Window)")
-                    DiagnosticItemRow("Latest Evaluation Execution", if (logs.isNotEmpty()) logs.first().time else "Never")
-                    DiagnosticItemRow("Last Notification Sent", if (logs.isNotEmpty()) logs.first().category.uppercase() else "None")
-                }
-            }
-
-            // Reset Rotation & Clear logs controls
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Button(
-                    onClick = {
-                        val prefs = context.getSharedPreferences("notification_selector_history", Context.MODE_PRIVATE)
-                        prefs.edit().clear().apply()
-                        Toast.makeText(context, "Rotation history reset successfully!", Toast.LENGTH_SHORT).show()
-                    },
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.1f), contentColor = MaterialTheme.colorScheme.error)
-                ) {
-                    Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Reset Rotation History", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                }
-
-                Button(
-                    onClick = {
-                        val randomCat = testCategories.random()
-                        previewTitle = "Random: " + randomCat.displayName
-                        val evaluated = com.synfusion.attendance.utils.NotificationMessageSelector.selectMessage(
-                            context, randomCat.category, randomCat.pool, placeholders
-                        )
-                        previewMessage = evaluated.ifEmpty { "No templates available" }
-                        showPreviewCard = true
-                    },
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
-                ) {
-                    Icon(Icons.Default.Shuffle, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Preview Random", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                }
-            }
-
-            // Calculated Variables Section
-            Text("Calculated Variables Map", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)),
-                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
-            ) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    placeholders.forEach { (key, value) ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text("{$key}", fontSize = 12.sp, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace, color = MaterialTheme.colorScheme.primary)
-                            Text(value.ifEmpty { "None" }, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                        }
-                    }
-                }
-            }
-
-            // 2. Preview Panel (Top anchored or visible upon selection)
-            if (showPreviewCard) {
-                Text("Notification Preview", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                // Draw mockup phone drawer card
-                Card(
-                    modifier = Modifier.fillMaxWidth().border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(16.dp)),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)), // Dark premium phone drawer background
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(modifier = Modifier.size(24.dp).background(Color(0xFF0EA5E9), androidx.compose.foundation.shape.CircleShape), contentAlignment = Alignment.Center) {
-                                    Icon(Icons.Default.Notifications, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
-                                }
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("WorkDaily", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                            }
-                            Box(modifier = Modifier.size(8.dp).background(Color(0xFF22C55E), androidx.compose.foundation.shape.CircleShape)) // green dot
-                        }
-                        Text(text = previewTitle, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                        Text(text = previewMessage, color = Color(0xFFCBD5E1), fontSize = 13.sp, lineHeight = 18.sp)
-                    }
-                }
-            }
-
-            // 3. Test Categories List
-            Text("Available Notifications Categories", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                testCategories.forEach { cat ->
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(12.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(cat.displayName, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                Text("Category: ${cat.category}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-
-                            Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Button(
-                                    onClick = {
-                                        previewTitle = cat.titlePrefix
-                                        val evaluated = com.synfusion.attendance.utils.NotificationMessageSelector.selectMessage(
-                                            context, cat.category, cat.pool, placeholders
-                                        )
-                                        previewMessage = evaluated.ifEmpty { "No templates available" }
-                                        showPreviewCard = true
-                                    },
-                                    shape = RoundedCornerShape(8.dp),
-                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), contentColor = MaterialTheme.colorScheme.primary)
-                                ) {
-                                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.preview_notification), fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                                }
-
-                                Button(
-                                    onClick = {
-                                        val channelId = com.synfusion.attendance.utils.LocalNotificationManager.CHANNEL_OFFLINE_ATTENDANCE
-
-                                        // Refresh permissions
-                                        val isAppNotificationsEnabled = androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled()
-                                        val isPostPermissionsGranted = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                                            androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED
-                                        } else {
-                                            true
-                                        }
-
-                                        if (!isAppNotificationsEnabled) {
-                                            diagnosticDialogTitle = context.getString(com.synfusion.attendance.R.string.notif_status_disabled)
-                                            diagnosticDialogDesc = context.getString(com.synfusion.attendance.R.string.notif_disabled_desc)
-                                            diagnosticDialogActionText = context.getString(com.synfusion.attendance.R.string.open_notif_settings)
-                                            diagnosticDialogAction = {
-                                                try {
-                                                    val intent = Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-                                                        putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
-                                                    }
-                                                    context.getActivity()?.startActivity(intent)
-                                                } catch (e: Exception) {
-                                                    try {
-                                                        val fallbackIntent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                                                            data = android.net.Uri.fromParts("package", context.packageName, null)
-                                                        }
-                                                        context.getActivity()?.startActivity(fallbackIntent)
-                                                    } catch (ex: Exception) {
-                                                        Toast.makeText(context, "Unable to open settings", Toast.LENGTH_SHORT).show()
-                                                    }
-                                                }
-                                            }
-                                            showDiagnosticDialog = true
-                                            return@Button
-                                        }
-
-                                        if (!isPostPermissionsGranted && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                                            diagnosticDialogTitle = context.getString(com.synfusion.attendance.R.string.notif_status_permission_required)
-                                            diagnosticDialogDesc = context.getString(com.synfusion.attendance.R.string.notif_permission_desc)
-                                            diagnosticDialogActionText = context.getString(com.synfusion.attendance.R.string.allow_notifications)
-                                            diagnosticDialogAction = {
-                                                permissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
-                                            }
-                                            showDiagnosticDialog = true
-                                            return@Button
-                                        }
-
-                                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                                            val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
-                                            val channel = manager.getNotificationChannel(channelId)
-                                            if (channel != null && channel.importance == android.app.NotificationManager.IMPORTANCE_NONE) {
-                                                diagnosticDialogTitle = context.getString(com.synfusion.attendance.R.string.notif_channel_disabled)
-                                                diagnosticDialogDesc = context.getString(com.synfusion.attendance.R.string.notif_channel_disabled_desc)
-                                                diagnosticDialogActionText = context.getString(com.synfusion.attendance.R.string.open_notif_settings)
-                                                diagnosticDialogAction = {
-                                                    try {
-                                                        val intent = Intent(android.provider.Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS).apply {
-                                                            putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
-                                                            putExtra(android.provider.Settings.EXTRA_CHANNEL_ID, channel.id)
-                                                        }
-                                                        context.getActivity()?.startActivity(intent)
-                                                    } catch (e: Exception) {
-                                                        try {
-                                                            val intent = Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-                                                                putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
-                                                            }
-                                                            context.getActivity()?.startActivity(intent)
-                                                        } catch (ex: Exception) {
-                                                            try {
-                                                                val fallbackIntent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                                                                    data = android.net.Uri.fromParts("package", context.packageName, null)
-                                                                }
-                                                                context.getActivity()?.startActivity(fallbackIntent)
-                                                            } catch (exc: Exception) {
-                                                                Toast.makeText(context, "Unable to open settings", Toast.LENGTH_SHORT).show()
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                                showDiagnosticDialog = true
-                                                return@Button
-                                            } else if (channel == null) {
-                                                com.synfusion.attendance.utils.LocalNotificationManager.initChannels(context)
-                                            }
-                                        }
-
-                                        val evaluated = com.synfusion.attendance.utils.NotificationMessageSelector.selectMessage(
-                                            context, cat.category, cat.pool, placeholders
-                                        )
-                                        val messageToSend = evaluated.ifEmpty { "No templates available" }
-
-                                        com.synfusion.attendance.utils.LocalNotificationManager.sendNotification(
-                                            context = context,
-                                            channelId = channelId,
-                                            title = cat.titlePrefix,
-                                            message = messageToSend,
-                                            category = cat.category,
-                                            reason = "Manual developer preview test trigger"
-                                        )
-
-                                        // Refresh history
-                                        logs = com.synfusion.attendance.utils.LocalNotificationManager.getNotificationLogs(context)
-                                        Toast.makeText(context, context.getString(com.synfusion.attendance.R.string.notif_sent_successfully), Toast.LENGTH_SHORT).show()
-                                    },
-                                    shape = RoundedCornerShape(8.dp),
-                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                                ) {
-                                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.dev_test), fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // 4. Execution Logs History
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text("Developer Notification History Logs", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                if (logs.isNotEmpty()) {
-                    TextButton(onClick = {
-                        com.synfusion.attendance.utils.LocalNotificationManager.clearNotificationLogs(context)
-                        logs = emptyList()
-                    }) {
-                        Text("Clear Logs", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                    }
-                }
-            }
-
-            if (logs.isEmpty()) {
-                Box(modifier = Modifier.fillMaxWidth().height(100.dp), contentAlignment = Alignment.Center) {
-                    Text("No send history logs logged yet.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            } else {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    logs.forEach { log ->
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
-                        ) {
-                            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                    Text(log.category.uppercase(), fontWeight = FontWeight.Bold, fontSize = 11.sp, color = MaterialTheme.colorScheme.primary)
-                                    Text(log.time, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
-                                Text(log.message, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
-                                Text("Reason: ${log.reason}", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
-                            }
-                        }
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(48.dp))
-        }
-    }
-
-    if (showDiagnosticDialog) {
-        AlertDialog(
-            onDismissRequest = { showDiagnosticDialog = false },
-            title = { Text(diagnosticDialogTitle, fontWeight = FontWeight.Bold) },
-            text = { Text(diagnosticDialogDesc) },
-            confirmButton = {
-                Button(onClick = {
-                    showDiagnosticDialog = false
-                    diagnosticDialogAction()
-                }) {
-                    Text(diagnosticDialogActionText)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDiagnosticDialog = false }) {
-                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.cancel))
-                }
-            }
-        )
-    }
-}
-
-data class TestCategoryItem(
-    val displayName: String,
-    val category: String,
-    val titlePrefix: String,
-    val pool: List<String>
-)
-
-@Composable
-fun DiagnosticItemRow(label: String, value: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(label, fontSize = 12.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(value, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-    }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -1606,6 +1167,118 @@ fun OfflineProfileEditBottomSheet(
                 Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.edit_profile), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
             }
             HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                val context = LocalContext.current
+                val photoPickerLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+                    contract = androidx.activity.result.contract.ActivityResultContracts.GetContent()
+                ) { uri: Uri? ->
+                    if (uri != null) {
+                        viewModel.onProfileImageSelected(uri)
+                    }
+                }
+
+                val displayUri = state.profileImageUri
+                val currentPhotoPath = state.profileImageUrl
+
+                val imageModel: Any? = remember(displayUri, currentPhotoPath) {
+                    if (displayUri != null) displayUri
+                    else if (currentPhotoPath.isNotEmpty()) java.io.File(currentPhotoPath)
+                    else null
+                }
+
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(100.dp)
+                            .clip(androidx.compose.foundation.shape.CircleShape)
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+                            .border(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), androidx.compose.foundation.shape.CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        val imageRequest = remember(imageModel) {
+                            if (imageModel != null) {
+                                val builder = coil.request.ImageRequest.Builder(context)
+                                    .data(imageModel)
+                                    .crossfade(true)
+                                if (imageModel is java.io.File) {
+                                    builder.memoryCacheKey("${imageModel.absolutePath}_${imageModel.lastModified()}")
+                                        .diskCacheKey("${imageModel.absolutePath}_${imageModel.lastModified()}")
+                                }
+                                builder.networkCachePolicy(coil.request.CachePolicy.DISABLED)
+                                    .diskCachePolicy(coil.request.CachePolicy.ENABLED)
+                                    .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
+                                    .build()
+                            } else null
+                        }
+
+                        if (imageModel != null && imageRequest != null) {
+                            coil.compose.SubcomposeAsyncImage(
+                                model = imageRequest,
+                                contentDescription = "Preview Photo",
+                                modifier = Modifier.fillMaxSize().clip(androidx.compose.foundation.shape.CircleShape),
+                                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                                error = {
+                                    Icon(
+                                        imageVector = Icons.Default.Person,
+                                        contentDescription = "Default Avatar",
+                                        modifier = Modifier.size(50.dp),
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = "Default Avatar",
+                                modifier = Modifier.size(50.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = { photoPickerLauncher.launch("image/*") },
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Icon(Icons.Default.PhotoCamera, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = if (imageModel != null) "Change" else "Choose",
+                                fontSize = 12.sp
+                            )
+                        }
+
+                        if (imageModel != null) {
+                            OutlinedButton(
+                                onClick = {
+                                    viewModel.onProfileImageSelected(null)
+                                    viewModel.onRemoveProfilePhoto()
+                                },
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.error)
+                            ) {
+                                Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Remove", fontSize = 12.sp)
+                            }
+                        }
+                    }
+                }
+            }
 
             OutlinedTextField(
                 value = state.name,

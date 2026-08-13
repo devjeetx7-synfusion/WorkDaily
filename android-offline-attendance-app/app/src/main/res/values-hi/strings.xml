@@ -130,6 +130,8 @@
     <string name="full_day">पूरा दिन</string>
     <string name="half_day">आधा दिन</string>
     <string name="add_advance_payment">अग्रिम भुगतान जोड़ें</string>
+    <string name="edit_advance_payment">अग्रिम भुगतान संपादित करें</string>
+    <string name="edit_advance">अग्रिम संपादित करें</string>
     <string name="amount">राशि</string>
     <string name="save">सहेजें</string>
     <string name="no_internet_connection">कोई इंटरनेट कनेक्शन नहीं</string>

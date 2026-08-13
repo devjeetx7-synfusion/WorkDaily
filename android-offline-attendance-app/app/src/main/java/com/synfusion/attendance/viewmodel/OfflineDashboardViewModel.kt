@@ -12,6 +12,7 @@ import com.synfusion.attendance.utils.AttendanceCalculationEngine
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.withContext
@@ -42,6 +43,7 @@ data class OfflineDashboardState(
     val hasShownOfflineSheet: Boolean = false,
 
     val errorMessage: String? = null,
+    val todayAdvanceAmount: Double? = null,
 
     val selectedDrillDownType: DrillDownType? = null,
     val selectedLogs: List<OfflinePassbookLog> = emptyList(),
@@ -64,6 +66,11 @@ class OfflineDashboardViewModel(
         viewModelScope.launch {
             _dashboardState.update { it.copy(isLoading = true) }
             loadLocalData()
+        }
+        viewModelScope.launch {
+            preferencesRepository.profilePhotoPathFlow.collect { path ->
+                _dashboardState.update { it.copy(photoUrl = path ?: "") }
+            }
         }
     }
 
@@ -101,8 +108,9 @@ class OfflineDashboardViewModel(
                 val user = withContext(Dispatchers.IO) { localAttendanceRepository.getUser() }
                 val name = user?.name ?: "User"
                 cachedDefaultWage = user?.dailyWage ?: 500.0
+                val resolvedPhotoPath = preferencesRepository.profilePhotoPathFlow.first() ?: ""
 
-                _dashboardState.update { it.copy(name = name) }
+                _dashboardState.update { it.copy(name = name, photoUrl = resolvedPhotoPath) }
 
                 // Personal role
                 val personalAttendance = withContext(Dispatchers.IO) { localAttendanceRepository.getPersonalAttendance() }
@@ -132,6 +140,7 @@ class OfflineDashboardViewModel(
                     todayType = calcResult.currentTodayType,
                     overtimeHours = calcResult.currentOvertime,
                     todayNote = calcResult.currentNote,
+                    todayAdvanceAmount = if (calcResult.advanceToday > 0.0) calcResult.advanceToday else null,
                     isLoading = false,
                     isRefreshing = false,
                     errorMessage = null

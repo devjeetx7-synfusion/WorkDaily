@@ -242,6 +242,7 @@ fun DashboardScreen(
                                                 }
                                                 item {
                                                     PersonalQuickActions(
+                                                        todayAdvanceAmount = dashboardState.todayAdvanceAmount,
                                                         onAddAdvance = { showAdvanceDialog = true }
                                                     )
                                                 }
@@ -314,9 +315,31 @@ fun DashboardScreen(
         }
 
         if (showAdvanceDialog) {
+            val existingAmount = dashboardState.todayAdvanceAmount
+            LaunchedEffect(showAdvanceDialog) {
+                if (existingAmount != null && existingAmount > 0.0) {
+                    advanceAmount = if (existingAmount % 1.0 == 0.0) {
+                        existingAmount.toInt().toString()
+                    } else {
+                        existingAmount.toString()
+                    }
+                } else {
+                    advanceAmount = ""
+                }
+            }
+
             AlertDialog(
                 onDismissRequest = { showAdvanceDialog = false },
-                title = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.add_advance_payment), fontWeight = FontWeight.Bold) },
+                title = {
+                    Text(
+                        text = if (existingAmount != null && existingAmount > 0.0) {
+                            androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.edit_advance_payment)
+                        } else {
+                            androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.add_advance_payment)
+                        },
+                        fontWeight = FontWeight.Bold
+                    )
+                },
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                         OutlinedTextField(
@@ -332,15 +355,25 @@ fun DashboardScreen(
                     }
                 },
                 confirmButton = {
+                    val isValidAmount = remember(advanceAmount) {
+                        val parsed = advanceAmount.toDoubleOrNull()
+                        parsed != null && parsed > 0.0 && advanceAmount.trim().isNotEmpty()
+                    }
                     Button(
                         onClick = {
                             val amount = advanceAmount.toDoubleOrNull()
-                            if (amount != null && amount > 0) {
+                            if (amount != null && amount > 0.0) {
                                 dashboardViewModel.addAdvance(amount)
+                                showAdvanceDialog = false
+                                advanceAmount = ""
                             }
-                            showAdvanceDialog = false
-                            advanceAmount = ""
-                        }
+                        },
+                        enabled = isValidAmount,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            disabledContainerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f),
+                            disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                        )
                     ) {
                         Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.save))
                     }
@@ -458,6 +491,7 @@ fun DashboardShimmer() {
 
 @Composable
 fun HeaderSection(state: OfflineDashboardState) {
+    val context = LocalContext.current
     val todayFullDate = remember {
         SimpleDateFormat("EEEE, dd MMMM yyyy", Locale.getDefault()).format(Date())
     }
@@ -465,6 +499,24 @@ fun HeaderSection(state: OfflineDashboardState) {
     val displayName = state.name.trim()
     val firstName = if (displayName.isNotEmpty()) displayName.split(" ")[0] else "User"
     val avatarLetters = if (displayName.length >= 2) displayName.take(2).uppercase() else if (displayName.isNotEmpty()) displayName.take(1).uppercase() else "U"
+
+    val imageFile = remember(state.photoUrl) {
+        if (state.photoUrl.isNotEmpty()) java.io.File(state.photoUrl) else null
+    }
+    val showLocalImage = imageFile != null && imageFile.exists()
+    val imageRequest = remember(state.photoUrl, showLocalImage) {
+        if (imageFile != null && showLocalImage) {
+            coil.request.ImageRequest.Builder(context)
+                .data(imageFile)
+                .crossfade(true)
+                .memoryCacheKey("${state.photoUrl}_${imageFile.lastModified()}")
+                .diskCacheKey("${state.photoUrl}_${imageFile.lastModified()}")
+                .networkCachePolicy(coil.request.CachePolicy.DISABLED)
+                .diskCachePolicy(coil.request.CachePolicy.ENABLED)
+                .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
+                .build()
+        } else null
+    }
 
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -480,12 +532,29 @@ fun HeaderSection(state: OfflineDashboardState) {
                     .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = avatarLetters,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp
-                )
+                if (showLocalImage && imageRequest != null) {
+                    coil.compose.SubcomposeAsyncImage(
+                        model = imageRequest,
+                        contentDescription = "Profile Photo",
+                        modifier = Modifier.fillMaxSize().clip(CircleShape),
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                        error = {
+                            Text(
+                                text = avatarLetters,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp
+                            )
+                        }
+                    )
+                } else {
+                    Text(
+                        text = avatarLetters,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp
+                    )
+                }
             }
             Spacer(modifier = Modifier.width(12.dp))
             Column {
@@ -566,9 +635,18 @@ fun AllTimePassbookButton(onNavigate: () -> Unit) {
 }
 
 @Composable
-fun PersonalQuickActions(onAddAdvance: () -> Unit) {
+fun PersonalQuickActions(
+    todayAdvanceAmount: Double?,
+    onAddAdvance: () -> Unit
+) {
     Column {
-        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.quick_actions), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 8.dp))
+        Text(
+            text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.quick_actions),
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -580,20 +658,66 @@ fun PersonalQuickActions(onAddAdvance: () -> Unit) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
                 Box(
                     modifier = Modifier.size(48.dp).clip(CircleShape).background(com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay().copy(alpha = 0.1f)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = null, tint = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay(), modifier = Modifier.size(24.dp))
+                    Icon(
+                        imageVector = if (todayAdvanceAmount != null && todayAdvanceAmount > 0.0) Icons.Default.Edit else Icons.Default.Add,
+                        contentDescription = null,
+                        tint = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay(),
+                        modifier = Modifier.size(24.dp)
+                    )
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 Column {
-                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.add_advance_payment), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.advance_payment), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    if (todayAdvanceAmount != null && todayAdvanceAmount > 0.0) {
+                        Text(
+                            text = "Advance Payment",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "₹${AmountFormatter.format(todayAdvanceAmount)}",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                    } else {
+                        Text(
+                            text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.add_advance_payment),
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                        Text(
+                            text = "Advance Payment (₹)",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
-            Icon(Icons.Default.ArrowForward, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
+            if (todayAdvanceAmount != null && todayAdvanceAmount > 0.0) {
+                Button(
+                    onClick = onAddAdvance,
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                        contentColor = MaterialTheme.colorScheme.primary
+                    ),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                ) {
+                    Text(
+                        text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.edit_advance),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp
+                    )
+                }
+            } else {
+                Icon(Icons.Default.ArrowForward, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
+            }
         }
     }
 }
