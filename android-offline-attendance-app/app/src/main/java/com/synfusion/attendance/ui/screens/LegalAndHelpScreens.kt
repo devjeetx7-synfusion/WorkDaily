@@ -44,26 +44,160 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.synfusion.attendance.R
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun WorkDailyAppBar(
+    title: String,
+    onNavigateBack: () -> Unit
+) {
+    TopAppBar(
+        title = {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = (-0.5).sp
+                ),
+                color = MaterialTheme.colorScheme.onBackground
+            )
+        },
+        navigationIcon = {
+            Box(
+                modifier = Modifier
+                    .padding(start = 12.dp, end = 4.dp)
+                    .size(40.dp)
+                    .clip(androidx.compose.foundation.shape.CircleShape)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+                    .clickable(onClick = onNavigateBack),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = stringResource(R.string.close),
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = MaterialTheme.colorScheme.background,
+            titleContentColor = MaterialTheme.colorScheme.onBackground,
+            navigationIconContentColor = MaterialTheme.colorScheme.primary
+        ),
+        windowInsets = WindowInsets.statusBars
+    )
+}
+
+@Composable
+fun PrivacyHeaderIllustration() {
+    val infiniteTransition = rememberInfiniteTransition(label = "privacy_illustration")
+    val scale by infiniteTransition.animateFloat(
+        initialValue = 0.95f,
+        targetValue = 1.05f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2000, easing = EaseInOutSine),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "scale"
+    )
+
+    Box(
+        modifier = Modifier
+            .size(100.dp)
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .size(80.dp)
+                .background(
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                    shape = androidx.compose.foundation.shape.CircleShape
+                )
+        )
+        Icon(
+            imageVector = Icons.Default.Shield,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(56.dp)
+        )
+        Icon(
+            imageVector = Icons.Default.Lock,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onPrimary,
+            modifier = Modifier.size(20.dp)
+        )
+    }
+}
+
+@Composable
+fun TermsHeaderIllustration() {
+    val infiniteTransition = rememberInfiniteTransition(label = "terms_illustration")
+    val translateY by infiniteTransition.animateFloat(
+        initialValue = -4f,
+        targetValue = 4f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2200, easing = EaseInOutSine),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "translateY"
+    )
+
+    Box(
+        modifier = Modifier
+            .size(100.dp)
+            .graphicsLayer {
+                translationY = translateY
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .size(80.dp)
+                .background(
+                    color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f),
+                    shape = androidx.compose.foundation.shape.CircleShape
+                )
+        )
+        Icon(
+            imageVector = Icons.Default.Description,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.secondary,
+            modifier = Modifier.size(56.dp)
+        )
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(bottom = 24.dp, end = 24.dp)
+                .size(22.dp)
+                .background(MaterialTheme.colorScheme.primary, androidx.compose.foundation.shape.CircleShape)
+                .border(2.dp, MaterialTheme.colorScheme.background, androidx.compose.foundation.shape.CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.Check,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(12.dp)
+            )
+        }
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HowToUseScreen(onNavigateBack: () -> Unit) {
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.how_to_use), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge) },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.close))
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface
-                ),
-                windowInsets = WindowInsets.statusBars
+            WorkDailyAppBar(
+                title = stringResource(R.string.how_to_use),
+                onNavigateBack = onNavigateBack
             )
         }
     ) { padding ->
@@ -277,19 +411,9 @@ fun TutorialStepCard(
 fun PrivacyPolicyScreen(onNavigateBack: () -> Unit) {
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.privacy_policy), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge) },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.close))
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface
-                ),
-                windowInsets = WindowInsets.statusBars
+            WorkDailyAppBar(
+                title = stringResource(R.string.privacy_policy),
+                onNavigateBack = onNavigateBack
             )
         }
     ) { padding ->
@@ -301,9 +425,29 @@ fun PrivacyPolicyScreen(onNavigateBack: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item { Spacer(modifier = Modifier.height(8.dp)) }
+
             item {
-                Text(stringResource(R.string.privacy_intro), style = MaterialTheme.typography.bodyLarge)
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    PrivacyHeaderIllustration()
+
+                    Text(
+                        text = stringResource(R.string.privacy_intro),
+                        style = MaterialTheme.typography.bodyLarge.copy(
+                            lineHeight = 24.sp,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        ),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 8.dp)
+                    )
+                }
             }
+
             item {
                 LegalSectionCard(
                     title = stringResource(R.string.privacy_local_data_title),
@@ -343,19 +487,9 @@ fun PrivacyPolicyScreen(onNavigateBack: () -> Unit) {
 fun TermsConditionsScreen(onNavigateBack: () -> Unit) {
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.terms_conditions), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge) },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.close))
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface
-                ),
-                windowInsets = WindowInsets.statusBars
+            WorkDailyAppBar(
+                title = stringResource(R.string.terms_conditions),
+                onNavigateBack = onNavigateBack
             )
         }
     ) { padding ->
@@ -367,6 +501,29 @@ fun TermsConditionsScreen(onNavigateBack: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item { Spacer(modifier = Modifier.height(8.dp)) }
+
+            item {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    TermsHeaderIllustration()
+
+                    Text(
+                        text = stringResource(R.string.rules_guidelines),
+                        style = MaterialTheme.typography.bodyLarge.copy(
+                            lineHeight = 24.sp,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        ),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 8.dp)
+                    )
+                }
+            }
+
             item {
                 LegalSectionCard(
                     title = stringResource(R.string.terms_acceptance_title),
@@ -422,58 +579,133 @@ fun TermsConditionsScreen(onNavigateBack: () -> Unit) {
 }
 
 @Composable
-fun LegalSectionCard(title: String, description: String, icon: androidx.compose.ui.graphics.vector.ImageVector) {
+fun LegalSectionCard(
+    title: String,
+    description: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector
+) {
     var expanded by remember { mutableStateOf(false) }
+
+    val rotationState by animateFloatAsState(
+        targetValue = if (expanded) 180f else 0f,
+        animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing),
+        label = "rotation"
+    )
+
+    val parts = remember(title) { title.split(". ", limit = 2) }
+    val sectionNumber = if (parts.size == 2) parts[0] else null
+    val sectionTitleText = if (parts.size == 2) parts[1] else title
+
     Card(
-        modifier = Modifier.fillMaxWidth().clickable { expanded = !expanded },
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(androidx.compose.foundation.shape.RoundedCornerShape(16.dp))
+            .clickable { expanded = !expanded },
         shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+        colors = CardDefaults.cardColors(
+            containerColor = if (expanded) {
+                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.15f)
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+            }
+        ),
+        border = if (expanded) {
+            androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
+        } else {
+            androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+        }
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+                .padding(16.dp)
+                .animateContentSize(
+                    animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing)
+                ),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically, modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .background(
+                            color = if (expanded) {
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                            } else {
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
+                            },
+                            shape = androidx.compose.foundation.shape.CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
+                        modifier = Modifier.size(18.dp)
                     )
                 }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    if (sectionNumber != null) {
+                        Text(
+                            text = "SECTION $sectionNumber",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.SemiBold,
+                                letterSpacing = 1.sp
+                            ),
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+                        )
+                    }
+                    Text(
+                        text = sectionTitleText,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            lineHeight = 22.sp
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
                 Icon(
-                    imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                    imageVector = Icons.Default.KeyboardArrowDown,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .graphicsLayer {
+                            rotationZ = rotationState
+                        }
+                        .size(24.dp)
                 )
             }
 
-            val shortDesc = if (description.length > 50) description.substring(0, 50) + "..." else description
-
-            AnimatedVisibility(visible = !expanded) {
-                Text(
-                    text = shortDesc,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            AnimatedVisibility(visible = expanded) {
-                Text(
-                    text = description,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+            AnimatedVisibility(
+                visible = expanded,
+                enter = expandVertically(animationSpec = tween(250)) + fadeIn(animationSpec = tween(150)),
+                exit = shrinkVertically(animationSpec = tween(250)) + fadeOut(animationSpec = tween(150))
+            ) {
+                Column(
+                    modifier = Modifier.padding(top = 4.dp)
+                ) {
+                    Divider(
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+                        thickness = 1.dp,
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    )
+                    Text(
+                        text = description,
+                        style = MaterialTheme.typography.bodyLarge.copy(
+                            lineHeight = 24.sp,
+                            letterSpacing = 0.25.sp
+                        ),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
     }
