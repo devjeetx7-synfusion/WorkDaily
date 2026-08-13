@@ -417,4 +417,10 @@
 
     <string name="login_notif_desc">उपस्थिति अनुस्मारक, रिपोर्ट और महत्वपूर्ण WorkDaily अपडेट प्राप्त करने के लिए नोटिफिकेशन चालू करें।</string>
     <string name="continue_word">जारी रखें</string>
+
+    <!-- Stay Connected / WhatsApp follow card -->
+    <string name="stay_connected">जुड़े रहें</string>
+    <string name="whatsapp_channel">व्हाट्सएप चैनल</string>
+    <string name="follow_workdaily_desc">अपडेट के लिए WorkDaily को फॉलो करें</string>
+    <string name="follow_channel">फॉलो करें</string>
 </resources>

@@ -418,4 +418,10 @@
 
     <string name="login_notif_desc">Enable notifications to receive attendance reminders, reports and important WorkDaily updates.</string>
     <string name="continue_word">Continue</string>
+
+    <!-- Stay Connected / WhatsApp follow card -->
+    <string name="stay_connected">Stay Connected</string>
+    <string name="whatsapp_channel">WhatsApp Channel</string>
+    <string name="follow_workdaily_desc">Follow WorkDaily for updates</string>
+    <string name="follow_channel">Follow</string>
 </resources>
