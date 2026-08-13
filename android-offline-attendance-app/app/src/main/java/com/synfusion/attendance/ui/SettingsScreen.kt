@@ -24,6 +24,7 @@ import androidx.compose.material3.*
 import com.synfusion.attendance.ui.components.InstagramIcon
 import com.synfusion.attendance.ui.components.TelegramIcon
 import com.synfusion.attendance.ui.components.YouTubeIcon
+import com.synfusion.attendance.ui.components.CropScreenDialog
 
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -32,6 +33,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.ui.draw.clip
@@ -1174,11 +1176,14 @@ fun OfflineProfileEditBottomSheet(
                 horizontalArrangement = Arrangement.Center
             ) {
                 val context = LocalContext.current
+                var selectedUriForCrop by remember { mutableStateOf<Uri?>(null) }
+                var showActionSheet by remember { mutableStateOf(false) }
+
                 val photoPickerLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
                     contract = androidx.activity.result.contract.ActivityResultContracts.GetContent()
                 ) { uri: Uri? ->
                     if (uri != null) {
-                        viewModel.onProfileImageSelected(uri)
+                        selectedUriForCrop = uri
                     }
                 }
 
@@ -1191,90 +1196,204 @@ fun OfflineProfileEditBottomSheet(
                     else null
                 }
 
+                // Premium visual transition for the profile image
+                var animatePhoto by remember { mutableStateOf(false) }
+                LaunchedEffect(Unit) {
+                    animatePhoto = true
+                }
+                val animatedScale by androidx.compose.animation.core.animateFloatAsState(
+                    targetValue = if (animatePhoto) 1f else 0.7f,
+                    animationSpec = androidx.compose.animation.core.spring(
+                        dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy,
+                        stiffness = androidx.compose.animation.core.Spring.StiffnessLow
+                    ),
+                    label = "photoScale"
+                )
+                val animatedAlpha by androidx.compose.animation.core.animateFloatAsState(
+                    targetValue = if (animatePhoto) 1f else 0f,
+                    animationSpec = androidx.compose.animation.core.tween(durationMillis = 350),
+                    label = "photoAlpha"
+                )
+
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(100.dp)
-                            .clip(androidx.compose.foundation.shape.CircleShape)
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
-                            .border(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), androidx.compose.foundation.shape.CircleShape),
-                        contentAlignment = Alignment.Center
+                            .graphicsLayer {
+                                scaleX = animatedScale
+                                scaleY = animatedScale
+                                alpha = animatedAlpha
+                            }
+                            .padding(bottom = 8.dp)
                     ) {
-                        val imageRequest = remember(imageModel) {
-                            if (imageModel != null) {
-                                val builder = coil.request.ImageRequest.Builder(context)
-                                    .data(imageModel)
-                                    .crossfade(true)
-                                if (imageModel is java.io.File) {
-                                    builder.memoryCacheKey("${imageModel.absolutePath}_${imageModel.lastModified()}")
-                                        .diskCacheKey("${imageModel.absolutePath}_${imageModel.lastModified()}")
-                                }
-                                builder.networkCachePolicy(coil.request.CachePolicy.DISABLED)
-                                    .diskCachePolicy(coil.request.CachePolicy.ENABLED)
-                                    .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
-                                    .build()
-                            } else null
+                        Box(
+                            modifier = Modifier
+                                .size(100.dp)
+                                .clip(androidx.compose.foundation.shape.CircleShape)
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+                                .border(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), androidx.compose.foundation.shape.CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            val imageRequest = remember(imageModel) {
+                                if (imageModel != null) {
+                                    val builder = coil.request.ImageRequest.Builder(context)
+                                        .data(imageModel)
+                                        .crossfade(true)
+                                    if (imageModel is java.io.File) {
+                                        builder.memoryCacheKey("${imageModel.absolutePath}_${imageModel.lastModified()}")
+                                            .diskCacheKey("${imageModel.absolutePath}_${imageModel.lastModified()}")
+                                    }
+                                    builder.networkCachePolicy(coil.request.CachePolicy.DISABLED)
+                                        .diskCachePolicy(coil.request.CachePolicy.ENABLED)
+                                        .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
+                                        .build()
+                                } else null
+                            }
+
+                            if (imageModel != null && imageRequest != null) {
+                                coil.compose.SubcomposeAsyncImage(
+                                    model = imageRequest,
+                                    contentDescription = "Preview Photo",
+                                    modifier = Modifier.fillMaxSize().clip(androidx.compose.foundation.shape.CircleShape),
+                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                                    error = {
+                                        Icon(
+                                            imageVector = Icons.Default.Person,
+                                            contentDescription = "Default Avatar",
+                                            modifier = Modifier.size(50.dp),
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.Person,
+                                    contentDescription = "Default Avatar",
+                                    modifier = Modifier.size(50.dp),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
                         }
 
-                        if (imageModel != null && imageRequest != null) {
-                            coil.compose.SubcomposeAsyncImage(
-                                model = imageRequest,
-                                contentDescription = "Preview Photo",
-                                modifier = Modifier.fillMaxSize().clip(androidx.compose.foundation.shape.CircleShape),
-                                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                                error = {
-                                    Icon(
-                                        imageVector = Icons.Default.Person,
-                                        contentDescription = "Default Avatar",
-                                        modifier = Modifier.size(50.dp),
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
-                                }
-                            )
-                        } else {
+                        // Circular edit/pencil button in the bottom-right corner
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .minimumInteractiveComponentSize()
+                                .size(32.dp)
+                                .clip(androidx.compose.foundation.shape.CircleShape)
+                                .background(MaterialTheme.colorScheme.primary)
+                                .border(2.dp, MaterialTheme.colorScheme.surface, androidx.compose.foundation.shape.CircleShape)
+                                .clickable { showActionSheet = true },
+                            contentAlignment = Alignment.Center
+                        ) {
                             Icon(
-                                imageVector = Icons.Default.Person,
-                                contentDescription = "Default Avatar",
-                                modifier = Modifier.size(50.dp),
-                                tint = MaterialTheme.colorScheme.primary
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = "Edit Profile Photo",
+                                tint = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier.size(16.dp)
                             )
                         }
                     }
+                }
 
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        OutlinedButton(
-                            onClick = { photoPickerLauncher.launch("image/*") },
-                            shape = RoundedCornerShape(8.dp),
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                        ) {
-                            Icon(Icons.Default.PhotoCamera, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = if (imageModel != null) "Change" else "Choose",
-                                fontSize = 12.sp
-                            )
+                // Show the 1:1 Image Cropper when an image has been selected
+                if (selectedUriForCrop != null) {
+                    CropScreenDialog(
+                        imageUri = selectedUriForCrop!!,
+                        onCropSuccess = { croppedUri ->
+                            viewModel.onProfileImageSelected(croppedUri)
+                            selectedUriForCrop = null
+                        },
+                        onCancel = {
+                            selectedUriForCrop = null
                         }
+                    )
+                }
 
-                        if (imageModel != null) {
-                            OutlinedButton(
-                                onClick = {
-                                    viewModel.onProfileImageSelected(null)
-                                    viewModel.onRemoveProfilePhoto()
-                                },
-                                shape = RoundedCornerShape(8.dp),
-                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.error)
+                // Compact Action Sheet Modal Bottom Sheet
+                if (showActionSheet) {
+                    ModalBottomSheet(
+                        onDismissRequest = { showActionSheet = false },
+                        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                        dragHandle = { BottomSheetDefaults.DragHandle() }
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 24.dp, vertical = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "Profile Photo",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.padding(bottom = 8.dp)
+                            )
+
+                            // Change Photo option
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .clickable {
+                                        showActionSheet = false
+                                        photoPickerLauncher.launch("image/*")
+                                    }
+                                    .padding(vertical = 12.dp, horizontal = 16.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("Remove", fontSize = 12.sp)
+                                Icon(
+                                    imageVector = Icons.Default.PhotoCamera,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Spacer(modifier = Modifier.width(16.dp))
+                                Text(
+                                    text = "Change Photo",
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
                             }
+
+                            // Remove Photo option (only visible if profile photo exists)
+                            if (imageModel != null) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .clickable {
+                                            showActionSheet = false
+                                            viewModel.onProfileImageSelected(null)
+                                            viewModel.onRemoveProfilePhoto()
+                                        }
+                                        .padding(vertical = 12.dp, horizontal = 16.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Delete,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.error,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(16.dp))
+                                    Text(
+                                        text = "Remove Photo",
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.error
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(24.dp))
                         }
                     }
                 }

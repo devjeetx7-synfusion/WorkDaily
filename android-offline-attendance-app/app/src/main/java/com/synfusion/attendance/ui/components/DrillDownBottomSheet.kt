@@ -1,21 +1,24 @@
 package com.synfusion.attendance.ui.components
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -51,19 +54,32 @@ fun DrillDownBottomSheet(
     }
 
     val sheetShape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+
+    // Wrap content when empty, but fill 90% when records exist
+    val sheetModifier = if (logs.isEmpty()) {
+        Modifier.wrapContentHeight()
+    } else {
+        Modifier.fillMaxHeight(0.9f)
+    }
+
+    val columnModifier = if (logs.isEmpty()) {
+        Modifier.fillMaxWidth().wrapContentHeight().clip(sheetShape)
+    } else {
+        Modifier.fillMaxSize().clip(sheetShape)
+    }
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = MaterialTheme.colorScheme.background,
         dragHandle = { BottomSheetDefaults.DragHandle() },
         shape = sheetShape,
-        modifier = Modifier.fillMaxHeight(0.9f)
+        modifier = sheetModifier
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .clip(sheetShape)
+            modifier = columnModifier
         ) {
+            // Header Row (Always shown)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -77,70 +93,77 @@ fun DrillDownBottomSheet(
                 }
             }
 
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                placeholder = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.search_records)) },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                shape = RoundedCornerShape(12.dp),
-                singleLine = true,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                )
-            )
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.End
-            ) {
-                TextButton(onClick = { sortAscending = !sortAscending }) {
-                    Text(if (sortAscending) "Sort: Oldest First" else "Sort: Newest First")
-                }
-            }
-
-            if (filteredLogs.isEmpty()) {
-                Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.no_records_found_dots), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
+            if (logs.isEmpty()) {
+                // Phase 2 Contextual Empty State with smooth staggered animations
+                ContextualEmptyState(title = title)
+                Spacer(modifier = Modifier.height(24.dp))
             } else {
-                LazyColumn(
+                // Populate/Populated State Controls (Hides entirely when list is empty)
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
                     modifier = Modifier
-                        .weight(1f)
+                        .fillMaxWidth()
                         .padding(horizontal = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    contentPadding = PaddingValues(bottom = 16.dp)
+                    placeholder = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.search_records)) },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                    )
+                )
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.End
                 ) {
-                    items(filteredLogs, key = { it.date }) { log ->
-                        DrillDownRecordItem(log)
+                    TextButton(onClick = { sortAscending = !sortAscending }) {
+                        Text(if (sortAscending) "Sort: Oldest First" else "Sort: Newest First")
                     }
                 }
-            }
 
-            // Sticky Summary Footer
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
-                    .background(MaterialTheme.colorScheme.surface)
-                    .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
-                    .padding(16.dp)
-            ) {
-                Column {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.all_records_drilldown), fontWeight = FontWeight.Bold)
-                        Text(totalRecordsText, fontWeight = FontWeight.Bold)
+                if (filteredLogs.isEmpty()) {
+                    Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.no_records_found_dots), color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-                    if (totalAmountText != null) {
-                        Spacer(modifier = Modifier.height(8.dp))
+                } else {
+                    LazyColumn(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(horizontal = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        contentPadding = PaddingValues(bottom = 16.dp)
+                    ) {
+                        items(filteredLogs, key = { it.date }) { log ->
+                            DrillDownRecordItem(log)
+                        }
+                    }
+                }
+
+                // Sticky Summary Footer (Hides entirely when list is empty)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
+                        .background(MaterialTheme.colorScheme.surface)
+                        .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
+                        .padding(16.dp)
+                ) {
+                    Column {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.all_amount_drilldown), fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent())
-                            Text("₹$totalAmountText", fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent())
+                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.all_records_drilldown), fontWeight = FontWeight.Bold)
+                            Text(totalRecordsText, fontWeight = FontWeight.Bold)
+                        }
+                        if (totalAmountText != null) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.all_amount_drilldown), fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent())
+                                Text("₹$totalAmountText", fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent())
+                            }
                         }
                     }
                 }
@@ -148,6 +171,140 @@ fun DrillDownBottomSheet(
         }
     }
 }
+
+@Composable
+fun ContextualEmptyState(title: String) {
+    var animateIn by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        animateIn = true
+    }
+
+    val alpha by animateFloatAsState(
+        targetValue = if (animateIn) 1f else 0f,
+        animationSpec = tween(durationMillis = 400, delayMillis = 100),
+        label = "fade"
+    )
+    val scale by animateFloatAsState(
+        targetValue = if (animateIn) 1f else 0.85f,
+        animationSpec = tween(durationMillis = 400, delayMillis = 100),
+        label = "scale"
+    )
+    val titleAlpha by animateFloatAsState(
+        targetValue = if (animateIn) 1f else 0f,
+        animationSpec = tween(durationMillis = 400, delayMillis = 250),
+        label = "title_fade"
+    )
+    val descAlpha by animateFloatAsState(
+        targetValue = if (animateIn) 1f else 0f,
+        animationSpec = tween(durationMillis = 400, delayMillis = 400),
+        label = "desc_fade"
+    )
+
+    val lowerTitle = title.lowercase()
+    val (icon, tint, displayTitle, displayDesc) = when {
+        lowerTitle.contains("advance") -> {
+            EmptyStateDetails(
+                Icons.Default.AccountBalanceWallet,
+                MaterialTheme.colorScheme.primary,
+                "No Advance Records",
+                "You haven\'t logged any advance payments for this period."
+            )
+        }
+        lowerTitle.contains("overtime") -> {
+            EmptyStateDetails(
+                Icons.Default.Schedule,
+                MaterialTheme.colorScheme.secondary,
+                "No Overtime Records",
+                "No overtime hours have been logged for this period."
+            )
+        }
+        lowerTitle.contains("present") || lowerTitle.contains("absent") || lowerTitle.contains("half") || lowerTitle.contains("attendance") -> {
+            EmptyStateDetails(
+                Icons.Default.DateRange,
+                MaterialTheme.colorScheme.tertiary,
+                "No Attendance Records",
+                "No attendance records match this status for this period."
+            )
+        }
+        lowerTitle.contains("date") -> {
+            EmptyStateDetails(
+                Icons.Default.Today,
+                MaterialTheme.colorScheme.primary,
+                "No Attendance for This Date",
+                "There are no attendance or work logs recorded for this specific date."
+            )
+        }
+        else -> { // earnings / default
+            EmptyStateDetails(
+                Icons.Default.History,
+                MaterialTheme.colorScheme.primary,
+                "No Records Yet",
+                "There are no records logged in this section yet."
+            )
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 32.dp, horizontal = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        // Illustration circular container
+        Box(
+            modifier = Modifier
+                .size(100.dp)
+                .graphicsLayer {
+                    scaleX = scale
+                    scaleY = scale
+                    this.alpha = alpha
+                }
+                .clip(CircleShape)
+                .background(tint.copy(alpha = 0.12f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = tint,
+                modifier = Modifier.size(48.dp)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // Title
+        Text(
+            text = displayTitle,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier.graphicsLayer { this.alpha = titleAlpha }
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Description
+        Text(
+            text = displayDesc,
+            fontSize = 14.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            lineHeight = 20.sp,
+            modifier = Modifier
+                .padding(horizontal = 16.dp)
+                .graphicsLayer { this.alpha = descAlpha }
+        )
+    }
+}
+
+private data class EmptyStateDetails(
+    val icon: androidx.compose.ui.graphics.vector.ImageVector,
+    val tint: Color,
+    val title: String,
+    val description: String
+)
 
 @Composable
 fun DrillDownRecordItem(log: OfflinePassbookLog) {
@@ -161,7 +318,7 @@ fun DrillDownRecordItem(log: OfflinePassbookLog) {
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
             .clickable(
                 interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() },
-                indication = null // keep it non-interactive-looking if there is no action, but still consume events
+                indication = null
             ) {}
             .padding(12.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
