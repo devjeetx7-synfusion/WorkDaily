@@ -57,18 +57,83 @@ class NotificationWorker(
                     "missed_seven_plus", "missed_ten_days", "long_absence"
                 )
 
-                if (isDailyAttendanceType && !isEligibleWindow) {
-                    return Result.success() // Wait for eligible window
+                if (!isDailyAttendanceType || isEligibleWindow) {
+                    LocalNotificationManager.sendNotification(
+                        context = applicationContext,
+                        channelId = evalResult.channelId,
+                        title = evalResult.title,
+                        message = evalResult.message,
+                        category = evalResult.category,
+                        reason = evalResult.reason
+                    )
                 }
+            }
 
-                LocalNotificationManager.sendNotification(
-                    context = applicationContext,
-                    channelId = evalResult.channelId,
-                    title = evalResult.title,
-                    message = evalResult.message,
-                    category = evalResult.category,
-                    reason = evalResult.reason
-                )
+            // Evaluate Friendly Notifications
+            val currentHour = calendar.get(Calendar.HOUR_OF_DAY)
+            val currentMinute = calendar.get(Calendar.MINUTE)
+            val timeInMinutes = currentHour * 60 + currentMinute
+
+            val todayStr = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date())
+            val userId = activeUser.id
+
+            val friendlyCategory = when {
+                timeInMinutes in 390..570 -> "morning"    // 6:30 AM - 9:30 AM (inclusive)
+                timeInMinutes in 1050..1200 -> "evening"  // 5:30 PM - 8:00 PM (inclusive)
+                timeInMinutes in 1260..1350 -> "night"    // 9:00 PM - 10:30 PM (inclusive)
+                else -> null
+            }
+
+            if (friendlyCategory != null) {
+                val prefSpam = applicationContext.getSharedPreferences("notification_spam_prevention", Context.MODE_PRIVATE)
+                val evalKey = "friendly_eval_${friendlyCategory}_${todayStr}_$userId"
+                val sentKey = "friendly_sent_${friendlyCategory}_${todayStr}_$userId"
+
+                if (!prefSpam.contains(evalKey)) {
+                    // Not evaluated today yet! Roll a 35% probability.
+                    val roll = kotlin.random.Random.nextFloat()
+                    val shouldSend = roll < 0.35f
+
+                    prefSpam.edit()
+                        .putBoolean(evalKey, true)
+                        .putBoolean(sentKey, shouldSend)
+                        .apply()
+
+                    if (shouldSend) {
+                        val placeholders = NotificationRuleEngine.buildPlaceholders(
+                            activeUser,
+                            repository.getPersonalAttendance(),
+                            todayStr
+                        )
+                        val finalPlaceholders = placeholders.toMutableMap()
+                        if (finalPlaceholders["userName"].isNullOrBlank()) {
+                            finalPlaceholders["userName"] = "bhai"
+                        }
+
+                        val pool = when (friendlyCategory) {
+                            "morning" -> NotificationMessagePool.goodMorningMessages
+                            "evening" -> NotificationMessagePool.goodEveningMessages
+                            "night" -> NotificationMessagePool.goodNightMessages
+                            else -> emptyList()
+                        }
+
+                        val message = NotificationMessageSelector.selectMessage(
+                            applicationContext,
+                            "friendly_$friendlyCategory",
+                            pool,
+                            finalPlaceholders
+                        )
+
+                        LocalNotificationManager.sendNotification(
+                            context = applicationContext,
+                            channelId = LocalNotificationManager.CHANNEL_OFFLINE_ATTENDANCE,
+                            title = "WorkDaily 😊",
+                            message = message,
+                            category = "friendly_$friendlyCategory",
+                            reason = "Seeded/randomized friendly $friendlyCategory reminder"
+                        )
+                    }
+                }
             }
         } catch (e: Exception) {
             // Never crash, safely return success (could try retry if important, but background reminders can skip)
