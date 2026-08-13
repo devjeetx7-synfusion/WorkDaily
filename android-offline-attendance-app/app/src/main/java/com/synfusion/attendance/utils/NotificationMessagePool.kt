@@ -270,4 +270,30 @@ object NotificationMessagePool {
         "आगे बढ़ते रहो, रुकना मना है! आज की उपस्थिति तुरंत दर्ज करें {userName}!",
         "मेहनत का हिसाब हमेशा सुरक्षित रखें। WorkDaily के साथ कदम से कदम मिलाएं! 🚀"
     )
+
+    val goodMorningMessages = listOf(
+        "🌅 Subah ho gayi! Aaj duty pe jaana hai kya? 😄",
+        "☀️ Good Morning! Utho bhai, duty tumhara intezaar kar rahi hai 😂",
+        "🌞 Morning! Aaj kaam pe ja rahe ho ya aaj chhutti ka plan hai? 😄",
+        "☕ Good Morning! Chai ho gayi? Ab duty ka number hai 😜",
+        "😴 Utho! Suraj bhi duty pe aa gaya 😂",
+        "🌻 Khus raho, happy raho! Ab batao aaj duty jaana hai kya? 😄"
+    )
+
+    val goodEveningMessages = listOf(
+        "🌆 Good Evening! Kaise ho? Aaj ki duty kaisi rahi? 😄",
+        "😄 Kaise {userName}, aaj kaisa raha? Duty se wapas aa gaye?",
+        "☕ Good Evening! Duty khatam? Ab thoda aaram bhi kar lo 😌",
+        "😂 Aaj duty ne zyada kaam karwaya ya tumne duty se?",
+        "🌇 Khus raho, happy raho! Aaj ka din kaisa gaya? ❤️"
+    )
+
+    val goodNightMessages = listOf(
+        "🌙 Good Night! Aaj ki duty ka hisaab ho gaya? Ab aaram karo 😴",
+        "😴 Din khatam, duty khatam… ab phone rakho aur so jao 😂",
+        "🌙 Good Night! Kal phir duty se mulaqat hogi 😜",
+        "⭐ Khus raho, happy raho. Kal ka din aur achha ho ❤️",
+        "😂 Ab bas bhi karo! Duty kal bhi hai, sone ka time ho gaya 😴",
+        "🌃 Good Night! Aaj ka attendance lag gaya, ab neend lagao 😂"
+    )
 }

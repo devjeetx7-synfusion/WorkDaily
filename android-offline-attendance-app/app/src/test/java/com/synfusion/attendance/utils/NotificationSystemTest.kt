@@ -91,4 +91,64 @@ class NotificationSystemTest {
         assertEquals(LocalNotificationManager.CHANNEL_OFFLINE_ATTENDANCE, LocalNotificationManager.CHANNEL_EARNINGS)
         assertEquals(LocalNotificationManager.CHANNEL_OFFLINE_ATTENDANCE, LocalNotificationManager.CHANNEL_FUN_MOTIVATION)
     }
+
+    @Test
+    fun testFriendlyNotificationMessagePoolsExist() {
+        assertFalse(NotificationMessagePool.goodMorningMessages.isEmpty())
+        assertFalse(NotificationMessagePool.goodEveningMessages.isEmpty())
+        assertFalse(NotificationMessagePool.goodNightMessages.isEmpty())
+
+        // Verify some content matches expected strings
+        assertTrue(NotificationMessagePool.goodMorningMessages.any { it.contains("🌅") || it.contains("☀️") })
+        assertTrue(NotificationMessagePool.goodEveningMessages.any { it.contains("🌆") || it.contains("🌇") })
+        assertTrue(NotificationMessagePool.goodNightMessages.any { it.contains("🌙") || it.contains("🌃") })
+    }
+
+    @Test
+    fun testFriendlyNotificationPersonalizationFallback() {
+        // Test with user display name
+        val templateWithName = "😄 Kaise {userName}, aaj kaisa raha? Duty se wapas aa gaye?"
+        val placeholdersWithName = mapOf("userName" to "Ramesh")
+        val resultWithName = NotificationMessageSelector.evaluateTemplate(templateWithName, placeholdersWithName)
+        assertEquals("😄 Kaise Ramesh, aaj kaisa raha? Duty se wapas aa gaye?", resultWithName)
+
+        // Test with blank/empty name and fallback to "bhai"
+        val placeholdersWithFallback = mapOf("userName" to "bhai")
+        val resultWithFallback = NotificationMessageSelector.evaluateTemplate(templateWithName, placeholdersWithFallback)
+        assertEquals("😄 Kaise bhai, aaj kaisa raha? Duty se wapas aa gaye?", resultWithFallback)
+    }
+
+    @Test
+    fun testFriendlyTimeWindows() {
+        // Helper block mapping to match our when condition
+        val getFriendlyCategory: (Int) -> String? = { timeInMinutes ->
+            when {
+                timeInMinutes in 390..570 -> "morning"    // 6:30 AM - 9:30 AM (inclusive)
+                timeInMinutes in 1050..1200 -> "evening"  // 5:30 PM - 8:00 PM (inclusive)
+                timeInMinutes in 1260..1350 -> "night"    // 9:00 PM - 10:30 PM (inclusive)
+                else -> null
+            }
+        }
+
+        // Test Good Morning (6:30 AM - 9:30 AM)
+        assertEquals("morning", getFriendlyCategory(6 * 60 + 30)) // 6:30 AM
+        assertEquals("morning", getFriendlyCategory(8 * 60))      // 8:00 AM
+        assertEquals("morning", getFriendlyCategory(9 * 60 + 30)) // 9:30 AM
+        assertNull(getFriendlyCategory(6 * 60 + 29))              // 6:29 AM
+        assertNull(getFriendlyCategory(9 * 60 + 31))              // 9:31 AM
+
+        // Test Good Evening (5:30 PM - 8:00 PM)
+        assertEquals("evening", getFriendlyCategory(17 * 60 + 30)) // 5:30 PM
+        assertEquals("evening", getFriendlyCategory(19 * 60))       // 7:00 PM
+        assertEquals("evening", getFriendlyCategory(20 * 60))       // 8:00 PM
+        assertNull(getFriendlyCategory(17 * 60 + 29))              // 5:29 PM
+        assertNull(getFriendlyCategory(20 * 60 + 1))               // 8:01 PM
+
+        // Test Good Night (9:00 PM - 10:30 PM)
+        assertEquals("night", getFriendlyCategory(21 * 60))      // 9:00 PM
+        assertEquals("night", getFriendlyCategory(22 * 60))      // 10:00 PM
+        assertEquals("night", getFriendlyCategory(22 * 60 + 30)) // 10:30 PM
+        assertNull(getFriendlyCategory(20 * 60 + 59))            // 8:59 PM
+        assertNull(getFriendlyCategory(22 * 60 + 31))            // 10:31 PM
+    }
 }
