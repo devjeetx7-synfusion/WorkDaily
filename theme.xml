@@ -579,94 +579,362 @@
     line-height: 1.6;
   }
 
-  /* APP PREVIEW SECTION (Tab-based Showcase) */
+  /* APP PREMIUM SHOWCASE (Multi-Carousel Showcase) */
   .preview-section {
     background-color: #FFFFFF;
+    background-image: radial-gradient(circle at 10% 20%, rgba(15, 159, 122, 0.03) 0%, rgba(37, 99, 235, 0.02) 100%);
   }
 
-  .preview-wrapper {
+  .showcase-container {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  .showcase-item {
     display: grid;
-    grid-template-columns: 0.9fr 1.1fr;
+    grid-template-columns: 1.1fr 0.9fr;
     gap: 64px;
     align-items: center;
+    margin-bottom: 120px;
   }
 
-  .preview-nav-tabs {
+  .showcase-item:last-child {
+    margin-bottom: 0;
+  }
+
+  .showcase-item.reverse {
+    grid-template-columns: 0.9fr 1.1fr;
+  }
+
+  .showcase-item.reverse .showcase-text-col {
+    order: 2;
+  }
+
+  .showcase-item.reverse .showcase-carousel-col {
+    order: 1;
+  }
+
+  .showcase-text-col h3 {
+    font-size: 28px;
+    font-weight: 800;
+    margin-bottom: 16px;
+    color: var(--text-primary);
+  }
+
+  .showcase-text-col p {
+    font-size: 16px;
+    color: var(--text-secondary);
+    margin-bottom: 24px;
+    line-height: 1.6;
+  }
+
+  .showcase-bullets {
+    list-style: none;
+    margin-bottom: 32px;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 12px;
   }
 
-  .preview-tab {
-    padding: 24px;
-    border-radius: 16px;
-    cursor: pointer;
-    border-left: 4px solid transparent;
-    transition: all 0.3s ease;
-    background-color: transparent;
-  }
-
-  .preview-tab:hover {
-    background-color: var(--bg-light);
-  }
-
-  .preview-tab.active {
-    background-color: var(--mint-light);
-    border-left-color: var(--mint-primary);
-  }
-
-  .preview-tab h3 {
-    font-size: 18px;
-    margin-bottom: 6px;
-    color: var(--text-primary);
+  .showcase-bullet-item {
     display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .preview-tab.active h3 {
-    color: var(--mint-primary);
-  }
-
-  .preview-tab p {
-    font-size: 14px;
+    align-items: flex-start;
+    gap: 12px;
+    font-size: 15px;
     color: var(--text-secondary);
+    text-align: left;
   }
 
-  /* Slides Display Container */
-  .preview-mockup-wrap {
-    background-color: var(--bg-light);
-    border-radius: 32px;
-    padding: 48px;
+  .showcase-bullet-icon {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background-color: var(--mint-light);
+    color: var(--mint-primary);
     display: flex;
-    justify-content: center;
     align-items: center;
-    border: 1px solid var(--border-light);
-    min-height: 540px;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 12px;
+  }
+
+  .showcase-text-col .btn {
+    align-self: flex-start;
+  }
+
+  /* Carousel Wrapper */
+  .wd-carousel {
+    position: relative;
+    width: 100%;
+    max-width: 320px;
+    margin: 0 auto;
+  }
+
+  .wd-carousel-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Phone Mockup Design */
+  .phone-frame {
+    width: 310px;
+    height: 620px;
+    background-color: #020617;
+    border: 12px solid #1E293B;
+    border-radius: 40px;
+    box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
+  }
+
+  .phone-frame:hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 35px 60px -15px rgba(15, 23, 42, 0.3);
+  }
+
+  .phone-notch {
+    width: 110px;
+    height: 24px;
+    background-color: #1E293B;
+    border-bottom-left-radius: 16px;
+    border-bottom-right-radius: 16px;
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+  }
+
+  .phone-screen {
+    flex: 1;
+    background-color: var(--bg-light);
+    padding: 30px 0 16px 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
     position: relative;
   }
 
-  .preview-slide {
-    display: none;
-    width: 100%;
-    animation: fadeScale 0.4s ease-out forwards;
-  }
-
-  .preview-slide.active {
-    display: block;
-  }
-
-  @keyframes fadeScale {
-    0% { opacity: 0; transform: scale(0.96); }
-    100% { opacity: 1; transform: scale(1); }
-  }
-
-  /* Slide UI Mockups inside Phone Screen */
-  .phone-screen-img {
+  /* Track scrolling */
+  .wd-carousel-track {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    overscroll-behavior-x: contain;
+    scroll-behavior: smooth;
     width: 100%;
     height: 100%;
-    object-fit: cover;
-    border-radius: 20px;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .wd-carousel-track::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Slide block */
+  .wd-carousel-slide {
+    flex: 0 0 100%;
+    width: 100%;
+    height: 100%;
+    scroll-snap-align: center;
+    box-sizing: border-box;
+    padding: 0 16px;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+    position: relative;
+  }
+
+  .wd-carousel-slide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Slide Active Highlighting */
+  .wd-carousel-slide {
+    opacity: 0.9;
+    transform: scale(0.98);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+
+  .wd-carousel-slide.active-slide {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  /* Arrows */
+  .wd-carousel-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background-color: #FFFFFF;
+    border: 1px solid var(--border-light);
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    transition: all 0.2s ease;
+    padding: 0;
+  }
+
+  .wd-carousel-arrow:hover {
+    background-color: var(--mint-light);
+    color: var(--mint-primary);
+    border-color: var(--mint-primary);
+    transform: translateY(-50%) scale(1.08);
+  }
+
+  .wd-carousel-arrow:focus-visible {
+    outline: 3px solid var(--mint-primary);
+  }
+
+  .wd-carousel-arrow.wd-prev {
+    left: -64px;
+  }
+
+  .wd-carousel-arrow.wd-next {
+    right: -64px;
+  }
+
+  /* Dots */
+  .wd-carousel-dots {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 24px;
+  }
+
+  .wd-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: var(--border-light);
+    border: none;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    padding: 0;
+  }
+
+  .wd-dot.active {
+    background-color: var(--mint-primary);
+    transform: scale(1.2);
+    width: 20px;
+    border-radius: 4px;
+  }
+
+  /* Specific Slide UI Elements for Professional Representation */
+  .slide-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    font-size: 11px;
+    color: var(--text-secondary);
+  }
+
+  .slide-title {
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--text-primary);
+  }
+
+  .slide-indicator {
+    background-color: var(--mint-light);
+    color: var(--mint-primary);
+    padding: 2px 8px;
+    border-radius: 99px;
+    font-weight: 700;
+    font-size: 10px;
+  }
+
+  /* Progress simulation animation */
+  .progress-anim {
+    height: 8px;
+    background-color: var(--border-light);
+    border-radius: 99px;
+    overflow: hidden;
+    margin-top: 6px;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background-color: var(--mint-primary);
+    border-radius: 99px;
+    width: 0%;
+    transition: width 1s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* Interactive button inside phone screen */
+  .mockup-phone-btn {
+    width: 100%;
+    padding: 10px;
+    border-radius: 10px;
+    background-color: var(--mint-primary);
+    color: #FFFFFF;
+    border: none;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+
+  .mockup-phone-btn:hover {
+    background-color: var(--mint-hover);
+  }
+
+  /* PDF Generator Spinner */
+  .pdf-loader-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.9);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    padding: 24px;
+    text-align: center;
+  }
+
+  .pdf-loader-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .spinner {
+    width: 36px;
+    height: 36px;
+    border: 3px solid var(--border-light);
+    border-top: 3px solid var(--mint-primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-bottom: 12px;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
   }
 
   /* DOWNLOAD CONVERSION ZONE */
@@ -1064,9 +1332,25 @@
       grid-template-columns: repeat(2, 1fr);
     }
 
-    .preview-wrapper {
-      grid-template-columns: 1fr;
-      gap: 40px;
+    .showcase-item {
+      grid-template-columns: 1fr !important;
+      gap: 48px;
+    }
+
+    .showcase-item.reverse {
+      grid-template-columns: 1fr !important;
+    }
+
+    .showcase-item.reverse .showcase-text-col {
+      order: 1 !important;
+    }
+
+    .showcase-item.reverse .showcase-carousel-col {
+      order: 2 !important;
+    }
+
+    .wd-carousel-arrow {
+      display: none !important;
     }
 
     .download-box-wrap {
@@ -1149,6 +1433,25 @@
 
     .post-body {
       padding: 24px;
+    }
+  }
+
+  /* ULTRA-NARROW VIEWPORT ADAPTABILITY */
+  @media (max-width: 360px) {
+    .phone-frame {
+      width: 270px !important;
+      height: 540px !important;
+      border-width: 8px !important;
+      border-radius: 30px !important;
+    }
+    .wd-carousel {
+      max-width: 280px !important;
+    }
+    .container {
+      padding: 0 16px !important;
+    }
+    .showcase-container {
+      padding: 0 16px !important;
     }
   }
 
@@ -1417,188 +1720,391 @@
 
     <!-- APP PREVIEW SECTION -->
     <section class='preview-section' id='preview'>
-      <div class='container'>
-        <div class='preview-wrapper'>
-          <div class='preview-nav-tabs'>
-            <span class='section-tag' style='align-self: flex-start;'>SaaS Interface</span>
-            <h2 class='section-title' style='font-size: 32px;'>Navigate WorkDaily Like a Pro</h2>
+      <div class='showcase-container'>
+        <div style='text-align:center;display:flex;flex-direction:column;align-items:center;margin-bottom:80px;'>
+          <span class='section-tag'>Premium Showcase</span>
+          <h2 class='section-title'>Explore WorkDaily Interactively</h2>
+          <p class='section-subtitle'>Swipe through the phone mockups below to see exactly how our premium offline Android application tracks attendance and prints PDF reports.</p>
+        </div>
 
-            <div class='preview-tab active' data-target='slide1'>
-              <h3>
-                <svg style='width:20px;height:20px;fill:currentColor;' viewBox='0 0 24 24'>
-                  <path d='M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z'/>
-                </svg>
-                Contractor Dashboard
-              </h3>
-              <p>Monitor your entire active labor force, check today's pending logs, and view overall cost indicators on a single screen.</p>
-            </div>
-
-            <div class='preview-tab' data-target='slide2'>
-              <h3>
-                <svg style='width:20px;height:20px;fill:currentColor;' viewBox='0 0 24 24'>
-                  <path d='M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z'/>
-                </svg>
-                Dynamic Attendance Calendar
-              </h3>
-              <p>Easily manage daily entries with custom states. Fast tap interactions let you mark holiday or half-day entries instantly.</p>
-            </div>
-
-            <div class='preview-tab' data-target='slide3'>
-              <h3>
-                <svg style='width:20px;height:20px;fill:currentColor;' viewBox='0 0 24 24'>
-                  <path d='M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z'/>
-                </svg>
-                Passbook Export Engine
-              </h3>
-              <p>Generate highly comprehensive financial reports in PDF and Excel sheets directly inside background threads without freezes.</p>
-            </div>
+        <!-- SHOWCASE 1: Contractor Dashboard -->
+        <div class='showcase-item'>
+          <div class='showcase-text-col'>
+            <span class='section-tag'>Management Hub</span>
+            <h3>Contractor Dashboard</h3>
+            <p>Monitor your entire active labor force, check today's pending logs, and view overall cost indicators on a single screen. Our high-fidelity interface puts data at your fingertips.</p>
+            <ul class='showcase-bullets'>
+              <li class='showcase-bullet-item'>
+                <span class='showcase-bullet-icon'>✓</span>
+                <div><strong>Realtime labor indicators:</strong> Check active daily wages, total hours worked, and overtime rates instantly.</div>
+              </li>
+              <li class='showcase-bullet-item'>
+                <span class='showcase-bullet-icon'>✓</span>
+                <div><strong>Live progress tracking:</strong> Monitor completion percentages as workers check in and out.</div>
+              </li>
+              <li class='showcase-bullet-item'>
+                <span class='showcase-bullet-icon'>✓</span>
+                <div><strong>Actionable shortcuts:</strong> One-tap access to add new workers, record advances, or generate instant summaries.</div>
+              </li>
+            </ul>
+            <a class='btn btn-primary' href='#download'>Get App on Google Play</a>
           </div>
 
-          <div class='preview-mockup-wrap'>
-            <!-- Slide 1 Content -->
-            <div class='preview-slide active' id='slide1'>
-              <div class='phone-frame' style='margin: 0 auto;'>
-                <div class='phone-notch'></div>
-                <div class='phone-screen' style='background-color:#F8FAFB;'>
-                  <div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;'>
-                    <div style='font-size:16px;font-weight:800;color:var(--text-primary);'>Dashboard</div>
-                    <span style='background-color:var(--mint-light);color:var(--mint-primary);padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;'>Active</span>
-                  </div>
-                  <!-- Quick Overview -->
-                  <div class='mockup-card' style='background:linear-gradient(135deg, #1E293B 0%, #0F172A 100%);color:white;'>
-                    <div class='mockup-card-title' style='color:#94A3B8;'>Overview Stats</div>
-                    <div class='mockup-stats-grid'>
-                      <div>
-                        <div style='font-size:10px;color:#94A3B8;'>Active Workers</div>
-                        <div style='font-size:16px;font-weight:700;'>18 Workers</div>
+          <div class='showcase-carousel-col'>
+            <div class='wd-carousel' data-carousel='dashboard'>
+              <div class='wd-carousel-container'>
+                <!-- Navigation Arrows -->
+                <button class='wd-carousel-arrow wd-prev' data-carousel-prev='true' aria-label='Previous screenshot'>
+                  <svg viewBox='0 0 24 24' style='width:24px;height:24px;fill:currentColor;'><path d='M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z'/></svg>
+                </button>
+
+                <div class='phone-frame'>
+                  <div class='phone-notch'></div>
+                  <div class='phone-screen'>
+                    <div class='wd-carousel-track' data-carousel-track='true'>
+                      <!-- Slide 1 -->
+                      <div class='wd-carousel-slide active-slide' data-carousel-slide='true'>
+                        <div class='slide-header'>
+                          <span class='slide-title'>Overview</span>
+                          <span class='slide-indicator'>Slide 1/3</span>
+                        </div>
+                        <div class='mockup-card' style='background:linear-gradient(135deg, #0F9F7A 0%, #0D8F6D 100%);color:white;margin-bottom:12px;box-shadow:none;'>
+                          <div class='mockup-card-title' style='color:#A7F3D0;'>This Month's Earnings</div>
+                          <div style='font-size:24px;font-weight:800;margin-bottom:4px;'>₹48,250.00</div>
+                          <div style='display:flex;justify-content:space-between;font-size:10px;color:#E6FFFA;'>
+                            <span>24 Days Worked</span>
+                            <span>99% Ratio</span>
+                          </div>
+                        </div>
+                        <div class='mockup-card'>
+                          <div class='mockup-card-title'>Quick Budget</div>
+                          <div style='display:flex;justify-content:space-between;font-size:12px;'>
+                            <span>Active Workers:</span>
+                            <span style='font-weight:700;'>18 Workers</span>
+                          </div>
+                          <div style='display:flex;justify-content:space-between;font-size:12px;margin-top:4px;'>
+                            <span>Today's Total Budget:</span>
+                            <span style='font-weight:700;color:var(--mint-primary);'>₹8,500</span>
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <div style='font-size:10px;color:#94A3B8;'>Today's Cost</div>
-                        <div style='font-size:16px;font-weight:700;color:var(--mint-primary);'>₹8,500</div>
+
+                      <!-- Slide 2 -->
+                      <div class='wd-carousel-slide' data-carousel-slide='true'>
+                        <div class='slide-header'>
+                          <span class='slide-title'>Progress Tracker</span>
+                          <span class='slide-indicator'>Slide 2/3</span>
+                        </div>
+                        <div class='mockup-card'>
+                          <div class='mockup-card-title'>Attendance Progress</div>
+                          <div style='display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;font-size:12px;'>
+                            <span>Completed logs (14/18)</span>
+                            <span style='font-weight:700;color:var(--mint-primary);'>77%</span>
+                          </div>
+                          <div class='progress-anim'>
+                            <div class='progress-bar-fill' style='width: 77%;'></div>
+                          </div>
+                        </div>
+                        <div class='mockup-card' style='font-size:11px;'>
+                          <div class='mockup-card-title'>Realtime Log Status</div>
+                          <div style='display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border-light);'>
+                            <span>Rajesh Kumar</span>
+                            <span style='color:var(--mint-primary);font-weight:700;'>Present</span>
+                          </div>
+                          <div style='display:flex;justify-content:space-between;padding:4px 0;'>
+                            <span>Vikram Singh</span>
+                            <span style='color:#EF4444;font-weight:700;'>Absent</span>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                  <!-- Progress Section -->
-                  <div class='mockup-card'>
-                    <div class='mockup-card-title'>Attendance Progress</div>
-                    <div style='display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;'>
-                      <span>Completed logs (14/18)</span>
-                      <span style='font-weight:700;color:var(--mint-primary);'>77%</span>
-                    </div>
-                    <div style='width:100%;height:8px;background-color:#F1F5F9;border-radius:99px;overflow:hidden;'>
-                      <div style='width:77%;height:100%;background-color:var(--mint-primary);'></div>
-                    </div>
-                  </div>
-                  <!-- Quick actions -->
-                  <div style='display:grid;grid-template-columns:1fr 1fr;gap:8px;'>
-                    <div class='mockup-card' style='text-align:center;padding:16px 8px;cursor:pointer;'>
-                      <div style='font-size:18px;margin-bottom:4px;'>👥</div>
-                      <div style='font-weight:700;font-size:11px;'>Add Worker</div>
-                    </div>
-                    <div class='mockup-card' style='text-align:center;padding:16px 8px;cursor:pointer;'>
-                      <div style='font-size:18px;margin-bottom:4px;'>📊</div>
-                      <div style='font-weight:700;font-size:11px;'>Passbook Report</div>
+
+                      <!-- Slide 3 -->
+                      <div class='wd-carousel-slide' data-carousel-slide='true'>
+                        <div class='slide-header'>
+                          <span class='slide-title'>Quick Actions</span>
+                          <span class='slide-indicator'>Slide 3/3</span>
+                        </div>
+                        <div style='display:grid;grid-template-columns:1fr 1fr;gap:8px;'>
+                          <div class='mockup-card' style='text-align:center;padding:16px 8px;cursor:pointer;'>
+                            <div style='font-size:24px;margin-bottom:6px;'>👥</div>
+                            <div style='font-weight:700;font-size:12px;'>Add Worker</div>
+                          </div>
+                          <div class='mockup-card' style='text-align:center;padding:16px 8px;cursor:pointer;'>
+                            <div style='font-size:24px;margin-bottom:6px;'>📊</div>
+                            <div style='font-weight:700;font-size:12px;'>Passbook Report</div>
+                          </div>
+                          <div class='mockup-card' style='text-align:center;padding:16px 8px;cursor:pointer;grid-column: span 2;'>
+                            <div style='font-size:20px;margin-bottom:4px;'>⚙️</div>
+                            <div style='font-weight:700;font-size:12px;'>System Preferences</div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
+
+                <button class='wd-carousel-arrow wd-next' data-carousel-next='true' aria-label='Next screenshot'>
+                  <svg viewBox='0 0 24 24' style='width:24px;height:24px;fill:currentColor;'><path d='M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z'/></svg>
+                </button>
               </div>
-            </div>
 
-            <!-- Slide 2 Content -->
-            <div class='preview-slide' id='slide2'>
-              <div class='phone-frame' style='margin: 0 auto;'>
-                <div class='phone-notch'></div>
-                <div class='phone-screen' style='background-color:#F8FAFB;'>
-                  <div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;'>
-                    <div style='font-size:16px;font-weight:800;color:var(--text-primary);'>Attendance Grid</div>
-                    <span style='background-color:var(--blue-light);color:var(--blue-secondary);padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;'>August 2026</span>
-                  </div>
-
-                  <div class='mockup-card' style='padding:8px;'>
-                    <!-- Days of Week -->
-                    <div style='display:grid;grid-template-columns:repeat(7, 1fr);text-align:center;font-weight:700;margin-bottom:8px;font-size:10px;color:var(--text-secondary);'>
-                      <span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span>
-                    </div>
-                    <div class='mockup-calendar-grid'>
-                      <span class='mockup-cal-day present'>1</span>
-                      <span class='mockup-cal-day present'>2</span>
-                      <span class='mockup-cal-day absent'>3</span>
-                      <span class='mockup-cal-day present'>4</span>
-                      <span class='mockup-cal-day present'>5</span>
-                      <span class='mockup-cal-day half'>6</span>
-                      <span class='mockup-cal-day present'>7</span>
-                      <span class='mockup-cal-day present'>8</span>
-                      <span class='mockup-cal-day present'>9</span>
-                      <span class='mockup-cal-day absent'>10</span>
-                      <span class='mockup-cal-day present'>11</span>
-                      <span class='mockup-cal-day present'>12</span>
-                      <span class='mockup-cal-day half'>13</span>
-                      <span class='mockup-cal-day present'>14</span>
-                      <span class='mockup-cal-day present'>15</span>
-                      <span class='mockup-cal-day present'>16</span>
-                      <span class='mockup-cal-day present'>17</span>
-                      <span class='mockup-cal-day present'>18</span>
-                      <span class='mockup-cal-day absent'>19</span>
-                      <span class='mockup-cal-day present'>20</span>
-                      <span class='mockup-cal-day present'>21</span>
-                    </div>
-                  </div>
-                  <!-- Selection Preview -->
-                  <div class='mockup-card'>
-                    <div style='display:flex;justify-content:space-between;align-items:center;'>
-                      <div>
-                        <div style='font-size:12px;font-weight:700;'>Selected Date: Aug 21</div>
-                        <div style='font-size:10px;color:var(--text-secondary);'>Full daily wage log tracked</div>
-                      </div>
-                      <span style='background-color:#EBFDF7;color:#0F9F7A;padding:4px 8px;border-radius:6px;font-weight:700;font-size:10px;'>Present</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Slide 3 Content -->
-            <div class='preview-slide' id='slide3'>
-              <div class='phone-frame' style='margin: 0 auto;'>
-                <div class='phone-notch'></div>
-                <div class='phone-screen' style='background-color:#F8FAFB;'>
-                  <div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;'>
-                    <div style='font-size:16px;font-weight:800;color:var(--text-primary);'>PDF Export</div>
-                    <span style='background-color:var(--orange-light);color:var(--orange-tertiary);padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;'>Report Ready</span>
-                  </div>
-                  <!-- Export Panel -->
-                  <div class='mockup-card'>
-                    <div class='mockup-card-title'>Select Report Period</div>
-                    <div style='padding:8px;background:#F8FAFB;border-radius:8px;border:1px dashed var(--border-light);text-align:center;font-weight:700;margin-bottom:12px;'>
-                      August 2026 Monthly Passbook
-                    </div>
-                    <div style='display:flex;flex-direction:column;gap:6px;'>
-                      <div style='display:flex;justify-content:space-between;font-size:11px;'>
-                        <span>Language format:</span>
-                        <span style='font-weight:700;'>Hindi (हिन्दी)</span>
-                      </div>
-                      <div style='display:flex;justify-content:space-between;font-size:11px;'>
-                        <span>File layout:</span>
-                        <span style='font-weight:700;'>Standard A4 Portrait</span>
-                      </div>
-                    </div>
-                  </div>
-                  <!-- PDF View Mockup -->
-                  <div class='mockup-card' style='border-color:var(--mint-primary);'>
-                    <div style='display:flex;align-items:center;gap:10px;'>
-                      <span style='font-size:24px;'>📄</span>
-                      <div>
-                        <div style='font-weight:700;font-size:11px;'>Aug_2026_Report.pdf</div>
-                        <div style='font-size:9px;color:var(--text-secondary);'>142 KB • Generated 2m ago</div>
-                      </div>
-                    </div>
-                  </div>
-                  <button class='btn btn-primary' style='padding:10px;border-radius:8px;width:100%;font-size:12px;margin-top:8px;'>Export Passbook PDF</button>
-                </div>
+              <!-- Indicators Dots -->
+              <div class='wd-carousel-dots' data-carousel-dots='true'>
+                <button class='wd-dot active' data-slide='0' aria-label='Go to screenshot 1'></button>
+                <button class='wd-dot' data-slide='1' aria-label='Go to screenshot 2'></button>
+                <button class='wd-dot' data-slide='2' aria-label='Go to screenshot 3'></button>
               </div>
             </div>
           </div>
         </div>
+
+        <!-- SHOWCASE 2: Attendance Calendar (Reverse Layout) -->
+        <div class='showcase-item reverse'>
+          <div class='showcase-text-col'>
+            <span class='section-tag'>Visual Tracker</span>
+            <h3>Dynamic Attendance Calendar</h3>
+            <p>Manage worker registries and wage payments directly inside a color-coded Interactive Calendar Grid. Fast taps let you mark Holiday, Present, Absent, or Half-day statuses with full precision.</p>
+            <ul class='showcase-bullets'>
+              <li class='showcase-bullet-item'>
+                <span class='showcase-bullet-icon'>✓</span>
+                <div><strong>Visual color codes:</strong> Spot attendance states at a glance. Green for present, red for absent, orange for half-days.</div>
+              </li>
+              <li class='showcase-bullet-item'>
+                <span class='showcase-bullet-icon'>✓</span>
+                <div><strong>Drill-down details:</strong> Open deep-dive sheets to log detailed wages, overtime ratios, or advanced drawings per worker.</div>
+              </li>
+              <li class='showcase-bullet-item'>
+                <span class='showcase-bullet-icon'>✓</span>
+                <div><strong>Isolated local Storage:</strong> All calendar calculations and worker statistics run instantly offline, protected inside filesDir.</div>
+              </li>
+            </ul>
+            <a class='btn btn-secondary' href='#features'>Explore Technical Details</a>
+          </div>
+
+          <div class='showcase-carousel-col'>
+            <div class='wd-carousel' data-carousel='calendar'>
+              <div class='wd-carousel-container'>
+                <!-- Navigation Arrows -->
+                <button class='wd-carousel-arrow wd-prev' data-carousel-prev='true' aria-label='Previous screenshot'>
+                  <svg viewBox='0 0 24 24' style='width:24px;height:24px;fill:currentColor;'><path d='M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z'/></svg>
+                </button>
+
+                <div class='phone-frame'>
+                  <div class='phone-notch'></div>
+                  <div class='phone-screen'>
+                    <div class='wd-carousel-track' data-carousel-track='true'>
+                      <!-- Slide 1 -->
+                      <div class='wd-carousel-slide active-slide' data-carousel-slide='true'>
+                        <div class='slide-header'>
+                          <span class='slide-title'>Attendance Grid</span>
+                          <span class='slide-indicator'>Slide 1/3</span>
+                        </div>
+                        <div class='mockup-card' style='padding: 8px;'>
+                          <div style='display:grid;grid-template-columns:repeat(7, 1fr);text-align:center;font-weight:700;margin-bottom:8px;font-size:10px;color:var(--text-secondary);'>
+                            <span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span>
+                          </div>
+                          <div class='mockup-calendar-grid'>
+                            <span class='mockup-cal-day present'>1</span>
+                            <span class='mockup-cal-day present'>2</span>
+                            <span class='mockup-cal-day absent'>3</span>
+                            <span class='mockup-cal-day present'>4</span>
+                            <span class='mockup-cal-day present'>5</span>
+                            <span class='mockup-cal-day half'>6</span>
+                            <span class='mockup-cal-day present'>7</span>
+                            <span class='mockup-cal-day present'>8</span>
+                            <span class='mockup-cal-day present'>9</span>
+                            <span class='mockup-cal-day absent'>10</span>
+                            <span class='mockup-cal-day present'>11</span>
+                            <span class='mockup-cal-day present'>12</span>
+                            <span class='mockup-cal-day half'>13</span>
+                            <span class='mockup-cal-day present'>14</span>
+                            <span class='mockup-cal-day present'>15</span>
+                            <span class='mockup-cal-day present'>16</span>
+                            <span class='mockup-cal-day present'>17</span>
+                            <span class='mockup-cal-day present'>18</span>
+                            <span class='mockup-cal-day absent'>19</span>
+                            <span class='mockup-cal-day present'>20</span>
+                            <span class='mockup-cal-day present'>21</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Slide 2 -->
+                      <div class='wd-carousel-slide' data-carousel-slide='true'>
+                        <div class='slide-header'>
+                          <span class='slide-title'>Personal Ledger</span>
+                          <span class='slide-indicator'>Slide 2/3</span>
+                        </div>
+                        <div class='mockup-card' style='background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%); color: white;'>
+                          <div class='mockup-card-title' style='color: var(--text-muted);'>Personal Passbook</div>
+                          <div style='font-size: 20px; font-weight: 800;'>₹24,500.00</div>
+                          <p style='font-size: 10px; opacity: 0.8; margin-top: 4px;'>Balance outstanding for this cycle.</p>
+                        </div>
+                        <div class='mockup-card' style='font-size:11px;'>
+                          <div class='mockup-card-title'>Wage Details</div>
+                          <div style='display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border-light);'>
+                            <span>Standard Daily Wage:</span>
+                            <span style='font-weight:700;'>₹800/Day</span>
+                          </div>
+                          <div style='display:flex;justify-content:space-between;padding:4px 0;'>
+                            <span>Overtime Multiplier:</span>
+                            <span style='font-weight:700;color:var(--mint-primary);'>1.5x Rate</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Slide 3 -->
+                      <div class='wd-carousel-slide' data-carousel-slide='true'>
+                        <div class='slide-header'>
+                          <span class='slide-title'>Drill-down State</span>
+                          <span class='slide-indicator'>Slide 3/3</span>
+                        </div>
+                        <div class='mockup-card'>
+                          <div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;'>
+                            <span style='font-weight:800;font-size:12px;'>Worker: Rajesh Kumar</span>
+                            <span style='background-color:#EBFDF7;color:var(--mint-primary);font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;'>Present</span>
+                          </div>
+                          <p style='font-size:11px;color:var(--text-secondary);line-height:1.4;margin-bottom:8px;'><strong>Logged Note:</strong> "Completed site layout foundations phase with standard daily wage parameters."</p>
+                          <div style='font-size:10px;color:var(--text-muted);'>Timestamp: 21 Aug, 2026 - 06:30 PM</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <button class='wd-carousel-arrow wd-next' data-carousel-next='true' aria-label='Next screenshot'>
+                  <svg viewBox='0 0 24 24' style='width:24px;height:24px;fill:currentColor;'><path d='M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z'/></svg>
+                </button>
+              </div>
+
+              <!-- Indicators Dots -->
+              <div class='wd-carousel-dots' data-carousel-dots='true'>
+                <button class='wd-dot active' data-slide='0' aria-label='Go to screenshot 1'></button>
+                <button class='wd-dot' data-slide='1' aria-label='Go to screenshot 2'></button>
+                <button class='wd-dot' data-slide='2' aria-label='Go to screenshot 3'></button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SHOWCASE 3: Passbook Export Engine -->
+        <div class='showcase-item'>
+          <div class='showcase-text-col'>
+            <span class='section-tag'>Reports &amp; Sharing</span>
+            <h3>High-Fidelity PDF Export</h3>
+            <p>Compile complex financial statements, attendances, and outstanding payment ledgers directly into beautifully formatted A4 PDF reports. Supports full Devanagari Hindi Unicode text for perfect localization.</p>
+            <ul class='showcase-bullets'>
+              <li class='showcase-bullet-item'>
+                <span class='showcase-bullet-icon'>✓</span>
+                <div><strong>Devanagari text compliance:</strong> Ensure correct rendering of Hindi names and titles without clipping or blank boxes.</div>
+              </li>
+              <li class='showcase-bullet-item'>
+                <span class='showcase-bullet-icon'>✓</span>
+                <div><strong>Background thread execution:</strong> File preparation runs completely in the background, keeping the app smooth.</div>
+              </li>
+              <li class='showcase-bullet-item'>
+                <span class='showcase-bullet-icon'>✓</span>
+                <div><strong>Direct WhatsApp sharing:</strong> Exported documents can be instantly routed to worker groups with localized sharing messages.</div>
+              </li>
+            </ul>
+            <a class='btn btn-primary' href='#download'>Generate Passbook Now</a>
+          </div>
+
+          <div class='showcase-carousel-col'>
+            <div class='wd-carousel' data-carousel='passbook'>
+              <div class='wd-carousel-container'>
+                <!-- Navigation Arrows -->
+                <button class='wd-carousel-arrow wd-prev' data-carousel-prev='true' aria-label='Previous screenshot'>
+                  <svg viewBox='0 0 24 24' style='width:24px;height:24px;fill:currentColor;'><path d='M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z'/></svg>
+                </button>
+
+                <div class='phone-frame'>
+                  <div class='phone-notch'></div>
+                  <div class='phone-screen'>
+                    <div class='wd-carousel-track' data-carousel-track='true'>
+                      <!-- Slide 1 -->
+                      <div class='wd-carousel-slide active-slide' data-carousel-slide='true'>
+                        <div class='slide-header'>
+                          <span class='slide-title'>Export Options</span>
+                          <span class='slide-indicator'>Slide 1/3</span>
+                        </div>
+                        <div class='mockup-card' style='padding:12px;'>
+                          <div class='mockup-card-title'>Select Report Period</div>
+                          <div style='padding:8px;background:var(--bg-light);border-radius:8px;border:1px dashed var(--border-light);text-align:center;font-weight:700;font-size:11px;margin-bottom:12px;'>
+                            August 2026 Monthly Passbook
+                          </div>
+                          <div style='display:flex;flex-direction:column;gap:6px;font-size:11px;'>
+                            <div style='display:flex;justify-content:space-between;'>
+                              <span>Language:</span>
+                              <span style='font-weight:700;'>Hindi (हिन्दी)</span>
+                            </div>
+                            <div style='display:flex;justify-content:space-between;'>
+                              <span>Layout Type:</span>
+                              <span style='font-weight:700;'>A4 Portrait Ledger</span>
+                            </div>
+                          </div>
+                        </div>
+                        <button class='mockup-phone-btn' id='mockTriggerPdf' style='margin-top: 10px;'>Generate PDF Report</button>
+                      </div>
+
+                      <!-- Slide 2 -->
+                      <div class='wd-carousel-slide' data-carousel-slide='true'>
+                        <div class='slide-header'>
+                          <span class='slide-title'>Background Thread</span>
+                          <span class='slide-indicator'>Slide 2/3</span>
+                        </div>
+                        <div class='mockup-card' style='text-align:center;padding:24px 12px;'>
+                          <div class='spinner' style='margin: 0 auto 12px auto;'></div>
+                          <div style='font-weight:700;font-size:12px;color:var(--text-primary);'>Compiling Financial Ledger</div>
+                          <p style='font-size:10px;color:var(--text-secondary);margin-top:4px;'>Running calculations asynchronously. Buttons disabled during export.</p>
+                        </div>
+                      </div>
+
+                      <!-- Slide 3 -->
+                      <div class='wd-carousel-slide' data-carousel-slide='true'>
+                        <div class='slide-header'>
+                          <span class='slide-title'>Share PDF Document</span>
+                          <span class='slide-indicator'>Slide 3/3</span>
+                        </div>
+                        <div class='mockup-card' style='border-color:var(--mint-primary);'>
+                          <div style='display:flex;align-items:center;gap:10px;'>
+                            <span style='font-size:24px;'>📄</span>
+                            <div style='text-align: left;'>
+                              <div style='font-weight:700;font-size:11px;'>Aug_2026_Report.pdf</div>
+                              <div style='font-size:9px;color:var(--text-secondary);'>142 KB • Generated cleanly</div>
+                            </div>
+                          </div>
+                        </div>
+                        <a class='btn btn-whatsapp' href='https://whatsapp.com/channel/0029Vb8bS4U23n3lJwvpbP3H' target='_blank' style='font-size:12px;padding:10px;border-radius:10px;width:100%;margin-top:10px;box-shadow:none;'>
+                          Share on WhatsApp
+                        </a>
+                      </div>
+                    </div>
+
+                    <!-- PDF simulated processing overlay -->
+                    <div class='pdf-loader-overlay' id='pdfSimulatorOverlay'>
+                      <div class='spinner'></div>
+                      <div style='font-weight:700;font-size:13px;'>Generating Report PDF...</div>
+                      <p style='font-size:10px;color:var(--text-secondary);margin-top:6px;'>Compiling Room records and drawing unicode fonts in Dispatchers.IO.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <button class='wd-carousel-arrow wd-next' data-carousel-next='true' aria-label='Next screenshot'>
+                  <svg viewBox='0 0 24 24' style='width:24px;height:24px;fill:currentColor;'><path d='M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z'/></svg>
+                </button>
+              </div>
+
+              <!-- Indicators Dots -->
+              <div class='wd-carousel-dots' data-carousel-dots='true'>
+                <button class='wd-dot active' data-slide='0' aria-label='Go to screenshot 1'></button>
+                <button class='wd-dot' data-slide='1' aria-label='Go to screenshot 2'></button>
+                <button class='wd-dot' data-slide='2' aria-label='Go to screenshot 3'></button>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </section>
 
@@ -1882,26 +2388,144 @@
         });
       }
 
-      // App Preview Section Tab Switcher
-      const tabs = document.querySelectorAll('.preview-tab');
-      const slides = document.querySelectorAll('.preview-slide');
-      if (tabs.length && slides.length) {
-        tabs.forEach(tab => {
-          tab.addEventListener('click', function() {
-            // Remove active classes
-            tabs.forEach(t => t.classList.remove('active'));
-            slides.forEach(s => s.classList.remove('active'));
+      // Reusable Lightweight Carousel Engine
+      const carousels = document.querySelectorAll('[data-carousel]');
 
-            // Add active class to clicked tab
-            tab.classList.add('active');
+      carousels.forEach(carousel => {
+        const track = carousel.querySelector('[data-carousel-track]');
+        const slides = carousel.querySelectorAll('[data-carousel-slide]');
+        const prevBtn = carousel.querySelector('[data-carousel-prev]');
+        const nextBtn = carousel.querySelector('[data-carousel-next]');
+        const dots = carousel.querySelectorAll('.wd-dot');
+        let activeIndex = 0;
 
-            // Show target slide
-            const target = tab.getAttribute('data-target');
-            const targetSlide = document.getElementById(target);
-            if (targetSlide) {
-              targetSlide.classList.add('active');
+        function updateUI(index) {
+          activeIndex = index;
+
+          // Update dots
+          dots.forEach((dot, idx) => {
+            if (idx === index) {
+              dot.classList.add('active');
+              dot.setAttribute('aria-selected', 'true');
+            } else {
+              dot.classList.remove('active');
+              dot.setAttribute('aria-selected', 'false');
             }
           });
+
+          // Update active-slide class for visual transitions
+          slides.forEach((slide, idx) => {
+            if (idx === index) {
+              slide.classList.add('active-slide');
+            } else {
+              slide.classList.remove('active-slide');
+            }
+          });
+        }
+
+        // Scroll snap detection
+        let isScrolling;
+        track.addEventListener('scroll', function() {
+          window.clearTimeout(isScrolling);
+          isScrolling = setTimeout(function() {
+            const slideWidth = track.clientWidth;
+            if (slideWidth > 0) {
+              const index = Math.round(track.scrollLeft / slideWidth);
+              if (index !== activeIndex && index >= 0 && index < slides.length) {
+                updateUI(index);
+              }
+            }
+          }, 60);
+        });
+
+        // Click on dots
+        dots.forEach((dot, index) => {
+          dot.addEventListener('click', () => {
+            const slideWidth = track.clientWidth;
+            track.scrollTo({
+              left: slideWidth * index,
+              behavior: 'smooth'
+            });
+            updateUI(index);
+          });
+        });
+
+        // Click on next
+        if (nextBtn) {
+          nextBtn.addEventListener('click', () => {
+            const slideWidth = track.clientWidth;
+            let target = activeIndex + 1;
+            if (target >= slides.length) target = 0; // loop
+            track.scrollTo({
+              left: slideWidth * target,
+              behavior: 'smooth'
+            });
+            updateUI(target);
+          });
+        }
+
+        // Click on prev
+        if (prevBtn) {
+          prevBtn.addEventListener('click', () => {
+            const slideWidth = track.clientWidth;
+            let target = activeIndex - 1;
+            if (target < 0) target = slides.length - 1; // loop
+            track.scrollTo({
+              left: slideWidth * target,
+              behavior: 'smooth'
+            });
+            updateUI(target);
+          });
+        }
+
+        // Keyboard Navigation (when carousel has focus or is hovered)
+        carousel.addEventListener('keydown', (e) => {
+          if (e.key === 'ArrowLeft') {
+            e.preventDefault();
+            prevBtn && prevBtn.click();
+          } else if (e.key === 'ArrowRight') {
+            e.preventDefault();
+            nextBtn && nextBtn.click();
+          }
+        });
+        // Make the carousel focusable so keyboard works
+        carousel.setAttribute('tabindex', '0');
+      });
+
+      // Special PDF Export Simulation for Showcase 3
+      const mockTriggerPdf = document.getElementById('mockTriggerPdf');
+      const pdfOverlay = document.getElementById('pdfSimulatorOverlay');
+      const passbookCarouselTrack = document.querySelector('[data-carousel="passbook"] [data-carousel-track]');
+
+      if (mockTriggerPdf && pdfOverlay && passbookCarouselTrack) {
+        mockTriggerPdf.addEventListener('click', (e) => {
+          e.preventDefault();
+
+          // Disable button to prevent double-click
+          mockTriggerPdf.disabled = true;
+          mockTriggerPdf.innerText = "Processing...";
+
+          // Show loader overlay
+          pdfOverlay.classList.add('active');
+
+          setTimeout(() => {
+            // Hide overlay
+            pdfOverlay.classList.remove('active');
+
+            // Go to slide index 2 (Slide 3: Ready report)
+            const slideWidth = passbookCarouselTrack.clientWidth;
+            passbookCarouselTrack.scrollTo({
+              left: slideWidth * 2,
+              behavior: 'smooth'
+            });
+
+            // Reset button state
+            setTimeout(() => {
+              mockTriggerPdf.disabled = false;
+              mockTriggerPdf.innerText = "Generate PDF Report";
+            }, 1000);
+
+          }, 2000);
         });
       }
     });
