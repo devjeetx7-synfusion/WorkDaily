@@ -81,12 +81,23 @@ fun SettingsScreen(
             }
         )
     }
+    var isChannelEnabled by remember {
+        mutableStateOf(
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+                val channel = manager.getNotificationChannel(com.synfusion.attendance.utils.LocalNotificationManager.CHANNEL_OFFLINE_ATTENDANCE)
+                channel == null || channel.importance != android.app.NotificationManager.IMPORTANCE_NONE
+            } else {
+                true
+            }
+        )
+    }
 
     val permissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
         contract = androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         isPostPermissionsGranted = isGranted
-        val systemEnabled = isAppNotificationsEnabled && isGranted
+        val systemEnabled = isAppNotificationsEnabled && isGranted && isChannelEnabled
 
         if (!isGranted) {
             Toast.makeText(context, context.getString(com.synfusion.attendance.R.string.notif_disabled_desc), Toast.LENGTH_LONG).show()
@@ -115,11 +126,19 @@ fun SettingsScreen(
                 } else {
                     true
                 }
+                val actualChannelEnabled = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+                    val channel = manager.getNotificationChannel(com.synfusion.attendance.utils.LocalNotificationManager.CHANNEL_OFFLINE_ATTENDANCE)
+                    channel == null || channel.importance != android.app.NotificationManager.IMPORTANCE_NONE
+                } else {
+                    true
+                }
 
                 isAppNotificationsEnabled = actualAppNotificationsEnabled
                 isPostPermissionsGranted = actualPostPermissionsGranted
+                isChannelEnabled = actualChannelEnabled
 
-                val systemEnabled = actualAppNotificationsEnabled && actualPostPermissionsGranted
+                val systemEnabled = actualAppNotificationsEnabled && actualPostPermissionsGranted && actualChannelEnabled
                 if (state.isRemindersEnabled != systemEnabled) {
                     viewModel.toggleReminders(systemEnabled)
                     if (systemEnabled) {
@@ -361,7 +380,7 @@ fun SettingsScreen(
 
 
                         // Reminders Switch
-                        val actualNotificationState = state.isRemindersEnabled && isAppNotificationsEnabled && isPostPermissionsGranted
+                        val actualNotificationState = state.isRemindersEnabled && isAppNotificationsEnabled && isPostPermissionsGranted && isChannelEnabled
                         Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
                                 Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
@@ -400,6 +419,26 @@ fun SettingsScreen(
                                             }
                                         } else if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU && !isPostPermissionsGranted) {
                                             permissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                                        } else if (!isChannelEnabled) {
+                                            // Safe recovery path for channel-level disabled!
+                                            try {
+                                                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                                                    val intent = Intent(android.provider.Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS).apply {
+                                                        putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
+                                                        putExtra(android.provider.Settings.EXTRA_CHANNEL_ID, com.synfusion.attendance.utils.LocalNotificationManager.CHANNEL_OFFLINE_ATTENDANCE)
+                                                    }
+                                                    context.getActivity()?.startActivity(intent)
+                                                }
+                                            } catch (e: Exception) {
+                                                try {
+                                                    val intent = Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                                                        putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
+                                                    }
+                                                    context.getActivity()?.startActivity(intent)
+                                                } catch (ex: Exception) {
+                                                    Toast.makeText(context, "Unable to open settings", Toast.LENGTH_SHORT).show()
+                                                }
+                                            }
                                         } else {
                                             viewModel.toggleReminders(true)
                                             com.synfusion.attendance.utils.NotificationScheduler.schedulePeriodicWork(context)
@@ -773,6 +812,17 @@ fun NotificationTestCenterBottomSheet(
             }
         )
     }
+    var channelEnabled by remember {
+        mutableStateOf(
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+                val channel = manager.getNotificationChannel(com.synfusion.attendance.utils.LocalNotificationManager.CHANNEL_OFFLINE_ATTENDANCE)
+                channel == null || channel.importance != android.app.NotificationManager.IMPORTANCE_NONE
+            } else {
+                true
+            }
+        )
+    }
 
     // Refresh permissions on resume just in case
     val lifecycleOwner = androidx.compose.ui.platform.LocalLifecycleOwner.current
@@ -785,8 +835,16 @@ fun NotificationTestCenterBottomSheet(
                 } else {
                     true
                 }
+                val actualChannelEnabled = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+                    val channel = manager.getNotificationChannel(com.synfusion.attendance.utils.LocalNotificationManager.CHANNEL_OFFLINE_ATTENDANCE)
+                    channel == null || channel.importance != android.app.NotificationManager.IMPORTANCE_NONE
+                } else {
+                    true
+                }
                 permissionGranted = actualAppNotificationsEnabled
                 systemPostPermissionGranted = actualPostPermissionsGranted
+                channelEnabled = actualChannelEnabled
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -810,6 +868,11 @@ fun NotificationTestCenterBottomSheet(
     ) { isGranted ->
         systemPostPermissionGranted = isGranted
         permissionGranted = androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled()
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+            val channel = manager.getNotificationChannel(com.synfusion.attendance.utils.LocalNotificationManager.CHANNEL_OFFLINE_ATTENDANCE)
+            channelEnabled = channel == null || channel.importance != android.app.NotificationManager.IMPORTANCE_NONE
+        }
     }
 
     LaunchedEffect(Unit) {
@@ -879,18 +942,16 @@ fun NotificationTestCenterBottomSheet(
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     DiagnosticItemRow("Reminders Preference", if (masterEnabled) "ON ✓" else "OFF ✕")
                     DiagnosticItemRow("System Notifications", if (permissionGranted) "ENABLED ✓" else "DISABLED ✕")
-                    val isPostGranted = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                        androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED
-                    } else true
-                    DiagnosticItemRow("Notification Permission", if (isPostGranted) "GRANTED ✓" else "DENIED ✕")
-                    DiagnosticItemRow("Effective Reminders", if (masterEnabled && permissionGranted && isPostGranted) "ACTIVE ✓" else "BLOCKED ✕")
+                    DiagnosticItemRow("Notification Permission", if (systemPostPermissionGranted) "GRANTED ✓" else "DENIED ✕")
+                    DiagnosticItemRow("Notification Channel", if (channelEnabled) "ENABLED ✓" else "DISABLED ✕")
+                    DiagnosticItemRow("Effective Reminders", if (masterEnabled && permissionGranted && systemPostPermissionGranted && channelEnabled) "ACTIVE ✓" else "BLOCKED ✕")
                     DiagnosticItemRow("POST_NOTIFICATIONS", if (systemPostPermissionGranted) "GRANTED ✓" else "DENIED ✕")
                     DiagnosticItemRow("Scheduler Status", if (masterEnabled) "ACTIVE (Every 1 Hour)" else "INACTIVE")
                     DiagnosticItemRow("Today's Attendance Status", todayMarked)
                     DiagnosticItemRow("Eligible Time Window", "6:00 PM - 10:00 PM")
                     DiagnosticItemRow("Device Battery Optimization", "Normal")
                     DiagnosticItemRow("Next Eligible Notification", if (todayMarked.startsWith("NOT MARKED")) "Today's Attendance Reminder (6-10 PM)" else "Weekly / Monthly Report (Time Triggered)")
-                    DiagnosticItemRow("Skip Reason if Any", if (!masterEnabled) "Master disabled" else if (!permissionGranted || !systemPostPermissionGranted) "Permission denied" else if (todayMarked.startsWith("MARKED")) "Attendance already marked for today" else "None (Ready for 6:00 PM Window)")
+                    DiagnosticItemRow("Skip Reason if Any", if (!masterEnabled) "Master disabled" else if (!permissionGranted || !systemPostPermissionGranted) "Permission denied" else if (!channelEnabled) "Channel disabled" else if (todayMarked.startsWith("MARKED")) "Attendance already marked for today" else "None (Ready for 6:00 PM Window)")
                     DiagnosticItemRow("Latest Evaluation Execution", if (logs.isNotEmpty()) logs.first().time else "Never")
                     DiagnosticItemRow("Last Notification Sent", if (logs.isNotEmpty()) logs.first().category.uppercase() else "None")
                 }
@@ -1017,12 +1078,7 @@ fun NotificationTestCenterBottomSheet(
 
                                 Button(
                                     onClick = {
-                                        val channelId = when (cat.category) {
-                                            "daily_attendance", "missed_two_days", "missed_three_days", "missed_seven_plus", "missed_ten_days", "long_absence" -> com.synfusion.attendance.utils.LocalNotificationManager.CHANNEL_ATTENDANCE
-                                            "weekly_report", "monthly_report", "yearly_report" -> com.synfusion.attendance.utils.LocalNotificationManager.CHANNEL_REPORTS
-                                            "earnings", "overtime", "advance" -> com.synfusion.attendance.utils.LocalNotificationManager.CHANNEL_EARNINGS
-                                            else -> com.synfusion.attendance.utils.LocalNotificationManager.CHANNEL_FUN_MOTIVATION
-                                        }
+                                        val channelId = com.synfusion.attendance.utils.LocalNotificationManager.CHANNEL_OFFLINE_ATTENDANCE
 
                                         // Refresh permissions
                                         val isAppNotificationsEnabled = androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled()
