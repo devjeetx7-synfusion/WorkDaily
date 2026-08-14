@@ -307,7 +307,7 @@
     background: transparent;
     border: none;
     cursor: pointer;
-    z-index: 1001;
+    z-index: 1150;
     position: relative;
   }
 
@@ -343,13 +343,15 @@
     -webkit-backdrop-filter: blur(8px);
     opacity: 0;
     visibility: hidden;
+    pointer-events: none;
     transition: opacity 0.3s ease, visibility 0.3s ease;
-    z-index: 998;
+    z-index: 1050;
   }
 
   .menu-backdrop.active {
     opacity: 1;
     visibility: visible;
+    pointer-events: auto;
   }
 
   /* HERO SECTION */
@@ -862,7 +864,8 @@
   .screenshot-img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
+    background-color: #000000;
     display: block;
     border-radius: 24px;
     user-select: none;
@@ -905,22 +908,22 @@
   @media (min-width: 1025px) {
     .scl-top-left {
       top: 50px;
-      left: -130px;
+      left: -100px;
       animation: float1 4s ease-in-out infinite alternate;
     }
     .scl-mid-left {
       top: 250px;
-      left: -150px;
+      left: -110px;
       animation: float2 4.5s ease-in-out infinite alternate;
     }
     .scl-mid-right {
       top: 150px;
-      right: -140px;
+      right: -100px;
       animation: float1 4.2s ease-in-out infinite alternate;
     }
     .scl-bottom-right {
       bottom: 80px;
-      right: -130px;
+      right: -100px;
       animation: float2 4.8s ease-in-out infinite alternate;
     }
   }
@@ -951,6 +954,13 @@
 
   /* Mobile collapse rules (<= 768px) */
   @media (max-width: 768px) {
+    .wd-carousel-container {
+      flex-direction: column !important;
+      align-items: center !important;
+      width: 100% !important;
+      gap: 16px !important;
+    }
+
     .sc-floating-labels-container {
       display: flex;
       flex-wrap: wrap;
@@ -1600,6 +1610,11 @@
       grid-template-columns: repeat(2, 1fr);
     }
 
+    .footer-grid {
+      grid-template-columns: repeat(2, 1fr) !important;
+      gap: 32px !important;
+    }
+
     .menu-toggle {
       display: flex;
     }
@@ -1607,26 +1622,74 @@
     .nav-menu {
       position: fixed;
       top: 0;
-      right: -320px;
-      width: 300px;
+      right: 0;
+      width: min(300px, 80vw);
       height: 100vh;
       background-color: var(--surface-light);
       flex-direction: column;
       align-items: flex-start;
-      padding: 100px 32px 32px 32px;
-      gap: 24px;
-      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      padding: 100px 24px 32px 24px;
+      gap: 16px;
+      transform: translateX(100%);
+      visibility: hidden;
+      pointer-events: none;
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.4s ease;
       box-shadow: -10px 0 30px rgba(15, 23, 42, 0.05);
-      z-index: 999;
+      z-index: 1100;
       margin: 0;
+      list-style: none !important;
+    }
+
+    .nav-menu li {
+      width: 100% !important;
+      list-style: none !important;
+    }
+
+    .nav-link {
+      display: block !important;
+      width: 100% !important;
+      padding: 12px 0 !important;
+      font-size: 16px !important;
+      font-weight: 600 !important;
+      border-bottom: 1px solid var(--border-light) !important;
     }
 
     .nav-menu.open {
-      transform: translateX(-320px);
+      transform: translateX(0);
+      visibility: visible;
+      pointer-events: auto;
     }
 
     .header-actions .btn {
       display: none;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .header-wrap {
+      height: 60px !important;
+    }
+    .logo {
+      font-size: 18px !important;
+      gap: 6px !important;
+    }
+    .logo img {
+      width: 28px !important;
+      height: 28px !important;
+    }
+    .menu-toggle {
+      width: 20px !important;
+      height: 14px !important;
+    }
+    /* 3-line hamburger to 'X' animation under compact height */
+    .menu-toggle.active span:nth-child(1) {
+      transform: translateY(6px) rotate(45deg) !important;
+    }
+    .menu-toggle.active span:nth-child(2) {
+      opacity: 0 !important;
+    }
+    .menu-toggle.active span:nth-child(3) {
+      transform: translateY(-6px) rotate(-45deg) !important;
     }
   }
 
@@ -1644,8 +1707,8 @@
     }
 
     .footer-grid {
-      grid-template-columns: 1fr;
-      gap: 32px;
+      grid-template-columns: 1fr !important;
+      gap: 32px !important;
     }
 
     .post-title {
@@ -1690,6 +1753,39 @@
       scroll-behavior: auto !important;
     }
   }
+  /* RESPONSIVE HERO & CTA BUTTONS */
+  @media (max-width: 1024px) {
+    .hero-mockup-container {
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      justify-content: center !important;
+      width: 100% !important;
+      gap: 20px !important;
+    }
+    .floating-card {
+      position: static !important;
+      transform: none !important;
+      animation: none !important;
+      width: 100% !important;
+      max-width: 300px !important;
+      margin: 0 auto !important;
+      display: flex !important;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05) !important;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .hero-actions {
+      flex-direction: column !important;
+      width: 100% !important;
+      gap: 12px !important;
+    }
+    .hero-actions .btn {
+      width: 100% !important;
+    }
+  }
+
   /* NATIVE BLOGGER NOISE CLEANUP */
   .feed-links,
   .blog-feeds,
@@ -1743,8 +1839,8 @@
         </div>
       </div>
     </div>
+    <div class='menu-backdrop' id='menuBackdrop'></div>
   </header>
-  <div class='menu-backdrop' id='menuBackdrop'></div>
 
   <!-- CONDITIONAL PAGE LAYOUTS -->
   <b:if cond='data:view.isHomepage'>
@@ -1777,62 +1873,8 @@
           <div class='hero-mockup-container'>
             <div class='phone-frame'>
               <div class='phone-notch'></div>
-              <div class='phone-screen'>
-                <!-- Mockup App Header -->
-                <div class='mockup-app-header'>
-                  <div class='mockup-user-info'>
-                    <div class='mockup-avatar'>S</div>
-                    <div>
-                      <div class='mockup-username'>SynFusion Dev</div>
-                      <div class='mockup-user-role'>Personal Account</div>
-                    </div>
-                  </div>
-                  <span style='background-color:#E2E8F0;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:600;'>Offline</span>
-                </div>
-
-                <!-- Mockup Earnings Stats Card -->
-                <div class='mockup-card' style='background:linear-gradient(135deg, #0F9F7A 0%, #0D8F6D 100%);color:white;'>
-                  <div class='mockup-card-title' style='color:#A7F3D0;'>This Month's Earnings</div>
-                  <div style='font-size:24px;font-weight:800;margin-bottom:4px;'>₹48,250.00</div>
-                  <div style='display:flex;justify-content:space-between;font-size:10px;color:#E6FFFA;'>
-                    <span>24 Days Worked</span>
-                    <span>99% Ratio</span>
-                  </div>
-                </div>
-
-                <!-- Mockup Calendar Attendance -->
-                <div class='mockup-card'>
-                  <div class='mockup-card-title'>Attendance Calendar</div>
-                  <div class='mockup-calendar-grid'>
-                    <span class='mockup-cal-day present'>1</span>
-                    <span class='mockup-cal-day present'>2</span>
-                    <span class='mockup-cal-day absent'>3</span>
-                    <span class='mockup-cal-day present'>4</span>
-                    <span class='mockup-cal-day present'>5</span>
-                    <span class='mockup-cal-day half'>6</span>
-                    <span class='mockup-cal-day present'>7</span>
-                    <span class='mockup-cal-day present'>8</span>
-                    <span class='mockup-cal-day present'>9</span>
-                    <span class='mockup-cal-day absent'>10</span>
-                    <span class='mockup-cal-day present'>11</span>
-                    <span class='mockup-cal-day present'>12</span>
-                    <span class='mockup-cal-day half'>13</span>
-                    <span class='mockup-cal-day present'>14</span>
-                  </div>
-                </div>
-
-                <!-- Quick Tasks -->
-                <div class='mockup-card'>
-                  <div class='mockup-card-title'>Recent Attendance Logs</div>
-                  <div style='display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid #F1F5F9;'>
-                    <span style='font-weight:600;color:var(--text-primary);'>August 24, 2026</span>
-                    <span style='color:#0F9F7A;font-weight:700;'>Present</span>
-                  </div>
-                  <div style='display:flex;justify-content:space-between;align-items:center;padding:4px 0;'>
-                    <span style='font-weight:600;color:var(--text-primary);'>August 23, 2026</span>
-                    <span style='color:#EF4444;font-weight:700;'>Absent</span>
-                  </div>
-                </div>
+              <div class='phone-screen' style='padding: 0 !important;'>
+                <img class='screenshot-img' src='https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&amp;fit=crop&amp;w=360&amp;h=720&amp;q=80' alt='WorkDaily App Screenshot - Dashboard Overview' style='width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 24px;'/>
               </div>
             </div>
 
@@ -2279,7 +2321,7 @@
 
   <!-- NATIVE BLOGGER MAIN SECTION -->
   <b:section id='main-section' showaddelement='yes'>
-    <b:widget id='Blog1' locked='true' title='Blog Posts' type='Blog'>
+    <b:widget id='Blog1' locked='true' mobile='yes' title='Blog Posts' type='Blog'>
       <b:includable id='main'>
 
         <b:if cond='data:view.isHomepage'>
@@ -2390,6 +2432,9 @@
 
       </b:includable>
       <b:includable id='feedLinks'/>
+      <b:includable id='mobile-main' var='top'>
+        <b:include name='main'/>
+      </b:includable>
     </b:widget>
   </b:section>
 
@@ -2484,7 +2529,7 @@
       if (menuToggle && navMenu && menuBackdrop) {
         // Accessibility attributes init
         menuToggle.setAttribute('aria-expanded', 'false');
-        menuToggle.setAttribute('aria-label', 'Open navigation menu');
+        menuToggle.setAttribute('aria-label', 'Open navigation');
         menuToggle.setAttribute('aria-controls', 'navMenu');
 
         function toggleMenu() {
@@ -2501,7 +2546,7 @@
           menuToggle.classList.add('active');
           menuBackdrop.classList.add('active');
           menuToggle.setAttribute('aria-expanded', 'true');
-          menuToggle.setAttribute('aria-label', 'Close navigation menu');
+          menuToggle.setAttribute('aria-label', 'Close navigation');
           document.body.style.overflow = 'hidden'; // Scroll lock
         }
 
@@ -2510,7 +2555,7 @@
           menuToggle.classList.remove('active');
           menuBackdrop.classList.remove('active');
           menuToggle.setAttribute('aria-expanded', 'false');
-          menuToggle.setAttribute('aria-label', 'Open navigation menu');
+          menuToggle.setAttribute('aria-label', 'Open navigation');
           document.body.style.overflow = ''; // Restore scrolling
         }
 
