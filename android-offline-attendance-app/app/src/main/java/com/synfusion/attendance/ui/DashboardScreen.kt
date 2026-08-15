@@ -112,6 +112,7 @@ fun DashboardScreen(
     }
 
     val windowSizeInfo = LocalWindowSizeInfo.current
+    val isCompactPortrait = windowSizeInfo.isCompact && !windowSizeInfo.isLandscape
     val currentNavRoute = when (selectedTab) {
         0 -> "dashboard"
         1 -> "calendar"
@@ -131,8 +132,9 @@ fun DashboardScreen(
 
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+        contentWindowInsets = WindowInsets(0.dp),
         bottomBar = {
-            if (currentRoute == "main_pager" && windowSizeInfo.isCompact) {
+            if (currentRoute == "main_pager" && isCompactPortrait) {
                 BottomNavigationBar(
                     currentRoute = currentNavRoute,
                     onNavigate = onNavSelected
@@ -145,7 +147,7 @@ fun DashboardScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            if (currentRoute == "main_pager" && !windowSizeInfo.isCompact) {
+            if (currentRoute == "main_pager" && !isCompactPortrait) {
                 AdaptiveNavigationRail(
                     currentRoute = currentNavRoute,
                     onNavigate = onNavSelected
@@ -241,7 +243,7 @@ fun DashboardScreen(
                                                 .background(MaterialTheme.colorScheme.background)
                                         ) {
                                             ResponsiveContainer {
-                                                if (windowSizeInfo.isCompact) {
+                                                if (isCompactPortrait) {
                                                     LazyColumn(
                                                         state = dashboardScrollState,
                                                         modifier = Modifier
@@ -278,8 +280,8 @@ fun DashboardScreen(
                                                         state = dashboardScrollState,
                                                         modifier = Modifier
                                                             .fillMaxSize()
-                                                            .padding(24.dp),
-                                                        verticalArrangement = Arrangement.spacedBy(20.dp)
+                                                            .padding(horizontal = 20.dp, vertical = 12.dp),
+                                                        verticalArrangement = Arrangement.spacedBy(16.dp)
                                                     ) {
                                                         item {
                                                             HeaderSection(state = dashboardState)
@@ -287,7 +289,7 @@ fun DashboardScreen(
                                                         item {
                                                             Row(
                                                                 modifier = Modifier.fillMaxWidth(),
-                                                                horizontalArrangement = Arrangement.spacedBy(24.dp),
+                                                                horizontalArrangement = Arrangement.spacedBy(20.dp),
                                                                 verticalAlignment = Alignment.Top
                                                             ) {
                                                                 Column(
@@ -313,7 +315,7 @@ fun DashboardScreen(
                                                                 }
                                                             }
                                                         }
-                                                        item { Spacer(modifier = Modifier.height(24.dp)) }
+                                                        item { Spacer(modifier = Modifier.height(16.dp)) }
                                                     }
                                                 }
                                             }

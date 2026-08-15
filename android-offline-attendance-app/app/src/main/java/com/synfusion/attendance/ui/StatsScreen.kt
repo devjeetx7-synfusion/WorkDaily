@@ -103,6 +103,7 @@ fun StatsScreen(
     }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0.dp),
         topBar = {
             TopAppBar(
                 title = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.statistics), fontWeight = FontWeight.Bold) },
@@ -456,17 +457,17 @@ fun PersonalStatsView(
         } else {
             LazyColumn(
                 state = scrollState,
-                modifier = Modifier.fillMaxSize().padding(24.dp),
-                verticalArrangement = Arrangement.spacedBy(20.dp)
+                modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 item {
-                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.stats), fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.stats), fontSize = 22.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                 }
 
                 item {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(24.dp),
+                        horizontalArrangement = Arrangement.spacedBy(20.dp),
                         verticalAlignment = Alignment.Top
                     ) {
                         // Left Column: Month selector & summary cards
