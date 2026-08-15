@@ -1,0 +1,1684 @@
+{
+  "templates": [
+    {
+      "id": "attendance_reminder_001",
+      "category": "attendance_reminder",
+      "title": "Today's Attendance Pending",
+      "message": "{userName}, today's attendance is not marked yet. Please log it now! 😊",
+      "priority": "high",
+      "action": "home"
+    },
+    {
+      "id": "attendance_reminder_002",
+      "category": "attendance_reminder",
+      "title": "Attendance Reminder",
+      "message": "Did you go to work today? {userName}, don't forget to mark attendance!",
+      "priority": "high",
+      "action": "home"
+    },
+    {
+      "id": "attendance_reminder_003",
+      "category": "attendance_reminder",
+      "title": "Daily Check-in",
+      "message": "Evening is here! Mark your full day or half day in WorkDaily ⏰",
+      "priority": "high",
+      "action": "home"
+    },
+    {
+      "id": "attendance_reminder_004",
+      "category": "attendance_reminder",
+      "title": "Work Daily Update",
+      "message": "Dost, today's attendance is pending. Check and mark it now!",
+      "priority": "high",
+      "action": "home"
+    },
+    {
+      "id": "attendance_reminder_005",
+      "category": "attendance_reminder",
+      "title": "Record Your Wage",
+      "message": "Don't miss today's wage entry! {userName}, record attendance in WorkDaily! 💰",
+      "priority": "high",
+      "action": "home"
+    },
+    {
+      "id": "attendance_reminder_006",
+      "category": "attendance_reminder",
+      "title": "Work Ledger Update",
+      "message": "Hey {userName}! Did you record today's work? Log your presence now!",
+      "priority": "high",
+      "action": "home"
+    },
+    {
+      "id": "attendance_reminder_007",
+      "category": "attendance_reminder",
+      "title": "Timely Logging",
+      "message": "Consistent daily records keep your wages clear. Mark today's attendance! 👍",
+      "priority": "high",
+      "action": "home"
+    },
+    {
+      "id": "attendance_reminder_008",
+      "category": "attendance_reminder",
+      "title": "Day Ending Reminder",
+      "message": "Day is coming to an end. Update your attendance status now!",
+      "priority": "high",
+      "action": "home"
+    },
+    {
+      "id": "attendance_reminder_009",
+      "category": "attendance_reminder",
+      "title": "Holiday or Working?",
+      "message": "Were you on leave or working today? Mark present or absent, {userName}!",
+      "priority": "high",
+      "action": "home"
+    },
+    {
+      "id": "attendance_reminder_010",
+      "category": "attendance_reminder",
+      "title": "Accurate Passbook",
+      "message": "Keep your passbook accurate—mark today's attendance right away!",
+      "priority": "high",
+      "action": "home"
+    },
+    {
+      "id": "attendance_reminder_011",
+      "category": "attendance_reminder",
+      "title": "Daily Log Check",
+      "message": "Hello {userName}, working today or resting? Update your daily log! 🌟",
+      "priority": "high",
+      "action": "home"
+    },
+    {
+      "id": "attendance_reminder_012",
+      "category": "attendance_reminder",
+      "title": "Hard Work Record",
+      "message": "Record today's hard work! Time to log your attendance!",
+      "priority": "high",
+      "action": "home"
+    },
+    {
+      "id": "attendance_reminder_013",
+      "category": "attendance_reminder",
+      "title": "One-Tap Attendance",
+      "message": "Mark your presence in one tap and keep your accounts clear! 👉",
+      "priority": "high",
+      "action": "home"
+    },
+    {
+      "id": "attendance_reminder_014",
+      "category": "attendance_reminder",
+      "title": "WorkDaily Notification",
+      "message": "WorkDaily reminder: {userName}, today's register is waiting!",
+      "priority": "high",
+      "action": "home"
+    },
+    {
+      "id": "attendance_reminder_015",
+      "category": "attendance_reminder",
+      "title": "Wage Register",
+      "message": "Update today's wage record, bhai, so you don't forget later! 😉",
+      "priority": "high",
+      "action": "home"
+    },
+    {
+      "id": "attendance_reminder_016",
+      "category": "attendance_reminder",
+      "title": "Good Habit Alert",
+      "message": "Logging attendance daily is a great habit. Mark it now!",
+      "priority": "high",
+      "action": "home"
+    },
+    {
+      "id": "attendance_reminder_017",
+      "category": "attendance_reminder",
+      "title": "Clear Accounting",
+      "message": "Avoid any mix-up in wages, mark today's attendance now {userName}!",
+      "priority": "high",
+      "action": "home"
+    },
+    {
+      "id": "attendance_reminder_018",
+      "category": "attendance_reminder",
+      "title": "Don't Lose Record",
+      "message": "Don't let today's effort go unrecorded—log presence & overtime! 💪",
+      "priority": "high",
+      "action": "home"
+    },
+    {
+      "id": "attendance_reminder_019",
+      "category": "attendance_reminder",
+      "title": "Attendance Register",
+      "message": "Hey bhai! Today's attendance is pending. Update your register!",
+      "priority": "high",
+      "action": "home"
+    },
+    {
+      "id": "attendance_reminder_020",
+      "category": "attendance_reminder",
+      "title": "Daily Work & Wage",
+      "message": "Daily work, daily ledger! {userName}, mark your presence now!",
+      "priority": "high",
+      "action": "home"
+    },
+    {
+      "id": "check_in_001",
+      "category": "check_in",
+      "title": "Morning Check-in",
+      "message": "Good morning {userName}! Shift starting at {time}? Tap to check in! 🌅",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "check_in_002",
+      "category": "check_in",
+      "title": "Work Day Started",
+      "message": "Starting your work day at {time}? Mark your check-in time in WorkDaily! ⏱️",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "check_in_003",
+      "category": "check_in",
+      "title": "Punch In Time",
+      "message": "Morning {userName}! Punch in your arrival time for today ({date}).",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "check_in_004",
+      "category": "check_in",
+      "title": "Work Daily Check-in",
+      "message": "Duty time! Log your start time ({time}) to keep your shift accurate.",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "check_in_005",
+      "category": "check_in",
+      "title": "Duty Starts Now",
+      "message": "Heading to work? Log your check-in time and start your productive day! 🚀",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "check_in_006",
+      "category": "check_in",
+      "title": "Shift Arrival",
+      "message": "Arrived at work at {time}? Update your check-in in WorkDaily!",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "check_in_007",
+      "category": "check_in",
+      "title": "Morning Shift",
+      "message": "Good morning {userName}! Log your check-in time for {date}.",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "check_in_008",
+      "category": "check_in",
+      "title": "Workplace Arrival",
+      "message": "Tap to record your start time ({time}) and keep your shift clean!",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "check_in_009",
+      "category": "check_in",
+      "title": "Daily Duty Start",
+      "message": "Ready for duty {userName}? Record your arrival time now! 💼",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "check_in_010",
+      "category": "check_in",
+      "title": "Shift Tracker",
+      "message": "Log your check-in time at {time} to ensure accurate shift hours!",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "check_out_001",
+      "category": "check_out",
+      "title": "Shift Completed",
+      "message": "Shift over at {time}? Log your check-out time in WorkDaily! 🌇",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "check_out_002",
+      "category": "check_out",
+      "title": "Duty Finished",
+      "message": "Good job today {userName}! Record your end time ({time}) now.",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "check_out_003",
+      "category": "check_out",
+      "title": "Evening Punch Out",
+      "message": "Time to head home! Don't forget to log your check-out time ({time}). 🚗",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "check_out_004",
+      "category": "check_out",
+      "title": "Daily Shift End",
+      "message": "Worked {hours} hours today? Confirm your check-out time in WorkDaily!",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "check_out_005",
+      "category": "check_out",
+      "title": "Workday Wrapped",
+      "message": "Great work today {userName}! Tap to record your end time at {time}.",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "check_out_006",
+      "category": "check_out",
+      "title": "Shift Wrap Up",
+      "message": "Clocking off? Record your check-out time to calculate your daily wage! 💵",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "check_out_007",
+      "category": "check_out",
+      "title": "Day Done",
+      "message": "Done for the day {userName}? Mark your check-out time ({time}) now.",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "check_out_008",
+      "category": "check_out",
+      "title": "Shift Hours Logged",
+      "message": "Log your departure time at {time} to calculate total shift duration!",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "check_out_009",
+      "category": "check_out",
+      "title": "Packing Up?",
+      "message": "Finished your work shift? Update your check-out time in WorkDaily! 🌆",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "check_out_010",
+      "category": "check_out",
+      "title": "End of Shift",
+      "message": "Time to relax {userName}! Confirm your check-out time ({time}) now.",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "late_attendance_001",
+      "category": "late_attendance",
+      "title": "Late Entry Alert",
+      "message": "Marked late arrival today ({time}). Log your exact shift details! ⏰",
+      "priority": "high",
+      "action": "home"
+    },
+    {
+      "id": "late_attendance_002",
+      "category": "late_attendance",
+      "title": "Late Arrival Check",
+      "message": "Started work later than usual {userName}? Update your shift record.",
+      "priority": "high",
+      "action": "home"
+    },
+    {
+      "id": "late_attendance_003",
+      "category": "late_attendance",
+      "title": "Late Attendance",
+      "message": "Late check-in recorded for {date}. Make sure to note any overtime later!",
+      "priority": "high",
+      "action": "home"
+    },
+    {
+      "id": "late_attendance_004",
+      "category": "late_attendance",
+      "title": "Shift Adjustment",
+      "message": "Running late today {userName}? Log your actual start time ({time}) safely.",
+      "priority": "high",
+      "action": "home"
+    },
+    {
+      "id": "late_attendance_005",
+      "category": "late_attendance",
+      "title": "Delayed Start",
+      "message": "Better late than never! {userName}, update your attendance for {date}.",
+      "priority": "high",
+      "action": "home"
+    },
+    {
+      "id": "late_attendance_006",
+      "category": "late_attendance",
+      "title": "Late Entry Logged",
+      "message": "Shift started at {time}. Record your attendance to keep wages intact!",
+      "priority": "high",
+      "action": "home"
+    },
+    {
+      "id": "late_attendance_007",
+      "category": "late_attendance",
+      "title": "Late Shift Notice",
+      "message": "Late arrival detected. Update your daily log in WorkDaily!",
+      "priority": "high",
+      "action": "home"
+    },
+    {
+      "id": "late_attendance_008",
+      "category": "late_attendance",
+      "title": "Shift Delay",
+      "message": "Started duty at {time}? Log your late check-in and shift notes.",
+      "priority": "high",
+      "action": "home"
+    },
+    {
+      "id": "late_attendance_009",
+      "category": "late_attendance",
+      "title": "Work Clock Notice",
+      "message": "Late entry for {date}. Check your shift hours in WorkDaily!",
+      "priority": "high",
+      "action": "home"
+    },
+    {
+      "id": "late_attendance_010",
+      "category": "late_attendance",
+      "title": "Arrival Delay",
+      "message": "Don't worry about being late {userName}, just keep your log updated! ⏱️",
+      "priority": "high",
+      "action": "home"
+    },
+    {
+      "id": "missing_attendance_001",
+      "category": "missing_attendance",
+      "title": "Missing Entry Alert",
+      "message": "2 days missing! {userName}, update your attendance for {date}! 📅",
+      "priority": "high",
+      "action": "home"
+    },
+    {
+      "id": "missing_attendance_002",
+      "category": "missing_attendance",
+      "title": "Consecutive Misses",
+      "message": "You missed {missedDays} days of attendance! Please update your log now.",
+      "priority": "high",
+      "action": "home"
+    },
+    {
+      "id": "missing_attendance_003",
+      "category": "missing_attendance",
+      "title": "Attendance Gap",
+      "message": "3 days without entries! {userName}, check your calendar and fill gaps! 🏖️",
+      "priority": "high",
+      "action": "home"
+    },
+    {
+      "id": "missing_attendance_004",
+      "category": "missing_attendance",
+      "title": "Pending Attendance",
+      "message": "Hey {userName}, you have {missedDays} pending attendance entries!",
+      "priority": "high",
+      "action": "home"
+    },
+    {
+      "id": "missing_attendance_005",
+      "category": "missing_attendance",
+      "title": "Missing Work Logs",
+      "message": "{missedDays} days of missing records found. Tap to review calendar! 🚨",
+      "priority": "high",
+      "action": "home"
+    },
+    {
+      "id": "missing_attendance_006",
+      "category": "missing_attendance",
+      "title": "Unmarked Days",
+      "message": "Keep your passbook current! Fill in your {missedDays} unmarked days.",
+      "priority": "high",
+      "action": "home"
+    },
+    {
+      "id": "missing_attendance_007",
+      "category": "missing_attendance",
+      "title": "Attendance Check",
+      "message": "A full week gap detected! {userName}, update your weekly records now.",
+      "priority": "high",
+      "action": "home"
+    },
+    {
+      "id": "missing_attendance_008",
+      "category": "missing_attendance",
+      "title": "Log Gap Detected",
+      "message": "10+ days missing! Please update your attendance status immediately! ⚠️",
+      "priority": "high",
+      "action": "home"
+    },
+    {
+      "id": "missing_attendance_009",
+      "category": "missing_attendance",
+      "title": "Review Calendar",
+      "message": "Unfilled days detected in your work diary. Tap to update!",
+      "priority": "high",
+      "action": "home"
+    },
+    {
+      "id": "missing_attendance_010",
+      "category": "missing_attendance",
+      "title": "Catch Up Reminders",
+      "message": "Don't let missing entries pile up! Update {missedDays} days now. 📝",
+      "priority": "high",
+      "action": "home"
+    },
+    {
+      "id": "overtime_001",
+      "category": "overtime",
+      "title": "Overtime Logged",
+      "message": "Recorded {hours} hrs overtime today! Additional earnings added: ₹{amount}. 💪",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "overtime_002",
+      "category": "overtime",
+      "title": "Extra Hours Earned",
+      "message": "Great hustle {userName}! You earned extra for {hours} hrs of overtime today.",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "overtime_003",
+      "category": "overtime",
+      "title": "Overtime Wage Added",
+      "message": "Overtime of {hours} hrs added to your passbook. Tap to view breakdown! 💵",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "overtime_004",
+      "category": "overtime",
+      "title": "Hard Work Pays",
+      "message": "Logged {hours} hours OT today! Total overtime this month: {overtime} hrs.",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "overtime_005",
+      "category": "overtime",
+      "title": "Overtime Bonus",
+      "message": "Extra work = extra pay! ₹{amount} added for {hours} OT hours today.",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "overtime_006",
+      "category": "overtime",
+      "title": "OT Record Updated",
+      "message": "Overtime calculation complete for {userName}: {hours} OT hours logged!",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "overtime_007",
+      "category": "overtime",
+      "title": "Hustle Rewarded",
+      "message": "You worked {hours} extra hours today. Your wage balance updated! 🚀",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "overtime_008",
+      "category": "overtime",
+      "title": "Overtime Tracking",
+      "message": "{hours} hours of overtime recorded for {date}. Check your summary!",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "overtime_009",
+      "category": "overtime",
+      "title": "OT Wages Logged",
+      "message": "Overtime pay of ₹{amount} added to your monthly ledger.",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "overtime_010",
+      "category": "overtime",
+      "title": "Extra Effort",
+      "message": "Awesome job working {hours} hrs OT today {userName}! Ledger updated.",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "overtime_threshold_001",
+      "category": "overtime_threshold",
+      "title": "Overtime Milestone",
+      "message": "High OT Alert! You crossed {hours} hours of total overtime this month! 🔥",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "overtime_threshold_002",
+      "category": "overtime_threshold",
+      "title": "OT Limit Reached",
+      "message": "You have accumulated {hours} OT hours! Check your updated overtime earnings.",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "overtime_threshold_003",
+      "category": "overtime_threshold",
+      "title": "Overtime Bonus Alert",
+      "message": "{userName}, your total overtime wage reached ₹{amount} this month! 💰",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "overtime_threshold_004",
+      "category": "overtime_threshold",
+      "title": "High Overtime Hours",
+      "message": "Significant overtime logged ({hours} hrs)! Ensure your rest & health too! 🌟",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "overtime_threshold_005",
+      "category": "overtime_threshold",
+      "title": "OT Target Hit",
+      "message": "Overtime threshold crossed! You earned ₹{amount} in overtime pay.",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "overtime_threshold_006",
+      "category": "overtime_threshold",
+      "title": "Extra Shift Reward",
+      "message": "Over {hours} hours of extra work logged this cycle! Excellent effort.",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "overtime_threshold_007",
+      "category": "overtime_threshold",
+      "title": "OT Passbook Milestone",
+      "message": "Overtime earnings cross ₹{amount}! Check detailed passbook report.",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "overtime_threshold_008",
+      "category": "overtime_threshold",
+      "title": "Overtime Cap",
+      "message": "{hours} OT hours logged this month for {userName}. Tap to see details.",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "overtime_threshold_009",
+      "category": "overtime_threshold",
+      "title": "Heavy Duty Shift",
+      "message": "Major overtime accumulated ({hours} hrs). Review your monthly earnings!",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "overtime_threshold_010",
+      "category": "overtime_threshold",
+      "title": "OT Peak Alert",
+      "message": "You reached a new monthly overtime peak of {hours} hours! 🎯",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "daily_summary_001",
+      "category": "daily_summary",
+      "title": "Daily Work Summary",
+      "message": "Today's Summary ({date}): Attendance marked! Wage: ₹{amount}. 📊",
+      "priority": "normal",
+      "action": "passbook"
+    },
+    {
+      "id": "daily_summary_002",
+      "category": "daily_summary",
+      "title": "Day End Ledger",
+      "message": "{userName}, today's shift ended. Total daily earnings: ₹{amount}.",
+      "priority": "normal",
+      "action": "passbook"
+    },
+    {
+      "id": "daily_summary_003",
+      "category": "daily_summary",
+      "title": "Daily Payout Status",
+      "message": "Daily summary ready: Worked {hours} hrs with ₹{amount} net payout.",
+      "priority": "normal",
+      "action": "passbook"
+    },
+    {
+      "id": "daily_summary_004",
+      "category": "daily_summary",
+      "title": "Today's Wage Record",
+      "message": "Daily log complete for {date}. Total wage earned: ₹{amount}! 👍",
+      "priority": "normal",
+      "action": "passbook"
+    },
+    {
+      "id": "daily_summary_005",
+      "category": "daily_summary",
+      "title": "End of Day Recap",
+      "message": "Summary for {date}: Present status logged, total wage ₹{amount}.",
+      "priority": "normal",
+      "action": "passbook"
+    },
+    {
+      "id": "daily_summary_006",
+      "category": "daily_summary",
+      "title": "Daily Balance Sheet",
+      "message": "{userName}, today's attendance & wage of ₹{amount} saved safely.",
+      "priority": "normal",
+      "action": "passbook"
+    },
+    {
+      "id": "daily_summary_007",
+      "category": "daily_summary",
+      "title": "Daily Work Statement",
+      "message": "Daily shift closed. {hours} hrs worked, ₹{amount} total wages.",
+      "priority": "normal",
+      "action": "passbook"
+    },
+    {
+      "id": "daily_summary_008",
+      "category": "daily_summary",
+      "title": "Daily Log Complete",
+      "message": "Today's ledger entry verified! Total daily earning: ₹{amount}.",
+      "priority": "normal",
+      "action": "passbook"
+    },
+    {
+      "id": "daily_summary_009",
+      "category": "daily_summary",
+      "title": "Day Summary Alert",
+      "message": "Summary for {date}: Wage ₹{amount}, Advance deducted: ₹{advance}.",
+      "priority": "normal",
+      "action": "passbook"
+    },
+    {
+      "id": "daily_summary_010",
+      "category": "daily_summary",
+      "title": "Daily Activity Log",
+      "message": "WorkDaily summary: Today's net calculated payout is ₹{netPayable}.",
+      "priority": "normal",
+      "action": "passbook"
+    },
+    {
+      "id": "weekly_summary_001",
+      "category": "weekly_summary",
+      "title": "Weekly Report Ready",
+      "message": "Weekly Report: {presentDays} days worked, total earnings: ₹{totalEarnings}! 📊",
+      "priority": "normal",
+      "action": "passbook"
+    },
+    {
+      "id": "weekly_summary_002",
+      "category": "weekly_summary",
+      "title": "Weekly Ledger Summary",
+      "message": "{userName}, you completed {workingDays} work days this week. Net: ₹{netPayable}.",
+      "priority": "normal",
+      "action": "passbook"
+    },
+    {
+      "id": "weekly_summary_003",
+      "category": "weekly_summary",
+      "title": "Sunday Weekly Summary",
+      "message": "Week ended! Total wage earned: ₹{totalEarnings}, Advance: ₹{advance}. 💰",
+      "priority": "normal",
+      "action": "passbook"
+    },
+    {
+      "id": "weekly_summary_004",
+      "category": "weekly_summary",
+      "title": "Weekly Performance",
+      "message": "Weekly report: {attendancePercentage}% attendance achieved this week! 📈",
+      "priority": "normal",
+      "action": "passbook"
+    },
+    {
+      "id": "weekly_summary_005",
+      "category": "weekly_summary",
+      "title": "Weekly Wage Report",
+      "message": "This week's payout: ₹{netPayable} ({presentDays} days present, {absentDays} absent).",
+      "priority": "normal",
+      "action": "passbook"
+    },
+    {
+      "id": "weekly_summary_006",
+      "category": "weekly_summary",
+      "title": "Weekly Review",
+      "message": "Great week {userName}! You earned ₹{totalEarnings} across {workingDays} days.",
+      "priority": "normal",
+      "action": "passbook"
+    },
+    {
+      "id": "weekly_summary_007",
+      "category": "weekly_summary",
+      "title": "Weekly Passbook Update",
+      "message": "Weekly ledger closed! Total net payable: ₹{netPayable}. Tap to view.",
+      "priority": "normal",
+      "action": "passbook"
+    },
+    {
+      "id": "weekly_summary_008",
+      "category": "weekly_summary",
+      "title": "Weekly Work Recap",
+      "message": "Weekly breakdown: Present: {presentDays}, OT: {overtime} hrs, Earnings: ₹{totalEarnings}.",
+      "priority": "normal",
+      "action": "passbook"
+    },
+    {
+      "id": "weekly_summary_009",
+      "category": "weekly_summary",
+      "title": "Weekly Stat Check",
+      "message": "Week completed! Attendance rate: {attendancePercentage}%. Check details!",
+      "priority": "normal",
+      "action": "passbook"
+    },
+    {
+      "id": "weekly_summary_010",
+      "category": "weekly_summary",
+      "title": "Weekly Payout Summary",
+      "message": "{userName}, your weekly earnings statement of ₹{totalEarnings} is ready!",
+      "priority": "normal",
+      "action": "passbook"
+    },
+    {
+      "id": "monthly_summary_001",
+      "category": "monthly_summary",
+      "title": "Monthly Report Ready",
+      "message": "Month end! Total earnings: ₹{totalEarnings}, Advance: ₹{advance}, Net: ₹{netPayable}! 💰",
+      "priority": "normal",
+      "action": "passbook"
+    },
+    {
+      "id": "monthly_summary_002",
+      "category": "monthly_summary",
+      "title": "Monthly Performance",
+      "message": "{userName}, monthly attendance rate: {attendancePercentage}%. Working days: {workingDays}.",
+      "priority": "normal",
+      "action": "passbook"
+    },
+    {
+      "id": "monthly_summary_003",
+      "category": "monthly_summary",
+      "title": "Monthly Ledger Statement",
+      "message": "Monthly wrap-up: {presentDays} present, {absentDays} absent. Net payout: ₹{netPayable}!",
+      "priority": "normal",
+      "action": "passbook"
+    },
+    {
+      "id": "monthly_summary_004",
+      "category": "monthly_summary",
+      "title": "Monthly Summary Alert",
+      "message": "Month closed! Total OT: {overtime} hrs, Total Earnings: ₹{totalEarnings}.",
+      "priority": "normal",
+      "action": "passbook"
+    },
+    {
+      "id": "monthly_summary_005",
+      "category": "monthly_summary",
+      "title": "Monthly Passbook Statement",
+      "message": "{userName}, your monthly passbook is ready for PDF export! 📄",
+      "priority": "normal",
+      "action": "passbook"
+    },
+    {
+      "id": "monthly_summary_006",
+      "category": "monthly_summary",
+      "title": "Monthly Wage Balance",
+      "message": "Monthly earnings summary: ₹{totalEarnings} gross, ₹{netPayable} net balance.",
+      "priority": "normal",
+      "action": "passbook"
+    },
+    {
+      "id": "monthly_summary_007",
+      "category": "monthly_summary",
+      "title": "Monthly Work Overview",
+      "message": "{workingDays} days on duty this month. Net take-home amount: ₹{netPayable}.",
+      "priority": "normal",
+      "action": "passbook"
+    },
+    {
+      "id": "monthly_summary_008",
+      "category": "monthly_summary",
+      "title": "Monthly Report Summary",
+      "message": "Monthly ledger complete! Tap to download your official PDF passbook.",
+      "priority": "normal",
+      "action": "passbook"
+    },
+    {
+      "id": "monthly_summary_009",
+      "category": "monthly_summary",
+      "title": "Monthly Payout Summary",
+      "message": "{userName}, you earned ₹{totalEarnings} this month across {presentDays} present days!",
+      "priority": "normal",
+      "action": "passbook"
+    },
+    {
+      "id": "monthly_summary_010",
+      "category": "monthly_summary",
+      "title": "Monthly Financial Recap",
+      "message": "Monthly breakdown: Wage ₹{totalEarnings}, Advance ₹{advance}, Balance ₹{netPayable}.",
+      "priority": "normal",
+      "action": "passbook"
+    },
+    {
+      "id": "earnings_001",
+      "category": "earnings",
+      "title": "Earnings Updated",
+      "message": "Wage updated! Daily wage rate: ₹{amount}/day for {userName}. 💵",
+      "priority": "normal",
+      "action": "passbook"
+    },
+    {
+      "id": "earnings_002",
+      "category": "earnings",
+      "title": "Advance Entry Logged",
+      "message": "Advance payment of ₹{advance} recorded for {date}. Net: ₹{netPayable}.",
+      "priority": "normal",
+      "action": "passbook"
+    },
+    {
+      "id": "earnings_003",
+      "category": "earnings",
+      "title": "Net Payable Update",
+      "message": "Your remaining net balance is ₹{netPayable}. Check your passbook! 💰",
+      "priority": "normal",
+      "action": "passbook"
+    },
+    {
+      "id": "earnings_004",
+      "category": "earnings",
+      "title": "Wage Calculation",
+      "message": "{userName}, new total earnings for this cycle: ₹{totalEarnings}.",
+      "priority": "normal",
+      "action": "passbook"
+    },
+    {
+      "id": "earnings_005",
+      "category": "earnings",
+      "title": "Advance Deducted",
+      "message": "Advance of ₹{advance} deducted from gross earnings ₹{totalEarnings}.",
+      "priority": "normal",
+      "action": "passbook"
+    },
+    {
+      "id": "earnings_006",
+      "category": "earnings",
+      "title": "Financial Statement",
+      "message": "Total earnings: ₹{totalEarnings}, Advance: ₹{advance}, Balance: ₹{netPayable}.",
+      "priority": "normal",
+      "action": "passbook"
+    },
+    {
+      "id": "earnings_007",
+      "category": "earnings",
+      "title": "Wage Passbook Alert",
+      "message": "New wage entry added! Total net payable updated to ₹{netPayable}.",
+      "priority": "normal",
+      "action": "passbook"
+    },
+    {
+      "id": "earnings_008",
+      "category": "earnings",
+      "title": "Advance Record Saved",
+      "message": "Advance entry of ₹{advance} saved in your local passbook safely.",
+      "priority": "normal",
+      "action": "passbook"
+    },
+    {
+      "id": "earnings_009",
+      "category": "earnings",
+      "title": "Earnings Progress",
+      "message": "{userName}, you have earned ₹{totalEarnings} in total this month! 💪",
+      "priority": "normal",
+      "action": "passbook"
+    },
+    {
+      "id": "earnings_010",
+      "category": "earnings",
+      "title": "Net Payout Ready",
+      "message": "Calculated net payout stands at ₹{netPayable}. Review ledger now!",
+      "priority": "normal",
+      "action": "passbook"
+    },
+    {
+      "id": "passbook_001",
+      "category": "passbook",
+      "title": "Passbook Statement",
+      "message": "Your digital passbook is updated! Total net balance: ₹{netPayable}. 📖",
+      "priority": "normal",
+      "action": "passbook"
+    },
+    {
+      "id": "passbook_002",
+      "category": "passbook",
+      "title": "PDF Report Ready",
+      "message": "Passbook PDF for {month} is ready. Tap to view and share! 📄",
+      "priority": "normal",
+      "action": "passbook"
+    },
+    {
+      "id": "passbook_003",
+      "category": "passbook",
+      "title": "Ledger Record Saved",
+      "message": "Passbook entry for {date} saved offline with zero data usage.",
+      "priority": "normal",
+      "action": "passbook"
+    },
+    {
+      "id": "passbook_004",
+      "category": "passbook",
+      "title": "Digital Passbook Update",
+      "message": "{userName}, review your passbook entries for accurate wage tracking.",
+      "priority": "normal",
+      "action": "passbook"
+    },
+    {
+      "id": "passbook_005",
+      "category": "passbook",
+      "title": "Passbook Verification",
+      "message": "All attendance and advance entries verified in your passbook.",
+      "priority": "normal",
+      "action": "passbook"
+    },
+    {
+      "id": "passbook_006",
+      "category": "passbook",
+      "title": "Export Passbook",
+      "message": "Export your monthly passbook as a clean PDF report anytime! 📑",
+      "priority": "normal",
+      "action": "passbook"
+    },
+    {
+      "id": "passbook_007",
+      "category": "passbook",
+      "title": "Offline Passbook",
+      "message": "100% offline passbook updated with today's attendance & wage entries.",
+      "priority": "normal",
+      "action": "passbook"
+    },
+    {
+      "id": "passbook_008",
+      "category": "passbook",
+      "title": "Passbook Backup",
+      "message": "Your passbook records are stored safely on your device. Tap to view.",
+      "priority": "normal",
+      "action": "passbook"
+    },
+    {
+      "id": "passbook_009",
+      "category": "passbook",
+      "title": "Passbook Audit",
+      "message": "{workingDays} working days recorded in your current passbook statement.",
+      "priority": "normal",
+      "action": "passbook"
+    },
+    {
+      "id": "passbook_010",
+      "category": "passbook",
+      "title": "Download Passbook",
+      "message": "Generate and download your official WorkDaily passbook PDF now!",
+      "priority": "normal",
+      "action": "passbook"
+    },
+    {
+      "id": "calendar_001",
+      "category": "calendar",
+      "title": "Calendar View Updated",
+      "message": "Check your monthly attendance calendar for {month} {year}! 📅",
+      "priority": "normal",
+      "action": "calendar"
+    },
+    {
+      "id": "calendar_002",
+      "category": "calendar",
+      "title": "Calendar History",
+      "message": "{userName}, view present, absent, and advance days on your calendar.",
+      "priority": "normal",
+      "action": "calendar"
+    },
+    {
+      "id": "calendar_003",
+      "category": "calendar",
+      "title": "Calendar Color Codes",
+      "message": "Green = Present, Red = Absent, Blue = Advance. Review your calendar! 🟢🔴",
+      "priority": "normal",
+      "action": "calendar"
+    },
+    {
+      "id": "calendar_004",
+      "category": "calendar",
+      "title": "Monthly Calendar Log",
+      "message": "All {month} records mapped on your calendar. Tap to inspect days.",
+      "priority": "normal",
+      "action": "calendar"
+    },
+    {
+      "id": "calendar_005",
+      "category": "calendar",
+      "title": "Calendar Drilldown",
+      "message": "Tap any date on the calendar to edit attendance, overtime, or advance!",
+      "priority": "normal",
+      "action": "calendar"
+    },
+    {
+      "id": "calendar_006",
+      "category": "calendar",
+      "title": "Calendar Inspection",
+      "message": "Check your attendance streak and working days on the calendar screen.",
+      "priority": "normal",
+      "action": "calendar"
+    },
+    {
+      "id": "calendar_007",
+      "category": "calendar",
+      "title": "Attendance Grid",
+      "message": "{month} calendar grid updated with {presentDays} present days logged.",
+      "priority": "normal",
+      "action": "calendar"
+    },
+    {
+      "id": "calendar_008",
+      "category": "calendar",
+      "title": "Calendar Overview",
+      "message": "Track your daily shift patterns and attendance status on calendar.",
+      "priority": "normal",
+      "action": "calendar"
+    },
+    {
+      "id": "calendar_009",
+      "category": "calendar",
+      "title": "Interactive Calendar",
+      "message": "{userName}, easily retro-fill any missing dates using calendar view!",
+      "priority": "normal",
+      "action": "calendar"
+    },
+    {
+      "id": "calendar_010",
+      "category": "calendar",
+      "title": "Calendar Sync",
+      "message": "Your local attendance calendar is completely up to date.",
+      "priority": "normal",
+      "action": "calendar"
+    },
+    {
+      "id": "streak_001",
+      "category": "streak",
+      "title": "Attendance Streak!",
+      "message": "Awesome! You have a {streak}-day attendance streak going! 🔥",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "streak_002",
+      "category": "streak",
+      "title": "Streak Milestone",
+      "message": "{streak} consecutive working days logged! Keep up the momentum, {userName}! 🚀",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "streak_003",
+      "category": "streak",
+      "title": "Hustle Streak",
+      "message": "{streak} days on duty without missing! You are super consistent. 💪",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "streak_004",
+      "category": "streak",
+      "title": "Streak Alert",
+      "message": "You reached a {streak}-day work streak! Great discipline! 🌟",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "streak_005",
+      "category": "streak",
+      "title": "Unstoppable!",
+      "message": "{userName}, {streak} days present in a row! Keep the streak alive today!",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "streak_006",
+      "category": "streak",
+      "title": "Consistency King",
+      "message": "{streak} days attendance streak achieved! Your effort is paying off.",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "streak_007",
+      "category": "streak",
+      "title": "Daily Work Streak",
+      "message": "Keep your {streak}-day work streak going—mark attendance for today!",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "streak_008",
+      "category": "streak",
+      "title": "Work Streak Bonus",
+      "message": "{streak}-day streak registered in WorkDaily! High productivity! 🏆",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "streak_009",
+      "category": "streak",
+      "title": "Streak Champion",
+      "message": "Impressive consistency! {streak} straight days marked present!",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "streak_010",
+      "category": "streak",
+      "title": "Maintain Your Streak",
+      "message": "Don't break your {streak}-day streak! Mark today's attendance now! 🎯",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "milestone_001",
+      "category": "milestone",
+      "title": "Milestone Reached!",
+      "message": "{workingDays} total working days completed in WorkDaily! 🏆",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "milestone_002",
+      "category": "milestone",
+      "title": "Earnings Milestone",
+      "message": "Congratulations {userName}! You passed ₹{totalEarnings} in total wages! 💰",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "milestone_003",
+      "category": "milestone",
+      "title": "Work Milestone",
+      "message": "Milestone unlocked: {presentDays} present days recorded this year! 🌟",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "milestone_004",
+      "category": "milestone",
+      "title": "100 Days Milestone",
+      "message": "100 working days logged! You are a true dedicated worker, {userName}! 👑",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "milestone_005",
+      "category": "milestone",
+      "title": "Work Daily Milestone",
+      "message": "Overtime milestone: {overtime} hours of extra duty completed! 💪",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "milestone_006",
+      "category": "milestone",
+      "title": "Ledger Milestone",
+      "message": "50+ passbook entries recorded! Your ledger is crystal clear. 📖",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "milestone_007",
+      "category": "milestone",
+      "title": "Consistency Milestone",
+      "message": "Outstanding commitment! Milestone reached with {attendancePercentage}% attendance!",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "milestone_008",
+      "category": "milestone",
+      "title": "Annual Milestone",
+      "message": "{userName}, you logged {workingDays} days of work this year! Great job! 🎉",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "milestone_009",
+      "category": "milestone",
+      "title": "Passbook Milestone",
+      "message": "Passbook milestone: Total net payout calculated at ₹{netPayable}!",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "milestone_010",
+      "category": "milestone",
+      "title": "Productivity Milestone",
+      "message": "You are building a rock-solid work history on WorkDaily! 🏆",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "backup_001",
+      "category": "backup",
+      "title": "Backup Reminder",
+      "message": "Keep your data safe! Perform a quick local backup of your passbook. 💾",
+      "priority": "normal",
+      "action": "settings"
+    },
+    {
+      "id": "backup_002",
+      "category": "backup",
+      "title": "Local Backup Complete",
+      "message": "Backup created successfully! Your attendance records are safe.",
+      "priority": "normal",
+      "action": "settings"
+    },
+    {
+      "id": "backup_003",
+      "category": "backup",
+      "title": "Data Safety Alert",
+      "message": "{userName}, create a ZIP backup to secure your passbook & earnings.",
+      "priority": "normal",
+      "action": "settings"
+    },
+    {
+      "id": "backup_004",
+      "category": "backup",
+      "title": "Offline Backup",
+      "message": "Save a copy of your work ledger to phone storage or SD card! 📦",
+      "priority": "normal",
+      "action": "settings"
+    },
+    {
+      "id": "backup_005",
+      "category": "backup",
+      "title": "Backup Status",
+      "message": "Last backup was performed smoothly. Your data is 100% offline & secure.",
+      "priority": "normal",
+      "action": "settings"
+    },
+    {
+      "id": "backup_006",
+      "category": "backup",
+      "title": "Export Backup File",
+      "message": "Export your WorkDaily backup ZIP to share or restore anytime.",
+      "priority": "normal",
+      "action": "settings"
+    },
+    {
+      "id": "backup_007",
+      "category": "backup",
+      "title": "Passbook Security",
+      "message": "Don't risk losing your wage records—backup your data in Settings! 🔐",
+      "priority": "normal",
+      "action": "settings"
+    },
+    {
+      "id": "backup_008",
+      "category": "backup",
+      "title": "Automatic Local Sync",
+      "message": "Your database and profile settings are stored safely locally.",
+      "priority": "normal",
+      "action": "settings"
+    },
+    {
+      "id": "backup_009",
+      "category": "backup",
+      "title": "Restore & Backup",
+      "message": "Easily restore your attendance records on a new device via ZIP backup!",
+      "priority": "normal",
+      "action": "settings"
+    },
+    {
+      "id": "backup_010",
+      "category": "backup",
+      "title": "Database Safety",
+      "message": "{userName}, backup your passbook today to preserve your financial log!",
+      "priority": "normal",
+      "action": "settings"
+    },
+    {
+      "id": "export_001",
+      "category": "export",
+      "title": "Export Passbook PDF",
+      "message": "Export your official monthly passbook as a PDF document! 📄",
+      "priority": "normal",
+      "action": "settings"
+    },
+    {
+      "id": "export_002",
+      "category": "export",
+      "title": "PDF Report Generated",
+      "message": "Your passbook PDF is generated and ready to share via WhatsApp/Email! 📤",
+      "priority": "normal",
+      "action": "settings"
+    },
+    {
+      "id": "export_003",
+      "category": "export",
+      "title": "Export Attendance Log",
+      "message": "Generate clean PDF statements for contractor or employer review.",
+      "priority": "normal",
+      "action": "settings"
+    },
+    {
+      "id": "export_004",
+      "category": "export",
+      "title": "All-Time Passbook Export",
+      "message": "Export your complete all-time work history in one PDF report! 📑",
+      "priority": "normal",
+      "action": "settings"
+    },
+    {
+      "id": "export_005",
+      "category": "export",
+      "title": "Share Passbook",
+      "message": "Tap to share your verified work summary PDF with your manager!",
+      "priority": "normal",
+      "action": "settings"
+    },
+    {
+      "id": "export_006",
+      "category": "export",
+      "title": "Printable PDF Statement",
+      "message": "Your WorkDaily PDF is formatted cleanly for printing on A4 paper.",
+      "priority": "normal",
+      "action": "settings"
+    },
+    {
+      "id": "export_007",
+      "category": "export",
+      "title": "Professional Report",
+      "message": "{userName}, export professional attendance & wage reports anytime.",
+      "priority": "normal",
+      "action": "settings"
+    },
+    {
+      "id": "export_008",
+      "category": "export",
+      "title": "PDF Export Success",
+      "message": "PDF generated cleanly with transparent logo and total wage summary!",
+      "priority": "normal",
+      "action": "settings"
+    },
+    {
+      "id": "export_009",
+      "category": "export",
+      "title": "Instant Report Export",
+      "message": "Create instant wage statements for any month in seconds! ⚡",
+      "priority": "normal",
+      "action": "settings"
+    },
+    {
+      "id": "export_010",
+      "category": "export",
+      "title": "Export & Save",
+      "message": "Save your wage reports to PDF for permanent personal record keeping.",
+      "priority": "normal",
+      "action": "settings"
+    },
+    {
+      "id": "holiday_001",
+      "category": "holiday",
+      "title": "Holiday Today?",
+      "message": "Enjoying a holiday today {userName}? Mark absent or leave on calendar! 🏖️",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "holiday_002",
+      "category": "holiday",
+      "title": "Festival Holiday",
+      "message": "Happy Holidays! Log your leave status on WorkDaily if applicable. 🎉",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "holiday_003",
+      "category": "holiday",
+      "title": "Holiday Notice",
+      "message": "Taking the day off today? Mark your holiday status in WorkDaily!",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "holiday_004",
+      "category": "holiday",
+      "title": "Paid Holiday / Leave",
+      "message": "Record your paid leave or holiday in your monthly ledger.",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "holiday_005",
+      "category": "holiday",
+      "title": "Rest & Relax",
+      "message": "Enjoy your day off {userName}! Keep your attendance updated.",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "holiday_006",
+      "category": "holiday",
+      "title": "Holiday Attendance",
+      "message": "Were you working on the holiday for extra wage? Log attendance now! 💰",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "holiday_007",
+      "category": "holiday",
+      "title": "Official Leave Log",
+      "message": "Keep your leave and holiday records accurate in calendar view.",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "holiday_008",
+      "category": "holiday",
+      "title": "Holiday Wage Check",
+      "message": "Check if holiday overtime or special allowance applies today!",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "holiday_009",
+      "category": "holiday",
+      "title": "Day Off Reminder",
+      "message": "Holiday marked! Have a great rest day, {userName}! 🌟",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "holiday_010",
+      "category": "holiday",
+      "title": "Work-Life Balance",
+      "message": "Enjoy your holiday! WorkDaily will be here when you return.",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "weekend_001",
+      "category": "weekend",
+      "title": "Weekend Ahead!",
+      "message": "Weekend is here! Check your weekly earnings and attendance summary. 🍹",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "weekend_002",
+      "category": "weekend",
+      "title": "Weekend Shift?",
+      "message": "Working weekend shift today {userName}? Don't forget to mark attendance!",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "weekend_003",
+      "category": "weekend",
+      "title": "Weekend Wage Summary",
+      "message": "Weekend recap: Total earnings this week stand at ₹{totalEarnings}! 💰",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "weekend_004",
+      "category": "weekend",
+      "title": "Weekend Passbook Check",
+      "message": "Take 1 minute this weekend to review your passbook entries! 📖",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "weekend_005",
+      "category": "weekend",
+      "title": "Sunday Wrap-up",
+      "message": "Sunday summary ready: Worked {workingDays} days, Net payable ₹{netPayable}.",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "weekend_006",
+      "category": "weekend",
+      "title": "Weekend Rest",
+      "message": "Rest well this weekend {userName}! You earned it after hard work. 💪",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "weekend_007",
+      "category": "weekend",
+      "title": "Weekend Overtime",
+      "message": "Logged weekend overtime today? Extra pay added to your ledger!",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "weekend_008",
+      "category": "weekend",
+      "title": "Weekend Attendance Log",
+      "message": "Working on Sunday? Make sure your weekend shift is recorded.",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "weekend_009",
+      "category": "weekend",
+      "title": "Weekend Ledger Review",
+      "message": "Review your weekly advance and wage balance this weekend.",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "weekend_010",
+      "category": "weekend",
+      "title": "Happy Weekend!",
+      "message": "Happy weekend {userName}! WorkDaily keeps your wages safe!",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "general_productivity_001",
+      "category": "general_productivity",
+      "title": "Productivity Tip",
+      "message": "Daily logging prevents wage disputes! Keep WorkDaily updated daily. 👍",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "general_productivity_002",
+      "category": "general_productivity",
+      "title": "Smart Financial Habit",
+      "message": "Tracking advance & overtime daily builds total financial clarity! 💡",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "general_productivity_003",
+      "category": "general_productivity",
+      "title": "WorkDaily Advantage",
+      "message": "100% offline, private, and secure—your wages stay on your device.",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "general_productivity_004",
+      "category": "general_productivity",
+      "title": "Keep Ledger Clean",
+      "message": "{userName}, accurate attendance ensures you get paid every rupee earned! 💵",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "general_productivity_005",
+      "category": "general_productivity",
+      "title": "Work & Earn",
+      "message": "Hard work deserves exact accounting. Track daily with WorkDaily! 💪",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "general_productivity_006",
+      "category": "general_productivity",
+      "title": "Transparency First",
+      "message": "Clear passbooks build trust between workers and contractors! 🤝",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "general_productivity_007",
+      "category": "general_productivity",
+      "title": "Daily Discipline",
+      "message": "2 seconds a day keeps your monthly wage ledger 100% dispute-free! ⏱️",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "general_productivity_008",
+      "category": "general_productivity",
+      "title": "Financial Control",
+      "message": "Know your exact net payable balance before payday! 📈",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "general_productivity_009",
+      "category": "general_productivity",
+      "title": "WorkDaily Companion",
+      "message": "Your digital work diary, always ready offline whenever you need it.",
+      "priority": "normal",
+      "action": "home"
+    },
+    {
+      "id": "general_productivity_010",
+      "category": "general_productivity",
+      "title": "Master Your Wages",
+      "message": "Track daily wages, overtime, and advances effortlessly with WorkDaily! 🌟",
+      "priority": "normal",
+      "action": "home"
+    }
+  ]
+}

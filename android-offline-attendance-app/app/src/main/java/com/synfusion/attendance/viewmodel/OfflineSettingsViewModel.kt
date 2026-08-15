@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.synfusion.attendance.data.LocalAttendanceRepository
 import com.synfusion.attendance.data.OfflinePreferencesRepository
 import com.synfusion.attendance.data.entities.UserEntity
+import com.synfusion.attendance.utils.NotificationScheduler
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -143,6 +144,12 @@ class OfflineSettingsViewModel(
     fun toggleReminders(enabled: Boolean) {
         viewModelScope.launch {
             repository.saveRemindersPreference(enabled)
+            val context = repository.context
+            if (enabled) {
+                NotificationScheduler.scheduleAllSchedules(context)
+            } else {
+                NotificationScheduler.cancelAllSchedules(context)
+            }
         }
     }
 
@@ -293,6 +300,7 @@ class OfflineSettingsViewModel(
                 localAttendanceRepository.clearSession()
             }
             repository.clearSession()
+            NotificationScheduler.cancelAllSchedules(repository.context)
         }
     }
 }

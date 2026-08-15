@@ -5,6 +5,9 @@ import android.content.Intent
 import android.os.Process
 import com.synfusion.attendance.data.AttendanceDatabase
 import com.synfusion.attendance.ui.CrashActivity
+import com.synfusion.attendance.utils.LocalNotificationManager
+import com.synfusion.attendance.utils.NotificationScheduler
+import com.synfusion.attendance.utils.NotificationTemplateRepository
 import kotlin.system.exitProcess
 
 class DailyWorkApplication : Application() {
@@ -14,9 +17,10 @@ class DailyWorkApplication : Application() {
         // Initialize SQLite database eagerly
         AttendanceDatabase.getInstance(this)
 
-        // Initialize notification channels and schedule local background engine
-        com.synfusion.attendance.utils.LocalNotificationManager.initChannels(this)
-        com.synfusion.attendance.utils.NotificationScheduler.schedulePeriodicWork(this)
+        // Preload notification templates, initialize notification channels and schedule local background engine
+        NotificationTemplateRepository.loadTemplates(this)
+        LocalNotificationManager.initChannels(this)
+        NotificationScheduler.scheduleAllSchedules(this)
     }
 
     private fun setupCrashHandler() {

@@ -1,11 +1,11 @@
 package com.synfusion.attendance.utils
 
 import android.content.Context
+import android.util.Log
 import androidx.work.*
 import com.synfusion.attendance.data.LocalAttendanceRepository
 import kotlinx.coroutines.flow.first
 import java.util.Calendar
-import java.util.concurrent.TimeUnit
 
 class NotificationWorker(
     appContext: Context,
@@ -16,16 +16,13 @@ class NotificationWorker(
         try {
             val repository = LocalAttendanceRepository(applicationContext)
 
-            // Abort if no active user profile exists in database (User Isolation)
             val activeUser = repository.getUser() ?: return Result.success()
 
             val prefsRepo = com.synfusion.attendance.data.OfflinePreferencesRepository(applicationContext)
 
-            // Check system permissions first
-            // Let's check master toggles before running evaluation
             val masterEnabled = prefsRepo.remindersFlow.first()
             if (!masterEnabled) {
-                return Result.success() // Reminders OFF
+                return Result.success()
             }
 
             if (!LocalNotificationManager.areNotificationsFullyEnabled(applicationContext)) {
@@ -40,21 +37,15 @@ class NotificationWorker(
                 return Result.success()
             }
 
-
-            // Check if active hours check is met
-            // Daily Attendance reminder eligibility is 6:00 PM (18) to 10:00 PM (22)
             val calendar = Calendar.getInstance()
             val hour = calendar.get(Calendar.HOUR_OF_DAY)
             val isEligibleWindow = hour in 18..22
 
-            // Run evaluation with style setting
             val evalResult = NotificationRuleEngine.evaluateAllRules(applicationContext, repository, "Friendly")
 
             if (evalResult.triggerNotification) {
-                // Determine category filters enabled
                 val isDailyAttendanceType = evalResult.category in listOf(
-                    "daily_attendance", "missed_two_days", "missed_three_days",
-                    "missed_seven_plus", "missed_ten_days", "long_absence"
+                    "attendance_reminder", "missing_attendance"
                 )
 
                 if (!isDailyAttendanceType || isEligibleWindow) {
@@ -79,7 +70,7 @@ class NotificationWorker(
                 }
             }
 
-            // Evaluate Friendly Notifications
+            // Evaluate General Productivity & Motivational Templates
             val currentHour = calendar.get(Calendar.HOUR_OF_DAY)
             val currentMinute = calendar.get(Calendar.MINUTE)
             val timeInMinutes = currentHour * 60 + currentMinute
@@ -88,9 +79,9 @@ class NotificationWorker(
             val userId = activeUser.id
 
             val friendlyCategory = when {
-                timeInMinutes in 390..570 -> "morning"    // 6:30 AM - 9:30 AM (inclusive)
-                timeInMinutes in 1050..1200 -> "evening"  // 5:30 PM - 8:00 PM (inclusive)
-                timeInMinutes in 1260..1350 -> "night"    // 9:00 PM - 10:30 PM (inclusive)
+                timeInMinutes in 390..570 -> "general_productivity"  // Morning window
+                timeInMinutes in 1050..1200 -> "streak"              // Evening window
+                timeInMinutes in 1260..1350 -> "general_productivity" // Night window
                 else -> null
             }
 
@@ -100,7 +91,6 @@ class NotificationWorker(
                 val sentKey = "friendly_sent_${friendlyCategory}_${todayStr}_$userId"
 
                 if (!prefSpam.contains(evalKey)) {
-                    // Not evaluated today yet! Roll a 35% probability.
                     val roll = kotlin.random.Random.nextFloat()
                     val shouldSend = roll < 0.35f
 
@@ -115,93 +105,31 @@ class NotificationWorker(
                             repository.getPersonalAttendance(),
                             todayStr
                         )
-                        val finalPlaceholders = placeholders.toMutableMap()
-                        if (finalPlaceholders["userName"].isNullOrBlank()) {
-                            finalPlaceholders["userName"] = "bhai"
-                        }
 
-                        val pool = when (friendlyCategory) {
-                            "morning" -> NotificationMessagePool.goodMorningMessages
-                            "evening" -> NotificationMessagePool.goodEveningMessages
-                            "night" -> NotificationMessagePool.goodNightMessages
-                            else -> emptyList()
-                        }
-
-                        val message = NotificationMessageSelector.selectMessage(
-                            applicationContext,
-                            "friendly_$friendlyCategory",
-                            pool,
-                            finalPlaceholders
-                        )
-
-                        LocalNotificationManager.sendNotification(
+                        val templatePair = NotificationTemplateRepository.selectTemplate(
                             context = applicationContext,
-                            channelId = LocalNotificationManager.CHANNEL_OFFLINE_ATTENDANCE,
-                            title = "WorkDaily 😊",
-                            message = message,
-                            category = "friendly_$friendlyCategory",
-                            reason = "Seeded/randomized friendly $friendlyCategory reminder"
+                            category = friendlyCategory,
+                            placeholders = placeholders
                         )
+
+                        if (templatePair != null) {
+                            val (template, formattedMsg) = templatePair
+                            LocalNotificationManager.sendNotification(
+                                context = applicationContext,
+                                channelId = LocalNotificationManager.mapCategoryToChannel(friendlyCategory),
+                                title = template.title,
+                                message = formattedMsg,
+                                category = friendlyCategory,
+                                reason = "Seeded/randomized template notification for $friendlyCategory",
+                                action = template.action
+                            )
+                        }
                     }
                 }
             }
         } catch (e: Exception) {
-            // Never crash, safely return success (could try retry if important, but background reminders can skip)
+            Log.e("WorkDailyNotification", "Error in NotificationWorker: ${e.localizedMessage}", e)
         }
         return Result.success()
-    }
-}
-
-object NotificationScheduler {
-
-    private const val WORK_NAME = "WorkDailyNotificationWork"
-
-    fun schedulePeriodicWork(context: Context) {
-        val constraints = Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.NOT_REQUIRED)
-            .build()
-
-        val periodicRequest = PeriodicWorkRequestBuilder<NotificationWorker>(
-            1, TimeUnit.HOURS // Run once every hour to check rules
-        )
-        .setConstraints(constraints)
-        .build()
-
-        val workManager = WorkManager.getInstance(context)
-        val workInfos = try {
-            workManager.getWorkInfosForUniqueWork(WORK_NAME).get()
-        } catch (e: Exception) {
-            emptyList()
-        }
-
-        // Re-enqueue using UPDATE if work is active, or KEEP if none exists/completed
-        val hasActiveWork = workInfos.any {
-            it.state == WorkInfo.State.ENQUEUED || it.state == WorkInfo.State.RUNNING
-        }
-
-        val policy = if (hasActiveWork) ExistingPeriodicWorkPolicy.KEEP else ExistingPeriodicWorkPolicy.CANCEL_AND_REENQUEUE
-
-        workManager.enqueueUniquePeriodicWork(
-            WORK_NAME,
-            policy,
-            periodicRequest
-        )
-
-        LocalNotificationManager.logNotificationHistory(
-            context,
-            "scheduler",
-            "",
-            "schedulePeriodicWork invoked (policy=$policy, hasActiveWork=$hasActiveWork)"
-        )
-    }
-
-    fun cancelAllScheduledWork(context: Context) {
-        WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME)
-        LocalNotificationManager.logNotificationHistory(
-            context,
-            "scheduler",
-            "",
-            "cancelAllScheduledWork invoked - Cancelled $WORK_NAME"
-        )
     }
 }
