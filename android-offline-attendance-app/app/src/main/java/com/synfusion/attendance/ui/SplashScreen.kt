@@ -75,7 +75,8 @@ fun SplashScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
+            .background(MaterialTheme.colorScheme.background)
+            .safeDrawingPadding(),
         contentAlignment = Alignment.Center
     ) {
         // Subtle Background Particles

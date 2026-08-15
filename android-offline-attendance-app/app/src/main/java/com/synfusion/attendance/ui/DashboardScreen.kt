@@ -132,7 +132,7 @@ fun DashboardScreen(
 
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-        contentWindowInsets = WindowInsets(0.dp),
+        contentWindowInsets = WindowInsets.systemBars,
         bottomBar = {
             if (currentRoute == "main_pager" && isCompactPortrait) {
                 BottomNavigationBar(
@@ -976,6 +976,7 @@ fun AdaptiveNavigationRail(currentRoute: String, onNavigate: (String) -> Unit = 
     NavigationRail(
         containerColor = MaterialTheme.colorScheme.background,
         contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        windowInsets = WindowInsets(0.dp),
         header = {
             Box(
                 modifier = Modifier

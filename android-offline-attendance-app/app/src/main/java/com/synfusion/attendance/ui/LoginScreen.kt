@@ -575,8 +575,7 @@ fun LoginScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxSize()
-                        .statusBarsPadding()
-                        .navigationBarsPadding()
+                        .safeDrawingPadding()
                         .padding(24.dp),
                     horizontalArrangement = Arrangement.spacedBy(32.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -718,7 +717,7 @@ fun SaaSFeatureShowcase() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(450.dp),
+            .heightIn(max = 450.dp),
         contentAlignment = Alignment.Center
     ) {
         val glowColor = MaterialTheme.colorScheme.primary
