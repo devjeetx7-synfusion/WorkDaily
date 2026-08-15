@@ -39,6 +39,10 @@ import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -806,7 +810,7 @@ fun PersonalDailyLog(state: OfflineDashboardState, dashboardViewModel: OfflineDa
     }
 
     Column {
-        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.daily_log), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 8.dp, top = 8.dp))
+        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.daily_log), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 8.dp))
 
         if (state.todayStatus == null) {
             Row(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
@@ -945,6 +949,7 @@ fun PersonalDailyLog(state: OfflineDashboardState, dashboardViewModel: OfflineDa
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun AdaptiveNavigationRail(currentRoute: String, onNavigate: (String) -> Unit = {}) {
     data class NavItem(val route: String, val icon: ImageVector, val label: String)
@@ -956,58 +961,81 @@ fun AdaptiveNavigationRail(currentRoute: String, onNavigate: (String) -> Unit = 
         NavItem("settings", Icons.Default.Settings, "Setting")
     )
 
+    val coroutineScope = rememberCoroutineScope()
+    val requesters = remember { tabs.map { androidx.compose.foundation.relocation.BringIntoViewRequester() } }
+
+    LaunchedEffect(currentRoute) {
+        val selectedIndex = tabs.indexOfFirst { it.route == currentRoute }
+        if (selectedIndex >= 0) {
+            requesters[selectedIndex].bringIntoView()
+        }
+    }
+
     NavigationRail(
         containerColor = MaterialTheme.colorScheme.background,
         contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
         header = {
             Box(
                 modifier = Modifier
-                    .padding(vertical = 16.dp)
-                    .size(44.dp)
+                    .padding(top = 16.dp, bottom = 8.dp)
+                    .size(48.dp)
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Default.CheckCircle,
+                androidx.compose.foundation.Image(
+                    painter = androidx.compose.ui.res.painterResource(id = com.synfusion.attendance.R.drawable.logo_transparent),
                     contentDescription = "WorkDaily",
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(32.dp),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Fit
                 )
             }
         }
     ) {
-        Spacer(modifier = Modifier.weight(1f))
-        tabs.forEach { tab ->
-            val selected = tab.route == currentRoute
-            NavigationRailItem(
-                icon = {
-                    Icon(
-                        tab.icon,
-                        contentDescription = tab.label,
-                        modifier = Modifier.size(24.dp)
+        Column(
+            modifier = Modifier
+                .fillMaxHeight()
+                .verticalScroll(rememberScrollState())
+                .padding(vertical = 12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            tabs.forEachIndexed { index, tab ->
+                val selected = tab.route == currentRoute
+                val requester = requesters[index]
+                NavigationRailItem(
+                    modifier = Modifier.bringIntoViewRequester(requester),
+                    icon = {
+                        Icon(
+                            tab.icon,
+                            contentDescription = tab.label,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    },
+                    label = {
+                        Text(
+                            tab.label,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    },
+                    selected = selected,
+                    onClick = {
+                        onNavigate(tab.route)
+                        coroutineScope.launch {
+                            requester.bringIntoView()
+                        }
+                    },
+                    colors = NavigationRailItemDefaults.colors(
+                        indicatorColor = MaterialTheme.colorScheme.primary,
+                        selectedIconColor = Color.White,
+                        selectedTextColor = MaterialTheme.colorScheme.primary,
+                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                },
-                label = {
-                    Text(
-                        tab.label,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                },
-                selected = selected,
-                onClick = { onNavigate(tab.route) },
-                colors = NavigationRailItemDefaults.colors(
-                    indicatorColor = MaterialTheme.colorScheme.primary,
-                    selectedIconColor = Color.White,
-                    selectedTextColor = MaterialTheme.colorScheme.primary,
-                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-            )
-            Spacer(modifier = Modifier.height(8.dp))
+            }
         }
-        Spacer(modifier = Modifier.weight(1f))
     }
 }
 
