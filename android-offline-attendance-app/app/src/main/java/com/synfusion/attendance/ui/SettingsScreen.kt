@@ -47,10 +47,13 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.ui.draw.clip
 import android.content.Context
 import android.content.Intent
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.border
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.focus.FocusRequester
@@ -80,7 +83,7 @@ enum class SettingsCategory(val title: String, val icon: androidx.compose.ui.gra
     INFO_SUPPORT("Info & Support", Icons.Default.Info)
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun SettingsScreen(
     viewModel: OfflineSettingsViewModel,
@@ -245,7 +248,7 @@ fun SettingsScreen(
 
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-        contentWindowInsets = WindowInsets.safeDrawing
+        contentWindowInsets = WindowInsets(0.dp)
     ) { paddingValues ->
         ResponsiveContainer {
             if (windowSizeInfo.isCompact) {
@@ -254,8 +257,8 @@ fun SettingsScreen(
                         .fillMaxSize()
                         .verticalScroll(scrollState)
                         .padding(paddingValues)
-                        .padding(start = 16.dp, end = 16.dp, top = 20.dp, bottom = 32.dp),
-                    verticalArrangement = Arrangement.spacedBy(24.dp)
+                        .padding(horizontal = 16.dp, vertical = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(20.dp)
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.app_preferences), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 4.dp))
@@ -328,30 +331,49 @@ fun SettingsScreen(
 
                                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
 
-                                SettingsCategory.values().forEach { category ->
-                                    val isSelected = selectedCategory == category
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clip(RoundedCornerShape(12.dp))
-                                            .background(if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f) else Color.Transparent)
-                                            .clickable { selectedCategory = category }
-                                            .padding(vertical = 12.dp, horizontal = 16.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Icon(
-                                            imageVector = category.icon,
-                                            contentDescription = null,
-                                            tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                            modifier = Modifier.size(20.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(16.dp))
-                                        Text(
-                                            text = category.title,
-                                            fontSize = 15.sp,
-                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                                        )
+                                val categoryListState = rememberScrollState()
+                                val categoryRequesters = remember { SettingsCategory.values().map { androidx.compose.foundation.relocation.BringIntoViewRequester() } }
+
+                                LaunchedEffect(selectedCategory) {
+                                    val index = SettingsCategory.values().indexOf(selectedCategory)
+                                    if (index >= 0) {
+                                        categoryRequesters[index].bringIntoView()
+                                    }
+                                }
+
+                                Column(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .verticalScroll(categoryListState),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    SettingsCategory.values().forEachIndexed { index, category ->
+                                        val isSelected = selectedCategory == category
+                                        val requester = categoryRequesters[index]
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .bringIntoViewRequester(requester)
+                                                .clip(RoundedCornerShape(12.dp))
+                                                .background(if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f) else Color.Transparent)
+                                                .clickable { selectedCategory = category }
+                                                .padding(vertical = 12.dp, horizontal = 16.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Icon(
+                                                imageVector = category.icon,
+                                                contentDescription = null,
+                                                tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(16.dp))
+                                            Text(
+                                                text = category.title,
+                                                fontSize = 15.sp,
+                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                            )
+                                        }
                                     }
                                 }
                             }
