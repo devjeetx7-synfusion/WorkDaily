@@ -1,6 +1,7 @@
 package com.synfusion.attendance.utils
 
 import android.content.Context
+import android.util.Log
 import com.synfusion.attendance.data.LocalAttendanceRepository
 import com.synfusion.attendance.data.entities.AttendanceEntity
 import com.synfusion.attendance.data.entities.UserEntity
@@ -9,6 +10,7 @@ import java.util.*
 
 object NotificationRuleEngine {
 
+    private const val TAG = "WorkDailyNotification"
     private const val PREFS_SPAM = "notification_spam_prevention"
     private const val KEY_LAST_ATTENDANCE_DATE = "last_attendance_reminder_date"
     private const val KEY_LAST_WEEKLY_DATE = "last_weekly_report_date"
@@ -24,6 +26,7 @@ object NotificationRuleEngine {
         val user: UserEntity? = kotlinx.coroutines.runBlocking { repository.getUser() }
 
         if (user == null) {
+            Log.d(TAG, "evaluateAllRules: No active user profile found in database.")
             return RuleEvaluationResult(false, LocalNotificationManager.CHANNEL_ATTENDANCE, "", "", "", "No active user")
         }
 
@@ -35,16 +38,14 @@ object NotificationRuleEngine {
 
         val placeholders = buildPlaceholders(user, allRecords, todayStr)
 
-        // Rule evaluation logic
         // Rule A: Daily Attendance Reminder
         var triggerCategory: String? = null
         var message = ""
-        val channel = LocalNotificationManager.CHANNEL_ATTENDANCE
+        var title = "WorkDaily"
         var reason = "No rules triggered"
 
         val canSendDaily = pref.getString("${KEY_LAST_ATTENDANCE_DATE}_$userId", "") != todayStr
         if (todayRecord == null && canSendDaily) {
-            // Attendance not marked for today
             val consecutiveMissed = calculateConsecutiveMissedDays(allRecords, todayStr)
             val milestoneSet = pref.getStringSet("${KEY_SENT_MILESTONES}_$userId", emptySet()) ?: emptySet()
 
@@ -52,68 +53,60 @@ object NotificationRuleEngine {
 
             when {
                 consecutiveMissed >= 30 && !milestoneSet.contains("30") -> {
-                    triggerCategory = "long_absence"
-                    message = NotificationMessageSelector.selectMessage(
-                        context, triggerCategory, NotificationMessagePool.longAbsenceMessages, placeholders
-                    )
+                    triggerCategory = "missing_attendance"
                     reason = "30 consecutive missed days milestone"
                     milestoneToSave = "30"
                 }
                 consecutiveMissed >= 14 && !milestoneSet.contains("14") -> {
-                    triggerCategory = "missed_seven_plus"
-                    message = NotificationMessageSelector.selectMessage(
-                        context, triggerCategory, NotificationMessagePool.missedSevenPlusDaysMessages, placeholders
-                    )
+                    triggerCategory = "missing_attendance"
                     reason = "14 consecutive missed days milestone"
                     milestoneToSave = "14"
                 }
                 consecutiveMissed >= 10 && !milestoneSet.contains("10") -> {
-                    triggerCategory = "missed_ten_days"
-                    message = NotificationMessageSelector.selectMessage(
-                        context, triggerCategory, NotificationMessagePool.missedTenPlusDaysMessages, placeholders
-                    )
+                    triggerCategory = "missing_attendance"
                     reason = "10 consecutive missed days milestone"
                     milestoneToSave = "10"
                 }
                 consecutiveMissed >= 7 && !milestoneSet.contains("7") -> {
-                    triggerCategory = "missed_seven_plus"
-                    message = NotificationMessageSelector.selectMessage(
-                        context, triggerCategory, NotificationMessagePool.missedSevenPlusDaysMessages, placeholders
-                    )
+                    triggerCategory = "missing_attendance"
                     reason = "7 consecutive missed days milestone"
                     milestoneToSave = "7"
                 }
                 consecutiveMissed >= 3 && !milestoneSet.contains("3") -> {
-                    triggerCategory = "missed_three_days"
-                    message = NotificationMessageSelector.selectMessage(
-                        context, triggerCategory, NotificationMessagePool.missedThreeDaysMessages, placeholders
-                    )
+                    triggerCategory = "missing_attendance"
                     reason = "3 consecutive missed days milestone"
                     milestoneToSave = "3"
                 }
                 consecutiveMissed >= 2 && !milestoneSet.contains("2") -> {
-                    triggerCategory = "missed_two_days"
-                    message = NotificationMessageSelector.selectMessage(
-                        context, triggerCategory, NotificationMessagePool.missedTwoDaysMessages, placeholders
-                    )
+                    triggerCategory = "missing_attendance"
                     reason = "2 consecutive missed days milestone"
                     milestoneToSave = "2"
                 }
                 else -> {
-                    // Normal daily reminder
-                    triggerCategory = "daily_attendance"
-                    message = NotificationMessageSelector.selectMessage(
-                        context, triggerCategory, NotificationMessagePool.dailyAttendanceMessages, placeholders
-                    )
+                    triggerCategory = "attendance_reminder"
                     reason = "Today's attendance missing"
                 }
             }
 
             if (triggerCategory != null) {
+                val templatePair = NotificationTemplateRepository.selectTemplate(context, triggerCategory, placeholders)
+                if (templatePair != null) {
+                    val (template, formattedMsg) = templatePair
+                    title = template.title
+                    message = formattedMsg
+                } else {
+                    title = "आज की Attendance"
+                    message = "${user.name}, today's attendance is pending. Mark it now!"
+                }
+
+                val channel = LocalNotificationManager.mapCategoryToChannel(triggerCategory)
+
+                Log.i(TAG, "Daily Attendance Rule triggered! Category: $triggerCategory, Title: $title, Reason: $reason")
+
                 return RuleEvaluationResult(
                     triggerNotification = true,
                     channelId = channel,
-                    title = "आज की Attendance",
+                    title = title,
                     message = message,
                     category = triggerCategory,
                     reason = reason,
@@ -130,14 +123,22 @@ object NotificationRuleEngine {
         val isSunday = calendar.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY
         val currentWeekStr = "${calendar.get(Calendar.YEAR)}-W${calendar.get(Calendar.WEEK_OF_YEAR)}"
         if (isSunday && pref.getString("${KEY_LAST_WEEKLY_DATE}_$userId", "") != currentWeekStr) {
-            triggerCategory = "weekly_report"
-            message = NotificationMessageSelector.selectMessage(
-                context, triggerCategory, NotificationMessagePool.weeklyReportMessages, placeholders
-            )
+            triggerCategory = "weekly_summary"
+            val templatePair = NotificationTemplateRepository.selectTemplate(context, triggerCategory, placeholders)
+            if (templatePair != null) {
+                title = templatePair.first.title
+                message = templatePair.second
+            } else {
+                title = "Weekly Report 📊"
+                message = "Weekly progress report ready! Check passbook for details."
+            }
+
+            Log.i(TAG, "Weekly Report Rule triggered on Sunday! Week: $currentWeekStr")
+
             return RuleEvaluationResult(
                 triggerNotification = true,
-                channelId = LocalNotificationManager.CHANNEL_REPORTS,
-                title = "Weekly Report 📊",
+                channelId = LocalNotificationManager.CHANNEL_SUMMARY,
+                title = title,
                 message = message,
                 category = triggerCategory,
                 reason = "Weekly report triggered on Sunday",
@@ -151,14 +152,22 @@ object NotificationRuleEngine {
         val isFirstOfMonth = calendar.get(Calendar.DAY_OF_MONTH) == 1
         val currentMonthStr = SimpleDateFormat("yyyy-MM", Locale.getDefault()).format(Date())
         if (isFirstOfMonth && pref.getString("${KEY_LAST_MONTH_DATE}_$userId", "") != currentMonthStr) {
-            triggerCategory = "monthly_report"
-            message = NotificationMessageSelector.selectMessage(
-                context, triggerCategory, NotificationMessagePool.monthlyReportMessages, placeholders
-            )
+            triggerCategory = "monthly_summary"
+            val templatePair = NotificationTemplateRepository.selectTemplate(context, triggerCategory, placeholders)
+            if (templatePair != null) {
+                title = templatePair.first.title
+                message = templatePair.second
+            } else {
+                title = "Monthly Summary 📅"
+                message = "Month completed! Check your monthly passbook statement."
+            }
+
+            Log.i(TAG, "Monthly Report Rule triggered on 1st of Month! Month: $currentMonthStr")
+
             return RuleEvaluationResult(
                 triggerNotification = true,
-                channelId = LocalNotificationManager.CHANNEL_REPORTS,
-                title = "Monthly Summary 📅",
+                channelId = LocalNotificationManager.CHANNEL_SUMMARY,
+                title = title,
                 message = message,
                 category = triggerCategory,
                 reason = "Monthly report triggered on 1st of month",
@@ -173,13 +182,21 @@ object NotificationRuleEngine {
         val currentYearStr = calendar.get(Calendar.YEAR).toString()
         if (isFirstOfYear && pref.getString("${KEY_LAST_YEAR_DATE}_$userId", "") != currentYearStr) {
             triggerCategory = "yearly_report"
-            message = NotificationMessageSelector.selectMessage(
-                context, triggerCategory, NotificationMessagePool.yearlyReportMessages, placeholders
-            )
+            val templatePair = NotificationTemplateRepository.selectTemplate(context, triggerCategory, placeholders)
+            if (templatePair != null) {
+                title = templatePair.first.title
+                message = templatePair.second
+            } else {
+                title = "Yearly Recap 🏆"
+                message = "All-time passbook updated! Check your annual work summary."
+            }
+
+            Log.i(TAG, "Yearly Report Rule triggered on 1st January! Year: $currentYearStr")
+
             return RuleEvaluationResult(
                 triggerNotification = true,
-                channelId = LocalNotificationManager.CHANNEL_REPORTS,
-                title = "Yearly Recap 🏆",
+                channelId = LocalNotificationManager.CHANNEL_SUMMARY,
+                title = title,
                 message = message,
                 category = triggerCategory,
                 reason = "Yearly summary triggered on 1st Jan",
@@ -189,22 +206,21 @@ object NotificationRuleEngine {
             )
         }
 
-        return RuleEvaluationResult(false, channel, "", "", "", reason)
+        return RuleEvaluationResult(false, LocalNotificationManager.CHANNEL_ATTENDANCE, "", "", "", reason)
     }
 
     fun markRuleStatePersisted(context: Context, evalResult: RuleEvaluationResult) {
         val pref = context.getSharedPreferences(PREFS_SPAM, Context.MODE_PRIVATE)
         val editor = pref.edit()
-        if (!evalResult.stateKeyToPersist.isNullOfBlank() && !evalResult.stateValueToPersist.isNullOrEmpty()) {
+        if (!evalResult.stateKeyToPersist.isNullOrBlank() && !evalResult.stateValueToPersist.isNullOrEmpty()) {
             editor.putString(evalResult.stateKeyToPersist, evalResult.stateValueToPersist)
         }
         if (!evalResult.milestoneToPersist.isNullOrEmpty() && !evalResult.userId.isNullOrEmpty()) {
             saveSentMilestone(pref, evalResult.userId, evalResult.milestoneToPersist)
         }
         editor.apply()
+        Log.d(TAG, "Persisted notification rule state for key: ${evalResult.stateKeyToPersist}")
     }
-
-    private fun CharSequence?.isNullOfBlank(): Boolean = this == null || this.isBlank()
 
     private fun saveSentMilestone(pref: android.content.SharedPreferences, userId: String, day: String) {
         val milestoneSet = pref.getStringSet("${KEY_SENT_MILESTONES}_$userId", emptySet())?.toMutableSet() ?: mutableSetOf()
@@ -218,13 +234,11 @@ object NotificationRuleEngine {
 
         val calendar = Calendar.getInstance()
         val currentMonthPrefix = SimpleDateFormat("yyyy-MM", Locale.getDefault()).format(Date())
-        val currentYearPrefix = SimpleDateFormat("yyyy", Locale.getDefault()).format(Date())
 
         val dayStr = calendar.get(Calendar.DAY_OF_MONTH).toString()
         val monthStr = SimpleDateFormat("MMM", Locale.getDefault()).format(Date())
         val yearStr = calendar.get(Calendar.YEAR).toString()
 
-        // Filter current month records
         val monthRecords = allRecords.filter { it.date.startsWith(currentMonthPrefix) }
 
         var presentCount = 0
@@ -257,7 +271,6 @@ object NotificationRuleEngine {
         val netPayable = totalEarnings - advanceAmount
         val workingDays = (presentCount - halfDaysCount) + (halfDaysCount * 0.5)
 
-        val totalDaysInMonth = calendar.getActualMaximum(Calendar.DAY_OF_MONTH)
         val passedDays = calendar.get(Calendar.DAY_OF_MONTH)
         val attendancePercentage = if (passedDays > 0) {
             String.format(Locale.getDefault(), "%.0f", (workingDays / passedDays) * 100.0)
@@ -282,7 +295,10 @@ object NotificationRuleEngine {
             "advance" to AmountFormatter.format(advanceAmount),
             "netPayable" to AmountFormatter.format(netPayable),
             "attendancePercentage" to attendancePercentage,
-            "streak" to streak.toString()
+            "streak" to streak.toString(),
+            "amount" to AmountFormatter.format(if (totalEarnings > 0) totalEarnings else dailyWage),
+            "hours" to if (overtimeHours > 0) overtimeHours.toString() else "8",
+            "time" to SimpleDateFormat("hh:mm a", Locale.getDefault()).format(Date())
         )
     }
 
@@ -297,7 +313,6 @@ object NotificationRuleEngine {
         }
 
         var missedCount = 0
-        // check backward
         while (true) {
             val dateToCheck = sdf.format(currentCal.time)
             if (markedDates.contains(dateToCheck)) {
@@ -311,7 +326,6 @@ object NotificationRuleEngine {
                 missedCount++
             }
             currentCal.add(Calendar.DAY_OF_YEAR, -1)
-            // Limit checks to prevent infinite loops
             if (missedCount > 365) break
         }
         return missedCount
@@ -330,9 +344,8 @@ object NotificationRuleEngine {
             if (presentDates.contains(dateToCheck)) {
                 streak++
             } else {
-                // If checking today and it's not marked yet, don't break yet, check yesterday
                 if (streak == 0 && dateToCheck == sdf.format(Date())) {
-                    // skip today and continue checking
+                    // skip today if not marked yet
                 } else {
                     break
                 }

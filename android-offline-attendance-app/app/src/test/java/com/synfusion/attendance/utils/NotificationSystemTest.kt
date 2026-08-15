@@ -55,7 +55,6 @@ class NotificationSystemTest {
 
         val currentMonthPrefix = SimpleDateFormat("yyyy-MM", Locale.getDefault()).format(Date())
 
-        // Mock some records matching the current month prefix dynamically
         val records = listOf(
             AttendanceEntity("p1", null, "$currentMonthPrefix-01", "present", "full", wage = 600.0),
             AttendanceEntity("p2", null, "$currentMonthPrefix-02", "present", "full", wage = 600.0),
@@ -72,24 +71,20 @@ class NotificationSystemTest {
         assertEquals("5", placeholders["presentDays"])
         assertEquals("1", placeholders["halfDays"])
         assertEquals("1", placeholders["absentDays"])
-        // working days = 4 present + 0.5 half day = 4.5
         assertEquals("4.5", placeholders["workingDays"])
-        // total earnings = 4 * 600 + 1 * 300 = 2700
         assertEquals("2,700", placeholders["totalEarnings"])
         assertEquals("500", placeholders["advance"])
         assertEquals("2,200", placeholders["netPayable"])
     }
 
     @Test
-    fun testConsolidatedNotificationChannelConfiguration() {
-        // Verify that the consolidated channel ID is correct and stable
-        assertEquals("offline_attendance_reminders", LocalNotificationManager.CHANNEL_OFFLINE_ATTENDANCE)
-
-        // Verify that all backwards-compatible channel aliases resolve to the same consolidated channel ID
-        assertEquals(LocalNotificationManager.CHANNEL_OFFLINE_ATTENDANCE, LocalNotificationManager.CHANNEL_ATTENDANCE)
-        assertEquals(LocalNotificationManager.CHANNEL_OFFLINE_ATTENDANCE, LocalNotificationManager.CHANNEL_REPORTS)
-        assertEquals(LocalNotificationManager.CHANNEL_OFFLINE_ATTENDANCE, LocalNotificationManager.CHANNEL_EARNINGS)
-        assertEquals(LocalNotificationManager.CHANNEL_OFFLINE_ATTENDANCE, LocalNotificationManager.CHANNEL_FUN_MOTIVATION)
+    fun testNotificationChannelsConfiguration() {
+        // Verify channels
+        assertEquals("attendance_channel", LocalNotificationManager.CHANNEL_ATTENDANCE)
+        assertEquals("reminders_channel", LocalNotificationManager.CHANNEL_REMINDERS)
+        assertEquals("summary_channel", LocalNotificationManager.CHANNEL_SUMMARY)
+        assertEquals("earnings_channel", LocalNotificationManager.CHANNEL_EARNINGS)
+        assertEquals("backup_channel", LocalNotificationManager.CHANNEL_BACKUP)
     }
 
     @Test
@@ -98,7 +93,6 @@ class NotificationSystemTest {
         assertFalse(NotificationMessagePool.goodEveningMessages.isEmpty())
         assertFalse(NotificationMessagePool.goodNightMessages.isEmpty())
 
-        // Verify some content matches expected strings
         assertTrue(NotificationMessagePool.goodMorningMessages.any { it.contains("🌅") || it.contains("☀️") })
         assertTrue(NotificationMessagePool.goodEveningMessages.any { it.contains("🌆") || it.contains("🌇") })
         assertTrue(NotificationMessagePool.goodNightMessages.any { it.contains("🌙") || it.contains("🌃") })
@@ -106,13 +100,11 @@ class NotificationSystemTest {
 
     @Test
     fun testFriendlyNotificationPersonalizationFallback() {
-        // Test with user display name
         val templateWithName = "😄 Kaise {userName}, aaj kaisa raha? Duty se wapas aa gaye?"
         val placeholdersWithName = mapOf("userName" to "Ramesh")
         val resultWithName = NotificationMessageSelector.evaluateTemplate(templateWithName, placeholdersWithName)
         assertEquals("😄 Kaise Ramesh, aaj kaisa raha? Duty se wapas aa gaye?", resultWithName)
 
-        // Test with blank/empty name and fallback to "bhai"
         val placeholdersWithFallback = mapOf("userName" to "bhai")
         val resultWithFallback = NotificationMessageSelector.evaluateTemplate(templateWithName, placeholdersWithFallback)
         assertEquals("😄 Kaise bhai, aaj kaisa raha? Duty se wapas aa gaye?", resultWithFallback)
@@ -120,7 +112,6 @@ class NotificationSystemTest {
 
     @Test
     fun testFriendlyTimeWindows() {
-        // Helper block mapping to match our when condition
         val getFriendlyCategory: (Int) -> String? = { timeInMinutes ->
             when {
                 timeInMinutes in 390..570 -> "morning"    // 6:30 AM - 9:30 AM (inclusive)
@@ -130,26 +121,23 @@ class NotificationSystemTest {
             }
         }
 
-        // Test Good Morning (6:30 AM - 9:30 AM)
-        assertEquals("morning", getFriendlyCategory(6 * 60 + 30)) // 6:30 AM
-        assertEquals("morning", getFriendlyCategory(8 * 60))      // 8:00 AM
-        assertEquals("morning", getFriendlyCategory(9 * 60 + 30)) // 9:30 AM
-        assertNull(getFriendlyCategory(6 * 60 + 29))              // 6:29 AM
-        assertNull(getFriendlyCategory(9 * 60 + 31))              // 9:31 AM
+        assertEquals("morning", getFriendlyCategory(6 * 60 + 30))
+        assertEquals("morning", getFriendlyCategory(8 * 60))
+        assertEquals("morning", getFriendlyCategory(9 * 60 + 30))
+        assertNull(getFriendlyCategory(6 * 60 + 29))
+        assertNull(getFriendlyCategory(9 * 60 + 31))
 
-        // Test Good Evening (5:30 PM - 8:00 PM)
-        assertEquals("evening", getFriendlyCategory(17 * 60 + 30)) // 5:30 PM
-        assertEquals("evening", getFriendlyCategory(19 * 60))       // 7:00 PM
-        assertEquals("evening", getFriendlyCategory(20 * 60))       // 8:00 PM
-        assertNull(getFriendlyCategory(17 * 60 + 29))              // 5:29 PM
-        assertNull(getFriendlyCategory(20 * 60 + 1))               // 8:01 PM
+        assertEquals("evening", getFriendlyCategory(17 * 60 + 30))
+        assertEquals("evening", getFriendlyCategory(19 * 60))
+        assertEquals("evening", getFriendlyCategory(20 * 60))
+        assertNull(getFriendlyCategory(17 * 60 + 29))
+        assertNull(getFriendlyCategory(20 * 60 + 1))
 
-        // Test Good Night (9:00 PM - 10:30 PM)
-        assertEquals("night", getFriendlyCategory(21 * 60))      // 9:00 PM
-        assertEquals("night", getFriendlyCategory(22 * 60))      // 10:00 PM
-        assertEquals("night", getFriendlyCategory(22 * 60 + 30)) // 10:30 PM
-        assertNull(getFriendlyCategory(20 * 60 + 59))            // 8:59 PM
-        assertNull(getFriendlyCategory(22 * 60 + 31))            // 10:31 PM
+        assertEquals("night", getFriendlyCategory(21 * 60))
+        assertEquals("night", getFriendlyCategory(22 * 60))
+        assertEquals("night", getFriendlyCategory(22 * 60 + 30))
+        assertNull(getFriendlyCategory(20 * 60 + 59))
+        assertNull(getFriendlyCategory(22 * 60 + 31))
     }
 
     @Test
@@ -178,17 +166,14 @@ class NotificationSystemTest {
     fun testAttendanceWindowEligibilityLogic() {
         val isEligibleWindow: (Int) -> Boolean = { hour -> hour in 18..22 }
 
-        // Morning/Afternoon hours should NOT be eligible
         assertFalse(isEligibleWindow(8))
         assertFalse(isEligibleWindow(12))
         assertFalse(isEligibleWindow(17))
 
-        // 6:00 PM (18) to 10:00 PM (22) should be eligible
         assertTrue(isEligibleWindow(18))
         assertTrue(isEligibleWindow(20))
         assertTrue(isEligibleWindow(22))
 
-        // Late night hours should NOT be eligible
         assertFalse(isEligibleWindow(23))
         assertFalse(isEligibleWindow(0))
     }

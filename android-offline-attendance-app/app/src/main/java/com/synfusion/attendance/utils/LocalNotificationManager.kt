@@ -6,6 +6,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.synfusion.attendance.R
@@ -16,15 +17,29 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+data class NotificationLogItem(
+    val time: String,
+    val timestamp: Long,
+    val category: String,
+    val message: String,
+    val reason: String
+)
+
 object LocalNotificationManager {
 
-    const val CHANNEL_OFFLINE_ATTENDANCE = "offline_attendance_reminders"
+    private const val TAG = "WorkDailyNotification"
 
-    // For backwards compatibility and automatic mapping of existing references
-    const val CHANNEL_ATTENDANCE = CHANNEL_OFFLINE_ATTENDANCE
-    const val CHANNEL_REPORTS = CHANNEL_OFFLINE_ATTENDANCE
-    const val CHANNEL_EARNINGS = CHANNEL_OFFLINE_ATTENDANCE
-    const val CHANNEL_FUN_MOTIVATION = CHANNEL_OFFLINE_ATTENDANCE
+    // Stable Channel Definitions
+    const val CHANNEL_ATTENDANCE = "attendance_channel"
+    const val CHANNEL_REMINDERS = "reminders_channel"
+    const val CHANNEL_SUMMARY = "summary_channel"
+    const val CHANNEL_EARNINGS = "earnings_channel"
+    const val CHANNEL_BACKUP = "backup_channel"
+
+    // Legacy fallback channel alias
+    const val CHANNEL_OFFLINE_ATTENDANCE = CHANNEL_ATTENDANCE
+    const val CHANNEL_REPORTS = CHANNEL_SUMMARY
+    const val CHANNEL_FUN_MOTIVATION = CHANNEL_REMINDERS
 
     private const val PREFS_HISTORY = "notification_send_history_logs"
     private const val KEY_LOGS = "logs_list"
@@ -34,30 +49,81 @@ object LocalNotificationManager {
             val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
             val attendanceChannel = NotificationChannel(
-                CHANNEL_OFFLINE_ATTENDANCE,
-                "Offline Attendance Reminders",
+                CHANNEL_ATTENDANCE,
+                "Attendance & Shifts",
                 NotificationManager.IMPORTANCE_DEFAULT
             ).apply {
-                description = "Daily attendance pending reminders, misses, reports and earnings updates"
+                description = "Reminders to mark daily attendance, check-in, check-out and missing logs"
             }
 
-            manager.createNotificationChannel(attendanceChannel)
+            val remindersChannel = NotificationChannel(
+                CHANNEL_REMINDERS,
+                "Daily Reminders & Productivity",
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = "General work reminders, streaks, productivity tips and motivational alerts"
+            }
 
-            // Safely delete old legacy/unused channels to clean up system settings
+            val summaryChannel = NotificationChannel(
+                CHANNEL_SUMMARY,
+                "Reports & Summaries",
+                NotificationManager.IMPORTANCE_LOW
+            ).apply {
+                description = "Daily, weekly, monthly and yearly work summaries and passbook reports"
+            }
+
+            val earningsChannel = NotificationChannel(
+                CHANNEL_EARNINGS,
+                "Wages & Overtime",
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = "Daily wage updates, overtime calculations, advance deductions and net payable alerts"
+            }
+
+            val backupChannel = NotificationChannel(
+                CHANNEL_BACKUP,
+                "Backup & Storage",
+                NotificationManager.IMPORTANCE_LOW
+            ).apply {
+                description = "Reminders for data backups, PDF exports and offline data protection"
+            }
+
+            manager.createNotificationChannels(
+                listOf(
+                    attendanceChannel,
+                    remindersChannel,
+                    summaryChannel,
+                    earningsChannel,
+                    backupChannel
+                )
+            )
+
             try {
-                manager.deleteNotificationChannel("attendance_reminders")
+                manager.deleteNotificationChannel("offline_attendance_reminders")
                 manager.deleteNotificationChannel("reports")
-                manager.deleteNotificationChannel("earnings")
                 manager.deleteNotificationChannel("funny_motivation")
             } catch (e: Exception) {
-                // Safe fallback if deletion is blocked or fails
+                // Ignore cleanup errors
             }
+
+            Log.d(TAG, "Initialized standard notification channels successfully.")
+        }
+    }
+
+    fun mapCategoryToChannel(category: String): String {
+        return when (category) {
+            "attendance_reminder", "check_in", "check_out", "late_attendance", "missing_attendance" -> CHANNEL_ATTENDANCE
+            "overtime", "overtime_threshold", "earnings" -> CHANNEL_EARNINGS
+            "daily_summary", "weekly_summary", "monthly_summary", "yearly_report", "weekly_report", "monthly_report", "passbook", "export" -> CHANNEL_SUMMARY
+            "backup" -> CHANNEL_BACKUP
+            else -> CHANNEL_REMINDERS
         }
     }
 
     fun areNotificationsFullyEnabled(context: Context): Boolean {
         val notifManager = NotificationManagerCompat.from(context)
         if (!notifManager.areNotificationsEnabled()) {
+            Log.w(TAG, "areNotificationsFullyEnabled: App-level notifications disabled.")
             return false
         }
 
@@ -67,14 +133,7 @@ object LocalNotificationManager {
                     android.Manifest.permission.POST_NOTIFICATIONS
                 ) != android.content.pm.PackageManager.PERMISSION_GRANTED
             ) {
-                return false
-            }
-        }
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            val channel = manager.getNotificationChannel(CHANNEL_OFFLINE_ATTENDANCE)
-            if (channel != null && channel.importance == NotificationManager.IMPORTANCE_NONE) {
+                Log.w(TAG, "areNotificationsFullyEnabled: POST_NOTIFICATIONS permission not granted.")
                 return false
             }
         }
@@ -82,20 +141,39 @@ object LocalNotificationManager {
         return true
     }
 
+    fun generateNotificationId(category: String, dateStr: String = ""): Int {
+        val todayStr = if (dateStr.isBlank()) {
+            SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+        } else dateStr
+        val raw = "${category}_$todayStr"
+        return raw.hashCode() and 0x7FFFFFFF // Ensure positive Integer
+    }
+
     fun sendNotification(
         context: Context,
-        channelId: String, // Kept for signature compatibility but mapped to consolidated channel
+        channelId: String,
         title: String,
         message: String,
         category: String,
-        reason: String
+        reason: String,
+        action: String = "home"
     ): Boolean {
-        // Build Intent to open MainActivity on Tap
-        val intent = Intent(context, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        val targetChannelId = if (channelId.isBlank()) mapCategoryToChannel(category) else channelId
+
+        Log.d(TAG, "Attempting sendNotification - Category: $category, Channel: $targetChannelId, Title: $title")
+
+        if (title.isBlank() && message.isBlank()) {
+            logNotificationHistory(context, category, message, reason)
+            return false
         }
 
-        val notificationId = System.currentTimeMillis().toInt()
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            putExtra("navigate_to", action)
+            putExtra("notification_category", category)
+        }
+
+        val notificationId = generateNotificationId(category)
 
         val pendingIntent = PendingIntent.getActivity(
             context,
@@ -104,27 +182,25 @@ object LocalNotificationManager {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
-        val targetChannelId = CHANNEL_OFFLINE_ATTENDANCE
-
         val builder = NotificationCompat.Builder(context, targetChannelId)
-            .setSmallIcon(com.synfusion.attendance.R.mipmap.ic_launcher) // Use app launcher icon safely
+            .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle(title)
             .setContentText(message)
             .setStyle(NotificationCompat.BigTextStyle().bigText(message))
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setPriority(
+                if (targetChannelId == CHANNEL_SUMMARY || targetChannelId == CHANNEL_BACKUP)
+                    NotificationCompat.PRIORITY_LOW
+                else
+                    NotificationCompat.PRIORITY_DEFAULT
+            )
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
 
         try {
-            // Check if title and message are both empty - if so, only log history and return
-            if (title.isBlank() && message.isBlank()) {
-                logNotificationHistory(context, category, message, reason)
-                return false
-            }
-
             val notificationManagerCompat = NotificationManagerCompat.from(context)
             if (!notificationManagerCompat.areNotificationsEnabled()) {
-                logNotificationHistory(context, category, message, "Permission Denied: System Notifications Disabled")
+                logNotificationHistory(context, category, message, "FAILED: System Notifications Disabled")
+                Log.w(TAG, "sendNotification failed: System notifications disabled for app.")
                 return false
             }
 
@@ -134,41 +210,42 @@ object LocalNotificationManager {
                         android.Manifest.permission.POST_NOTIFICATIONS
                     ) != android.content.pm.PackageManager.PERMISSION_GRANTED
                 ) {
-                    // Log fail internally, do not fire
-                    logNotificationHistory(context, category, message, "Permission Denied: POST_NOTIFICATIONS missing")
+                    logNotificationHistory(context, category, message, "FAILED: POST_NOTIFICATIONS missing")
+                    Log.w(TAG, "sendNotification failed: POST_NOTIFICATIONS permission missing.")
                     return false
                 }
             }
 
-            // Check channel
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
                 var channel = manager.getNotificationChannel(targetChannelId)
                 if (channel == null) {
-                    initChannels(context) // Re-init if missing
+                    initChannels(context)
                     channel = manager.getNotificationChannel(targetChannelId)
                 }
 
                 if (channel == null) {
-                    logNotificationHistory(context, category, message, "Failed: Channel $targetChannelId does not exist")
+                    logNotificationHistory(context, category, message, "FAILED: Channel $targetChannelId not found")
+                    Log.e(TAG, "sendNotification failed: Channel $targetChannelId not found after init.")
                     return false
                 }
 
                 if (channel.importance == NotificationManager.IMPORTANCE_NONE) {
-                    logNotificationHistory(context, category, message, "Permission Denied: Channel disabled")
+                    logNotificationHistory(context, category, message, "FAILED: Channel $targetChannelId disabled")
+                    Log.w(TAG, "sendNotification failed: Channel $targetChannelId is disabled by user.")
                     return false
                 }
             }
 
-            // Use the standard NotificationManager system API directly to post
             val systemManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             systemManager.notify(notificationId, builder.build())
 
-            // Add to execution logs
-            logNotificationHistory(context, category, message, reason)
+            logNotificationHistory(context, category, message, "DELIVERED: $reason")
+            Log.i(TAG, "Notification delivered successfully! ID: $notificationId, Title: $title")
             return true
         } catch (e: Exception) {
-            logNotificationHistory(context, category, message, "Failed: ${e.localizedMessage}")
+            logNotificationHistory(context, category, message, "FAILED_EXCEPTION: ${e.localizedMessage}")
+            Log.e(TAG, "Error posting notification: ${e.localizedMessage}", e)
             return false
         }
     }
@@ -192,16 +269,15 @@ object LocalNotificationManager {
                 put("reason", reason)
             }
 
-            // Put newer logs first
             val newArray = JSONArray()
             newArray.put(logObj)
-            for (i in 0 until minOf(array.length(), 49)) { // cap at 50 logs to save storage
+            for (i in 0 until minOf(array.length(), 49)) {
                 newArray.put(array.get(i))
             }
 
             prefs.edit().putString(KEY_LOGS, newArray.toString()).apply()
         } catch (e: Exception) {
-            // Safe fallback
+            Log.e(TAG, "Failed logging notification history: ${e.localizedMessage}")
         }
     }
 
@@ -234,11 +310,3 @@ object LocalNotificationManager {
         prefs.edit().remove(KEY_LOGS).apply()
     }
 }
-
-data class NotificationLogItem(
-    val time: String,
-    val timestamp: Long,
-    val category: String,
-    val message: String,
-    val reason: String
-)
