@@ -52,8 +52,11 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+import androidx.activity.enableEdgeToEdge
+
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
         val repository = OfflinePreferencesRepository(applicationContext)

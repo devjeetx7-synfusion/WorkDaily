@@ -2,6 +2,7 @@ package com.synfusion.attendance.ui.responsive
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
@@ -37,11 +38,7 @@ data class WindowSizeInfo(
     val isLandscape: Boolean get() = screenWidthDp > screenHeightDp
 
     val maxContentWidth: Dp
-        get() = when (widthClass) {
-            WindowWidthClass.COMPACT -> Dp.Unspecified
-            WindowWidthClass.MEDIUM -> 720.dp
-            WindowWidthClass.EXPANDED -> 1100.dp
-        }
+        get() = Dp.Unspecified
 
     val maxFormWidth: Dp
         get() = when (widthClass) {
@@ -118,14 +115,14 @@ fun ResponsiveContainer(
     content: @Composable BoxScope.() -> Unit
 ) {
     Box(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxSize(),
         contentAlignment = alignment
     ) {
         if (maxContentWidth != Dp.Unspecified) {
             Box(
                 modifier = Modifier
                     .widthIn(max = maxContentWidth)
-                    .fillMaxWidth()
+                    .fillMaxSize()
             ) {
                 content()
             }

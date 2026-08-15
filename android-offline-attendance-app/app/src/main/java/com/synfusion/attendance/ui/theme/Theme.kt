@@ -53,10 +53,10 @@ fun DailyWorkTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            val windowBackground = colorScheme.background.toArgb()
+            val transparentColor = androidx.compose.ui.graphics.Color.Transparent.toArgb()
 
-            window.statusBarColor = windowBackground
-            window.navigationBarColor = windowBackground
+            window.statusBarColor = transparentColor
+            window.navigationBarColor = transparentColor
 
             val insetsController = WindowCompat.getInsetsController(window, view)
             insetsController.isAppearanceLightStatusBars = !darkTheme
