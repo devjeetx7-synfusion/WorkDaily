@@ -636,6 +636,145 @@
     gap: 32px;
   }
 
+  .features-grid.grid-4 {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+  }
+
+  /* VIDEO FEEDBACK SECTION */
+  .video-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px;
+  }
+
+  .video-card {
+    background-color: var(--surface-light);
+    border: 1px solid var(--border-light);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: var(--card-shadow);
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
+  }
+
+  .video-card:hover {
+    transform: translateY(-6px);
+    box-shadow: var(--hover-shadow);
+  }
+
+  .video-thumb-wrap {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .video-play-btn {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background-color: var(--mint-primary);
+    color: #FFFFFF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 20px rgba(15, 159, 122, 0.4);
+    transition: transform 0.2s ease, background-color 0.2s ease;
+  }
+
+  .video-card:hover .video-play-btn {
+    transform: scale(1.1);
+    background-color: var(--mint-hover);
+  }
+
+  .video-duration-tag {
+    position: absolute;
+    bottom: 12px;
+    right: 12px;
+    background-color: rgba(15, 23, 42, 0.75);
+    backdrop-filter: blur(4px);
+    color: #FFFFFF;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 6px;
+  }
+
+  .video-card-body {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+
+  .video-rating-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+
+  .star-rating {
+    color: #F59E0B;
+    font-size: 14px;
+    letter-spacing: 2px;
+  }
+
+  .rating-score {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  .video-review-text {
+    font-size: 15px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin-bottom: 20px;
+    flex: 1;
+  }
+
+  .video-user-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .video-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 15px;
+    color: #FFFFFF;
+  }
+
+  .video-user-info {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .video-user-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.2;
+  }
+
+  .video-user-role {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
   .feature-card {
     background-color: var(--surface-light);
     border: 1px solid var(--border-light);
@@ -1446,21 +1585,21 @@
   .site-footer {
     background-color: #0F172A;
     color: #94A3B8;
-    padding: 80px 0 40px 0;
+    padding: 60px 0 30px 0;
     border-top: 1px solid #1E293B;
   }
 
   .footer-grid {
     display: grid;
     grid-template-columns: 1.5fr repeat(3, 1fr);
-    gap: 48px;
-    margin-bottom: 60px;
+    gap: 40px;
+    margin-bottom: 40px;
   }
 
   .footer-brand {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 16px;
   }
 
   .footer-brand .logo {
@@ -1468,19 +1607,25 @@
   }
 
   .footer-desc {
-    font-size: 15px;
-    line-height: 1.6;
-    max-width: 320px;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #94A3B8;
+  }
+
+  .footer-company-tag {
+    font-size: 13px;
+    color: var(--mint-primary);
+    font-weight: 600;
   }
 
   .social-channels {
     display: flex;
-    gap: 16px;
+    gap: 12px;
   }
 
   .social-btn {
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     background-color: #1E293B;
     display: flex;
@@ -1497,16 +1642,16 @@
   }
 
   .social-btn svg {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
     fill: currentColor;
   }
 
   .footer-col h4 {
     color: #FFFFFF;
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 700;
-    margin-bottom: 24px;
+    margin-bottom: 16px;
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
@@ -1514,12 +1659,13 @@
   .footer-links {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
     list-style: none;
   }
 
   .footer-link {
-    font-size: 15px;
+    font-size: 14px;
+    color: #94A3B8;
   }
 
   .footer-link:hover {
@@ -1530,11 +1676,12 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-top: 40px;
+    padding-top: 24px;
     border-top: 1px solid #1E293B;
-    font-size: 14px;
+    font-size: 13px;
+    color: #64748B;
     flex-wrap: wrap;
-    gap: 20px;
+    gap: 16px;
   }
 
   /* MOBILE RESPONSIVE ADAPTATIONS */
@@ -1565,7 +1712,7 @@
       justify-content: center;
     }
 
-    .features-grid {
+    .features-grid, .features-grid.grid-4, .video-grid {
       grid-template-columns: repeat(2, 1fr);
     }
 
@@ -1702,7 +1849,7 @@
       font-size: 16px;
     }
 
-    .features-grid, .blog-grid {
+    .features-grid, .features-grid.grid-4, .blog-grid, .video-grid {
       grid-template-columns: 1fr;
     }
 
@@ -1931,7 +2078,7 @@
           <p class='section-subtitle'>Four simple steps to maintain complete control over your personal attendance records.</p>
         </div>
 
-        <div class='features-grid' style='grid-template-columns: repeat(4, 1fr); gap: 24px;'>
+        <div class='features-grid grid-4'>
           <!-- Step 01 -->
           <div class='feature-card' style='padding: 24px;'>
             <div style='font-size: 13px; font-weight: 800; color: var(--mint-primary); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em;'>01 — Record</div>
@@ -2106,7 +2253,7 @@
           <p class='section-subtitle'>Your attendance records shouldn't depend on an internet connection or external servers.</p>
         </div>
 
-        <div class='features-grid' style='grid-template-columns: repeat(3, 1fr); gap: 32px;'>
+        <div class='features-grid'>
           <div class='feature-card'>
             <div class='feature-icon-wrap'>
               <svg viewBox='0 0 24 24'><path d='M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z'/></svg>
@@ -2182,24 +2329,93 @@
       </div>
     </section>
 
-    <!-- USER FEEDBACK SECTION -->
+    <!-- USER VIDEO FEEDBACK SECTION -->
     <section class='features-section' id='feedback' style='background-color: var(--bg-light); border-top: 1px solid var(--border-light); border-bottom: 1px solid var(--border-light);'>
       <div class='container'>
         <div style='text-align:center; display:flex; flex-direction:column; align-items:center;'>
-          <span class='section-tag'>User Feedback</span>
-          <h2 class='section-title'>Help Us Improve WorkDaily</h2>
-          <p class='section-subtitle' style='margin-bottom:32px;'>Your suggestions directly shape future updates of the app.</p>
+          <span class='section-tag'>User Experience</span>
+          <h2 class='section-title'>Real Feedback. Real Experience.</h2>
+          <p class='section-subtitle' style='margin-bottom:48px;'>See how everyday shift workers use WorkDaily for complete attendance and wage clarity.</p>
         </div>
 
-        <div style='max-width: 600px; margin: 0 auto; background: #FFFFFF; border: 1px solid var(--border-light); border-radius: 24px; padding: 40px; text-align: center; box-shadow: var(--card-shadow);'>
-          <h3 style='font-size: 22px; margin-bottom: 12px; color: var(--text-primary);'>Have feedback or a suggestion?</h3>
-          <p style='color: var(--text-secondary); margin-bottom: 28px; font-size: 15px;'>Tell us how WorkDaily can become better for your personal shift tracking needs.</p>
-          <a class='btn btn-primary' href='mailto:workdaily.synfusion@gmail.com'>
-            <svg style='width:20px;height:20px;fill:currentColor;' viewBox='0 0 24 24'>
-              <path d='M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-4V6l8 5 8-5v2z'/>
-            </svg>
-            Give Feedback
-          </a>
+        <div class='video-grid'>
+          <!-- Video Card 1 -->
+          <div class='video-card'>
+            <div class='video-thumb-wrap'>
+              <div class='video-play-btn'>
+                <svg style='width:22px;height:22px;fill:currentColor;margin-left:3px;' viewBox='0 0 24 24'>
+                  <path d='M8 5v14l11-7z'/>
+                </svg>
+              </div>
+              <span class='video-duration-tag'>1:15</span>
+            </div>
+            <div class='video-card-body'>
+              <div class='video-rating-row'>
+                <span class='star-rating'>★★★★★</span>
+                <span class='rating-score'>5.0</span>
+              </div>
+              <p class='video-review-text'>"WorkDaily makes it super simple to log my daily shift hours and cash advances without needing internet."</p>
+              <div class='video-user-row'>
+                <div class='video-avatar' style='background-color:var(--mint-primary);'>S</div>
+                <div class='video-user-info'>
+                  <span class='video-user-name'>Shift Worker</span>
+                  <span class='video-user-role'>WorkDaily User</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Video Card 2 -->
+          <div class='video-card'>
+            <div class='video-thumb-wrap'>
+              <div class='video-play-btn'>
+                <svg style='width:22px;height:22px;fill:currentColor;margin-left:3px;' viewBox='0 0 24 24'>
+                  <path d='M8 5v14l11-7z'/>
+                </svg>
+              </div>
+              <span class='video-duration-tag'>0:52</span>
+            </div>
+            <div class='video-card-body'>
+              <div class='video-rating-row'>
+                <span class='star-rating'>★★★★★</span>
+                <span class='rating-score'>5.0</span>
+              </div>
+              <p class='video-review-text'>"The A4 passbook PDF export feature is incredible. I generate monthly wage summaries with one tap."</p>
+              <div class='video-user-row'>
+                <div class='video-avatar' style='background-color:var(--blue-secondary);'>A</div>
+                <div class='video-user-info'>
+                  <span class='video-user-name'>Attendance Tracker</span>
+                  <span class='video-user-role'>WorkDaily User</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Video Card 3 -->
+          <div class='video-card'>
+            <div class='video-thumb-wrap'>
+              <div class='video-play-btn'>
+                <svg style='width:22px;height:22px;fill:currentColor;margin-left:3px;' viewBox='0 0 24 24'>
+                  <path d='M8 5v14l11-7z'/>
+                </svg>
+              </div>
+              <span class='video-duration-tag'>1:40</span>
+            </div>
+            <div class='video-card-body'>
+              <div class='video-rating-row'>
+                <span class='star-rating'>★★★★★</span>
+                <span class='rating-score'>5.0</span>
+              </div>
+              <p class='video-review-text'>"100% offline privacy and accurate overtime calculation. Absolutely essential app for my daily job."</p>
+              <div class='video-user-row'>
+                <div class='video-avatar' style='background-color:var(--orange-tertiary);'>D</div>
+                <div class='video-user-info'>
+                  <span class='video-user-name'>Daily Earner</span>
+                  <span class='video-user-role'>WorkDaily User</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -2266,6 +2482,72 @@
         </div>
       </div>
     </section>
+
+    <!-- COMPACT SITE FOOTER -->
+    <footer class='site-footer'>
+      <div class='container'>
+        <div class='footer-grid'>
+          <!-- Brand Column -->
+          <div class='footer-brand'>
+            <a class='logo' href='#'>
+              <svg viewBox='0 0 24 24'>
+                <path d='M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z'/>
+              </svg>
+              <span>WorkDaily</span>
+            </a>
+            <p class='footer-desc'>Personal attendance, simplified.</p>
+            <span class='footer-company-tag'>Built by SynFusion</span>
+          </div>
+
+          <!-- Product Column -->
+          <div class='footer-col'>
+            <h4>Product</h4>
+            <ul class='footer-links'>
+              <li><a class='footer-link' href='#'>Home</a></li>
+              <li><a class='footer-link' href='#about'>Features</a></li>
+              <li><a class='footer-link' href='#showcase'>App Showcase</a></li>
+              <li><a class='footer-link' href='#download'>Download</a></li>
+            </ul>
+          </div>
+
+          <!-- Support Column -->
+          <div class='footer-col'>
+            <h4>Support</h4>
+            <ul class='footer-links'>
+              <li><a class='footer-link' href='#feedback'>Feedback</a></li>
+              <li><a class='footer-link' href='mailto:workdaily.synfusion@gmail.com'>Contact</a></li>
+            </ul>
+          </div>
+
+          <!-- Social Column -->
+          <div class='footer-col'>
+            <h4>Social</h4>
+            <div class='social-channels'>
+              <a aria-label='Instagram' class='social-btn' href='https://instagram.com/getsynfusion' target='_blank'>
+                <svg viewBox='0 0 24 24'>
+                  <path d='M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z'/>
+                </svg>
+              </a>
+              <a aria-label='YouTube' class='social-btn' href='https://youtube.com/@getsynfusion' target='_blank'>
+                <svg viewBox='0 0 24 24'>
+                  <path d='M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z'/>
+                </svg>
+              </a>
+              <a aria-label='WhatsApp' class='social-btn' href='https://whatsapp.com/channel/0029Vb8bS4U23n3lJwvpbP3H' target='_blank'>
+                <svg viewBox='0 0 24 24'>
+                  <path d='M12.01 2.01C6.48 2.01 2 6.48 2 12.01c0 1.77.46 3.48 1.34 5L2 22l5.12-1.34c1.47.8 3.12 1.23 4.88 1.23 5.53 0 10.01-4.47 10.01-10.01S17.54 2.01 12.01 2.01zm5.95 13.91c-.24.68-1.2 1.24-1.68 1.32-.48.08-1.04.12-3.12-.72-2.6-1.04-4.24-3.68-4.36-3.84-.12-.16-1.04-1.36-1.04-2.6 0-1.24.64-1.84.88-2.08.24-.24.52-.32.68-.32H10c.16 0 .36.04.52.4.2.48.68 1.64.72 1.76.04.12.08.28 0 .44-.08.16-.16.28-.28.44l-.44.48c-.12.16-.28.32-.08.64.2.32.88 1.44 1.88 2.32 1.28 1.12 2.36 1.48 2.68 1.64.32.16.52.12.64-.04.16-.2.68-.8.88-1.08.16-.24.36-.2.6-.08.24.12 1.56.72 1.84.88.28.16.48.24.56.36.08.16.08.76-.16 1.44z'/>
+                </svg>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div class='footer-bottom'>
+          <div>© 2026 SynFusion. All rights reserved.</div>
+          <div>Built by SynFusion for WorkDaily</div>
+        </div>
+      </div>
+    </footer>
 
   </b:if>
 
