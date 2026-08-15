@@ -89,7 +89,7 @@ object LocalNotificationManager {
         message: String,
         category: String,
         reason: String
-    ) {
+    ): Boolean {
         // Build Intent to open MainActivity on Tap
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
@@ -119,13 +119,13 @@ object LocalNotificationManager {
             // Check if title and message are both empty - if so, only log history and return
             if (title.isBlank() && message.isBlank()) {
                 logNotificationHistory(context, category, message, reason)
-                return
+                return false
             }
 
             val notificationManagerCompat = NotificationManagerCompat.from(context)
             if (!notificationManagerCompat.areNotificationsEnabled()) {
                 logNotificationHistory(context, category, message, "Permission Denied: System Notifications Disabled")
-                return
+                return false
             }
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -136,7 +136,7 @@ object LocalNotificationManager {
                 ) {
                     // Log fail internally, do not fire
                     logNotificationHistory(context, category, message, "Permission Denied: POST_NOTIFICATIONS missing")
-                    return
+                    return false
                 }
             }
 
@@ -151,12 +151,12 @@ object LocalNotificationManager {
 
                 if (channel == null) {
                     logNotificationHistory(context, category, message, "Failed: Channel $targetChannelId does not exist")
-                    return
+                    return false
                 }
 
                 if (channel.importance == NotificationManager.IMPORTANCE_NONE) {
                     logNotificationHistory(context, category, message, "Permission Denied: Channel disabled")
-                    return
+                    return false
                 }
             }
 
@@ -166,8 +166,10 @@ object LocalNotificationManager {
 
             // Add to execution logs
             logNotificationHistory(context, category, message, reason)
+            return true
         } catch (e: Exception) {
             logNotificationHistory(context, category, message, "Failed: ${e.localizedMessage}")
+            return false
         }
     }
 
