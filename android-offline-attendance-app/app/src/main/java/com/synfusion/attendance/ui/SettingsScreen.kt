@@ -64,9 +64,21 @@ import com.synfusion.attendance.viewmodel.OfflineSettingsState
 import com.synfusion.attendance.utils.AmountFormatter
 import com.synfusion.attendance.utils.collectAsStateWithLifecycle
 import com.synfusion.attendance.utils.IndianCurrencyVisualTransformation
+import com.synfusion.attendance.ui.responsive.LocalWindowSizeInfo
+import com.synfusion.attendance.ui.responsive.ResponsiveContainer
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.safeDrawing
+
+enum class SettingsCategory(val title: String, val icon: androidx.compose.ui.graphics.vector.ImageVector) {
+    PROFILE("Profile Settings", Icons.Default.Person),
+    STAY_CONNECTED("Stay Connected", Icons.Default.Favorite),
+    PREFERENCES("App Preferences", Icons.Default.Settings),
+    NOTIFICATIONS("Notifications", Icons.Default.Notifications),
+    BACKUP("Backup & Restore", Icons.Default.Backup),
+    INFO_SUPPORT("Info & Support", Icons.Default.Info)
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -226,560 +238,189 @@ fun SettingsScreen(
             state.phone != state.originalPhone ||
             state.profileImageUri != null
 
+    val windowSizeInfo = LocalWindowSizeInfo.current
+    var selectedCategory by rememberSaveable { mutableStateOf(SettingsCategory.PROFILE) }
+
+    val actualNotificationState = state.isRemindersEnabled && isAppNotificationsEnabled && isPostPermissionsGranted && isChannelEnabled
+
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         contentWindowInsets = WindowInsets.safeDrawing
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(scrollState)
-                .padding(paddingValues)
-                .padding(start = 16.dp, end = 16.dp, top = 20.dp, bottom = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.app_preferences), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 4.dp))
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                    Icon(Icons.Default.Settings, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.settings), fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-                }
-            }
-
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
-            ) {
+        ResponsiveContainer {
+            if (windowSizeInfo.isCompact) {
                 Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(scrollState)
+                        .padding(paddingValues)
+                        .padding(start = 16.dp, end = 16.dp, top = 20.dp, bottom = 32.dp),
+                    verticalArrangement = Arrangement.spacedBy(24.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.profile_settings), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                        AnimatedVisibility(visible = hasChanges) {
-                            IconButton(onClick = { viewModel.saveChanges() }, enabled = !state.isSaving) {
-                                if (state.isSaving) {
-                                    CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
-                                } else {
-                                    Icon(Icons.Default.Check, contentDescription = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.save_changes), tint = MaterialTheme.colorScheme.primary)
-                                }
-                            }
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.app_preferences), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 4.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                            Icon(Icons.Default.Settings, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.settings), fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                         }
                     }
 
-                    Box(modifier = Modifier.padding(bottom = 8.dp)) {
-                        val imageFile = remember(state.profileImageUrl) {
-                            if (state.profileImageUrl.isNotEmpty()) java.io.File(state.profileImageUrl) else null
-                        }
-                        val showLocalImage = imageFile != null && imageFile.exists()
-                        val imageRequest = remember(state.profileImageUrl, showLocalImage) {
-                            if (imageFile != null && showLocalImage) {
-                                coil.request.ImageRequest.Builder(context)
-                                    .data(imageFile)
-                                    .crossfade(true)
-                                    .memoryCacheKey("${state.profileImageUrl}_${imageFile.lastModified()}")
-                                    .diskCacheKey("${state.profileImageUrl}_${imageFile.lastModified()}")
-                                    .networkCachePolicy(coil.request.CachePolicy.DISABLED)
-                                    .diskCachePolicy(coil.request.CachePolicy.ENABLED)
-                                    .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
-                                    .build()
-                            } else null
-                        }
+                    ProfileCardSection(state = state, viewModel = viewModel, hasChanges = hasChanges, onEditPhoto = { showProfileEditSheet = true })
+                    StayConnectedCardSection(context = context)
+                    AppPreferencesCardSection(state = state, viewModel = viewModel, supportedLanguages = supportedLanguages, context = context)
+                    NotificationSettingsCardSection(
+                        state = state,
+                        viewModel = viewModel,
+                        actualNotificationState = actualNotificationState,
+                        isAppNotificationsEnabled = isAppNotificationsEnabled,
+                        isPostPermissionsGranted = isPostPermissionsGranted,
+                        isChannelEnabled = isChannelEnabled,
+                        permissionLauncher = permissionLauncher,
+                        context = context
+                    )
+                    BackupRestoreCardSection(state = state, lastBackupFile = lastBackupFile, context = context, onManageBackup = { showBackupSheet = true })
+                    InfoSupportCardSection(onNavigate = onNavigate, onDeveloperContact = { showDeveloperSheet = true })
 
-                        Box(
-                            modifier = Modifier
-                                .size(90.dp)
-                                .clip(androidx.compose.foundation.shape.CircleShape)
-                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
-                                .border(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), androidx.compose.foundation.shape.CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            if (showLocalImage && imageRequest != null) {
-                                coil.compose.SubcomposeAsyncImage(
-                                    model = imageRequest,
-                                    contentDescription = "Profile Photo",
-                                    modifier = Modifier.fillMaxSize().clip(androidx.compose.foundation.shape.CircleShape),
-                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                                    error = {
-                                        Icon(
-                                            imageVector = Icons.Default.Person,
-                                            contentDescription = "Default Avatar",
-                                            modifier = Modifier.size(50.dp),
-                                            tint = MaterialTheme.colorScheme.primary
-                                        )
-                                    }
-                                )
-                            } else {
-                                Icon(
-                                    imageVector = Icons.Default.Person,
-                                    contentDescription = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.profile_settings),
-                                    modifier = Modifier.size(50.dp),
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                            }
-                        }
-
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.BottomEnd)
-                                .size(32.dp)
-                                .clip(androidx.compose.foundation.shape.CircleShape)
-                                .background(MaterialTheme.colorScheme.primary)
-                                .border(2.dp, MaterialTheme.colorScheme.surface, androidx.compose.foundation.shape.CircleShape)
-                                .clickable { showProfileEditSheet = true },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(Icons.Default.Edit, contentDescription = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.edit_profile), tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(16.dp))
-                        }
-                    }
-
-                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text(text = state.name.ifEmpty { "User Name" }, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                        if (state.phone.isNotEmpty()) {
-                            Text(text = "+91 ${state.phone}", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        if (state.dailyWage > 0) {
-                            Text(text = "₹${AmountFormatter.format(state.dailyWage)} / day", fontSize = 14.sp, color = Color(0xFF16A34A), fontWeight = FontWeight.Bold)
-                        }
-                    }
-                }
-            }
-
-            // Premium "Stay Connected" Section with WhatsApp Follow Card
-            val startStayConnectedAnimation = remember { mutableStateOf(false) }
-            LaunchedEffect(Unit) {
-                startStayConnectedAnimation.value = true
-            }
-            val cardStayConnectedAlpha by animateFloatAsState(
-                targetValue = if (startStayConnectedAnimation.value) 1f else 0f,
-                animationSpec = tween(durationMillis = 350, easing = LinearOutSlowInEasing),
-                label = "stayConnectedAlpha"
-            )
-            val cardStayConnectedTranslationY by animateFloatAsState(
-                targetValue = if (startStayConnectedAnimation.value) 0f else 15f,
-                animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
-                label = "stayConnectedTranslation"
-            )
-
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .graphicsLayer {
-                        alpha = cardStayConnectedAlpha
-                        translationY = cardStayConnectedTranslationY
-                    },
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Text(
-                    text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.stay_connected),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(start = 4.dp)
-                )
-
-                val isDark = isSystemInDarkTheme()
-                val glassBgColor = if (isDark) Color(0xFF25D366).copy(alpha = 0.12f) else Color(0xFF25D366).copy(alpha = 0.08f)
-                val glassBorderColor = if (isDark) Color(0xFF25D366).copy(alpha = 0.25f) else Color(0xFF25D366).copy(alpha = 0.15f)
-                val iconContainerColor = if (isDark) Color(0xFF25D366).copy(alpha = 0.2f) else Color(0xFF25D366).copy(alpha = 0.12f)
-
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = glassBgColor),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, glassBorderColor)
-                ) {
-                    Row(
+                    Button(
+                        onClick = { showPreDeleteReminderDialog = true },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            .height(56.dp)
+                            .padding(top = 8.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error.copy(alpha=0.1f), contentColor = MaterialTheme.colorScheme.error)
                     ) {
-                        Box(
+                        Icon(Icons.Default.Logout, contentDescription = null, modifier = Modifier.size(24.dp))
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(text = "Log Out", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            } else {
+                // Adaptive Split-Pane View for Medium & Expanded Windows / Tablets
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues)
+                        .padding(24.dp),
+                    horizontalArrangement = Arrangement.spacedBy(24.dp)
+                ) {
+                    // Left Pane: Navigation List
+                    Card(
+                        modifier = Modifier
+                            .width(320.dp)
+                            .fillMaxHeight(),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+                    ) {
+                        Column(
                             modifier = Modifier
-                                .size(48.dp)
-                                .clip(androidx.compose.foundation.shape.CircleShape)
-                                .background(iconContainerColor),
-                            contentAlignment = Alignment.Center
+                                .fillMaxSize()
+                                .padding(16.dp),
+                            verticalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Icon(
-                                imageVector = com.synfusion.attendance.ui.components.WhatsAppIcon,
-                                contentDescription = "WhatsApp Logo",
-                                tint = Color.White,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
+                            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                                Column(modifier = Modifier.padding(start = 8.dp, top = 8.dp, bottom = 8.dp)) {
+                                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.settings), fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                                    Text(state.name.ifEmpty { "User Profile" }, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
 
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.whatsapp_channel),
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.follow_workdaily_desc),
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
 
-                        val buttonInteractionSource = remember { MutableInteractionSource() }
-                        val isButtonPressed by buttonInteractionSource.collectIsPressedAsState()
-                        val buttonScale by animateFloatAsState(
-                            targetValue = if (isButtonPressed) 0.95f else 1f,
-                            animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
-                            label = "btnScale"
-                        )
-
-                        Button(
-                            onClick = {
-                                com.synfusion.attendance.ui.components.SafeExternalLinkHandler.openLink(
-                                    context,
-                                    "https://whatsapp.com/channel/0029Vb8bS4U23n3lJwvpbP3H"
-                                )
-                            },
-                            shape = androidx.compose.foundation.shape.CircleShape,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFF11824A),
-                                contentColor = Color.White
-                            ),
-                            elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp),
-                            interactionSource = buttonInteractionSource,
-                            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 10.dp),
-                            modifier = Modifier
-                                .graphicsLayer {
-                                    scaleX = buttonScale
-                                    scaleY = buttonScale
-                                }
-                                .defaultMinSize(minWidth = 80.dp, minHeight = 44.dp)
-                        ) {
-                            Text(
-                                text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.follow_channel),
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-                }
-            }
-
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.app_preferences), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 4.dp))
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
-                ) {
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
-                                    Icon(if (state.isDarkMode) Icons.Default.DarkMode else Icons.Default.LightMode, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                                }
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column {
-                                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.theme), fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                }
-                            }
-                            Switch(checked = state.isDarkMode, onCheckedChange = { viewModel.toggleTheme(it) })
-                        }
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
-                        Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
-                                    Icon(Icons.Default.RocketLaunch, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                                }
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column {
-                                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.enable_splash_screen), fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                }
-                            }
-                            Switch(checked = state.isSplashEnabled, onCheckedChange = { viewModel.toggleSplash(it) })
-                        }
-                        if (state.isLanguageEnabled && state.isLanguageActivityEnabled) {
-                            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
-                            Row(modifier = Modifier.fillMaxWidth().clickable {
-                                val intent = android.content.Intent(context, LanguageSelectorActivity::class.java)
-                                context.getActivity()?.startActivity(intent)
-                            }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
-                                        Icon(Icons.Default.Language, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                                    }
-                                    Spacer(modifier = Modifier.width(12.dp))
-                                    Column {
-                                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.language_2), fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                        Text(supportedLanguages[state.language] ?: "English", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                SettingsCategory.values().forEach { category ->
+                                    val isSelected = selectedCategory == category
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(12.dp))
+                                            .background(if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f) else Color.Transparent)
+                                            .clickable { selectedCategory = category }
+                                            .padding(vertical = 12.dp, horizontal = 16.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            imageVector = category.icon,
+                                            contentDescription = null,
+                                            tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(16.dp))
+                                        Text(
+                                            text = category.title,
+                                            fontSize = 15.sp,
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                        )
                                     }
                                 }
-                                Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
-                        }
-                    }
-                }
-            }
 
-            // Notification Settings Card
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.notification_settings), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 4.dp))
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
-                ) {
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        // Status Row
-
-
-                        // Reminders Switch
-                        val actualNotificationState = state.isRemindersEnabled && isAppNotificationsEnabled && isPostPermissionsGranted && isChannelEnabled
-                        Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                                Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
-                                    Icon(Icons.Default.Notifications, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                                }
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column {
-                                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.reminders), fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                    val statusText = if (actualNotificationState) {
-                                        androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.notif_status_enabled)
-                                    } else {
-                                        androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.notif_status_disabled)
-                                    }
-                                    Text(statusText, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
-                            }
-                            Switch(
-                                checked = actualNotificationState,
-                                onCheckedChange = { checked ->
-                                    if (checked) {
-                                        if (!isAppNotificationsEnabled) {
-                                            try {
-                                                val intent = Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-                                                    putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
-                                                }
-                                                context.getActivity()?.startActivity(intent)
-                                            } catch (e: Exception) {
-                                                try {
-                                                    val fallbackIntent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                                                        data = android.net.Uri.fromParts("package", context.packageName, null)
-                                                    }
-                                                    context.getActivity()?.startActivity(fallbackIntent)
-                                                } catch (ex: Exception) {
-                                                    Toast.makeText(context, "Unable to open settings", Toast.LENGTH_SHORT).show()
-                                                }
-                                            }
-                                        } else if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU && !isPostPermissionsGranted) {
-                                            permissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
-                                        } else if (!isChannelEnabled) {
-                                            // Safe recovery path for channel-level disabled!
-                                            try {
-                                                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                                                    val intent = Intent(android.provider.Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS).apply {
-                                                        putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
-                                                        putExtra(android.provider.Settings.EXTRA_CHANNEL_ID, com.synfusion.attendance.utils.LocalNotificationManager.CHANNEL_OFFLINE_ATTENDANCE)
-                                                    }
-                                                    context.getActivity()?.startActivity(intent)
-                                                }
-                                            } catch (e: Exception) {
-                                                try {
-                                                    val intent = Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-                                                        putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
-                                                    }
-                                                    context.getActivity()?.startActivity(intent)
-                                                } catch (ex: Exception) {
-                                                    Toast.makeText(context, "Unable to open settings", Toast.LENGTH_SHORT).show()
-                                                }
-                                            }
-                                        } else {
-                                            viewModel.toggleReminders(true)
-                                            com.synfusion.attendance.utils.NotificationScheduler.schedulePeriodicWork(context)
-                                        }
-                                    } else {
-                                        viewModel.toggleReminders(false)
-                                        com.synfusion.attendance.utils.NotificationScheduler.cancelAllScheduledWork(context)
-                                    }
-                                }
-                            )
-                        }
-
-                    }
-                }
-            }
-
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.backup_and_restore), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 4.dp))
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        val lastDateStr = if (state.lastBackupTime != null && state.lastBackupTime!! > 0L) {
-                            SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault()).format(Date(state.lastBackupTime!!))
-                        } else {
-                            lastBackupFile?.let {
-                                SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault()).format(Date(it.lastModified()))
-                            } ?: "Never"
-                        }
-
-                        val lastSizeStr = if (state.lastBackupSize != null && state.lastBackupSize!! > 0L) {
-                            val sizeKb = state.lastBackupSize!! / 1024.0
-                            if (sizeKb >= 1024.0) {
-                                String.format(Locale.getDefault(), "%.2f MB", sizeKb / 1024.0)
-                            } else {
-                                String.format(Locale.getDefault(), "%.2f KB", sizeKb)
-                            }
-                        } else {
-                            lastBackupFile?.let {
-                                val sizeMb = it.length() / 1024.0 / 1024.0
-                                String.format(Locale.getDefault(), "%.2f MB", sizeMb)
-                            } ?: "N/A"
-                        }
-
-                        val lastLocStr = state.lastBackupLoc ?: (lastBackupFile?.let { "External Files" } ?: "N/A")
-
-                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.last_backup) + ":", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Text(lastDateStr, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
-                            }
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.backup_size) + ":", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Text(lastSizeStr, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
-                            }
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.backup_location) + ":", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Text(lastLocStr, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
-                            }
-                        }
-
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Button(
-                                onClick = { showBackupSheet = true },
-                                modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(8.dp)
+                                onClick = { showPreDeleteReminderDialog = true },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(48.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error.copy(alpha=0.1f), contentColor = MaterialTheme.colorScheme.error)
                             ) {
-                                Icon(Icons.Default.Backup, null, modifier = Modifier.size(16.dp))
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.manage), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                Icon(Icons.Default.Logout, contentDescription = null, modifier = Modifier.size(20.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(text = "Log Out", fontSize = 14.sp, fontWeight = FontWeight.Bold)
                             }
+                        }
+                    }
 
-                            if (lastBackupFile != null) {
-                                OutlinedButton(
-                                    onClick = {
-                                        val uri = FileProvider.getUriForFile(context, "com.synfusion.attendance.fileprovider", lastBackupFile!!)
-                                        val intent = Intent(Intent.ACTION_SEND).apply {
-                                            type = "application/zip"
-                                            putExtra(Intent.EXTRA_STREAM, uri)
-                                            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-                                        }
-                                        context.getActivity()?.startActivity(Intent.createChooser(intent, "Share Backup"))
-                                    },
-                                    modifier = Modifier.weight(1f),
-                                    shape = RoundedCornerShape(8.dp)
-                                ) {
-                                    Icon(Icons.Default.Share, null, modifier = Modifier.size(16.dp))
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.share), fontSize = 12.sp)
+                    // Right Pane: Detail View for Selected Category
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .verticalScroll(rememberScrollState())
+                    ) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(20.dp)
+                        ) {
+                            Text(
+                                text = selectedCategory.title,
+                                fontSize = 22.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+
+                            when (selectedCategory) {
+                                SettingsCategory.PROFILE -> {
+                                    ProfileCardSection(state = state, viewModel = viewModel, hasChanges = hasChanges, onEditPhoto = { showProfileEditSheet = true })
+                                }
+                                SettingsCategory.STAY_CONNECTED -> {
+                                    StayConnectedCardSection(context = context)
+                                }
+                                SettingsCategory.PREFERENCES -> {
+                                    AppPreferencesCardSection(state = state, viewModel = viewModel, supportedLanguages = supportedLanguages, context = context)
+                                }
+                                SettingsCategory.NOTIFICATIONS -> {
+                                    NotificationSettingsCardSection(
+                                        state = state,
+                                        viewModel = viewModel,
+                                        actualNotificationState = actualNotificationState,
+                                        isAppNotificationsEnabled = isAppNotificationsEnabled,
+                                        isPostPermissionsGranted = isPostPermissionsGranted,
+                                        isChannelEnabled = isChannelEnabled,
+                                        permissionLauncher = permissionLauncher,
+                                        context = context
+                                    )
+                                }
+                                SettingsCategory.BACKUP -> {
+                                    BackupRestoreCardSection(state = state, lastBackupFile = lastBackupFile, context = context, onManageBackup = { showBackupSheet = true })
+                                }
+                                SettingsCategory.INFO_SUPPORT -> {
+                                    InfoSupportCardSection(onNavigate = onNavigate, onDeveloperContact = { showDeveloperSheet = true })
                                 }
                             }
                         }
                     }
                 }
-            }
-
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.information_support), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 4.dp))
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
-                ) {
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Row(modifier = Modifier.fillMaxWidth().clickable { onNavigate("how_to_use") }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
-                                    Icon(Icons.Default.Info, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                                }
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column {
-                                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.how_to_use_dailywork), fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.quick_guide_tutorials), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
-                            }
-                        }
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
-                        Row(modifier = Modifier.fillMaxWidth().clickable { onNavigate("privacy_policy") }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
-                                    Icon(Icons.Default.Security, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                                }
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column {
-                                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.privacy_policy), fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.stored_safely_offline), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
-                            }
-                        }
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
-                        Row(modifier = Modifier.fillMaxWidth().clickable { onNavigate("terms_conditions") }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
-                                    Icon(Icons.Default.Description, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                                }
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column {
-                                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.terms_conditions), fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.rules_guidelines), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
-                            }
-                        }
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
-                        Row(modifier = Modifier.fillMaxWidth().clickable { showDeveloperSheet = true }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
-                                    Icon(Icons.Default.Code, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                                }
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column {
-                                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.developer_contact), fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.reach_out_support), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            Button(
-                onClick = { showPreDeleteReminderDialog = true },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp)
-                    .padding(top = 8.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error.copy(alpha=0.1f), contentColor = MaterialTheme.colorScheme.error)
-            ) {
-                Icon(Icons.Default.Logout, contentDescription = null, modifier = Modifier.size(24.dp))
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(text = "Log Out", fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
         }
 
@@ -960,6 +601,564 @@ fun SettingsScreen(
                     }
                 }
             )
+        }
+    }
+}
+
+@Composable
+fun ProfileCardSection(
+    state: OfflineSettingsState,
+    viewModel: OfflineSettingsViewModel,
+    hasChanges: Boolean,
+    onEditPhoto: () -> Unit
+) {
+    val context = LocalContext.current
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.profile_settings), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                AnimatedVisibility(visible = hasChanges) {
+                    IconButton(onClick = { viewModel.saveChanges() }, enabled = !state.isSaving) {
+                        if (state.isSaving) {
+                            CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                        } else {
+                            Icon(Icons.Default.Check, contentDescription = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.save_changes), tint = MaterialTheme.colorScheme.primary)
+                        }
+                    }
+                }
+            }
+
+            Box(modifier = Modifier.padding(bottom = 8.dp)) {
+                val imageFile = remember(state.profileImageUrl) {
+                    if (state.profileImageUrl.isNotEmpty()) java.io.File(state.profileImageUrl) else null
+                }
+                val showLocalImage = imageFile != null && imageFile.exists()
+                val imageRequest = remember(state.profileImageUrl, showLocalImage) {
+                    if (imageFile != null && showLocalImage) {
+                        coil.request.ImageRequest.Builder(context)
+                            .data(imageFile)
+                            .crossfade(true)
+                            .memoryCacheKey("${state.profileImageUrl}_${imageFile.lastModified()}")
+                            .diskCacheKey("${state.profileImageUrl}_${imageFile.lastModified()}")
+                            .networkCachePolicy(coil.request.CachePolicy.DISABLED)
+                            .diskCachePolicy(coil.request.CachePolicy.ENABLED)
+                            .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
+                            .build()
+                    } else null
+                }
+
+                Box(
+                    modifier = Modifier
+                        .size(90.dp)
+                        .clip(androidx.compose.foundation.shape.CircleShape)
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+                        .border(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), androidx.compose.foundation.shape.CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (showLocalImage && imageRequest != null) {
+                        coil.compose.SubcomposeAsyncImage(
+                            model = imageRequest,
+                            contentDescription = "Profile Photo",
+                            modifier = Modifier.fillMaxSize().clip(androidx.compose.foundation.shape.CircleShape),
+                            contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                            error = {
+                                Icon(
+                                    imageVector = Icons.Default.Person,
+                                    contentDescription = "Default Avatar",
+                                    modifier = Modifier.size(50.dp),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.profile_settings),
+                            modifier = Modifier.size(50.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .size(32.dp)
+                        .clip(androidx.compose.foundation.shape.CircleShape)
+                        .background(MaterialTheme.colorScheme.primary)
+                        .border(2.dp, MaterialTheme.colorScheme.surface, androidx.compose.foundation.shape.CircleShape)
+                        .clickable { onEditPhoto() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Default.Edit, contentDescription = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.edit_profile), tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(16.dp))
+                }
+            }
+
+            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(text = state.name.ifEmpty { "User Name" }, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                if (state.phone.isNotEmpty()) {
+                    Text(text = "+91 ${state.phone}", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                if (state.dailyWage > 0) {
+                    Text(text = "₹${AmountFormatter.format(state.dailyWage)} / day", fontSize = 14.sp, color = Color(0xFF16A34A), fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun StayConnectedCardSection(context: Context) {
+    val startStayConnectedAnimation = remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        startStayConnectedAnimation.value = true
+    }
+    val cardStayConnectedAlpha by animateFloatAsState(
+        targetValue = if (startStayConnectedAnimation.value) 1f else 0f,
+        animationSpec = tween(durationMillis = 350, easing = LinearOutSlowInEasing),
+        label = "stayConnectedAlpha"
+    )
+    val cardStayConnectedTranslationY by animateFloatAsState(
+        targetValue = if (startStayConnectedAnimation.value) 0f else 15f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
+        label = "stayConnectedTranslation"
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .graphicsLayer {
+                alpha = cardStayConnectedAlpha
+                translationY = cardStayConnectedTranslationY
+            },
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text(
+            text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.stay_connected),
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(start = 4.dp)
+        )
+
+        val isDark = isSystemInDarkTheme()
+        val glassBgColor = if (isDark) Color(0xFF25D366).copy(alpha = 0.12f) else Color(0xFF25D366).copy(alpha = 0.08f)
+        val glassBorderColor = if (isDark) Color(0xFF25D366).copy(alpha = 0.25f) else Color(0xFF25D366).copy(alpha = 0.15f)
+        val iconContainerColor = if (isDark) Color(0xFF25D366).copy(alpha = 0.2f) else Color(0xFF25D366).copy(alpha = 0.12f)
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = glassBgColor),
+            border = androidx.compose.foundation.BorderStroke(1.dp, glassBorderColor)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(androidx.compose.foundation.shape.CircleShape)
+                        .background(iconContainerColor),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = com.synfusion.attendance.ui.components.WhatsAppIcon,
+                        contentDescription = "WhatsApp Logo",
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.whatsapp_channel),
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.follow_workdaily_desc),
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                val buttonInteractionSource = remember { MutableInteractionSource() }
+                val isButtonPressed by buttonInteractionSource.collectIsPressedAsState()
+                val buttonScale by animateFloatAsState(
+                    targetValue = if (isButtonPressed) 0.95f else 1f,
+                    animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
+                    label = "btnScale"
+                )
+
+                Button(
+                    onClick = {
+                        com.synfusion.attendance.ui.components.SafeExternalLinkHandler.openLink(
+                            context,
+                            "https://whatsapp.com/channel/0029Vb8bS4U23n3lJwvpbP3H"
+                        )
+                    },
+                    shape = androidx.compose.foundation.shape.CircleShape,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF11824A),
+                        contentColor = Color.White
+                    ),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp),
+                    interactionSource = buttonInteractionSource,
+                    contentPadding = PaddingValues(horizontal = 20.dp, vertical = 10.dp),
+                    modifier = Modifier
+                        .graphicsLayer {
+                            scaleX = buttonScale
+                            scaleY = buttonScale
+                        }
+                        .defaultMinSize(minWidth = 80.dp, minHeight = 44.dp)
+                ) {
+                    Text(
+                        text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.follow_channel),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun AppPreferencesCardSection(
+    state: OfflineSettingsState,
+    viewModel: OfflineSettingsViewModel,
+    supportedLanguages: Map<String, String>,
+    context: Context
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.app_preferences), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 4.dp))
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
+                            Icon(if (state.isDarkMode) Icons.Default.DarkMode else Icons.Default.LightMode, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.theme), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                    Switch(checked = state.isDarkMode, onCheckedChange = { viewModel.toggleTheme(it) })
+                }
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+                Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
+                            Icon(Icons.Default.RocketLaunch, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.enable_splash_screen), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                    Switch(checked = state.isSplashEnabled, onCheckedChange = { viewModel.toggleSplash(it) })
+                }
+                if (state.isLanguageEnabled && state.isLanguageActivityEnabled) {
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+                    Row(modifier = Modifier.fillMaxWidth().clickable {
+                        val intent = android.content.Intent(context, LanguageSelectorActivity::class.java)
+                        context.getActivity()?.startActivity(intent)
+                    }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
+                                Icon(Icons.Default.Language, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.language_2), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                Text(supportedLanguages[state.language] ?: "English", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                        Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun NotificationSettingsCardSection(
+    state: OfflineSettingsState,
+    viewModel: OfflineSettingsViewModel,
+    actualNotificationState: Boolean,
+    isAppNotificationsEnabled: Boolean,
+    isPostPermissionsGranted: Boolean,
+    isChannelEnabled: Boolean,
+    permissionLauncher: androidx.activity.result.ActivityResultLauncher<String>,
+    context: Context
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.notification_settings), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 4.dp))
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                        Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
+                            Icon(Icons.Default.Notifications, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.reminders), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                            val statusText = if (actualNotificationState) {
+                                androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.notif_status_enabled)
+                            } else {
+                                androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.notif_status_disabled)
+                            }
+                            Text(statusText, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                    Switch(
+                        checked = actualNotificationState,
+                        onCheckedChange = { checked ->
+                            if (checked) {
+                                if (!isAppNotificationsEnabled) {
+                                    try {
+                                        val intent = Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                                            putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
+                                        }
+                                        context.getActivity()?.startActivity(intent)
+                                    } catch (e: Exception) {
+                                        try {
+                                            val fallbackIntent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                                data = android.net.Uri.fromParts("package", context.packageName, null)
+                                            }
+                                            context.getActivity()?.startActivity(fallbackIntent)
+                                        } catch (ex: Exception) {
+                                            Toast.makeText(context, "Unable to open settings", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                } else if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU && !isPostPermissionsGranted) {
+                                    permissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                                } else if (!isChannelEnabled) {
+                                    try {
+                                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                                            val intent = Intent(android.provider.Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS).apply {
+                                                putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
+                                                putExtra(android.provider.Settings.EXTRA_CHANNEL_ID, com.synfusion.attendance.utils.LocalNotificationManager.CHANNEL_OFFLINE_ATTENDANCE)
+                                            }
+                                            context.getActivity()?.startActivity(intent)
+                                        }
+                                    } catch (e: Exception) {
+                                        try {
+                                            val intent = Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                                                putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
+                                            }
+                                            context.getActivity()?.startActivity(intent)
+                                        } catch (ex: Exception) {
+                                            Toast.makeText(context, "Unable to open settings", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                } else {
+                                    viewModel.toggleReminders(true)
+                                    com.synfusion.attendance.utils.NotificationScheduler.schedulePeriodicWork(context)
+                                }
+                            } else {
+                                viewModel.toggleReminders(false)
+                                com.synfusion.attendance.utils.NotificationScheduler.cancelAllScheduledWork(context)
+                            }
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun BackupRestoreCardSection(
+    state: OfflineSettingsState,
+    lastBackupFile: File?,
+    context: Context,
+    onManageBackup: () -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.backup_and_restore), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 4.dp))
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+        ) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                val lastDateStr = if (state.lastBackupTime != null && state.lastBackupTime!! > 0L) {
+                    SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault()).format(Date(state.lastBackupTime!!))
+                } else {
+                    lastBackupFile?.let {
+                        SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault()).format(Date(it.lastModified()))
+                    } ?: "Never"
+                }
+
+                val lastSizeStr = if (state.lastBackupSize != null && state.lastBackupSize!! > 0L) {
+                    val sizeKb = state.lastBackupSize!! / 1024.0
+                    if (sizeKb >= 1024.0) {
+                        String.format(Locale.getDefault(), "%.2f MB", sizeKb / 1024.0)
+                    } else {
+                        String.format(Locale.getDefault(), "%.2f KB", sizeKb)
+                    }
+                } else {
+                    lastBackupFile?.let {
+                        val sizeMb = it.length() / 1024.0 / 1024.0
+                        String.format(Locale.getDefault(), "%.2f MB", sizeMb)
+                    } ?: "N/A"
+                }
+
+                val lastLocStr = state.lastBackupLoc ?: (lastBackupFile?.let { "External Files" } ?: "N/A")
+
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.last_backup) + ":", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(lastDateStr, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
+                    }
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.backup_size) + ":", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(lastSizeStr, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
+                    }
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.backup_location) + ":", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(lastLocStr, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
+                    }
+                }
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(
+                        onClick = onManageBackup,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Icon(Icons.Default.Backup, null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.manage), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+
+                    if (lastBackupFile != null) {
+                        OutlinedButton(
+                            onClick = {
+                                val uri = FileProvider.getUriForFile(context, "com.synfusion.attendance.fileprovider", lastBackupFile)
+                                val intent = Intent(Intent.ACTION_SEND).apply {
+                                    type = "application/zip"
+                                    putExtra(Intent.EXTRA_STREAM, uri)
+                                    flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                }
+                                context.getActivity()?.startActivity(Intent.createChooser(intent, "Share Backup"))
+                            },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Icon(Icons.Default.Share, null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.share), fontSize = 12.sp)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun InfoSupportCardSection(
+    onNavigate: (String) -> Unit,
+    onDeveloperContact: () -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.information_support), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 4.dp))
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Row(modifier = Modifier.fillMaxWidth().clickable { onNavigate("how_to_use") }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
+                            Icon(Icons.Default.Info, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.how_to_use_dailywork), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.quick_guide_tutorials), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+                Row(modifier = Modifier.fillMaxWidth().clickable { onNavigate("privacy_policy") }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
+                            Icon(Icons.Default.Security, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.privacy_policy), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.stored_safely_offline), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+                Row(modifier = Modifier.fillMaxWidth().clickable { onNavigate("terms_conditions") }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
+                            Icon(Icons.Default.Description, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.terms_conditions), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.rules_guidelines), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+                Row(modifier = Modifier.fillMaxWidth().clickable { onDeveloperContact() }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
+                            Icon(Icons.Default.Code, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.developer_contact), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.reach_out_support), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
+            }
         }
     }
 }

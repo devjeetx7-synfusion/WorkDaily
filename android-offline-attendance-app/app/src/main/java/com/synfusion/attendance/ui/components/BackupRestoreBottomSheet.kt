@@ -163,13 +163,18 @@ fun BackupRestoreBottomSheet(
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
         dragHandle = { if (!isOperating) BottomSheetDefaults.DragHandle() }
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 16.dp)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
+        Box(
+            modifier = Modifier.fillMaxWidth(),
+            contentAlignment = Alignment.TopCenter
         ) {
+            Column(
+                modifier = Modifier
+                    .widthIn(max = 640.dp)
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 16.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
             // Header
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
@@ -474,6 +479,7 @@ fun BackupRestoreBottomSheet(
             }
 
             Spacer(modifier = Modifier.height(32.dp))
+        }
         }
     }
 }

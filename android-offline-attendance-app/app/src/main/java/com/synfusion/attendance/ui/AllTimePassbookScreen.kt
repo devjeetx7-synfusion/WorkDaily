@@ -37,6 +37,8 @@ import com.synfusion.attendance.utils.PdfExportManager
 import com.synfusion.attendance.utils.PdfExportState
 import com.synfusion.attendance.ui.components.PdfExportLoadingDialog
 import androidx.compose.ui.platform.LocalContext
+import com.synfusion.attendance.ui.responsive.LocalWindowSizeInfo
+import com.synfusion.attendance.ui.responsive.ResponsiveContainer
 import androidx.core.content.FileProvider
 import android.content.Intent
 import kotlinx.coroutines.launch
@@ -110,51 +112,53 @@ fun AllTimePassbookScreen(
         }
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
-            if (state.isLoading) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
-            } else if (state.errorMessage != null) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(state.errorMessage ?: "Unknown error", color = MaterialTheme.colorScheme.error)
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    item {
-                        EmploymentSummarySection(state, viewModel)
+            ResponsiveContainer {
+                if (state.isLoading) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
                     }
-
-                    item {
-                        OutlinedTextField(
-                            value = state.searchQuery,
-                            onValueChange = { viewModel.updateSearchQuery(it) },
-                            modifier = Modifier.fillMaxWidth(),
-                                placeholder = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.search_records)) },
-                            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                            shape = RoundedCornerShape(12.dp),
-                            singleLine = true
-                        )
+                } else if (state.errorMessage != null) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(state.errorMessage ?: "Unknown error", color = MaterialTheme.colorScheme.error)
                     }
-
-                    if (state.yearGroups.isEmpty()) {
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
                         item {
-                            Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.no_records_found_dots), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
+                            EmploymentSummarySection(state, viewModel)
                         }
-                    } else {
-                        items(state.yearGroups, key = { it.year }) { yearGroup ->
-                            YearGroupItem(
-                                yearGroup = yearGroup,
-                                expandedMonths = expandedMonths,
-                                onToggleMonth = { monthKey ->
-                                    expandedMonths[monthKey] = !(expandedMonths[monthKey] ?: false)
-                                }
+
+                        item {
+                            OutlinedTextField(
+                                value = state.searchQuery,
+                                onValueChange = { viewModel.updateSearchQuery(it) },
+                                modifier = Modifier.fillMaxWidth(),
+                                placeholder = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.search_records)) },
+                                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                                shape = RoundedCornerShape(12.dp),
+                                singleLine = true
                             )
+                        }
+
+                        if (state.yearGroups.isEmpty()) {
+                            item {
+                                Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.no_records_found_dots), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                        } else {
+                            items(state.yearGroups, key = { it.year }) { yearGroup ->
+                                YearGroupItem(
+                                    yearGroup = yearGroup,
+                                    expandedMonths = expandedMonths,
+                                    onToggleMonth = { monthKey ->
+                                        expandedMonths[monthKey] = !(expandedMonths[monthKey] ?: false)
+                                    }
+                                )
+                            }
                         }
                     }
                 }
@@ -197,184 +201,327 @@ fun AllTimePassbookScreen(
 
 @Composable
 fun EmploymentSummarySection(state: com.synfusion.attendance.viewmodel.OfflineAllTimePassbookState, viewModel: OfflineAllTimePassbookViewModel) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        // Employment Summary Card
-        ElevatedCard(
+    val windowSizeInfo = LocalWindowSizeInfo.current
+
+    if (windowSizeInfo.isCompact) {
+        Column(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.elevatedCardColors(
-                containerColor = MaterialTheme.colorScheme.surface
-            ),
-            elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Column(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(16.dp))
-                    .padding(16.dp)
+            // Employment Summary Card
+            ElevatedCard(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                Column(
+                    modifier = Modifier.clip(RoundedCornerShape(16.dp)).padding(16.dp)
                 ) {
-                    Column {
-                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.employment_summary), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-                        if (state.employmentSince.isNotEmpty()) {
-                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.employment_since, state.employmentSince), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
-                        }
-                    }
-                    Box(
-                        modifier = Modifier
-                            .clip(CircleShape)
-                            .background(com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent().copy(alpha = 0.12f))
-                            .padding(horizontal = 12.dp, vertical = 6.dp)
-                    ) {
-                        Text(
-                            text = "Active",
-                            color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent(),
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 12.sp
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
-                            .clickable { viewModel.openDrillDown(DrillDownType.PRESENT) }
-                            .padding(12.dp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column {
-                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.total_present), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(state.totalPresent.toString(), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent())
+                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.employment_summary), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                            if (state.employmentSince.isNotEmpty()) {
+                                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.employment_since, state.employmentSince), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
+                            }
+                        }
+                        Box(
+                            modifier = Modifier
+                                .clip(CircleShape)
+                                .background(com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent().copy(alpha = 0.12f))
+                                .padding(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Text(text = "Active", color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent(), fontWeight = FontWeight.Bold, fontSize = 12.sp)
                         }
                     }
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
-                            .clickable { viewModel.openDrillDown(DrillDownType.ABSENT) }
-                            .padding(12.dp)
-                    ) {
-                        Column {
-                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.total_absent), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(state.totalAbsent.toString(), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent())
-                        }
-                    }
-                }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
-                            .clickable { viewModel.openDrillDown(DrillDownType.HALF_DAY) }
-                            .padding(12.dp)
-                    ) {
-                        Column {
-                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.total_half_days), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(state.totalHalfDays.toString(), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay())
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+                                .clickable { viewModel.openDrillDown(DrillDownType.PRESENT) }
+                                .padding(12.dp)
+                        ) {
+                            Column {
+                                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.total_present), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(state.totalPresent.toString(), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent())
+                            }
+                        }
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+                                .clickable { viewModel.openDrillDown(DrillDownType.ABSENT) }
+                                .padding(12.dp)
+                        ) {
+                            Column {
+                                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.total_absent), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(state.totalAbsent.toString(), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent())
+                            }
                         }
                     }
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
-                            .padding(12.dp)
-                    ) {
-                        Column {
-                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.working_days), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(state.totalWorkingDays.toString().removeSuffix(".0"), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+                                .clickable { viewModel.openDrillDown(DrillDownType.HALF_DAY) }
+                                .padding(12.dp)
+                        ) {
+                            Column {
+                                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.total_half_days), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(state.totalHalfDays.toString(), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay())
+                            }
+                        }
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+                                .padding(12.dp)
+                        ) {
+                            Column {
+                                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.working_days), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(state.totalWorkingDays.toString().removeSuffix(".0"), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                            }
                         }
                     }
                 }
             }
-        }
 
-        // Financial Summary Card
-        ElevatedCard(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.elevatedCardColors(
-                containerColor = MaterialTheme.colorScheme.surface
-            ),
-            elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
-        ) {
-            Column(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(16.dp))
-                    .padding(16.dp)
+            // Financial Summary Card
+            ElevatedCard(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                Column(
+                    modifier = Modifier.clip(RoundedCornerShape(16.dp)).padding(16.dp)
                 ) {
-                    Column {
-                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.financial_summary), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.manage_your_daily_labor_earnings), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
-                        contentAlignment = Alignment.Center
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.AccountBalanceWallet,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(18.dp)
-                        )
+                        Column {
+                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.financial_summary), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.manage_your_daily_labor_earnings), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(imageVector = Icons.Default.AccountBalanceWallet, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.salary), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
+                        Text("₹${AmountFormatter.format(state.totalSalaryEarned)}", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.overtime), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
+                        Text("₹${AmountFormatter.format(state.totalOtEarned)}", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getLeave())
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.advance), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
+                        Text("₹${AmountFormatter.format(state.totalAdvance)}", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay())
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.net_salary), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                        Text("₹${AmountFormatter.format(state.totalNetEarnings)}", fontSize = 20.sp, fontWeight = FontWeight.Black, color = if (state.totalNetEarnings >= 0) com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent() else com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent())
                     }
                 }
+            }
+        }
+    } else {
+        // Multi-column side-by-side layout for Medium / Expanded windows
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(20.dp),
+            verticalAlignment = Alignment.Top
+        ) {
+            ElevatedCard(
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
+            ) {
+                Column(modifier = Modifier.clip(RoundedCornerShape(16.dp)).padding(16.dp)) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Column {
+                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.employment_summary), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                            if (state.employmentSince.isNotEmpty()) {
+                                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.employment_since, state.employmentSince), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
+                            }
+                        }
+                        Box(
+                            modifier = Modifier
+                                .clip(CircleShape)
+                                .background(com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent().copy(alpha = 0.12f))
+                                .padding(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Text(text = "Active", color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent(), fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                        }
+                    }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.salary), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
-                    Text("₹${AmountFormatter.format(state.totalSalaryEarned)}", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+                                .clickable { viewModel.openDrillDown(DrillDownType.PRESENT) }
+                                .padding(12.dp)
+                        ) {
+                            Column {
+                                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.total_present), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(state.totalPresent.toString(), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent())
+                            }
+                        }
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+                                .clickable { viewModel.openDrillDown(DrillDownType.ABSENT) }
+                                .padding(12.dp)
+                        ) {
+                            Column {
+                                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.total_absent), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(state.totalAbsent.toString(), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent())
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+                                .clickable { viewModel.openDrillDown(DrillDownType.HALF_DAY) }
+                                .padding(12.dp)
+                        ) {
+                            Column {
+                                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.total_half_days), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(state.totalHalfDays.toString(), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay())
+                            }
+                        }
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+                                .padding(12.dp)
+                        ) {
+                            Column {
+                                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.working_days), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(state.totalWorkingDays.toString().removeSuffix(".0"), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                            }
+                        }
+                    }
                 }
+            }
 
-                Spacer(modifier = Modifier.height(10.dp))
+            ElevatedCard(
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
+            ) {
+                Column(modifier = Modifier.clip(RoundedCornerShape(16.dp)).padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.financial_summary), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.manage_your_daily_labor_earnings), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(imageVector = Icons.Default.AccountBalanceWallet, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                        }
+                    }
 
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.overtime), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
-                    Text("₹${AmountFormatter.format(state.totalOtEarned)}", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getLeave())
-                }
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                Spacer(modifier = Modifier.height(10.dp))
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.salary), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
+                        Text("₹${AmountFormatter.format(state.totalSalaryEarned)}", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                    }
 
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.advance), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
-                    Text("₹${AmountFormatter.format(state.totalAdvance)}", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay())
-                }
+                    Spacer(modifier = Modifier.height(10.dp))
 
-                Spacer(modifier = Modifier.height(12.dp))
-                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
-                Spacer(modifier = Modifier.height(12.dp))
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.overtime), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
+                        Text("₹${AmountFormatter.format(state.totalOtEarned)}", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getLeave())
+                    }
 
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.net_salary), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-                    Text("₹${AmountFormatter.format(state.totalNetEarnings)}", fontSize = 20.sp, fontWeight = FontWeight.Black, color = if (state.totalNetEarnings >= 0) com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent() else com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent())
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.advance), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
+                        Text("₹${AmountFormatter.format(state.totalAdvance)}", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay())
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.net_salary), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                        Text("₹${AmountFormatter.format(state.totalNetEarnings)}", fontSize = 20.sp, fontWeight = FontWeight.Black, color = if (state.totalNetEarnings >= 0) com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent() else com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent())
+                    }
                 }
             }
         }

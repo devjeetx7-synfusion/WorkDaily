@@ -42,6 +42,7 @@ fun PdfExportLoadingDialog(
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
             modifier = Modifier
+                .widthIn(max = 480.dp)
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {

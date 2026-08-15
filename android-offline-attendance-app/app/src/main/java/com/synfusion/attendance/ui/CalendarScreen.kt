@@ -37,6 +37,8 @@ import com.synfusion.attendance.viewmodel.OfflineAttendanceRecord
 import com.synfusion.attendance.viewmodel.OfflineCalendarViewModel
 import com.synfusion.attendance.utils.IndianCurrencyVisualTransformation
 import com.synfusion.attendance.utils.collectAsStateWithLifecycle
+import com.synfusion.attendance.ui.responsive.LocalWindowSizeInfo
+import com.synfusion.attendance.ui.responsive.ResponsiveContainer
 import java.text.SimpleDateFormat
 import java.util.*
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -169,178 +171,183 @@ fun PersonalCalendarView(
 
     val presentCount = dayMap.values.count { it.status == "present" }
     val absentCount = dayMap.values.count { it.status == "absent" }
+    val windowSizeInfo = LocalWindowSizeInfo.current
 
-    LazyColumn(
-        state = scrollState,
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        item {
-            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.calendar), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-            Spacer(modifier = Modifier.height(16.dp))
-        }
-
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+    ResponsiveContainer {
+        if (windowSizeInfo.isCompact) {
+            LazyColumn(
+                state = scrollState,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp)
             ) {
-                IconButton(onClick = { viewModel.changePersonalMonth(-1) }) {
-                    Icon(Icons.Default.ChevronLeft, contentDescription = "Previous Month")
+                item {
+                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.calendar), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                    Spacer(modifier = Modifier.height(16.dp))
                 }
-                Text(
-                    text = monthYearStr,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                IconButton(onClick = { viewModel.changePersonalMonth(1) }) {
-                    Icon(Icons.Default.ChevronRight, contentDescription = "Next Month")
-                }
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-        }
 
-        item {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
-                        .padding(vertical = 8.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("$presentCount", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.present_1), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(onClick = { viewModel.changePersonalMonth(-1) }) {
+                            Icon(Icons.Default.ChevronLeft, contentDescription = "Previous Month")
+                        }
+                        Text(
+                            text = monthYearStr,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        IconButton(onClick = { viewModel.changePersonalMonth(1) }) {
+                            Icon(Icons.Default.ChevronRight, contentDescription = "Next Month")
+                        }
                     }
+                    Spacer(modifier = Modifier.height(16.dp))
                 }
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(MaterialTheme.colorScheme.error.copy(alpha = 0.1f))
-                        .padding(vertical = 8.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("$absentCount", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.absent_1), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.tap_any_day_to_edit_attendance_or_add_no_msg),
-                fontSize = 10.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-        }
 
-        item {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                dayLabels.forEach { d ->
-                    Text(
-                        text = d,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold,
+                item {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+                                .padding(vertical = 8.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("$presentCount", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.present_1), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(MaterialTheme.colorScheme.error.copy(alpha = 0.1f))
+                                .padding(vertical = 8.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("$absentCount", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.absent_1), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.tap_any_day_to_edit_attendance_or_add_no_msg),
+                        fontSize = 10.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.fillMaxWidth(),
                         textAlign = TextAlign.Center
                     )
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-        }
 
-        item {
-            val totalCells = firstDayOfWeek + daysInMonth
-            val rows = Math.ceil(totalCells / 7.0).toInt()
+                item {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                        dayLabels.forEach { d ->
+                            Text(
+                                text = d,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.weight(1f),
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
 
-            Column(modifier = Modifier.fillMaxWidth()) {
-                for (row in 0 until rows) {
-                    Row(modifier = Modifier.fillMaxWidth()) {
-                        for (col in 0..6) {
-                            val cellIndex = row * 7 + col
-                            val day = cellIndex - firstDayOfWeek + 1
+                item {
+                    val totalCells = firstDayOfWeek + daysInMonth
+                    val rows = Math.ceil(totalCells / 7.0).toInt()
 
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .aspectRatio(1f)
-                                    .padding(2.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                if (day in 1..daysInMonth) {
-                                    val data = dayMap[day]
-                                    val isPresent = data?.status == "present"
-                                    val isAbsent = data?.status == "absent"
-                                    val isHalf = data?.type == "half"
-                                    val hasAdvance = data?.advanceAmount != null && data.advanceAmount > 0
-                                    val isToday = isCurrentMonth && day == todayDay
-
-                                    val bgColor = when {
-                                        isPresent && isHalf -> com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay()
-                                        isPresent -> com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent()
-                                        isAbsent -> com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent()
-                                        else -> Color.Transparent
-                                    }
-
-                                    val textColor = when {
-                                        isPresent || isAbsent -> Color.White
-                                        isToday -> MaterialTheme.colorScheme.onSurface
-                                        else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                                    }
-
-                                    val hasOT = data?.overtimeHours != null && data.overtimeHours > 0
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        for (row in 0 until rows) {
+                            Row(modifier = Modifier.fillMaxWidth()) {
+                                for (col in 0..6) {
+                                    val cellIndex = row * 7 + col
+                                    val day = cellIndex - firstDayOfWeek + 1
 
                                     Box(
                                         modifier = Modifier
-                                            .fillMaxSize()
-                                            .clip(CircleShape)
-                                            .background(bgColor)
-                                            .clickable {
-                                                selectedDay = day
-                                                showDialog = true
-                                            }
-                                            .border(
-                                                width = if (hasOT) 2.dp else if (isToday && !isPresent && !isAbsent) 2.dp else 0.dp,
-                                                color = if (hasOT) com.synfusion.attendance.ui.theme.AttendanceStatusColors.getLeave() else if (isToday && !isPresent && !isAbsent) MaterialTheme.colorScheme.primary else Color.Transparent,
-                                                shape = CircleShape
-                                            ),
+                                            .weight(1f)
+                                            .aspectRatio(1f)
+                                            .padding(2.dp),
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        Text(
-                                            text = day.toString(),
-                                            fontSize = 14.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = textColor
-                                        )
-                                        if (isHalf) {
+                                        if (day in 1..daysInMonth) {
+                                            val data = dayMap[day]
+                                            val isPresent = data?.status == "present"
+                                            val isAbsent = data?.status == "absent"
+                                            val isHalf = data?.type == "half"
+                                            val hasAdvance = data?.advanceAmount != null && data.advanceAmount > 0
+                                            val isToday = isCurrentMonth && day == todayDay
+
+                                            val bgColor = when {
+                                                isPresent && isHalf -> com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay()
+                                                isPresent -> com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent()
+                                                isAbsent -> com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent()
+                                                else -> Color.Transparent
+                                            }
+
+                                            val textColor = when {
+                                                isPresent || isAbsent -> Color.White
+                                                isToday -> MaterialTheme.colorScheme.onSurface
+                                                else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                                            }
+
+                                            val hasOT = data?.overtimeHours != null && data.overtimeHours > 0
+
                                             Box(
                                                 modifier = Modifier
-                                                    .align(Alignment.TopEnd)
-                                                    .padding(4.dp)
-                                                    .size(6.dp)
+                                                    .fillMaxSize()
                                                     .clip(CircleShape)
-                                                    .background(MaterialTheme.colorScheme.onPrimary)
-                                            )
-                                        }
-                                        if (hasAdvance) {
-                                            Box(
-                                                modifier = Modifier
-                                                    .align(Alignment.BottomCenter)
-                                                    .padding(bottom = 6.dp)
-                                                    .size(8.dp)
-                                                    .clip(CircleShape)
-                                                    .background(com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay())
-                                            )
+                                                    .background(bgColor)
+                                                    .clickable {
+                                                        selectedDay = day
+                                                        showDialog = true
+                                                    }
+                                                    .border(
+                                                        width = if (hasOT) 2.dp else if (isToday && !isPresent && !isAbsent) 2.dp else 0.dp,
+                                                        color = if (hasOT) com.synfusion.attendance.ui.theme.AttendanceStatusColors.getLeave() else if (isToday && !isPresent && !isAbsent) MaterialTheme.colorScheme.primary else Color.Transparent,
+                                                        shape = CircleShape
+                                                    ),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Text(
+                                                    text = day.toString(),
+                                                    fontSize = 14.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = textColor
+                                                )
+                                                if (isHalf) {
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .align(Alignment.TopEnd)
+                                                            .padding(4.dp)
+                                                            .size(6.dp)
+                                                            .clip(CircleShape)
+                                                            .background(MaterialTheme.colorScheme.onPrimary)
+                                                    )
+                                                }
+                                                if (hasAdvance) {
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .align(Alignment.BottomCenter)
+                                                            .padding(bottom = 6.dp)
+                                                            .size(8.dp)
+                                                            .clip(CircleShape)
+                                                            .background(com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay())
+                                                    )
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -348,39 +355,285 @@ fun PersonalCalendarView(
                         }
                     }
                 }
+
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent()))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.full_day), fontSize = 10.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay()))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.half_day), fontSize = 10.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent()))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.absent_1), fontSize = 10.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay()))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.advance), fontSize = 10.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                }
             }
-        }
-
-        item {
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
+        } else {
+            LazyColumn(
+                state = scrollState,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent()))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.full_day), fontSize = 10.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                item {
+                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.calendar), fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                 }
-                Spacer(modifier = Modifier.width(16.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay()))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.half_day), fontSize = 10.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                Spacer(modifier = Modifier.width(16.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent()))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.absent_1), fontSize = 10.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                Spacer(modifier = Modifier.width(16.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay()))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.advance), fontSize = 10.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(24.dp),
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        // Left Column: Calendar Grid & Month selector
+                        Card(
+                            modifier = Modifier.weight(1.1f),
+                            shape = RoundedCornerShape(20.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+                        ) {
+                            Column(modifier = Modifier.padding(20.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    IconButton(onClick = { viewModel.changePersonalMonth(-1) }) {
+                                        Icon(Icons.Default.ChevronLeft, contentDescription = "Previous Month")
+                                    }
+                                    Text(
+                                        text = monthYearStr,
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    IconButton(onClick = { viewModel.changePersonalMonth(1) }) {
+                                        Icon(Icons.Default.ChevronRight, contentDescription = "Next Month")
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(16.dp))
+
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                                    dayLabels.forEach { d ->
+                                        Text(
+                                            text = d,
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.weight(1f),
+                                            textAlign = TextAlign.Center
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                val totalCells = firstDayOfWeek + daysInMonth
+                                val rows = Math.ceil(totalCells / 7.0).toInt()
+
+                                Column(modifier = Modifier.fillMaxWidth()) {
+                                    for (row in 0 until rows) {
+                                        Row(modifier = Modifier.fillMaxWidth()) {
+                                            for (col in 0..6) {
+                                                val cellIndex = row * 7 + col
+                                                val day = cellIndex - firstDayOfWeek + 1
+
+                                                Box(
+                                                    modifier = Modifier
+                                                        .weight(1f)
+                                                        .aspectRatio(1f)
+                                                        .padding(2.dp),
+                                                    contentAlignment = Alignment.Center
+                                                ) {
+                                                    if (day in 1..daysInMonth) {
+                                                        val data = dayMap[day]
+                                                        val isPresent = data?.status == "present"
+                                                        val isAbsent = data?.status == "absent"
+                                                        val isHalf = data?.type == "half"
+                                                        val hasAdvance = data?.advanceAmount != null && data.advanceAmount > 0
+                                                        val isToday = isCurrentMonth && day == todayDay
+
+                                                        val bgColor = when {
+                                                            isPresent && isHalf -> com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay()
+                                                            isPresent -> com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent()
+                                                            isAbsent -> com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent()
+                                                            else -> Color.Transparent
+                                                        }
+
+                                                        val textColor = when {
+                                                            isPresent || isAbsent -> Color.White
+                                                            isToday -> MaterialTheme.colorScheme.onSurface
+                                                            else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                                                        }
+
+                                                        val hasOT = data?.overtimeHours != null && data.overtimeHours > 0
+
+                                                        Box(
+                                                            modifier = Modifier
+                                                                .fillMaxSize()
+                                                                .clip(CircleShape)
+                                                                .background(bgColor)
+                                                                .clickable {
+                                                                    selectedDay = day
+                                                                    showDialog = true
+                                                                }
+                                                                .border(
+                                                                    width = if (hasOT) 2.dp else if (isToday && !isPresent && !isAbsent) 2.dp else 0.dp,
+                                                                    color = if (hasOT) com.synfusion.attendance.ui.theme.AttendanceStatusColors.getLeave() else if (isToday && !isPresent && !isAbsent) MaterialTheme.colorScheme.primary else Color.Transparent,
+                                                                    shape = CircleShape
+                                                                ),
+                                                            contentAlignment = Alignment.Center
+                                                        ) {
+                                                            Text(
+                                                                text = day.toString(),
+                                                                fontSize = 14.sp,
+                                                                fontWeight = FontWeight.Bold,
+                                                                color = textColor
+                                                            )
+                                                            if (isHalf) {
+                                                                Box(
+                                                                    modifier = Modifier
+                                                                        .align(Alignment.TopEnd)
+                                                                        .padding(4.dp)
+                                                                        .size(6.dp)
+                                                                        .clip(CircleShape)
+                                                                        .background(MaterialTheme.colorScheme.onPrimary)
+                                                                )
+                                                            }
+                                                            if (hasAdvance) {
+                                                                Box(
+                                                                    modifier = Modifier
+                                                                        .align(Alignment.BottomCenter)
+                                                                        .padding(bottom = 6.dp)
+                                                                        .size(8.dp)
+                                                                        .clip(CircleShape)
+                                                                        .background(com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay())
+                                                                )
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // Right Column: Counters, Details & Legend
+                        Column(
+                            modifier = Modifier.weight(0.9f),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(20.dp),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+                            ) {
+                                Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                                    Text(
+                                        text = "Monthly Overview",
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+
+                                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                        Box(
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .clip(RoundedCornerShape(12.dp))
+                                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+                                                .padding(16.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                                Text("$presentCount", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                                                Spacer(modifier = Modifier.height(4.dp))
+                                                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.present_1), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                            }
+                                        }
+                                        Box(
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .clip(RoundedCornerShape(12.dp))
+                                                .background(MaterialTheme.colorScheme.error.copy(alpha = 0.1f))
+                                                .padding(16.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                                Text("$absentCount", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
+                                                Spacer(modifier = Modifier.height(4.dp))
+                                                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.absent_1), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                            }
+                                        }
+                                    }
+
+                                    Text(
+                                        androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.tap_any_day_to_edit_attendance_or_add_no_msg),
+                                        fontSize = 12.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        textAlign = TextAlign.Center,
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                }
+                            }
+
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(20.dp),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+                            ) {
+                                Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                    Text("Legend", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Box(modifier = Modifier.size(14.dp).clip(CircleShape).background(com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent()))
+                                        Spacer(modifier = Modifier.width(10.dp))
+                                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.full_day), fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                                    }
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Box(modifier = Modifier.size(14.dp).clip(CircleShape).background(com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay()))
+                                        Spacer(modifier = Modifier.width(10.dp))
+                                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.half_day), fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                                    }
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Box(modifier = Modifier.size(14.dp).clip(CircleShape).background(com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent()))
+                                        Spacer(modifier = Modifier.width(10.dp))
+                                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.absent_1), fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                                    }
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Box(modifier = Modifier.size(14.dp).clip(CircleShape).background(com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay()))
+                                        Spacer(modifier = Modifier.width(10.dp))
+                                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.advance), fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }

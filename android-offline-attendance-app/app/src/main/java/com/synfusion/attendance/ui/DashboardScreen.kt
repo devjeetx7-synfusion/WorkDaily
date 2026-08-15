@@ -60,6 +60,8 @@ import com.synfusion.attendance.utils.AmountFormatter
 import com.synfusion.attendance.utils.IndianCurrencyVisualTransformation
 import com.synfusion.attendance.viewmodel.OfflineViewModelFactory
 import com.synfusion.attendance.utils.collectAsStateWithLifecycle
+import com.synfusion.attendance.ui.responsive.LocalWindowSizeInfo
+import com.synfusion.attendance.ui.responsive.ResponsiveContainer
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -105,60 +107,77 @@ fun DashboardScreen(
         }
     }
 
+    val windowSizeInfo = LocalWindowSizeInfo.current
+    val currentNavRoute = when (selectedTab) {
+        0 -> "dashboard"
+        1 -> "calendar"
+        2 -> "stats"
+        3 -> "settings"
+        else -> "dashboard"
+    }
+    val onNavSelected: (String) -> Unit = { route ->
+        selectedTab = when (route) {
+            "dashboard" -> 0
+            "calendar" -> 1
+            "stats" -> 2
+            "settings" -> 3
+            else -> 0
+        }
+    }
+
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         bottomBar = {
-            if (currentRoute == "main_pager") {
+            if (currentRoute == "main_pager" && windowSizeInfo.isCompact) {
                 BottomNavigationBar(
-                    currentRoute = when (selectedTab) {
-                        0 -> "dashboard"
-                        1 -> "calendar"
-                        2 -> "stats"
-                        3 -> "settings"
-                        else -> "dashboard"
-                    },
-                    onNavigate = { route ->
-                        selectedTab = when (route) {
-                            "dashboard" -> 0
-                            "calendar" -> 1
-                            "stats" -> 2
-                            "settings" -> 3
-                            else -> 0
-                        }
-                    }
+                    currentRoute = currentNavRoute,
+                    onNavigate = onNavSelected
                 )
             }
         }
     ) { padding ->
-        NavHost(
-            navController = bottomNavController,
-            startDestination = "main_pager",
-            modifier = Modifier.fillMaxSize().padding(padding),
-            enterTransition = {
-                slideIntoContainer(
-                    AnimatedContentTransitionScope.SlideDirection.Up,
-                    animationSpec = tween(300)
-                ) + fadeIn(animationSpec = tween(300))
-            },
-            exitTransition = {
-                slideOutOfContainer(
-                    AnimatedContentTransitionScope.SlideDirection.Down,
-                    animationSpec = tween(300)
-                ) + fadeOut(animationSpec = tween(300))
-            },
-            popEnterTransition = {
-                slideIntoContainer(
-                    AnimatedContentTransitionScope.SlideDirection.Up,
-                    animationSpec = tween(300)
-                ) + fadeIn(animationSpec = tween(300))
-            },
-            popExitTransition = {
-                slideOutOfContainer(
-                    AnimatedContentTransitionScope.SlideDirection.Down,
-                    animationSpec = tween(300)
-                ) + fadeOut(animationSpec = tween(300))
-            }
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
         ) {
+            if (currentRoute == "main_pager" && !windowSizeInfo.isCompact) {
+                AdaptiveNavigationRail(
+                    currentRoute = currentNavRoute,
+                    onNavigate = onNavSelected
+                )
+            }
+
+            Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                NavHost(
+                    navController = bottomNavController,
+                    startDestination = "main_pager",
+                    modifier = Modifier.fillMaxSize(),
+                    enterTransition = {
+                        slideIntoContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Up,
+                            animationSpec = tween(300)
+                        ) + fadeIn(animationSpec = tween(300))
+                    },
+                    exitTransition = {
+                        slideOutOfContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Down,
+                            animationSpec = tween(300)
+                        ) + fadeOut(animationSpec = tween(300))
+                    },
+                    popEnterTransition = {
+                        slideIntoContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Up,
+                            animationSpec = tween(300)
+                        ) + fadeIn(animationSpec = tween(300))
+                    },
+                    popExitTransition = {
+                        slideOutOfContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Down,
+                            animationSpec = tween(300)
+                        ) + fadeOut(animationSpec = tween(300))
+                    }
+                ) {
             composable("main_pager") {
                 AnimatedContent(
                     targetState = selectedTab,
@@ -217,38 +236,82 @@ fun DashboardScreen(
                                                 .nestedScroll(pullRefreshState.nestedScrollConnection)
                                                 .background(MaterialTheme.colorScheme.background)
                                         ) {
-                                            LazyColumn(
-                                                state = dashboardScrollState,
-                                                modifier = Modifier
-                                                    .fillMaxSize()
-                                                    .padding(16.dp),
-                                                verticalArrangement = Arrangement.spacedBy(16.dp)
-                                            ) {
-                                                item {
-                                                    HeaderSection(
-                                                        state = dashboardState
-                                                    )
+                                            ResponsiveContainer {
+                                                if (windowSizeInfo.isCompact) {
+                                                    LazyColumn(
+                                                        state = dashboardScrollState,
+                                                        modifier = Modifier
+                                                            .fillMaxSize()
+                                                            .padding(16.dp),
+                                                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                                                    ) {
+                                                        item {
+                                                            HeaderSection(state = dashboardState)
+                                                        }
+                                                        item {
+                                                            PersonalStatsGrid(
+                                                                state = dashboardState,
+                                                                onNavigatePassbook = { showPassbookBottomSheet = true },
+                                                                onEarningsClick = { dashboardViewModel.openDrillDown(DrillDownType.EARNINGS) }
+                                                            )
+                                                        }
+                                                        item {
+                                                            AllTimePassbookButton(onNavigate = { bottomNavController.navigate("all_time_passbook") })
+                                                        }
+                                                        item {
+                                                            PersonalQuickActions(
+                                                                todayAdvanceAmount = dashboardState.todayAdvanceAmount,
+                                                                onAddAdvance = { showAdvanceDialog = true }
+                                                            )
+                                                        }
+                                                        item {
+                                                            PersonalDailyLog(dashboardState, dashboardViewModel)
+                                                        }
+                                                        item { Spacer(modifier = Modifier.height(24.dp)) }
+                                                    }
+                                                } else {
+                                                    LazyColumn(
+                                                        state = dashboardScrollState,
+                                                        modifier = Modifier
+                                                            .fillMaxSize()
+                                                            .padding(24.dp),
+                                                        verticalArrangement = Arrangement.spacedBy(20.dp)
+                                                    ) {
+                                                        item {
+                                                            HeaderSection(state = dashboardState)
+                                                        }
+                                                        item {
+                                                            Row(
+                                                                modifier = Modifier.fillMaxWidth(),
+                                                                horizontalArrangement = Arrangement.spacedBy(24.dp),
+                                                                verticalAlignment = Alignment.Top
+                                                            ) {
+                                                                Column(
+                                                                    modifier = Modifier.weight(1f),
+                                                                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                                                                ) {
+                                                                    PersonalStatsGrid(
+                                                                        state = dashboardState,
+                                                                        onNavigatePassbook = { showPassbookBottomSheet = true },
+                                                                        onEarningsClick = { dashboardViewModel.openDrillDown(DrillDownType.EARNINGS) }
+                                                                    )
+                                                                    AllTimePassbookButton(onNavigate = { bottomNavController.navigate("all_time_passbook") })
+                                                                    PersonalQuickActions(
+                                                                        todayAdvanceAmount = dashboardState.todayAdvanceAmount,
+                                                                        onAddAdvance = { showAdvanceDialog = true }
+                                                                    )
+                                                                }
+                                                                Column(
+                                                                    modifier = Modifier.weight(1f),
+                                                                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                                                                ) {
+                                                                    PersonalDailyLog(dashboardState, dashboardViewModel)
+                                                                }
+                                                            }
+                                                        }
+                                                        item { Spacer(modifier = Modifier.height(24.dp)) }
+                                                    }
                                                 }
-
-                                                item {
-                                                    PersonalStatsGrid(
-                                                        state = dashboardState,
-                                                        onNavigatePassbook = { showPassbookBottomSheet = true },
-                                                        onEarningsClick = { dashboardViewModel.openDrillDown(DrillDownType.EARNINGS) }
-                                                    )
-                                                }
-                                                item {
-                                                    AllTimePassbookButton(onNavigate = { bottomNavController.navigate("all_time_passbook") })
-                                                }
-                                                item {
-                                                    PersonalQuickActions(
-                                                        todayAdvanceAmount = dashboardState.todayAdvanceAmount,
-                                                        onAddAdvance = { showAdvanceDialog = true }
-                                                    )
-                                                }
-                                                item { PersonalDailyLog(dashboardState, dashboardViewModel) }
-
-                                                item { Spacer(modifier = Modifier.height(24.dp)) }
                                             }
 
                                             PullToRefreshContainer(
@@ -312,6 +375,8 @@ fun DashboardScreen(
                 TermsConditionsScreen(onNavigateBack = { bottomNavController.navigateUp() })
             }
 
+        }
+            }
         }
 
         if (showAdvanceDialog) {
@@ -877,6 +942,72 @@ fun PersonalDailyLog(state: OfflineDashboardState, dashboardViewModel: OfflineDa
                 }
             )
         }
+    }
+}
+
+@Composable
+fun AdaptiveNavigationRail(currentRoute: String, onNavigate: (String) -> Unit = {}) {
+    data class NavItem(val route: String, val icon: ImageVector, val label: String)
+
+    val tabs = listOf(
+        NavItem("dashboard", Icons.Default.Home, "Home"),
+        NavItem("calendar", Icons.Default.CalendarMonth, "Calendar"),
+        NavItem("stats", Icons.Default.BarChart, "Status"),
+        NavItem("settings", Icons.Default.Settings, "Setting")
+    )
+
+    NavigationRail(
+        containerColor = MaterialTheme.colorScheme.background,
+        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        header = {
+            Box(
+                modifier = Modifier
+                    .padding(vertical = 16.dp)
+                    .size(44.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.CheckCircle,
+                    contentDescription = "WorkDaily",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+        }
+    ) {
+        Spacer(modifier = Modifier.weight(1f))
+        tabs.forEach { tab ->
+            val selected = tab.route == currentRoute
+            NavigationRailItem(
+                icon = {
+                    Icon(
+                        tab.icon,
+                        contentDescription = tab.label,
+                        modifier = Modifier.size(24.dp)
+                    )
+                },
+                label = {
+                    Text(
+                        tab.label,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                },
+                selected = selected,
+                onClick = { onNavigate(tab.route) },
+                colors = NavigationRailItemDefaults.colors(
+                    indicatorColor = MaterialTheme.colorScheme.primary,
+                    selectedIconColor = Color.White,
+                    selectedTextColor = MaterialTheme.colorScheme.primary,
+                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+        Spacer(modifier = Modifier.weight(1f))
     }
 }
 

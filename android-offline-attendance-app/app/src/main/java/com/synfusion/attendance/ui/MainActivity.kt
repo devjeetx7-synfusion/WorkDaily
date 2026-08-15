@@ -19,6 +19,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import com.synfusion.attendance.data.OfflinePreferencesRepository
+import com.synfusion.attendance.ui.responsive.ProvideWindowSizeInfo
 import com.synfusion.attendance.ui.theme.DailyWorkTheme
 import com.synfusion.attendance.viewmodel.OfflineAuthViewModel
 import com.synfusion.attendance.viewmodel.OfflineSettingsViewModel
@@ -75,18 +76,20 @@ class MainActivity : AppCompatActivity() {
             var showRestoreSuccessDialog by remember { mutableStateOf(restoreReport) }
 
             DailyWorkTheme(darkTheme = isDarkMode) {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    Box(modifier = Modifier.fillMaxSize()) {
-                        OfflineDailyWorkApp(factory)
+                ProvideWindowSizeInfo {
+                    Surface(
+                        modifier = Modifier.fillMaxSize(),
+                        color = MaterialTheme.colorScheme.background
+                    ) {
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            OfflineDailyWorkApp(factory)
 
-                        showRestoreSuccessDialog?.let { report ->
-                            RestoreSuccessDetailDialog(
-                                report = report,
-                                onDismiss = { showRestoreSuccessDialog = null }
-                            )
+                            showRestoreSuccessDialog?.let { report ->
+                                RestoreSuccessDetailDialog(
+                                    report = report,
+                                    onDismiss = { showRestoreSuccessDialog = null }
+                                )
+                            }
                         }
                     }
                 }
