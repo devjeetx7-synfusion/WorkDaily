@@ -56,6 +56,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.synfusion.attendance.viewmodel.OfflineAuthViewModel
 import com.synfusion.attendance.viewmodel.OfflineLoginState
+import com.synfusion.attendance.ui.responsive.LocalWindowSizeInfo
+import com.synfusion.attendance.ui.responsive.ResponsiveContainer
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.ui.composed
@@ -431,136 +435,269 @@ fun LoginScreen(
         )
     }
 
+    val windowSizeInfo = LocalWindowSizeInfo.current
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .navigationBarsPadding(),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Spacer(modifier = Modifier.height(24.dp))
+        ResponsiveContainer {
+            if (windowSizeInfo.isCompact) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .statusBarsPadding()
+                        .navigationBarsPadding(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Spacer(modifier = Modifier.height(24.dp))
 
-            // CENTER AREA: SaaS Feature Showcase
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
-                contentAlignment = Alignment.Center
-            ) {
-                SaaSFeatureShowcase()
-            }
+                    // CENTER AREA: SaaS Feature Showcase
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        SaaSFeatureShowcase()
+                    }
 
-            // BOTTOM AREA: Local Workspace Setup
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 32.dp)
-                    .padding(bottom = 32.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                if (loginState is OfflineLoginState.Error) {
-                    Text(
-                        text = (loginState as OfflineLoginState.Error).message,
-                        color = MaterialTheme.colorScheme.error,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium,
-                        textAlign = TextAlign.Center,
+                    // BOTTOM AREA: Local Workspace Setup
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(bottom = 20.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(MaterialTheme.colorScheme.error.copy(alpha = 0.05f))
-                            .padding(vertical = 12.dp, horizontal = 16.dp)
-                    )
-                }
-
-                // Local Input Fields
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    placeholder = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.full_name_1)) },
-                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)),
-                    shape = RoundedCornerShape(12.dp),
-                    leadingIcon = { Icon(Icons.Default.Person, null, tint = MaterialTheme.colorScheme.primary) },
-                    singleLine = true
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-
-                OutlinedTextField(
-                    value = phone,
-                    onValueChange = { newValue ->
-                        val digits = newValue.filter { it.isDigit() }.take(10)
-                        phone = digits
-                    },
-                    placeholder = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.enter_valid_10digit_mobile_number)) },
-                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)),
-                    shape = RoundedCornerShape(12.dp),
-                    leadingIcon = { Icon(Icons.Default.Phone, null, tint = MaterialTheme.colorScheme.primary) },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                )
-                Spacer(modifier = Modifier.height(20.dp))
-
-                Button(
-                    onClick = {
-                        if (name.isNotBlank() && phone.length >= 10) {
-                            authViewModel.login(name, email, phone)
+                            .padding(horizontal = 32.dp)
+                            .padding(bottom = 32.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        if (loginState is OfflineLoginState.Error) {
+                            Text(
+                                text = (loginState as OfflineLoginState.Error).message,
+                                color = MaterialTheme.colorScheme.error,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 20.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(MaterialTheme.colorScheme.error.copy(alpha = 0.05f))
+                                    .padding(vertical = 12.dp, horizontal = 16.dp)
+                            )
                         }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(58.dp)
-                        .pressScaleEffect(),
-                    shape = RoundedCornerShape(20.dp),
-                    enabled = name.isNotBlank() && phone.length >= 10 && !isProcessing
-                ) {
-                    if (isProcessing) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            strokeWidth = 2.5.dp,
-                            color = MaterialTheme.colorScheme.onPrimary
+
+                        // Local Input Fields
+                        OutlinedTextField(
+                            value = name,
+                            onValueChange = { name = it },
+                            placeholder = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.full_name_1)) },
+                            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)),
+                            shape = RoundedCornerShape(12.dp),
+                            leadingIcon = { Icon(Icons.Default.Person, null, tint = MaterialTheme.colorScheme.primary) },
+                            singleLine = true
                         )
-                    } else {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Lock, null, modifier = Modifier.size(20.dp))
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text(startText, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        OutlinedTextField(
+                            value = phone,
+                            onValueChange = { newValue ->
+                                val digits = newValue.filter { it.isDigit() }.take(10)
+                                phone = digits
+                            },
+                            placeholder = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.enter_valid_10digit_mobile_number)) },
+                            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)),
+                            shape = RoundedCornerShape(12.dp),
+                            leadingIcon = { Icon(Icons.Default.Phone, null, tint = MaterialTheme.colorScheme.primary) },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                        )
+                        Spacer(modifier = Modifier.height(20.dp))
+
+                        Button(
+                            onClick = {
+                                if (name.isNotBlank() && phone.length >= 10) {
+                                    authViewModel.login(name, email, phone)
+                                }
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(58.dp)
+                                .pressScaleEffect(),
+                            shape = RoundedCornerShape(20.dp),
+                            enabled = name.isNotBlank() && phone.length >= 10 && !isProcessing
+                        ) {
+                            if (isProcessing) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(24.dp),
+                                    strokeWidth = 2.5.dp,
+                                    color = MaterialTheme.colorScheme.onPrimary
+                                )
+                            } else {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.Lock, null, modifier = Modifier.size(20.dp))
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Text(startText, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
                         }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.private_offline_footer),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = FontWeight.Medium
+                        )
+
+                        Spacer(modifier = Modifier.height(24.dp))
+                        HorizontalDivider(modifier = Modifier.width(180.dp), color = MaterialTheme.colorScheme.outlineVariant)
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Text(
+                            text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.already_have_backup),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.restore_backup),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier
+                                .clickable { pickRestoreLauncher.launch(arrayOf("application/zip")) }
+                                .padding(8.dp)
+                        )
                     }
                 }
-
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.private_offline_footer),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontWeight = FontWeight.Medium
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-                HorizontalDivider(modifier = Modifier.width(180.dp), color = MaterialTheme.colorScheme.outlineVariant)
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Text(
-                    text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.already_have_backup),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.restore_backup),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold,
+            } else {
+                Row(
                     modifier = Modifier
-                        .clickable { pickRestoreLauncher.launch(arrayOf("application/zip")) }
-                        .padding(8.dp)
-                )
+                        .fillMaxSize()
+                        .statusBarsPadding()
+                        .navigationBarsPadding()
+                        .padding(24.dp),
+                    horizontalArrangement = Arrangement.spacedBy(32.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        SaaSFeatureShowcase()
+                    }
+
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .verticalScroll(rememberScrollState())
+                            .padding(vertical = 16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        if (loginState is OfflineLoginState.Error) {
+                            Text(
+                                text = (loginState as OfflineLoginState.Error).message,
+                                color = MaterialTheme.colorScheme.error,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 20.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(MaterialTheme.colorScheme.error.copy(alpha = 0.05f))
+                                    .padding(vertical = 12.dp, horizontal = 16.dp)
+                            )
+                        }
+
+                        OutlinedTextField(
+                            value = name,
+                            onValueChange = { name = it },
+                            placeholder = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.full_name_1)) },
+                            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)),
+                            shape = RoundedCornerShape(12.dp),
+                            leadingIcon = { Icon(Icons.Default.Person, null, tint = MaterialTheme.colorScheme.primary) },
+                            singleLine = true
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        OutlinedTextField(
+                            value = phone,
+                            onValueChange = { newValue ->
+                                val digits = newValue.filter { it.isDigit() }.take(10)
+                                phone = digits
+                            },
+                            placeholder = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.enter_valid_10digit_mobile_number)) },
+                            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)),
+                            shape = RoundedCornerShape(12.dp),
+                            leadingIcon = { Icon(Icons.Default.Phone, null, tint = MaterialTheme.colorScheme.primary) },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                        )
+                        Spacer(modifier = Modifier.height(20.dp))
+
+                        Button(
+                            onClick = {
+                                if (name.isNotBlank() && phone.length >= 10) {
+                                    authViewModel.login(name, email, phone)
+                                }
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(58.dp)
+                                .pressScaleEffect(),
+                            shape = RoundedCornerShape(20.dp),
+                            enabled = name.isNotBlank() && phone.length >= 10 && !isProcessing
+                        ) {
+                            if (isProcessing) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(24.dp),
+                                    strokeWidth = 2.5.dp,
+                                    color = MaterialTheme.colorScheme.onPrimary
+                                )
+                            } else {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.Lock, null, modifier = Modifier.size(20.dp))
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Text(startText, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.private_offline_footer),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = FontWeight.Medium
+                        )
+
+                        Spacer(modifier = Modifier.height(24.dp))
+                        HorizontalDivider(modifier = Modifier.width(180.dp), color = MaterialTheme.colorScheme.outlineVariant)
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Text(
+                            text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.already_have_backup),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.restore_backup),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier
+                                .clickable { pickRestoreLauncher.launch(arrayOf("application/zip")) }
+                                .padding(8.dp)
+                        )
+                    }
+                }
             }
         }
     }

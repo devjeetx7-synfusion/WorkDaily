@@ -51,11 +51,16 @@ fun ShareBottomSheet(
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
         dragHandle = { BottomSheetDefaults.DragHandle() }
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 32.dp)
+        Box(
+            modifier = Modifier.fillMaxWidth(),
+            contentAlignment = Alignment.TopCenter
         ) {
+            Column(
+                modifier = Modifier
+                    .widthIn(max = 640.dp)
+                    .fillMaxWidth()
+                    .padding(bottom = 32.dp)
+            ) {
             Text(
                 text = "Share WorkDaily",
                 modifier = Modifier
@@ -80,6 +85,7 @@ fun ShareBottomSheet(
                     }
                 }
             }
+        }
         }
     }
 }

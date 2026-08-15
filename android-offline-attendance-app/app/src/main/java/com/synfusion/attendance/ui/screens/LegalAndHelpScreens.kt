@@ -46,6 +46,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.synfusion.attendance.R
+import com.synfusion.attendance.ui.responsive.ResponsiveContainer
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -201,13 +202,17 @@ fun HowToUseScreen(onNavigateBack: () -> Unit) {
             )
         }
     ) { padding ->
-        androidx.compose.foundation.lazy.LazyColumn(
+        ResponsiveContainer(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
+            androidx.compose.foundation.lazy.LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(24.dp)
+            ) {
 
             item { Spacer(modifier = Modifier.height(8.dp)) }
 
@@ -331,6 +336,7 @@ fun HowToUseScreen(onNavigateBack: () -> Unit) {
 
             item { Spacer(modifier = Modifier.height(32.dp)) }
         }
+        }
     }
 }
 
@@ -417,13 +423,17 @@ fun PrivacyPolicyScreen(onNavigateBack: () -> Unit) {
             )
         }
     ) { padding ->
-        androidx.compose.foundation.lazy.LazyColumn(
+        ResponsiveContainer(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            androidx.compose.foundation.lazy.LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
             item { Spacer(modifier = Modifier.height(8.dp)) }
 
             item {
@@ -478,6 +488,7 @@ fun PrivacyPolicyScreen(onNavigateBack: () -> Unit) {
             }
             item { Spacer(modifier = Modifier.height(32.dp)) }
         }
+        }
     }
 }
 
@@ -493,13 +504,17 @@ fun TermsConditionsScreen(onNavigateBack: () -> Unit) {
             )
         }
     ) { padding ->
-        androidx.compose.foundation.lazy.LazyColumn(
+        ResponsiveContainer(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            androidx.compose.foundation.lazy.LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
             item { Spacer(modifier = Modifier.height(8.dp)) }
 
             item {
@@ -574,6 +589,7 @@ fun TermsConditionsScreen(onNavigateBack: () -> Unit) {
                 )
             }
             item { Spacer(modifier = Modifier.height(32.dp)) }
+        }
         }
     }
 }
