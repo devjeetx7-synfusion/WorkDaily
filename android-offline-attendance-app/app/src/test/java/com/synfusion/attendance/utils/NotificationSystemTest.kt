@@ -11,25 +11,25 @@ class NotificationSystemTest {
 
     @Test
     fun testPlaceholderReplacementWithName() {
-        val template = "{userName}, आज की attendance अभी तक नहीं लगी है 😄"
-        val placeholders = mapOf("userName" to "Dharmjeet")
+        val template = "{userName}, आज की हाज़िरी अभी तक नहीं लगी है 😄"
+        val placeholders = mapOf("userName" to "धर्मजीत")
 
         val result = NotificationMessageSelector.evaluateTemplate(template, placeholders)
-        assertEquals("Dharmjeet, आज की attendance अभी तक नहीं लगी है 😄", result)
+        assertEquals("धर्मजीत, आज की हाज़िरी अभी तक नहीं लगी है 😄", result)
     }
 
     @Test
     fun testPlaceholderReplacementWithoutName() {
-        val template = "{userName}, आज की attendance अभी तक नहीं लगी है 😄"
+        val template = "{userName}, आज की हाज़िरी अभी तक नहीं लगी है 😄"
         val placeholders = mapOf("userName" to "")
 
         val result = NotificationMessageSelector.evaluateTemplate(template, placeholders)
-        assertEquals("आज की attendance अभी तक नहीं लगी है 😄", result)
+        assertEquals("आज की हाज़िरी अभी तक नहीं लगी है 😄", result)
     }
 
     @Test
     fun testMultiplePlaceholdersReplacement() {
-        val template = "कमाई: ₹{totalEarnings}, Advance: ₹{advance}, Net: ₹{netPayable}"
+        val template = "कमाई: ₹{totalEarnings}, एडवांस: ₹{advance}, शुद्ध देय: ₹{netPayable}"
         val placeholders = mapOf(
             "totalEarnings" to "12,000",
             "advance" to "2,000",
@@ -37,7 +37,7 @@ class NotificationSystemTest {
         )
 
         val result = NotificationMessageSelector.evaluateTemplate(template, placeholders)
-        assertEquals("कमाई: ₹12,000, Advance: ₹2,000, Net: ₹10,000", result)
+        assertEquals("कमाई: ₹12,000, एडवांस: ₹2,000, शुद्ध देय: ₹10,000", result)
     }
 
     @Test
@@ -100,14 +100,14 @@ class NotificationSystemTest {
 
     @Test
     fun testFriendlyNotificationPersonalizationFallback() {
-        val templateWithName = "😄 Kaise {userName}, aaj kaisa raha? Duty se wapas aa gaye?"
-        val placeholdersWithName = mapOf("userName" to "Ramesh")
+        val templateWithName = "😄 कैसे हो {userName}, आज का दिन कैसा रहा? ड्यूटी से वापस आ गए?"
+        val placeholdersWithName = mapOf("userName" to "रमेश")
         val resultWithName = NotificationMessageSelector.evaluateTemplate(templateWithName, placeholdersWithName)
-        assertEquals("😄 Kaise Ramesh, aaj kaisa raha? Duty se wapas aa gaye?", resultWithName)
+        assertEquals("😄 कैसे हो रमेश, आज का दिन कैसा रहा? ड्यूटी से वापस आ गए?", resultWithName)
 
-        val placeholdersWithFallback = mapOf("userName" to "bhai")
+        val placeholdersWithFallback = mapOf("userName" to "भाई")
         val resultWithFallback = NotificationMessageSelector.evaluateTemplate(templateWithName, placeholdersWithFallback)
-        assertEquals("😄 Kaise bhai, aaj kaisa raha? Duty se wapas aa gaye?", resultWithFallback)
+        assertEquals("😄 कैसे हो भाई, आज का दिन कैसा रहा? ड्यूटी से वापस आ गए?", resultWithFallback)
     }
 
     @Test
@@ -145,8 +145,8 @@ class NotificationSystemTest {
         val evalResult = RuleEvaluationResult(
             triggerNotification = true,
             channelId = LocalNotificationManager.CHANNEL_OFFLINE_ATTENDANCE,
-            title = "आज की Attendance",
-            message = "Test message",
+            title = "आज की हाज़िरी",
+            message = "आज की हाज़िरी दर्ज कर लो भाई!",
             category = "daily_attendance",
             reason = "Today's attendance missing",
             stateKeyToPersist = "last_attendance_reminder_date_user_123",

@@ -95,8 +95,11 @@ object NotificationRuleEngine {
                     title = template.title
                     message = formattedMsg
                 } else {
-                    title = "आज की Attendance"
-                    message = "${user.name}, today's attendance is pending. Mark it now!"
+                    title = "अरे भाई, हाज़िरी लगा दे! 😂"
+                    message = NotificationTemplateRepository.formatMessage(
+                        "{userName}, आज की हाज़िरी पेंडिंग है भाई! जल्दी से दर्ज कर लो। 😂",
+                        placeholders
+                    )
                 }
 
                 val channel = LocalNotificationManager.mapCategoryToChannel(triggerCategory)
@@ -129,8 +132,11 @@ object NotificationRuleEngine {
                 title = templatePair.first.title
                 message = templatePair.second
             } else {
-                title = "Weekly Report 📊"
-                message = "Weekly progress report ready! Check passbook for details."
+                title = "हफ़्ते का पूरा हिसाब! 📊"
+                message = NotificationTemplateRepository.formatMessage(
+                    "{userName}, हफ़्ते की रिपोर्ट तैयार है भाई! पासबुक खोलकर देख लो।",
+                    placeholders
+                )
             }
 
             Log.i(TAG, "Weekly Report Rule triggered on Sunday! Week: $currentWeekStr")
@@ -158,8 +164,11 @@ object NotificationRuleEngine {
                 title = templatePair.first.title
                 message = templatePair.second
             } else {
-                title = "Monthly Summary 📅"
-                message = "Month completed! Check your monthly passbook statement."
+                title = "महीने का हिसाब देख लो! 📅"
+                message = NotificationTemplateRepository.formatMessage(
+                    "{userName}, महीना पूरा हो गया है! पासबुक में देख लो कितनी कमाई हुई।",
+                    placeholders
+                )
             }
 
             Log.i(TAG, "Monthly Report Rule triggered on 1st of Month! Month: $currentMonthStr")
@@ -187,8 +196,11 @@ object NotificationRuleEngine {
                 title = templatePair.first.title
                 message = templatePair.second
             } else {
-                title = "Yearly Recap 🏆"
-                message = "All-time passbook updated! Check your annual work summary."
+                title = "साल भर का महा-हिसाब! 🏆"
+                message = NotificationTemplateRepository.formatMessage(
+                    "{userName}, पूरे साल की मेहनत और कमाई का लेखा-जोखा तैयार है भाई! देख लो।",
+                    placeholders
+                )
             }
 
             Log.i(TAG, "Yearly Report Rule triggered on 1st January! Year: $currentYearStr")
