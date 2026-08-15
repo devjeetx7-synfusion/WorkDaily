@@ -151,4 +151,45 @@ class NotificationSystemTest {
         assertNull(getFriendlyCategory(20 * 60 + 59))            // 8:59 PM
         assertNull(getFriendlyCategory(22 * 60 + 31))            // 10:31 PM
     }
+
+    @Test
+    fun testRuleEvaluationResultContainsDecoupledPersistenceState() {
+        val evalResult = RuleEvaluationResult(
+            triggerNotification = true,
+            channelId = LocalNotificationManager.CHANNEL_OFFLINE_ATTENDANCE,
+            title = "आज की Attendance",
+            message = "Test message",
+            category = "daily_attendance",
+            reason = "Today's attendance missing",
+            stateKeyToPersist = "last_attendance_reminder_date_user_123",
+            stateValueToPersist = "2026-08-15",
+            milestoneToPersist = null,
+            userId = "user_123"
+        )
+
+        assertTrue(evalResult.triggerNotification)
+        assertEquals("last_attendance_reminder_date_user_123", evalResult.stateKeyToPersist)
+        assertEquals("2026-08-15", evalResult.stateValueToPersist)
+        assertNull(evalResult.milestoneToPersist)
+        assertEquals("user_123", evalResult.userId)
+    }
+
+    @Test
+    fun testAttendanceWindowEligibilityLogic() {
+        val isEligibleWindow: (Int) -> Boolean = { hour -> hour in 18..22 }
+
+        // Morning/Afternoon hours should NOT be eligible
+        assertFalse(isEligibleWindow(8))
+        assertFalse(isEligibleWindow(12))
+        assertFalse(isEligibleWindow(17))
+
+        // 6:00 PM (18) to 10:00 PM (22) should be eligible
+        assertTrue(isEligibleWindow(18))
+        assertTrue(isEligibleWindow(20))
+        assertTrue(isEligibleWindow(22))
+
+        // Late night hours should NOT be eligible
+        assertFalse(isEligibleWindow(23))
+        assertFalse(isEligibleWindow(0))
+    }
 }

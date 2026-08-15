@@ -58,13 +58,23 @@ class NotificationWorker(
                 )
 
                 if (!isDailyAttendanceType || isEligibleWindow) {
-                    LocalNotificationManager.sendNotification(
+                    val posted = LocalNotificationManager.sendNotification(
                         context = applicationContext,
                         channelId = evalResult.channelId,
                         title = evalResult.title,
                         message = evalResult.message,
                         category = evalResult.category,
                         reason = evalResult.reason
+                    )
+                    if (posted) {
+                        NotificationRuleEngine.markRuleStatePersisted(applicationContext, evalResult)
+                    }
+                } else {
+                    LocalNotificationManager.logNotificationHistory(
+                        applicationContext,
+                        evalResult.category,
+                        "",
+                        "SKIPPED_OUTSIDE_ELIGIBLE_WINDOW (Hour: $hour, window: 18..22)"
                     )
                 }
             }
@@ -157,14 +167,41 @@ object NotificationScheduler {
         .setConstraints(constraints)
         .build()
 
-        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+        val workManager = WorkManager.getInstance(context)
+        val workInfos = try {
+            workManager.getWorkInfosForUniqueWork(WORK_NAME).get()
+        } catch (e: Exception) {
+            emptyList()
+        }
+
+        // Re-enqueue using UPDATE if work is active, or KEEP if none exists/completed
+        val hasActiveWork = workInfos.any {
+            it.state == WorkInfo.State.ENQUEUED || it.state == WorkInfo.State.RUNNING
+        }
+
+        val policy = if (hasActiveWork) ExistingPeriodicWorkPolicy.KEEP else ExistingPeriodicWorkPolicy.CANCEL_AND_REENQUEUE
+
+        workManager.enqueueUniquePeriodicWork(
             WORK_NAME,
-            ExistingPeriodicWorkPolicy.KEEP, // Keep existing to maintain scheduled timing
+            policy,
             periodicRequest
+        )
+
+        LocalNotificationManager.logNotificationHistory(
+            context,
+            "scheduler",
+            "",
+            "schedulePeriodicWork invoked (policy=$policy, hasActiveWork=$hasActiveWork)"
         )
     }
 
     fun cancelAllScheduledWork(context: Context) {
         WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME)
+        LocalNotificationManager.logNotificationHistory(
+            context,
+            "scheduler",
+            "",
+            "cancelAllScheduledWork invoked - Cancelled $WORK_NAME"
+        )
     }
 }
