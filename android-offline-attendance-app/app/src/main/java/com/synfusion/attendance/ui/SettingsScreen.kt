@@ -305,8 +305,8 @@ fun SettingsScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(paddingValues)
-                        .padding(24.dp),
-                    horizontalArrangement = Arrangement.spacedBy(24.dp)
+                        .padding(horizontal = 20.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(20.dp)
                 ) {
                     // Left Pane: Navigation List
                     Card(

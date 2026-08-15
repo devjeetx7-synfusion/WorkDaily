@@ -69,6 +69,9 @@ fun SplashScreen(
         onSplashFinished()
     }
 
+    val windowSizeInfo = com.synfusion.attendance.ui.responsive.LocalWindowSizeInfo.current
+    val isLandscapeMode = windowSizeInfo.isLandscape || windowSizeInfo.heightClass == com.synfusion.attendance.ui.responsive.WindowHeightClass.COMPACT
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -78,109 +81,227 @@ fun SplashScreen(
         // Subtle Background Particles
         SplashParticlesEffect()
 
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Box(
+        if (isLandscapeMode) {
+            Row(
                 modifier = Modifier
-                    .size(280.dp),
-                contentAlignment = Alignment.Center
+                    .fillMaxSize()
+                    .padding(horizontal = 32.dp, vertical = 16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                // Orbit Lines
-                val orbitColor = MaterialTheme.colorScheme.primary
-                Canvas(modifier = Modifier.size(240.dp).alpha(0.1f)) {
-                    drawCircle(color = orbitColor, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.dp.toPx()))
-                }
-
-                // Center Card (Fintech/SaaS Dashboard style)
-                Surface(
-                    modifier = Modifier
-                        .size(160.dp, 200.dp)
-                        .offset(y = floatAnim.dp)
-                        .scale(0.95f),
-                    shape = RoundedCornerShape(24.dp),
-                    color = MaterialTheme.colorScheme.surface,
-                    shadowElevation = 0.dp
+                // Graphic Element on Left
+                Box(
+                    modifier = Modifier.size(200.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .background(MaterialTheme.colorScheme.surface)
-                            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f), RoundedCornerShape(24.dp))
-                            .padding(16.dp)
-                    ) {
-                        Column {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(modifier = Modifier.size(32.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
-                                    Icon(Icons.Default.Payments, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
-                                }
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Box(modifier = Modifier.width(60.dp).height(8.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant))
-                            }
-                            Spacer(modifier = Modifier.height(24.dp))
-                            Box(modifier = Modifier.fillMaxWidth().height(12.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant))
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Box(modifier = Modifier.fillMaxWidth(0.7f).height(12.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant))
+                    val orbitColor = MaterialTheme.colorScheme.primary
+                    Canvas(modifier = Modifier.size(170.dp).alpha(0.1f)) {
+                        drawCircle(color = orbitColor, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.dp.toPx()))
+                    }
 
-                            Spacer(modifier = Modifier.weight(1f))
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
-                                repeat(4) { i ->
-                                    Box(modifier = Modifier.width(14.dp).height((30 + i * 15).dp).clip(RoundedCornerShape(4.dp)).background(if(i==2) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant))
+                    Surface(
+                        modifier = Modifier
+                            .size(110.dp, 140.dp)
+                            .offset(y = (floatAnim * 0.7f).dp)
+                            .scale(0.85f),
+                        shape = RoundedCornerShape(18.dp),
+                        color = MaterialTheme.colorScheme.surface,
+                        shadowElevation = 0.dp
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .background(MaterialTheme.colorScheme.surface)
+                                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f), RoundedCornerShape(18.dp))
+                                .padding(12.dp)
+                        ) {
+                            Column {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(modifier = Modifier.size(24.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
+                                        Icon(Icons.Default.Payments, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(12.dp))
+                                    }
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Box(modifier = Modifier.width(40.dp).height(6.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant))
+                                }
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Box(modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant))
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Box(modifier = Modifier.fillMaxWidth(0.7f).height(8.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant))
+
+                                Spacer(modifier = Modifier.weight(1f))
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
+                                    repeat(4) { i ->
+                                        Box(modifier = Modifier.width(10.dp).height((20 + i * 10).dp).clip(RoundedCornerShape(3.dp)).background(if(i==2) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant))
+                                    }
                                 }
                             }
                         }
                     }
+
+                    val icons = listOf(Icons.Default.AccountBalanceWallet, Icons.Default.Description, Icons.Default.CheckCircle, Icons.Default.TrendingUp)
+                    val radius = 85f
+                    icons.forEachIndexed { index, icon ->
+                        val angle = rotationAnim + (index * (360f / icons.size))
+                        val angleRad = Math.toRadians(angle.toDouble())
+                        val x = (radius * cos(angleRad)).toFloat()
+                        val y = (radius * sin(angleRad)).toFloat()
+
+                        Box(
+                            modifier = Modifier
+                                .offset(x = x.dp, y = y.dp)
+                                .size(30.dp)
+                                .scale(pulseAnim)
+                                .shadow(if (MaterialTheme.colorScheme.background.luminance() > 0.5f) 4.dp else 0.dp, CircleShape)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.surface)
+                                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(icon, null, tint = if(index%2==0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary, modifier = Modifier.size(15.dp))
+                        }
+                    }
                 }
 
-                // Orbiting Icons
-                val icons = listOf(Icons.Default.AccountBalanceWallet, Icons.Default.Description, Icons.Default.CheckCircle, Icons.Default.TrendingUp)
-                val radius = 120f
-                icons.forEachIndexed { index, icon ->
-                    val angle = rotationAnim + (index * (360f / icons.size))
-                    val angleRad = Math.toRadians(angle.toDouble())
-                    val x = (radius * cos(angleRad)).toFloat()
-                    val y = (radius * sin(angleRad)).toFloat()
-
-                    Box(
+                // Title & Loading Section on Right
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        "WorkDaily",
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        "Offline Attendance & Earnings",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Spacer(modifier = Modifier.height(20.dp))
+                    LinearProgressIndicator(
                         modifier = Modifier
-                            .offset(x = x.dp, y = y.dp)
-                            .size(40.dp)
-                            .scale(pulseAnim)
-                            .shadow(if (MaterialTheme.colorScheme.background.luminance() > 0.5f) 8.dp else 0.dp, CircleShape)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.surface)
-                            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f), CircleShape),
-                        contentAlignment = Alignment.Center
+                            .width(140.dp)
+                            .height(3.dp)
+                            .clip(CircleShape),
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        "Preparing Workspace...",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.Medium,
+                        letterSpacing = 0.5.sp
+                    )
+                }
+            }
+        } else {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(280.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    // Orbit Lines
+                    val orbitColor = MaterialTheme.colorScheme.primary
+                    Canvas(modifier = Modifier.size(240.dp).alpha(0.1f)) {
+                        drawCircle(color = orbitColor, style = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.dp.toPx()))
+                    }
+
+                    // Center Card
+                    Surface(
+                        modifier = Modifier
+                            .size(160.dp, 200.dp)
+                            .offset(y = floatAnim.dp)
+                            .scale(0.95f),
+                        shape = RoundedCornerShape(24.dp),
+                        color = MaterialTheme.colorScheme.surface,
+                        shadowElevation = 0.dp
                     ) {
-                        Icon(icon, null, tint = if(index%2==0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary, modifier = Modifier.size(20.dp))
+                        Box(
+                            modifier = Modifier
+                                .background(MaterialTheme.colorScheme.surface)
+                                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f), RoundedCornerShape(24.dp))
+                                .padding(16.dp)
+                        ) {
+                            Column {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(modifier = Modifier.size(32.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
+                                        Icon(Icons.Default.Payments, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
+                                    }
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Box(modifier = Modifier.width(60.dp).height(8.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant))
+                                }
+                                Spacer(modifier = Modifier.height(24.dp))
+                                Box(modifier = Modifier.fillMaxWidth().height(12.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant))
+                                Spacer(modifier = Modifier.height(12.dp))
+                                Box(modifier = Modifier.fillMaxWidth(0.7f).height(12.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant))
+
+                                Spacer(modifier = Modifier.weight(1f))
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
+                                    repeat(4) { i ->
+                                        Box(modifier = Modifier.width(14.dp).height((30 + i * 15).dp).clip(RoundedCornerShape(4.dp)).background(if(i==2) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant))
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Orbiting Icons
+                    val icons = listOf(Icons.Default.AccountBalanceWallet, Icons.Default.Description, Icons.Default.CheckCircle, Icons.Default.TrendingUp)
+                    val radius = 120f
+                    icons.forEachIndexed { index, icon ->
+                        val angle = rotationAnim + (index * (360f / icons.size))
+                        val angleRad = Math.toRadians(angle.toDouble())
+                        val x = (radius * cos(angleRad)).toFloat()
+                        val y = (radius * sin(angleRad)).toFloat()
+
+                        Box(
+                            modifier = Modifier
+                                .offset(x = x.dp, y = y.dp)
+                                .size(40.dp)
+                                .scale(pulseAnim)
+                                .shadow(if (MaterialTheme.colorScheme.background.luminance() > 0.5f) 8.dp else 0.dp, CircleShape)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.surface)
+                                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(icon, null, tint = if(index%2==0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary, modifier = Modifier.size(20.dp))
+                        }
                     }
                 }
             }
-        }
 
-        // Bottom Loading Section
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 64.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            LinearProgressIndicator(
+            // Bottom Loading Section
+            Column(
                 modifier = Modifier
-                    .width(140.dp)
-                    .height(3.dp)
-                    .clip(CircleShape),
-                color = MaterialTheme.colorScheme.primary,
-                trackColor = MaterialTheme.colorScheme.surfaceVariant
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                "Preparing Workspace...",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontWeight = FontWeight.Medium,
-                letterSpacing = 0.5.sp
-            )
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 64.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                LinearProgressIndicator(
+                    modifier = Modifier
+                        .width(140.dp)
+                        .height(3.dp)
+                        .clip(CircleShape),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    "Preparing Workspace...",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.Medium,
+                    letterSpacing = 0.5.sp
+                )
+            }
         }
     }
 }

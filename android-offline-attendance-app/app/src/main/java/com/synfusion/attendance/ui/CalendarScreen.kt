@@ -9,6 +9,9 @@ import com.synfusion.attendance.ui.components.ShimmerTextLine
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -112,8 +115,8 @@ fun PersonalCalendarView(
     state: com.synfusion.attendance.viewmodel.OfflineCalendarState,
     scrollState: androidx.compose.foundation.lazy.LazyListState
 ) {
-    var showDialog by remember { mutableStateOf(false) }
-    var selectedDay by remember { mutableStateOf<Int?>(null) }
+    var showDialog by rememberSaveable { mutableStateOf(false) }
+    var selectedDay by rememberSaveable { mutableStateOf<Int?>(null) }
 
     val currentMonthDate = state.currentMonthDate
     val cal = Calendar.getInstance()
@@ -395,17 +398,17 @@ fun PersonalCalendarView(
                 state = scrollState,
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(24.dp),
-                verticalArrangement = Arrangement.spacedBy(20.dp)
+                    .padding(horizontal = 20.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 item {
-                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.calendar), fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.calendar), fontSize = 22.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                 }
 
                 item {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(24.dp),
+                        horizontalArrangement = Arrangement.spacedBy(20.dp),
                         verticalAlignment = Alignment.Top
                     ) {
                         // Left Column: Calendar Grid & Month selector
@@ -640,7 +643,7 @@ fun PersonalCalendarView(
     }
 
     if (showDialog && selectedDay != null) {
-        val dateStr = String.format("%04d-%02d-%02d", year, month + 1, selectedDay!!)
+        val dateStr = String.format(Locale.US, "%04d-%02d-%02d", year, month + 1, selectedDay!!)
         val existingRecord = dayMap[selectedDay!!]
 
         PersonalAttendanceDialog(
@@ -690,7 +693,13 @@ fun PersonalAttendanceDialog(
             }
         },
         text = {
-            Column(modifier = Modifier.fillMaxWidth()) {
+            val scrollState = rememberScrollState()
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 380.dp)
+                    .verticalScroll(scrollState)
+            ) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(
                         onClick = { editStatus = "present" },
