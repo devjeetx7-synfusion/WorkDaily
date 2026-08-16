@@ -118,7 +118,12 @@ object AttendanceCalculationEngine {
         var overtime = 0
         var advanceTotalBd = BigDecimal.ZERO.setScale(2, ROUNDING_MODE)
 
-        val dailyRecordsMap = mutableMapOf<String, OfflineDailyRecord>()
+        val monthDailyMap = mutableMapOf<String, OfflineDailyRecord>()
+        val allTimeDailyMap = mutableMapOf<String, OfflineDailyRecord>()
+
+        var hasRecordsInPeriod = false
+        var hasAllTimeRecords = false
+
         val wageBd = toMoney(defaultWage)
         val halfWageBd = wageBd.divide(BigDecimal.valueOf(2), 2, ROUNDING_MODE)
 
@@ -134,12 +139,42 @@ object AttendanceCalculationEngine {
             val otAmtBd = if (isPresent) OvertimeCalculator.calculateOvertimeAmountBigDecimal(defaultWage, ot, noteStr) else BigDecimal.ZERO.setScale(2, ROUNDING_MODE)
             val totalCostValBd = baseCostBd.add(otAmtBd)
 
+            if (rec.status != "advance") {
+                hasAllTimeRecords = true
+                val attendanceVal = if (isPresent) (if (isHalf) 0.5 else 1.0) else 0.0
+                val existing = allTimeDailyMap[date]
+                if (existing != null) {
+                    val newEarningsBd = toMoney(existing.earnings).add(totalCostValBd)
+                    val newBaseBd = toMoney(existing.baseEarnings).add(baseCostBd)
+                    val newOtBd = toMoney(existing.overtimeAmount).add(otAmtBd)
+                    allTimeDailyMap[date] = existing.copy(
+                        earnings = newEarningsBd.toDouble(),
+                        baseEarnings = newBaseBd.toDouble(),
+                        overtimeAmount = newOtBd.toDouble(),
+                        overtimeHours = existing.overtimeHours + ot,
+                        attendance = existing.attendance + attendanceVal
+                    )
+                } else {
+                    allTimeDailyMap[date] = OfflineDailyRecord(
+                        dateStr = date,
+                        earnings = totalCostValBd.toDouble(),
+                        baseEarnings = baseCostBd.toDouble(),
+                        overtimeAmount = otAmtBd.toDouble(),
+                        overtimeHours = ot,
+                        attendance = attendanceVal
+                    )
+                }
+            }
+
             if (isPresent) {
                 allTimeDays++
                 allTimeEarningsBd = allTimeEarningsBd.add(totalCostValBd)
             }
 
             if (date.startsWith(currentMonthStr)) {
+                if (rec.status != "advance") {
+                    hasRecordsInPeriod = true
+                }
                 if (isPresent) {
                     present++
                     totalEarningsBd = totalEarningsBd.add(totalCostValBd)
@@ -155,17 +190,25 @@ object AttendanceCalculationEngine {
 
                 if (rec.status != "advance") {
                     val attendanceVal = if (isPresent) (if (isHalf) 0.5 else 1.0) else 0.0
-                    val existing = dailyRecordsMap[date]
+                    val existing = monthDailyMap[date]
                     if (existing != null) {
-                        val newEarnings = toMoney(existing.earnings).add(totalCostValBd).toDouble()
-                        dailyRecordsMap[date] = existing.copy(
-                            earnings = newEarnings,
+                        val newEarningsBd = toMoney(existing.earnings).add(totalCostValBd)
+                        val newBaseBd = toMoney(existing.baseEarnings).add(baseCostBd)
+                        val newOtBd = toMoney(existing.overtimeAmount).add(otAmtBd)
+                        monthDailyMap[date] = existing.copy(
+                            earnings = newEarningsBd.toDouble(),
+                            baseEarnings = newBaseBd.toDouble(),
+                            overtimeAmount = newOtBd.toDouble(),
+                            overtimeHours = existing.overtimeHours + ot,
                             attendance = existing.attendance + attendanceVal
                         )
                     } else {
-                        dailyRecordsMap[date] = OfflineDailyRecord(
+                        monthDailyMap[date] = OfflineDailyRecord(
                             dateStr = date,
                             earnings = totalCostValBd.toDouble(),
+                            baseEarnings = baseCostBd.toDouble(),
+                            overtimeAmount = otAmtBd.toDouble(),
+                            overtimeHours = ot,
                             attendance = attendanceVal
                         )
                     }
@@ -173,7 +216,38 @@ object AttendanceCalculationEngine {
             }
         }
 
-        val dailyRecordsList = dailyRecordsMap.values.toList().sortedBy { it.dateStr }
+        // Fill all calendar days for currentMonthStr
+        val filledMonthRecords = mutableListOf<OfflineDailyRecord>()
+        try {
+            val parts = currentMonthStr.split("-")
+            if (parts.size == 2) {
+                val year = parts[0].toInt()
+                val month = parts[1].toInt() - 1 // 0-based month in Calendar
+                val cal = java.util.Calendar.getInstance()
+                cal.set(java.util.Calendar.YEAR, year)
+                cal.set(java.util.Calendar.MONTH, month)
+                cal.set(java.util.Calendar.DAY_OF_MONTH, 1)
+                val maxDays = cal.getActualMaximum(java.util.Calendar.DAY_OF_MONTH)
+
+                for (day in 1..maxDays) {
+                    val dayStr = String.format(java.util.Locale.US, "%04d-%02d-%02d", year, month + 1, day)
+                    val record = monthDailyMap[dayStr] ?: OfflineDailyRecord(
+                        dateStr = dayStr,
+                        earnings = 0.0,
+                        baseEarnings = 0.0,
+                        overtimeAmount = 0.0,
+                        overtimeHours = 0,
+                        attendance = 0.0
+                    )
+                    filledMonthRecords.add(record)
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("AttendanceCalcEngine", "Error generating calendar days for $currentMonthStr", e)
+        }
+
+        val dailyRecordsList = if (filledMonthRecords.isNotEmpty()) filledMonthRecords else monthDailyMap.values.toList().sortedBy { it.dateStr }
+        val allTimeDailyList = allTimeDailyMap.values.toList().sortedBy { it.dateStr }
 
         return OfflinePersonalStatsData(
             present = present,
@@ -183,8 +257,11 @@ object AttendanceCalculationEngine {
             advanceTotal = advanceTotalBd.toDouble(),
             totalEarnings = totalEarningsBd.toDouble(),
             dailyRecords = dailyRecordsList,
+            allTimeDailyRecords = allTimeDailyList,
             allTimeDays = allTimeDays,
-            allTimeEarnings = allTimeEarningsBd.toDouble()
+            allTimeEarnings = allTimeEarningsBd.toDouble(),
+            hasRecordsInPeriod = hasRecordsInPeriod,
+            hasAllTimeRecords = hasAllTimeRecords
         )
     }
 

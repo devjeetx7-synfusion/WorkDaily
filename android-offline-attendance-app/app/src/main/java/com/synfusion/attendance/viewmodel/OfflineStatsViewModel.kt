@@ -23,7 +23,10 @@ import java.util.Locale
 data class OfflineDailyRecord(
     val dateStr: String,
     val earnings: Double,
-    val attendance: Double
+    val baseEarnings: Double = 0.0,
+    val overtimeAmount: Double = 0.0,
+    val overtimeHours: Int = 0,
+    val attendance: Double = 0.0
 )
 
 data class OfflinePersonalStatsData(
@@ -34,8 +37,11 @@ data class OfflinePersonalStatsData(
     val advanceTotal: Double = 0.0,
     val totalEarnings: Double = 0.0,
     val dailyRecords: List<OfflineDailyRecord> = emptyList(),
+    val allTimeDailyRecords: List<OfflineDailyRecord> = emptyList(),
     val allTimeDays: Int = 0,
-    val allTimeEarnings: Double = 0.0
+    val allTimeEarnings: Double = 0.0,
+    val hasRecordsInPeriod: Boolean = false,
+    val hasAllTimeRecords: Boolean = false
 )
 
 data class OfflineStatsState(
