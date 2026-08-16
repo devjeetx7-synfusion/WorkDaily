@@ -56,6 +56,12 @@ class PdfExportManager(
             val currentMonthPrefix = SimpleDateFormat("yyyy-MM", Locale.US).format(selectedMonthDate)
             val monthlyRecords = records.filter { AttendanceCalculationEngine.isDateInMonth(it.date, currentMonthPrefix) }
 
+            if (monthlyRecords.isEmpty()) {
+                _exportState.value = PdfExportState.Error(context.getString(com.synfusion.attendance.R.string.empty_passbook_pdf_msg))
+                isExporting = false
+                return
+            }
+
             val calcResult = withContext(Dispatchers.Default) {
                 AttendanceCalculationEngine.calculatePassbook(monthlyRecords, cachedDefaultWage)
             }
@@ -181,7 +187,7 @@ class PdfExportManager(
             val records = withContext(Dispatchers.IO) { localAttendanceRepository.getPersonalAttendance() }
 
             if (records.isEmpty()) {
-                _exportState.value = PdfExportState.Error(context.getString(com.synfusion.attendance.R.string.no_records_found_dots))
+                _exportState.value = PdfExportState.Error(context.getString(com.synfusion.attendance.R.string.empty_passbook_pdf_msg))
                 isExporting = false
                 return
             }
@@ -342,7 +348,13 @@ class PdfExportManager(
     private fun getMonthName(month: Int): String {
         val cal = java.util.Calendar.getInstance()
         cal.set(java.util.Calendar.MONTH, month - 1)
-        val sdf = SimpleDateFormat("MMMM", Locale.getDefault())
+        val locale = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
+            context.resources.configuration.locales[0]
+        } else {
+            @Suppress("DEPRECATION")
+            context.resources.configuration.locale
+        }
+        val sdf = SimpleDateFormat("MMMM", locale)
         return sdf.format(cal.time)
     }
 }

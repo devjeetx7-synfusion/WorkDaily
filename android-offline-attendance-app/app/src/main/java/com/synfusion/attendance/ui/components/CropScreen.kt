@@ -212,7 +212,7 @@ fun CropScreenContent(
                             .align(Alignment.TopCenter)
                     ) {
                         Text(
-                            text = "Crop Photo",
+                            text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.crop_photo),
                             color = Color.White,
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
@@ -237,9 +237,9 @@ fun CropScreenContent(
                             shape = RoundedCornerShape(12.dp),
                             modifier = Modifier.height(50.dp).weight(1f).padding(end = 8.dp)
                         ) {
-                            Icon(Icons.Default.Close, contentDescription = "Cancel")
+                            Icon(Icons.Default.Close, contentDescription = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.cancel))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Cancel", fontWeight = FontWeight.Bold)
+                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.cancel), fontWeight = FontWeight.Bold)
                         }
 
                         // Done / Confirm Button
@@ -273,7 +273,7 @@ fun CropScreenContent(
 
                                             onCropSuccess(Uri.fromFile(tempFile))
                                         } catch (e: Exception) {
-                                            Toast.makeText(context, "Failed to crop image", Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(context, context.getString(com.synfusion.attendance.R.string.failed_to_crop_image), Toast.LENGTH_SHORT).show()
                                             isProcessing = false
                                         }
                                     }
@@ -283,9 +283,9 @@ fun CropScreenContent(
                             shape = RoundedCornerShape(12.dp),
                             modifier = Modifier.height(50.dp).weight(1f).padding(start = 8.dp)
                         ) {
-                            Icon(Icons.Default.Done, contentDescription = "Confirm")
+                            Icon(Icons.Default.Done, contentDescription = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.confirm))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Done", fontWeight = FontWeight.Bold)
+                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.done), fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -316,7 +316,7 @@ fun CropScreenContent(
                     ) {
                         CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                         Text(
-                            text = "Processing...",
+                            text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.processing_dots),
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
                         )

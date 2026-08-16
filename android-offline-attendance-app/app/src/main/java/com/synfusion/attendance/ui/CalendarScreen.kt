@@ -612,7 +612,7 @@ fun PersonalCalendarView(
                                 border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
                             ) {
                                 Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                                    Text("Legend", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.legend), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Box(modifier = Modifier.size(14.dp).clip(CircleShape).background(com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent()))
                                         Spacer(modifier = Modifier.width(10.dp))

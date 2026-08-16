@@ -505,4 +505,55 @@
     <string name="overtime_desc">Manage and calculate your overtime hours easily.</string>
     <string name="advance_title">Advance</string>
     <string name="advance_desc">Keep track of advances taken and deduct them accurately from your final earnings.</string>
+
+    <!-- Additional Localized Audit Strings -->
+    <string name="empty_passbook_pdf_msg">No passbook records found. Please add records before exporting PDF.</string>
+    <string name="backup_and_restore_title">Backup &amp; Restore</string>
+    <string name="backup_subtitle">Export and secure your application state</string>
+    <string name="backup_dont_close_msg">Please do not close or exit the app during this process.</string>
+    <string name="success_exclamation">Success!</string>
+    <string name="failed_exclamation">Failed!</string>
+    <string name="backup_generated_success_msg">Your application state backup has been generated and saved securely.</string>
+    <string name="restore_data_success_msg">Your data has been completely restored.</string>
+    <string name="unexpected_error_occurred">An unexpected error occurred during the process.</string>
+    <string name="backup_package_preview">Backup Package Preview</string>
+    <string name="restore_mode">Restore Mode</string>
+    <string name="start_restore">Start Restore</string>
+    <string name="create_new_backup">Create New Backup</string>
+    <string name="create_new_backup_subtitle">Saves your entire application state (profile, attendance database, settings, images) into a ZIP file.</string>
+    <string name="restore_from_backup">Restore from Backup</string>
+    <string name="restore_from_backup_subtitle">Import and parse standard Backup packages with atomic validations and rollbacks on failure.</string>
+
+    <string name="sort_oldest_first">Sort: Oldest First</string>
+    <string name="sort_newest_first">Sort: Newest First</string>
+    <string name="no_advance_records_title">No Advance Records</string>
+    <string name="no_advance_records_desc">You haven\'t logged any advance payments for this period.</string>
+    <string name="no_overtime_records_title">No Overtime Records</string>
+    <string name="no_overtime_records_desc">No overtime hours have been logged for this period.</string>
+    <string name="no_attendance_records_title">No Attendance Records</string>
+    <string name="no_attendance_records_desc">No attendance records match this status for this period.</string>
+    <string name="no_attendance_for_date_title">No Attendance for This Date</string>
+    <string name="no_attendance_for_date_desc">There are no attendance or work logs recorded for this specific date.</string>
+    <string name="no_records_yet_title">No Records Yet</string>
+    <string name="no_records_yet_desc">There are no records logged in this section yet.</string>
+
+    <string name="tab_monthly">Monthly</string>
+    <string name="tab_all_time">All-Time</string>
+
+    <string name="crop_photo">Crop Photo</string>
+    <string name="processing_dots">Processing...</string>
+    <string name="failed_to_crop_image">Failed to crop image</string>
+
+    <string name="legend">Legend</string>
+
+    <string name="pdf_amount_to_receive">Amount To Receive</string>
+    <string name="pdf_amount_to_pay_back">Amount To Pay Back</string>
+    <string name="pdf_month_summary_strip">Earn: %1$s  |  Sal: %2$s  |  OT: %3$s  |  Adv: %4$s  |  P: %5$d  |  H: %6$d  |  A: %7$d</string>
+
+    <string name="invalid_corrupt_backup">Invalid or corrupt backup package</string>
+    <string name="failed_to_load_backup">Failed to load backup: %1$s</string>
+    <string name="restore_selection_cancelled">Restore selection cancelled</string>
+    <string name="restore_failed_msg">Restore verification or execution failed.</string>
+    <string name="internal_file_error">Internal file resolution error.</string>
+    <string name="unable_to_open_settings">Unable to open settings</string>
 </resources>

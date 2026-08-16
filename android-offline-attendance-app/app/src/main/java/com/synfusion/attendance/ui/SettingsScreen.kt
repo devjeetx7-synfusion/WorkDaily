@@ -982,7 +982,7 @@ fun NotificationSettingsCardSection(
                                             }
                                             context.getActivity()?.startActivity(fallbackIntent)
                                         } catch (ex: Exception) {
-                                            Toast.makeText(context, "Unable to open settings", Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(context, context.getString(com.synfusion.attendance.R.string.unable_to_open_settings), Toast.LENGTH_SHORT).show()
                                         }
                                     }
                                 } else if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU && !isPostPermissionsGranted) {
