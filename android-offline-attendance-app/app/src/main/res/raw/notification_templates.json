@@ -2,1987 +2,1683 @@
   "templates": [
     {
       "id": "attendance_reminder_001",
-      "category": "attendance_reminder",
-      "title": "अरे भाई, हाज़िरी लगा दे! 😂",
-      "message": "{userName}, आज की हाज़िरी पेंडिंग है भाई! जल्दी से लगा लो, कहीं मालिक दिहाड़ी न काट ले! 😂",
+      "title": "Aaj attendance nahi lagayi? 😂",
+      "message": "{userName}, aaj attendance nahi lagayi? 🤨 Bhai kaam pe aaye the ya sirf attendance se breakup karne? 😂 Jaake laga de!",
       "priority": "high",
-      "action": "home"
+      "action": "home",
+      "category": "attendance_reminder"
     },
     {
       "id": "attendance_reminder_002",
-      "category": "attendance_reminder",
-      "title": "आज की हाज़िरी कहाँ है? 🤔",
-      "message": "काम पर आए हो या सिर्फ चाय-समोसा खाने? {userName}, अपनी हाज़िरी लगाना मत भूलना!",
+      "title": "Arre bhai, haziri kahan hai? 🤔",
+      "message": "{userName}, aaj ka kaam ho gaya par attendance pending hai! Dihadi se dushmani hai kya? Jaldi attendance mark kar!",
       "priority": "high",
-      "action": "home"
+      "action": "home",
+      "category": "attendance_reminder"
     },
     {
       "id": "attendance_reminder_003",
-      "category": "attendance_reminder",
-      "title": "भूलक्कड़ मोड चालू है क्या? 😆",
-      "message": "शाम ढल चुकी है भाई! आज का फुल डे या हाफ डे रजिस्टर में दर्ज कर लो। ⏰",
+      "title": "Bhulakkad mode ON hai kya? 😆",
+      "message": "Shaam ho gayi bhai! Aaj ka full day ya half day WorkDaily me daal de, warna baad me rote rahoge! ⏰",
       "priority": "high",
-      "action": "home"
+      "action": "home",
+      "category": "attendance_reminder"
     },
     {
       "id": "attendance_reminder_004",
-      "category": "attendance_reminder",
-      "title": "अरे ओ सेठ जी! 😜",
-      "message": "ओए भाई, हाज़िरी नहीं लगाओगे तो महीने के अंत में सिर्फ यादें बचेंगी, पैसे नहीं! 😜",
+      "title": "Oye seth ji! 😜",
+      "message": "Oye bhai, attendance nahi lagaoge toh mahine ke end me sirf yaadein bachengi, paisa nahi! 😜 Mark kar de!",
       "priority": "high",
-      "action": "home"
+      "action": "home",
+      "category": "attendance_reminder"
     },
     {
       "id": "attendance_reminder_005",
-      "category": "attendance_reminder",
-      "title": "कुर्सी का बुलावा आया है! 😂",
-      "message": "आज की मेहनत का हिसाब लिख ले भाई! वर्कडेली में हाज़िरी ठोक दो। 💰",
+      "title": "Kursi ka bulawa aaya hai! 😂",
+      "message": "Aaj ki mehnat ka hisaab likh le {userName}! WorkDaily me attendance thok de fatak se! 💰",
       "priority": "high",
-      "action": "home"
+      "action": "home",
+      "category": "attendance_reminder"
     },
     {
       "id": "attendance_reminder_006",
-      "category": "attendance_reminder",
-      "title": "हाज़िरी रजिस्टर खाली है! 📝",
-      "message": "अरे {userName}! आज का काम दर्ज किया या सब ऊपर वाले भरोसे छोड़ दिया? 😂",
+      "title": "Register abhi tak khali hai! 📝",
+      "message": "Arre {userName}! Aaj ka kaam register me daala ya sab bhagwan bharose chhod diya? 😂 Attendance laga de!",
       "priority": "high",
-      "action": "home"
+      "action": "home",
+      "category": "attendance_reminder"
     },
     {
       "id": "attendance_reminder_007",
-      "category": "attendance_reminder",
-      "title": "हिसाब-किताब साफ़ रखो! 👍",
-      "message": "समय पर हाज़िरी लगाओगे तो हिसाब-किताब भी साफ़-सुथरा रहेगा! लगा दो भाई। 👍",
+      "title": "Hisaab-kitaab saaf rakho! 👍",
+      "message": "Time pe attendance lagayega toh boss se behas nahi hogi! Jaldi se haziri mark kar de bhai. 👍",
       "priority": "high",
-      "action": "home"
+      "action": "home",
+      "category": "attendance_reminder"
     },
     {
       "id": "attendance_reminder_008",
-      "category": "attendance_reminder",
-      "title": "दिन खत्म होने को आया! ⏳",
-      "message": "दिन खत्म होने को आया भाई, आज का हाज़िरी स्टेटस जल्दी से अपडेट कर लो!",
+      "title": "Din khatam hone ko aaya! ⏳",
+      "message": "Din khatam hone ko aaya {userName}, aaj ka attendance status jaldi se update kar lo!",
       "priority": "high",
-      "action": "home"
+      "action": "home",
+      "category": "attendance_reminder"
     },
     {
       "id": "attendance_reminder_009",
-      "category": "attendance_reminder",
-      "title": "छुट्टी पर थे या काम पर? 🏖️",
-      "message": "छुट्टी पर थे या काम पर? जो भी हो, प्रेजेंट या एब्सेंट दर्ज कर दो {userName}!",
+      "title": "Chhutti pe the ya kaam pe? 🏖️",
+      "message": "Chhutti pe the ya kaam pe? Jo bhi scene ho, present ya absent mark kar do {userName}!",
       "priority": "high",
-      "action": "home"
+      "action": "home",
+      "category": "attendance_reminder"
     },
     {
       "id": "attendance_reminder_010",
-      "category": "attendance_reminder",
-      "title": "मेहनत पूरी, हाज़िरी अधूरी? 😂",
-      "message": "मेहनत पूरी और हाज़िरी अधूरी? ऐसा अत्याचार मत करो भाई, दर्ज करो! 😂",
+      "title": "Mehnat poori, haziri adhoori? 😂",
+      "message": "Mehnat poori aur attendance adhoori? Aisa atyachar mat karo bhai apne wallet pe, haziri laga do! 😂",
       "priority": "high",
-      "action": "home"
-    },
-    {
-      "id": "attendance_reminder_011",
-      "category": "attendance_reminder",
-      "title": "काम किया या आराम? 🌟",
-      "message": "हेलो {userName}, आज पसीना बहाया या कुर्सी तोड़ी? हाज़िरी अपडेट करो! 🌟",
-      "priority": "high",
-      "action": "home"
-    },
-    {
-      "id": "attendance_reminder_012",
-      "category": "attendance_reminder",
-      "title": "एक क्लिक में हाज़िरी! 👉",
-      "message": "एक क्लिक में हाज़िरी लगाओ और निश्चिंत होकर सो जाओ भाई! 👉",
-      "priority": "high",
-      "action": "home"
+      "action": "home",
+      "category": "attendance_reminder"
     },
     {
       "id": "check_in_001",
-      "category": "check_in",
-      "title": "सुबह हो गई, उठो भाई! 🌅",
-      "message": "गुड मॉर्निंग {userName}! {time} बज चुके हैं, चेक-इन करके काम शुरू करो भाई! 🌅",
+      "title": "Subah ho gayi, utho bhai! 🌅",
+      "message": "Good morning {userName}! {time} baj chuke hain, check-in karke kaam shuru karo bhai! 🌅",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "check_in"
     },
     {
       "id": "check_in_002",
-      "category": "check_in",
-      "title": "ड्यूटी का टाइम हो गया! ⏰",
-      "message": "काम का समय शुरू हो चुका है ({time})। जल्दी से चेक-इन का समय दर्ज करो! ⏱️",
+      "title": "Duty ka time ho gaya! ⏰",
+      "message": "Kaam ka time shuru ho chuka hai ({time}). Jaldi se check-in karke haziri thok do! ⏱️",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "check_in"
     },
     {
       "id": "check_in_003",
-      "category": "check_in",
-      "title": "पहुँच गए क्या ऑफिस? 😄",
-      "message": "पहुँच गए काम की जगह? {userName}, आज की एंट्री मारो और हीरो बनो!",
+      "title": "Pahunch gaye kya office? 😄",
+      "message": "Pahunch gaye kaam pe? {userName}, aaj ki check-in entry maro aur hero bano!",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "check_in"
     },
     {
       "id": "check_in_004",
-      "category": "check_in",
-      "title": "घड़ी टिक-टिक कर रही है! ⏱️",
-      "message": "ड्यूटी टाइम पर आ गए हो तो वर्कडेली में भी एंट्री मार दो भाई! 😉",
+      "title": "Ghadi tik-tik kar rahi hai! ⏱️",
+      "message": "Duty time pe aa gaye ho toh WorkDaily me bhi check-in daba do bhai! 😉",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "check_in"
     },
     {
       "id": "check_in_005",
-      "category": "check_in",
-      "title": "काम चालू, हाज़िरी चालू! 🚀",
-      "message": "चलो भाई, काम पर आ ही गए हो तो चेक-इन दबा दो और दिहाड़ी पक्की करो! 🚀",
+      "title": "Kaam chalu, haziri chalu! 🚀",
+      "message": "Chalo bhai, kaam pe aa hi gaye ho toh check-in button daba do aur dihadi pakki karo! 🚀",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "check_in"
     },
     {
       "id": "check_in_006",
-      "category": "check_in",
-      "title": "टाइमिंग नोट कर लो! 📝",
-      "message": "{time} बजे की एंट्री दर्ज करो ताकि बाद में कोई ये न कहे कि लेट आए थे!",
+      "title": "Timing note kar le! 📝",
+      "message": "{time} baje ki check-in entry kar lo {userName}, taaki baad me koi ye na bole ki late aaye the!",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "check_in"
     },
     {
       "id": "check_in_007",
-      "category": "check_in",
-      "title": "सुप्रभात भाई! ☕",
-      "message": "सुप्रभात {userName}! {date} की पहली एंट्री दर्ज करने का समय आ गया है।",
+      "title": "Suprabhat bhai! ☕",
+      "message": "Good morning {userName}! {date} ki pehli check-in entry karne ka time aa gaya hai.",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "check_in"
     },
     {
       "id": "check_in_008",
-      "category": "check_in",
-      "title": "काम शुरू करो भाई! 💼",
-      "message": "काम शुरू करने से पहले एक क्लिक: चेक-इन दर्ज करो और टेंशन फ्री हो जाओ!",
+      "title": "Kaam shuru karo bhai! 💼",
+      "message": "Kaam shuru karne se pehle ek click: check-in register karo aur tension free ho jao!",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "check_in"
     },
     {
       "id": "check_in_009",
-      "category": "check_in",
-      "title": "तैयार हो काम के लिए? 🚀",
-      "message": "तैयार हो काम के लिए {userName}? अपनी एंट्री दर्ज करके श्रीगणेश करो! 💼",
+      "title": "Taiyar ho kaam ke liye? 🚀",
+      "message": "Taiyar ho kaam ke liye {userName}? Apni check-in entry karke shree ganesh karo! 💼",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "check_in"
     },
     {
       "id": "check_in_010",
-      "category": "check_in",
-      "title": "समय के पाबंद बनो! ⏱️",
-      "message": "समय का पाबंद बंदा ही आगे बढ़ता है भाई! {time} का चेक-इन लगाओ।",
+      "title": "Pehla ghoont, pehla check-in! ☕",
+      "message": "Chai ka pehla ghoont aur pehla check-in! WorkDaily me entry maar do {userName}! ☕",
       "priority": "normal",
-      "action": "home"
-    },
-    {
-      "id": "check_in_011",
-      "category": "check_in",
-      "title": "पहला घूँट, पहला चेक-इन! ☕",
-      "message": "चाय का पहला घूँट और पहला चेक-इन! वर्कडेली में एंट्री मार दो {userName}! ☕",
-      "priority": "normal",
-      "action": "home"
-    },
-    {
-      "id": "check_in_012",
-      "category": "check_in",
-      "title": "हाज़िरी पक्की करो! 👍",
-      "message": "काम पर कदम रखते ही हाज़िरी पक्की करो, बाद में भूल जाओगे! 😂",
-      "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "check_in"
     },
     {
       "id": "check_out_001",
-      "category": "check_out",
-      "title": "भाई, अब घर भी जाना है! 😂",
-      "message": "काम के घंटे पूरे हो गए हैं {userName}! कुर्सी से रिश्ता तोड़ो और चेक-आउट करो! 😂",
+      "title": "Bhai, ab ghar bhi jaana hai! 😂",
+      "message": "Working hours complete ho gaye {userName}! Kursi se chipak ke kya fayda? Ghar bhi jaana hai! 😆 Check-out kar de!",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "check_out"
     },
     {
       "id": "check_out_002",
-      "category": "check_out",
-      "title": "शिफ्ट खत्म, छुट्टी चालू! 🎉",
-      "message": "शाबाश भाई! आज का काम समाप्त हुआ। {time} बजे का चेक-आउट दर्ज कर लो।",
+      "title": "Shift khatam, chhutti chalu! 🎉",
+      "message": "Shabaash bhai! Aaj ka kaam khatam hua. {time} baje ka check-out mark kar lo.",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "check_out"
     },
     {
       "id": "check_out_003",
-      "category": "check_out",
-      "title": "कुर्सी छोड़ो भाई! 🚗",
-      "message": "अब घर जाने का समय हो गया है! वर्कडेली में चेक-आउट मारो और आराम करो! 🚗",
+      "title": "Kursi chhod do bhai! 🚗",
+      "message": "Ab ghar jaane ka time ho gaya! WorkDaily me check-out maro aur relax karo! 🚗",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "check_out"
     },
     {
       "id": "check_out_004",
-      "category": "check_out",
-      "title": "बैक पैक करो! 🎒",
-      "message": "{hours} घंटे काम कर लिया भाई! अब चेक-आउट करके अपने घर का रास्ता नापो! 🌇",
+      "title": "Bag pack kar lo! 🎒",
+      "message": "{hours} ghante kaam kar liya bhai! Ab check-out karke apne ghar ka rasta naapo! 🌇",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "check_out"
     },
     {
       "id": "check_out_005",
-      "category": "check_out",
-      "title": "दिन खत्म, काम खत्म! 🌆",
-      "message": "दिन भर पसीना बहाया, अब चेक-आउट दर्ज करके अपनी दिहाड़ी पक्की करो! 💵",
+      "title": "Din khatam, kaam khatam! 🌆",
+      "message": "Din bhar pasina bahaya, ab check-out mark karke apni dihadi pakki karo! 💵",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "check_out"
     },
     {
       "id": "check_out_006",
-      "category": "check_out",
-      "title": "पैकिंग चालू है क्या? 🧳",
-      "message": "पैकिंग चालू है तो चेक-आउट भी दर्ज कर लो {userName}, हिसाब साफ़ रहेगा!",
+      "title": "Packing chalu hai kya? 🧳",
+      "message": "Packing chalu hai toh check-out bhi mark kar le {userName}, hisaab saaf rahega!",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "check_out"
     },
     {
       "id": "check_out_007",
-      "category": "check_out",
-      "title": "काम खत्म, पैसा हजम! 💰",
-      "message": "काम खत्म, पैसा हजम! {time} बजे का चेक-आउट पंच दर्ज करो भाई!",
+      "title": "Kaam khatam, paisa hazam! 💰",
+      "message": "Kaam khatam! {time} baje ka check-out punch record karo bhai!",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "check_out"
     },
     {
       "id": "check_out_008",
-      "category": "check_out",
-      "title": "आज का कोटा पूरा! 🎯",
-      "message": "आज का कोटा पूरा! चेक-आउट टाइम अपडेट करो और शाम का मज़ा लो! 🌆",
+      "title": "Aaj ka quota poora! 🎯",
+      "message": "Aaj ka quota poora! Check-out time update karo aur shaam ka maza lo! 🌆",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "check_out"
     },
     {
       "id": "check_out_009",
-      "category": "check_out",
-      "title": "थोड़ा जियो भी भाई! 😆",
-      "message": "क्या अभी भी काम ही करते रहोगे? {userName}, चेक-आउट करके थोड़ा जियो! 😆",
+      "title": "Thoda jiyo bhi bhai! 😆",
+      "message": "Kya abhi bhi kaam hi karte rahoge? {userName}, check-out karke thoda jiyo! 😆",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "check_out"
     },
     {
       "id": "check_out_010",
-      "category": "check_out",
-      "title": "घड़ी में समय देखो! ⏰",
-      "message": "घड़ी में {time} बज गए हैं, चेक-आउट मारो और परिवार के साथ वक्त बिताओ!",
+      "title": "App so jayega warna! 😂",
+      "message": "Check-out karna mat bhoolna bhai, warna app samjhega tum raat bhar wahi so rahe ho! 😂",
       "priority": "normal",
-      "action": "home"
-    },
-    {
-      "id": "check_out_011",
-      "category": "check_out",
-      "title": "रैप-अप टाइम! 🎬",
-      "message": "आज का काम रैप-अप करो भाई, वर्कडेली में चेक-आउट दर्ज करके छुट्टी मनाओ!",
-      "priority": "normal",
-      "action": "home"
-    },
-    {
-      "id": "check_out_012",
-      "category": "check_out",
-      "title": "ऐप सो जाएगा वरना! 😂",
-      "message": "चेक-आउट करना मत भूलना भाई, वरना ऐप समझेगा तुम रात भर वहीं सो रहे हो! 😂",
-      "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "check_out"
     },
     {
       "id": "late_attendance_001",
-      "category": "late_attendance",
-      "title": "घड़ी से दुश्मनी है क्या? 😑",
-      "message": "काम का समय कब का शुरू हो गया और आप अभी आ रहे हो! चलो भाई, हाज़िरी लगा दो। 😂",
+      "title": "Phir late bhai? 😂",
+      "message": "Ghadi se kya dushmani hai? Attendance laga de, warna time bhi tujhe ignore kar dega! 😭",
       "priority": "high",
-      "action": "home"
+      "action": "home",
+      "category": "late_attendance"
     },
     {
       "id": "late_attendance_002",
-      "category": "late_attendance",
-      "title": "लेट लतीफ मोड ऑन! 😂",
-      "message": "लेट एंट्री हुई है आज ({time})! {userName}, सही शिफ्ट डिटेल्स दर्ज कर लो भाई।",
+      "title": "Late latif mode ON! 😂",
+      "message": "Late entry hui hai aaj ({time})! {userName}, sahi shift details aur time fill kar le bhai.",
       "priority": "high",
-      "action": "home"
+      "action": "home",
+      "category": "late_attendance"
     },
     {
       "id": "late_attendance_003",
-      "category": "late_attendance",
-      "title": "अलार्म सो गया क्या? 😴",
-      "message": "सुबह का अलार्म बजा था या वो भी सोता रह गया? {time} पर हाज़िरी लगी है! 😜",
+      "title": "Alarm so gaya kya? 😴",
+      "message": "Subah ka alarm baja tha ya wo bhi sota reh gaya? {time} pe attendance mili hai! 😜",
       "priority": "high",
-      "action": "home"
+      "action": "home",
+      "category": "late_attendance"
     },
     {
       "id": "late_attendance_004",
-      "category": "late_attendance",
-      "title": "देर आए दुरुस्त आए! 🚗",
-      "message": "देर आए पर दुरुस्त आए! {userName}, {date} की लेट हाज़िरी रजिस्टर में भर दो।",
+      "title": "Der aaye durust aaye! 🚗",
+      "message": "Der aaye par durust aaye! {userName}, {date} ki late haziri register me bhar do.",
       "priority": "high",
-      "action": "home"
+      "action": "home",
+      "category": "late_attendance"
     },
     {
       "id": "late_attendance_005",
-      "category": "late_attendance",
-      "title": "आज फिर लेट भाई? ⏰",
-      "message": "आज थोड़ा लेट हो गए भाई, पर कोई बात नहीं, सही समय दर्ज करके हिसाब साफ़ रखो! ⏰",
+      "title": "Aaj phir late ho gaye? ⏰",
+      "message": "Aaj thoda late ho gaye bhai, par koi baat nahi! Sahi time mark karke hisaab clean rakho! ⏰",
       "priority": "high",
-      "action": "home"
+      "action": "home",
+      "category": "late_attendance"
     },
     {
       "id": "late_attendance_006",
-      "category": "late_attendance",
-      "title": "डांट से बचो भाई! 😂",
-      "message": "मालिक की डांट से पहले वर्कडेली में एंट्री मार लो {userName}! 😂",
+      "title": "Boss ki daant se bacho! 😂",
+      "message": "Boss ki daant se pehle WorkDaily me entry maar lo {userName}! 😂",
       "priority": "high",
-      "action": "home"
+      "action": "home",
+      "category": "late_attendance"
     },
     {
       "id": "late_attendance_007",
-      "category": "late_attendance",
-      "title": "ट्रैफिक या बिस्तर? 🚗",
-      "message": "ट्रैफिक ज़्यादा था या बिस्तर का प्यार? {time} बजे का चेक-इन लग गया है!",
+      "title": "Traffic ya bistar? 🚗",
+      "message": "Traffic zyada tha ya bistar ka pyar? {time} baje ka check-in lag gaya hai!",
       "priority": "high",
-      "action": "home"
+      "action": "home",
+      "category": "late_attendance"
     },
     {
       "id": "late_attendance_008",
-      "category": "late_attendance",
-      "title": "ओटी करके कसर पूरी करो! 😆",
-      "message": "लेट तो हो गए हो भाई, अब कम से कम ओटी करके कसर पूरी कर लेना! 😆",
+      "title": "Overtime karke kasar poori karo! 😆",
+      "message": "Late toh ho gaye ho bhai, ab kam se kam overtime karke kasar poori kar lena! 😆",
       "priority": "high",
-      "action": "home"
+      "action": "home",
+      "category": "late_attendance"
     },
     {
       "id": "late_attendance_009",
-      "category": "late_attendance",
-      "title": "देरी से सही हाज़िरी! 👍",
-      "message": "देरी से सही, हाज़िरी लग गई। {userName}, अपनी सही टाइमिंग नोट कर लो!",
+      "title": "Suraj sar pe aa gaya! ☀️",
+      "message": "Suraj kab ka sar pe aa gaya aur aap ab pahunche! Jaldi attendance entry kar lo!",
       "priority": "high",
-      "action": "home"
+      "action": "home",
+      "category": "late_attendance"
     },
     {
       "id": "late_attendance_010",
-      "category": "late_attendance",
-      "title": "सूरज सिर पर आ गया! ☀️",
-      "message": "सूरज कब का सिर पर आ गया और आप अब पहुँचे! जल्दी एंट्री दर्ज करो भाई!",
+      "title": "Record mat todo late hone ka! 😉",
+      "message": "Late aane ka record mat banao bhai, sahi time pe haziri mark karo! 😉",
       "priority": "high",
-      "action": "home"
-    },
-    {
-      "id": "late_attendance_011",
-      "category": "late_attendance",
-      "title": "समय रुकता नहीं! ⏱️",
-      "message": "घड़ी की सुइयां रुकती नहीं भाई! {time} का लेट टाइम दर्ज कर लिया गया है।",
-      "priority": "high",
-      "action": "home"
-    },
-    {
-      "id": "late_attendance_012",
-      "category": "late_attendance",
-      "title": "रिकॉर्ड मत तोड़ो भाई! 😉",
-      "message": "लेट आने का रिकॉर्ड मत बनाओ भाई, समय पर हाज़िरी दर्ज करो! 😉",
-      "priority": "high",
-      "action": "home"
+      "action": "home",
+      "category": "late_attendance"
     },
     {
       "id": "missing_attendance_001",
-      "category": "missing_attendance",
-      "title": "आज हाज़िरी कहाँ गायब है? 🤨",
-      "message": "काम किया लेकिन हाज़िरी लगाना भूल गए? वाह भाई, मेहनत पूरी और रिकॉर्ड अधूरा! 😂",
+      "title": "Haziri kahan gayab hai? 🤨",
+      "message": "Kaam kiya par attendance lagana bhool gaye? Waah bhai, mehnat poori aur record adhoora! 😂",
       "priority": "high",
-      "action": "home"
+      "action": "home",
+      "category": "missing_attendance"
     },
     {
       "id": "missing_attendance_002",
-      "category": "missing_attendance",
-      "title": "रिकॉर्ड में गड्डा हो गया! 🚨",
-      "message": "लगातार {missedDays} दिन से कोई हाज़िरी नहीं! {userName}, सब ठीक-ठाक तो है न? 🤔",
+      "title": "Record me gadda ho gaya! 🚨",
+      "message": "Lagatar {missedDays} din se koi attendance nahi! {userName}, sab theek-thaak toh hai na? 🤔",
       "priority": "high",
-      "action": "home"
+      "action": "home",
+      "category": "missing_attendance"
     },
     {
       "id": "missing_attendance_003",
-      "category": "missing_attendance",
-      "title": "कहाँ हो भाई? 🕵️‍♂️",
-      "message": "{missedDays} दिनों से रजिस्टर सूना पड़ा है भाई! क्या नौकरी बदल ली या छुट्टी पर हो? 😅",
+      "title": "Kahan ho bhai? 🕵️‍♂️",
+      "message": "{missedDays} dino se register soona pada hai bhai! Kya job badal li ya chhutti pe ho? 😅",
       "priority": "high",
-      "action": "home"
+      "action": "home",
+      "category": "missing_attendance"
     },
     {
       "id": "missing_attendance_004",
-      "category": "missing_attendance",
-      "title": "हाज़िरी ने छुट्टी ले ली? 🏖️",
-      "message": "लगभग एक हफ्ता होने को आया, {missedDays} दिन का हिसाब पेंडिंग है {userName}!",
+      "title": "Attendance ne chhutti le li? 🏖️",
+      "message": "Laghbhag ek hafta hone ko aaya, {missedDays} din ka hisaab pending hai {userName}!",
       "priority": "high",
-      "action": "home"
+      "action": "home",
+      "category": "missing_attendance"
     },
     {
       "id": "missing_attendance_005",
-      "category": "missing_attendance",
-      "title": "सावधान भाई! 🚨",
-      "message": "सावधान! {missedDays} दिनों से हाज़िरी खाली है। रजिस्टर तुरंत अपडेट करो भाई! 🚨",
+      "title": "Savdhan bhai! 🚨",
+      "message": "Savdhan! {missedDays} dino se attendance khali hai. Register turant update karo bhai! 🚨",
       "priority": "high",
-      "action": "home"
+      "action": "home",
+      "category": "missing_attendance"
     },
     {
       "id": "missing_attendance_006",
-      "category": "missing_attendance",
-      "title": "इतनी लंबी छुट्टी? 📅",
-      "message": "इतनी लंबी छुट्टी? {missedDays} दिनों की हाज़िरी पेंडिंग पड़ी है, कैलेंडर में भरो!",
+      "title": "Itni lambi chhutti? 📅",
+      "message": "Itni lambi chhutti? {missedDays} dino ki attendance pending padi hai, calendar me bharo!",
       "priority": "high",
-      "action": "home"
+      "action": "home",
+      "category": "missing_attendance"
     },
     {
       "id": "missing_attendance_007",
-      "category": "missing_attendance",
-      "title": "दिहाड़ी गोल हो जाएगी! 📉",
-      "message": "दिहाड़ी का हिसाब गोल हो जाएगा भाई! {missedDays} दिन की पुरानी एंट्री कर लो! 📉",
+      "title": "Dihadi gol ho jayegi! 📉",
+      "message": "Dihadi ka hisaab gol ho jayega bhai! {missedDays} din ki purani entry kar lo! 📉",
       "priority": "high",
-      "action": "home"
+      "action": "home",
+      "category": "missing_attendance"
     },
     {
       "id": "missing_attendance_008",
-      "category": "missing_attendance",
-      "title": "ऐप खोलना भूल गए? 📱",
-      "message": "क्या आप सच में छुट्टी पर थे या बस ऐप खोलना भूल गए? {missedDays} दिन भरो!",
+      "title": "App kholna bhool gaye? 📱",
+      "message": "Kya aap sach me chhutti pe the ya bas app kholna bhool gaye? {missedDays} din mark karo!",
       "priority": "high",
-      "action": "home"
+      "action": "home",
+      "category": "missing_attendance"
     },
     {
       "id": "missing_attendance_009",
-      "category": "missing_attendance",
-      "title": "रजिस्टर का ब्रेक! 😂",
-      "message": "भाई, {missedDays} दिन से हाज़िरी गायब है, कहीं रजिस्टर ने आपसे ब्रेक तो नहीं ले लिया? 😂",
+      "title": "Register me sannata! ⚠️",
+      "message": "Warning: {missedDays} dino se register me sannata hai! {userName}, jaldi update karo!",
       "priority": "high",
-      "action": "home"
+      "action": "home",
+      "category": "missing_attendance"
     },
     {
       "id": "missing_attendance_010",
-      "category": "missing_attendance",
-      "title": "रजिस्टर में सन्नाटा! ⚠️",
-      "message": "गंभीर चेतावनी: {missedDays} दिनों से रजिस्टर में सन्नाटा है! {userName}, अपडेट करो!",
+      "title": "Boss se ladai na ho! 🥊",
+      "message": "Mahine ke end me boss se ladai na ho, isliye {missedDays} din ka hisaab abhi bhar lo!",
       "priority": "high",
-      "action": "home"
-    },
-    {
-      "id": "missing_attendance_011",
-      "category": "missing_attendance",
-      "title": "मालिक से लड़ाई न हो! 🥊",
-      "message": "महीने के अंत में मालिक से लड़ाई न हो, इसलिए {missedDays} दिन का हिसाब अभी भरो!",
-      "priority": "high",
-      "action": "home"
-    },
-    {
-      "id": "missing_attendance_012",
-      "category": "missing_attendance",
-      "title": "हाज़िरी पेंडिंग अलर्ट! 📝",
-      "message": "हाज़िरी पेंडिंग अलर्ट: {missedDays} दिन का हिसाब बाकी है, कैलेंडर खोलो और भरो!",
-      "priority": "high",
-      "action": "home"
+      "action": "home",
+      "category": "missing_attendance"
     },
     {
       "id": "overtime_001",
-      "category": "overtime",
-      "title": "बस कर भाई, कंपनी तेरी नहीं है! 😂",
-      "message": "आज {hours} घंटे ओवर-टाइम ठोका है! अतिरिक्त कमाई ₹{amount} जुड़ गई भाई! 💪",
+      "title": "Overtime kaafi ho gaya! 😭",
+      "message": "Bhai company teri nahi hai 😂 Thoda ghar walon ko bhi time de aur checkout kar le! Aaj {hours} hrs OT hua!",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "overtime"
     },
     {
       "id": "overtime_002",
-      "category": "overtime",
-      "title": "ओवरटाइम का राजा! 💪",
-      "message": "वाह भाई वाह! {userName}, आज तो तुमने {hours} घंटे एक्स्ट्रा घिसाई की है। शाबाश!",
+      "title": "Overtime ka raja! 💪",
+      "message": "Waah bhai waah! {userName}, aaj toh tumne {hours} ghante extra ghisai ki hai. Shabash!",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "overtime"
     },
     {
       "id": "overtime_003",
-      "category": "overtime",
-      "title": "पैसा ही पैसा होगा! 💰",
-      "message": "ओवरटाइम का ₹{amount} पासबुक में जुड़ गया है! अब तो पार्टी बनती है भाई! 💵",
+      "title": "Paisa hi paisa hoga! 💰",
+      "message": "Overtime ka ₹{amount} passbook me jud gaya hai! Ab toh party banti hai bhai! 💵",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "overtime"
     },
     {
       "id": "overtime_004",
-      "category": "overtime",
-      "title": "मशीन भी गरम हो गई! 😆",
-      "message": "आज {hours} घंटे एक्स्ट्रा काम किया! इस महीने कुल {overtime} घंटे ओटी हो चुका है। 🚀",
+      "title": "Machine bhi garam ho gayi! 😆",
+      "message": "Aaj {hours} ghante extra kaam kiya! Is mahine kul {overtime} ghante OT ho chuka hai. 🚀",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "overtime"
     },
     {
       "id": "overtime_005",
-      "category": "overtime",
-      "title": "ज्यादा मेहनत, ज्यादा पैसा! 💵",
-      "message": "ज्यादा मेहनत = ज्यादा पैसा! आज के {hours} घंटे ओवरटाइम के ₹{amount} पक्के!",
+      "title": "Zyada mehnat, zyada paisa! 💵",
+      "message": "Zyada mehnat = zyada paisa! Aaj ke {hours} ghante overtime ke ₹{amount} pakke!",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "overtime"
     },
     {
       "id": "overtime_006",
-      "category": "overtime",
-      "title": "ओटी का हिसाब लॉक! 👍",
-      "message": "ओटी का हिसाब दर्ज हो गया है {userName}: {hours} घंटे की एक्स्ट्रा मेहनत! 👍",
+      "title": "OT ka hisaab lock! 👍",
+      "message": "OT ka hisaab record ho gaya hai {userName}: {hours} ghante ki extra mehnat! 👍",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "overtime"
     },
     {
       "id": "overtime_007",
-      "category": "overtime",
-      "title": "कंपनी को मुकाम दिलाओगे? 😂",
-      "message": "कंपनी को मुकाम पर पहुँचा कर ही मानोगे क्या? {hours} घंटे ओवरटाइम दर्ज हुआ! 😂",
+      "title": "Company ko khareedoge kya? 😂",
+      "message": "Company ko khareedne ka plan hai kya? {hours} ghante overtime record hua hai! 😂",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "overtime"
     },
     {
       "id": "overtime_008",
-      "category": "overtime",
-      "title": "अब आराम भी कर लो! 😴",
-      "message": "{date} का ओवरटाइम दर्ज हो गया। अब थोड़ा आराम भी कर लो भाई!",
+      "title": "Ab aaram bhi kar lo! 😴",
+      "message": "{date} ka overtime record ho gaya. Ab thoda aaram bhi kar lo bhai!",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "overtime"
     },
     {
       "id": "overtime_009",
-      "category": "overtime",
-      "title": "ओवरटाइम का मीठा पैसा! 🍯",
-      "message": "मेहनत का फल मीठा होता है, और ओवरटाइम का पैसा और भी मीठा! ₹{amount} एक्स्ट्रा! 💰",
+      "title": "Overtime ka meetha paisa! 🍯",
+      "message": "Mehnat ka phal meetha hota hai, aur overtime ka paisa aur bhi meetha! ₹{amount} extra! 💰",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "overtime"
     },
     {
       "id": "overtime_010",
-      "category": "overtime",
-      "title": "आज तो रिकॉर्ड तोड़ दिया! 🎯",
-      "message": "आज तो तुमने रिकॉर्ड तोड़ दिया {userName}! {hours} घंटे ओवरटाइम दर्ज हुआ है।",
+      "title": "Aaj toh record tod diya! 🎯",
+      "message": "Aaj toh tumne record tod diya {userName}! {hours} ghante overtime record hua hai.",
       "priority": "normal",
-      "action": "home"
-    },
-    {
-      "id": "overtime_011",
-      "category": "overtime",
-      "title": "कमाई का ग्राफ ऊपर! 📈",
-      "message": "कमाई का ग्राफ ऊपर जा रहा है! {hours} घंटे का ओटी पासबुक में अपडेट हो गया।",
-      "priority": "normal",
-      "action": "home"
-    },
-    {
-      "id": "overtime_012",
-      "category": "overtime",
-      "title": "एक्स्ट्रा टाइम, एक्स्ट्रा मनी! ⚡",
-      "message": "एक्स्ट्रा टाइम, एक्स्ट्रा माइंड! आज की ओवर-टाइम कमाई ₹{amount} जुड़ गई है!",
-      "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "overtime"
     },
     {
       "id": "overtime_threshold_001",
-      "category": "overtime_threshold",
-      "title": "इतना ओवरटाइम क्यों भाई? 😭",
-      "message": "घंटे लगातार बढ़ रहे हैं भाई! {hours} घंटे ओवरटाइम पार हो चुका है, थोड़ा आराम कर लो! 😂",
+      "title": "Itna overtime kyu bhai? 😭",
+      "message": "Ghante lagatar badh rahe hain bhai! {hours} ghante overtime paar ho chuka hai, thoda aaram kar lo! 😂",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "overtime_threshold"
     },
     {
       "id": "overtime_threshold_002",
-      "category": "overtime_threshold",
-      "title": "ओटी का नया रिकॉर्ड! 🔥",
-      "message": "अलर्ट! इस महीने आपने कुल {hours} घंटे का भारी-भरकम ओवरटाइम पूरा कर लिया है! 🔥",
+      "title": "OT ka naya record! 🔥",
+      "message": "Alert! Is mahine aapne kul {hours} ghante ka bhari overtime poora kar liya hai! 🔥",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "overtime_threshold"
     },
     {
       "id": "overtime_threshold_003",
-      "category": "overtime_threshold",
-      "title": "ओवरटाइम ब्लास्ट! 💰",
-      "message": "{userName}, आपकी इस महीने की ओवरटाइम कमाई ₹{amount} पार कर चुकी है! 💰",
+      "title": "Overtime blast! 💰",
+      "message": "{userName}, aapki is mahine ki overtime kamai ₹{amount} paar kar chuki hai! 💰",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "overtime_threshold"
     },
     {
       "id": "overtime_threshold_004",
-      "category": "overtime_threshold",
-      "title": "रोबोट शरमा जाएगा! 🤖",
-      "message": "इतना काम करोगे तो रोबोट भी शरमा जाएगा! {hours} घंटे ओटी दर्ज हो चुका है। 🌟",
+      "title": "Robot sharma jayega! 🤖",
+      "message": "Itna kaam karoge toh robot bhi sharma jayega! {hours} ghante OT record ho chuka hai. 🌟",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "overtime_threshold"
     },
     {
       "id": "overtime_threshold_005",
-      "category": "overtime_threshold",
-      "title": "ओटी का नया रिकॉर्ड! 📊",
-      "message": "ओवरटाइम का नया रिकॉर्ड! इस साइकिल में ₹{amount} सिर्फ एक्स्ट्रा काम से कमाए।",
+      "title": "Seema paar ho gayi bhai! 🛑",
+      "message": "Overtime limit cross! {hours} ghante extra duty. Health ka bhi dhyan rakho bhai!",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "overtime_threshold"
     },
     {
       "id": "overtime_threshold_006",
-      "category": "overtime_threshold",
-      "title": "सीमा पार हो गई भाई! 🛑",
-      "message": "ओवरटाइम सीमा पार! {hours} घंटे एक्स्ट्रा ड्यूटी। सेहत का भी ध्यान रखो भाई!",
+      "title": "Passbook bhar gayi bhai! 📖",
+      "message": "Overtime se passbook bhar gayi hai bhai! ₹{amount} ki extra kamai record hui.",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "overtime_threshold"
     },
     {
       "id": "overtime_threshold_007",
-      "category": "overtime_threshold",
-      "title": "पासबुक भर गई भाई! 📖",
-      "message": "ओवरटाइम से पासबुक भर गई है भाई! ₹{amount} की एक्स्ट्रा कमाई दर्ज हुई।",
+      "title": "Ghar walon ko shakal dikha do! 😆",
+      "message": "{userName}, aapne {hours} hrs OT poora kar liya hai, ab ghar walon ko bhi shakal dikha do! 😆",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "overtime_threshold"
     },
     {
       "id": "overtime_threshold_008",
-      "category": "overtime_threshold",
-      "title": "घर वालों को शक्ल दिखा दो! 😆",
-      "message": "{userName}, आपने {hours} घंटे ओटी पूरा कर लिया है, अब घर वालों को भी शक्ल दिखा दो! 😆",
+      "title": "Bhari duty alert! 🚨",
+      "message": "Bhari duty alert! {hours} ghante overtime record. Apni passbook summary check karo!",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "overtime_threshold"
     },
     {
       "id": "overtime_threshold_009",
-      "category": "overtime_threshold",
-      "title": "भारी ड्यूटी अलर्ट! 🚨",
-      "message": "भारी ड्यूटी अलर्ट! {hours} घंटे ओवरटाइम दर्ज। अपनी पासबुक समरी चेक करो!",
+      "title": "OT ka chhakka maar diya! 🏏",
+      "message": "Is mahine toh tumne overtime ka chhakka maar diya! {hours} ghante extra kaam! 🎯",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "overtime_threshold"
     },
     {
       "id": "overtime_threshold_010",
-      "category": "overtime_threshold",
-      "title": "ओटी का छक्का मार दिया! 🏏",
-      "message": "इस महीने तो तुमने ओवरटाइम का छक्का मार दिया! {hours} घंटे एक्स्ट्रा काम! 🎯",
+      "title": "Bonus ka time aa gaya! 😂",
+      "message": "OT ki limit cross ho gayi bhai, ab toh boss ko bhi tumhe bonus dena padega! 😂",
       "priority": "normal",
-      "action": "home"
-    },
-    {
-      "id": "overtime_threshold_011",
-      "category": "overtime_threshold",
-      "title": "कमाई का नया मुकाम! 🎯",
-      "message": "कमाई का मुकाम हासिल! {hours} घंटे ओटी के साथ ₹{amount} एक्स्ट्रा बैलेंस में।",
-      "priority": "normal",
-      "action": "home"
-    },
-    {
-      "id": "overtime_threshold_012",
-      "category": "overtime_threshold",
-      "title": "बोनस का टाइम आ गया! 😂",
-      "message": "ओटी की सीमा पार हो गई भाई, अब तो मालिक को भी तुम्हें बोनस देना पड़ेगा! 😂",
-      "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "overtime_threshold"
     },
     {
       "id": "daily_summary_001",
-      "category": "daily_summary",
-      "title": "आज का पूरा हिसाब तैयार है! 📊",
-      "message": "आज कितने घंटे काम किया, कितनी कमाई हुई — सबका हिसाब तैयार है भाई! 😂",
+      "title": "Aaj ka hisaab ready hai! 📊",
+      "message": "Aaj kitne ghante kaam kiya, kitni kamai hui — sab hisaab ready hai bhai! Passbook dekh le! 😂",
       "priority": "normal",
-      "action": "passbook"
+      "action": "passbook",
+      "category": "daily_summary"
     },
     {
       "id": "daily_summary_002",
-      "category": "daily_summary",
-      "title": "दिन भर का लेखा-जोखा! 📑",
-      "message": "{userName}, आज की शिफ्ट पूरी। आज की कुल दिहाड़ी कमाई: ₹{amount}।",
+      "title": "Din bhar ka lekha-jokha! 📑",
+      "message": "{userName}, aaj ki shift poori. Aaj ki kul dihadi kamai: ₹{amount}.",
       "priority": "normal",
-      "action": "passbook"
+      "action": "passbook",
+      "category": "daily_summary"
     },
     {
       "id": "daily_summary_003",
-      "category": "daily_summary",
-      "title": "आज कितनी कमाई हुई? 💰",
-      "message": "आज की समरी ready: {hours} घंटे काम किया और ₹{amount} की शुद्ध कमाई हुई। 📊",
+      "title": "Aaj kitni kamai hui? 💰",
+      "message": "Aaj ki summary ready: {hours} hrs kaam kiya aur ₹{amount} ki shuddh kamai hui. 📊",
       "priority": "normal",
-      "action": "passbook"
+      "action": "passbook",
+      "category": "daily_summary"
     },
     {
       "id": "daily_summary_004",
-      "category": "daily_summary",
-      "title": "डेली समरी आ गई! ⚡",
-      "message": "{date} का पूरा हिसाब दर्ज हो गया। आज का कुल पारिश्रमिक: ₹{amount}! 👍",
+      "title": "Daily summary aa gayi! ⚡",
+      "message": "{date} ka poora hisaab record ho gaya. Aaj ka kul amount: ₹{amount}! 👍",
       "priority": "normal",
-      "action": "passbook"
+      "action": "passbook",
+      "category": "daily_summary"
     },
     {
       "id": "daily_summary_005",
-      "category": "daily_summary",
-      "title": "आज की दिहाड़ी लॉक! 🔒",
-      "message": "दिन भर का लेखा-जोखा: एब्सेंट/प्रेजेंट दर्ज, आज की कुल दिहाड़ी ₹{amount}।",
+      "title": "Aaj ki dihadi lock! 🔒",
+      "message": "Din bhar ka hisaab: attendance mark, aaj ki kul dihadi ₹{amount}.",
       "priority": "normal",
-      "action": "passbook"
+      "action": "passbook",
+      "category": "daily_summary"
     },
     {
       "id": "daily_summary_006",
-      "category": "daily_summary",
-      "title": "तिजोरी में हिसाब सुरक्षित! 🔐",
-      "message": "{userName}, आज का अटेंडेंस और ₹{amount} का हिसाब तिजोरी में सुरक्षित है।",
+      "title": "Tijori me hisaab safe! 🔐",
+      "message": "{userName}, aaj ki attendance aur ₹{amount} ka hisaab tijori me safe hai.",
       "priority": "normal",
-      "action": "passbook"
+      "action": "passbook",
+      "category": "daily_summary"
     },
     {
       "id": "daily_summary_007",
-      "category": "daily_summary",
-      "title": "ड्यूटी समाप्त, हिसाब रेडी! 🏁",
-      "message": "आज की ड्यूटी समाप्त! {hours} घंटे काम, ₹{amount} कुल कमाई। पासबुक देखो!",
+      "title": "Duty samapt, hisaab ready! 🏁",
+      "message": "Aaj ki duty samapt! {hours} hrs kaam, ₹{amount} kul kamai. Passbook dekho!",
       "priority": "normal",
-      "action": "passbook"
+      "action": "passbook",
+      "category": "daily_summary"
     },
     {
       "id": "daily_summary_008",
-      "category": "daily_summary",
-      "title": "रजिस्टर लॉक हो गया! 🔑",
-      "message": "आज का रजिस्टर लॉक हो गया भाई! आज की नेट कमाई दर्ज हो चुकी है।",
+      "title": "Register lock ho gaya! 🔑",
+      "message": "Aaj ka register lock ho gaya bhai! Aaj ki net kamai record ho chuki hai.",
       "priority": "normal",
-      "action": "passbook"
+      "action": "passbook",
+      "category": "daily_summary"
     },
     {
       "id": "daily_summary_009",
-      "category": "daily_summary",
-      "title": "आज का बैलेंस शीट! 📊",
-      "message": "{date} का हिसाब: दिहाड़ी ₹{amount}, एडवांस कटौती: ₹{advance}। देख लो!",
+      "title": "Net kamai calculate! 💰",
+      "message": "WorkDaily summary: Aaj ki net payable rashi ₹{netPayable} calculate ho gayi hai. 💰",
       "priority": "normal",
-      "action": "passbook"
+      "action": "passbook",
+      "category": "daily_summary"
     },
     {
       "id": "daily_summary_010",
-      "category": "daily_summary",
-      "title": "नेट कमाई कैलकुलेट! 💰",
-      "message": "वर्कडेली समरी: आज की नेट पेएबल राशि ₹{netPayable} कैलकुलेट हो गई है। 💰",
+      "title": "Passbook summary check karo! 😊",
+      "message": "Din ka end-card: Haziri pakki, kamai pakki! Passbook summary check karo bhai! 😊",
       "priority": "normal",
-      "action": "passbook"
-    },
-    {
-      "id": "daily_summary_011",
-      "category": "daily_summary",
-      "title": "सफल दिन का एंड-कार्ड! 🌟",
-      "message": "आज का दिन सफल रहा! ₹{amount} की दिहाड़ी पासबुक में जुड़ चुकी है।",
-      "priority": "normal",
-      "action": "passbook"
-    },
-    {
-      "id": "daily_summary_012",
-      "category": "daily_summary",
-      "title": "पासबुक समरी चेक करो! 😊",
-      "message": "दिन का एंड-कार्ड: हाज़िरी पक्की, कमाई पक्की! पासबुक समरी चेक करो भाई! 😊",
-      "priority": "normal",
-      "action": "passbook"
+      "action": "passbook",
+      "category": "daily_summary"
     },
     {
       "id": "weekly_summary_001",
-      "category": "weekly_summary",
-      "title": "हफ़्ते का पूरा हिसाब! 📊",
-      "message": "इस हफ्ते कितने दिन काम किया और कितनी कमाई हुई — सब हिसाब तैयार है! 😂",
+      "title": "Hafte ka poora hisaab! 📊",
+      "message": "Is hafte kitne din kaam kiya aur kitni kamai hui — sab hisaab ready hai! Khol ke dekh le! 😂",
       "priority": "normal",
-      "action": "passbook"
+      "action": "passbook",
+      "category": "weekly_summary"
     },
     {
       "id": "weekly_summary_002",
-      "category": "weekly_summary",
-      "title": "रविवार का महा-हिसाब! 💰",
-      "message": "वीकली रिपोर्ट: {presentDays} दिन काम किया, कुल कमाई ₹{totalEarnings} हुई है! 📊",
+      "title": "Ravivar ka maha-hisaab! 💰",
+      "message": "Weekly report: {presentDays} din kaam kiya, kul kamai ₹{totalEarnings} hui hai! 📊",
       "priority": "normal",
-      "action": "passbook"
+      "action": "passbook",
+      "category": "weekly_summary"
     },
     {
       "id": "weekly_summary_003",
-      "category": "weekly_summary",
-      "title": "वीकली रिपोर्ट कार्ड! 📑",
-      "message": "{userName}, इस हफ्ते आपने {workingDays} कार्य दिवस पूरे किए। नेट देय: ₹{netPayable}।",
+      "title": "Weekly report card! 📑",
+      "message": "{userName}, is hafte aapne {workingDays} working days poore kiye. Net payable: ₹{netPayable}.",
       "priority": "normal",
-      "action": "passbook"
+      "action": "passbook",
+      "category": "weekly_summary"
     },
     {
       "id": "weekly_summary_004",
-      "category": "weekly_summary",
-      "title": "हफ़्ता खत्म, हिसाब शुरू! 🏆",
-      "message": "हफ़्ता खत्म! कुल कमाई ₹{totalEarnings}, जिसमें से ₹{advance} एडवांस लिया था। 💰",
+      "title": "Hafta khatam, hisaab shuru! 🏆",
+      "message": "Hafta khatam! Kul kamai ₹{totalEarnings}, jisme se ₹{advance} advance liya tha. 💰",
       "priority": "normal",
-      "action": "passbook"
+      "action": "passbook",
+      "category": "weekly_summary"
     },
     {
       "id": "weekly_summary_005",
-      "category": "weekly_summary",
-      "title": "सात दिनों की कमाई! 📈",
-      "message": "वीकली रिपोर्ट कार्ड: इस हफ्ते आपकी अटेंडेंस दर {attendancePercentage}% रही! 📈",
+      "title": "Saat dino ki kamai! 📈",
+      "message": "Weekly report card: Is hafte aapki attendance rate {attendancePercentage}% rahi! 📈",
       "priority": "normal",
-      "action": "passbook"
+      "action": "passbook",
+      "category": "weekly_summary"
     },
     {
       "id": "weekly_summary_006",
-      "category": "weekly_summary",
-      "title": "नेट भुगतान की समरी! 💵",
-      "message": "इस हफ्ते का नेट भुगतान: ₹{netPayable} ({presentDays} दिन प्रेजेंट, {absentDays} दिन एब्सेंट)।",
+      "title": "Net payment ki summary! 💵",
+      "message": "Is hafte ka net payment: ₹{netPayable} ({presentDays} din present, {absentDays} din absent).",
       "priority": "normal",
-      "action": "passbook"
+      "action": "passbook",
+      "category": "weekly_summary"
     },
     {
       "id": "weekly_summary_007",
-      "category": "weekly_summary",
-      "title": "शानदार हफ़्ता रहा! 🌟",
-      "message": "शानदार हफ़्ता रहा {userName}! आपने {workingDays} दिनों में ₹{totalEarnings} कमाए।",
+      "title": "Shandar hafta raha! 🌟",
+      "message": "Shandar hafta raha {userName}! Aapne {workingDays} dino me ₹{totalEarnings} kamaye.",
       "priority": "normal",
-      "action": "passbook"
+      "action": "passbook",
+      "category": "weekly_summary"
     },
     {
       "id": "weekly_summary_008",
-      "category": "weekly_summary",
-      "title": "रजिस्टर क्लोज हो गया! 🔒",
-      "message": "हफ़्ते का रजिस्टर क्लोज! नेट पेएबल राशि ₹{netPayable} बनी है, पासबुक देखो!",
+      "title": "Register close ho gaya! 🔒",
+      "message": "Hafte ka register close! Net payable rashi ₹{netPayable} bani hai, passbook dekho!",
       "priority": "normal",
-      "action": "passbook"
+      "action": "passbook",
+      "category": "weekly_summary"
     },
     {
       "id": "weekly_summary_009",
-      "category": "weekly_summary",
-      "title": "वीकली ब्रेकडाउन रेडी! 📊",
-      "message": "वीकली ब्रेकडाउन: प्रेजेंट: {presentDays} दिन, ओटी: {overtime} घंटे, कमाई: ₹{totalEarnings}।",
+      "title": "Weekly breakdown ready! 📊",
+      "message": "Weekly breakdown: Present: {presentDays} days, OT: {overtime} hrs, Kamai: ₹{totalEarnings}.",
       "priority": "normal",
-      "action": "passbook"
+      "action": "passbook",
+      "category": "weekly_summary"
     },
     {
       "id": "weekly_summary_010",
-      "category": "weekly_summary",
-      "title": "अटेंडेंस रेट चेक करो! 📈",
-      "message": "हफ़्ते भर का अटेंडेंस रेट {attendancePercentage}% रहा। रिपोर्ट चेक करो भाई!",
+      "title": "Mehnat ka weekly phal! 😊",
+      "message": "Saat dino ki mehnat ka phal! Passbook kholo aur weekly report dekho bhai! 😊",
       "priority": "normal",
-      "action": "passbook"
-    },
-    {
-      "id": "weekly_summary_011",
-      "category": "weekly_summary",
-      "title": "वीकली स्टेटमेंट रेडी! 📑",
-      "message": "{userName}, इस हफ्ते का वीकली स्टेटमेंट तैयार है: कुल ₹{totalEarnings}!",
-      "priority": "normal",
-      "action": "passbook"
-    },
-    {
-      "id": "weekly_summary_012",
-      "category": "weekly_summary",
-      "title": "मेहनत का वीकली फल! 😊",
-      "message": "सात दिनों की मेहनत का फल! पासबुक खोलो और वीकली रिपोर्ट देखो भाई! 😊",
-      "priority": "normal",
-      "action": "passbook"
+      "action": "passbook",
+      "category": "weekly_summary"
     },
     {
       "id": "monthly_summary_001",
-      "category": "monthly_summary",
-      "title": "महीने का हिसाब देख लो भाई! 📅",
-      "message": "महीना पूरा हो गया है! पासबुक खोलकर देख लो कितनी कमाई जमा हुई। 😂",
+      "title": "Mahine ka hisaab dekh lo bhai! 📅",
+      "message": "Mahina poora ho gaya hai! Passbook kholkar dekh lo kitni kamai jama hui. 😂",
       "priority": "normal",
-      "action": "passbook"
+      "action": "passbook",
+      "category": "monthly_summary"
     },
     {
       "id": "monthly_summary_002",
-      "category": "monthly_summary",
-      "title": "महीना पूरा, सैलरी टाइम! 💰",
-      "message": "महीना खत्म! कुल कमाई: ₹{totalEarnings}, एडवांस: ₹{advance}, नेट देय: ₹{netPayable}! 💰",
+      "title": "Mahina poora, salary time! 💰",
+      "message": "Mahina khatam! Kul kamai: ₹{totalEarnings}, Advance: ₹{advance}, Net Payable: ₹{netPayable}! 💰",
       "priority": "normal",
-      "action": "passbook"
+      "action": "passbook",
+      "category": "monthly_summary"
     },
     {
       "id": "monthly_summary_003",
-      "category": "monthly_summary",
-      "title": "महीने की महा-समरी! 📊",
-      "message": "{userName}, इस महीने का अटेंडेंस रेट {attendancePercentage}% रहा। वर्किंग डेज: {workingDays}।",
+      "title": "Mahine ki maha-summary! 📊",
+      "message": "{userName}, is mahine ka attendance rate {attendancePercentage}% raha. Working days: {workingDays}.",
       "priority": "normal",
-      "action": "passbook"
+      "action": "passbook",
+      "category": "monthly_summary"
     },
     {
       "id": "monthly_summary_004",
-      "category": "monthly_summary",
-      "title": "महीने का रिपोर्ट कार्ड! 📑",
-      "message": "महीने भर का हिसाब: {presentDays} दिन प्रेजेंट, {absentDays} दिन एब्सेंट। नेट देय: ₹{netPayable}!",
+      "title": "Mahine ka report card! 📑",
+      "message": "Mahine bhar ka hisaab: {presentDays} din present, {absentDays} din absent. Net payable: ₹{netPayable}!",
       "priority": "normal",
-      "action": "passbook"
+      "action": "passbook",
+      "category": "monthly_summary"
     },
     {
       "id": "monthly_summary_005",
-      "category": "monthly_summary",
-      "title": "क्लोजिंग बैलेंस रेडी! 🏆",
-      "message": "महीने का क्लोजिंग बैलेंस: कुल ओटी {overtime} घंटे, कुल कमाई ₹{totalEarnings}।",
+      "title": "Closing balance ready! 🏆",
+      "message": "Mahine ka closing balance: Kul OT {overtime} hrs, kul kamai ₹{totalEarnings}.",
       "priority": "normal",
-      "action": "passbook"
+      "action": "passbook",
+      "category": "monthly_summary"
     },
     {
       "id": "monthly_summary_006",
-      "category": "monthly_summary",
-      "title": "पीडीएफ एक्सपोर्ट करो! 📄",
-      "message": "{userName}, आपकी इस महीने की पासबुक पीडीएफ एक्सपोर्ट के लिए तैयार है! 📄",
+      "title": "PDF export kar lo! 📄",
+      "message": "{userName}, aapki is mahine ki passbook PDF export ke liye ready hai! 📄",
       "priority": "normal",
-      "action": "passbook"
+      "action": "passbook",
+      "category": "monthly_summary"
     },
     {
       "id": "monthly_summary_007",
-      "category": "monthly_summary",
-      "title": "मासिक कमाई समरी! 💵",
-      "message": "महीने की कमाई समरी: ₹{totalEarnings} ग्रॉस, ₹{netPayable} नेट हाथ में आने वाली राशि।",
+      "title": "Masik kamai summary! 💵",
+      "message": "Mahine ki kamai summary: ₹{totalEarnings} gross, ₹{netPayable} net haath me aane wali rashi.",
       "priority": "normal",
-      "action": "passbook"
+      "action": "passbook",
+      "category": "monthly_summary"
     },
     {
       "id": "monthly_summary_008",
-      "category": "monthly_summary",
-      "title": "नेट पेएबल चेक करो! 💰",
-      "message": "इस महीने {workingDays} दिन ड्यूटी की। नेट घर ले जाने वाली राशि: ₹{netPayable}।",
+      "title": "Net payable check karo! 💰",
+      "message": "Is mahine {workingDays} din duty ki. Net ghar le jaane wali rashi: ₹{netPayable}.",
       "priority": "normal",
-      "action": "passbook"
+      "action": "passbook",
+      "category": "monthly_summary"
     },
     {
       "id": "monthly_summary_009",
-      "category": "monthly_summary",
-      "title": "मासिक लेजर लॉक! 🔒",
-      "message": "महीने भर का लेजर तैयार! ऑफिशियल पीडीएफ पासबुक तुरंत डाउनलोड करो भाई!",
+      "title": "Mahine bhar ki duty! 🌟",
+      "message": "{userName}, aapne is mahine {presentDays} dino ki duty karke ₹{totalEarnings} kamaye!",
       "priority": "normal",
-      "action": "passbook"
+      "action": "passbook",
+      "category": "monthly_summary"
     },
     {
       "id": "monthly_summary_010",
-      "category": "monthly_summary",
-      "title": "महीने भर की ड्यूटी! 🌟",
-      "message": "{userName}, आपने इस महीने {presentDays} दिनों की ड्यूटी करके ₹{totalEarnings} कमाए!",
+      "title": "Passbook ka maha-hisaab! 🌟",
+      "message": "Mahine ka maha-hisaab: Mehnat rang lai hai, apni passbook me final balance dekho! 🌟",
       "priority": "normal",
-      "action": "passbook"
-    },
-    {
-      "id": "monthly_summary_011",
-      "category": "monthly_summary",
-      "title": "मासिक एडवांस हिसाब! 📉",
-      "message": "महीने भर की हाज़िरी और एडवांस का हिसाब: कुल एडवांस ₹{advance}, नेट बकाया ₹{netPayable}।",
-      "priority": "normal",
-      "action": "passbook"
-    },
-    {
-      "id": "monthly_summary_012",
-      "category": "monthly_summary",
-      "title": "पासबुक का महा-हिसाब! 🌟",
-      "message": "महीने का महा-हिसाब: मेहनत रंग लाई है, अपनी पासबुक में फाइनल बैलेंस देखो! 🌟",
-      "priority": "normal",
-      "action": "passbook"
+      "action": "passbook",
+      "category": "monthly_summary"
     },
     {
       "id": "earnings_001",
-      "category": "earnings",
-      "title": "पैसा आया है महाराज! 💰😂",
-      "message": "आज की कमाई का हिसाब तैयार है। मेहनत रंग ला रही है, बस बैंक बैलेंस भी मान जाए! 😆",
+      "title": "Paisa aaya hai maharaj! 💰😂",
+      "message": "Aaj ki kamai ka hisaab ready hai. Mehnat rang la rahi hai, bas bank balance bhi maan jaye! 😆",
       "priority": "normal",
-      "action": "passbook"
+      "action": "passbook",
+      "category": "earnings"
     },
     {
       "id": "earnings_002",
-      "category": "earnings",
-      "title": "कमाई का नया अपडेट! 💵",
-      "message": "कमाई अपडेट! {userName}, आपकी आज की दिहाड़ी दर ₹{amount}/दिन दर्ज है। 💵",
+      "title": "Kamai ka naya update! 💵",
+      "message": "Kamai update! {userName}, aapki aaj ki dihadi rate ₹{amount}/day record hai. 💵",
       "priority": "normal",
-      "action": "passbook"
+      "action": "passbook",
+      "category": "earnings"
     },
     {
       "id": "earnings_003",
-      "category": "earnings",
-      "title": "एडवांस कटौैती दर्ज! 📉",
-      "message": "एडवांस एंट्री दर्ज हुई: ₹{advance} एडवांस लिया था ({date})। शेष देय: ₹{netPayable}।",
+      "title": "Advance deduction record! 📉",
+      "message": "Advance entry: ₹{advance} advance liya tha ({date}). Shesh payable: ₹{netPayable}.",
       "priority": "normal",
-      "action": "passbook"
+      "action": "passbook",
+      "category": "earnings"
     },
     {
       "id": "earnings_004",
-      "category": "earnings",
-      "title": "शुद्ध कमाई का हिसाब! 📊",
-      "message": "आपकी बची हुई शुद्ध देय राशि ₹{netPayable} है। अपनी पासबुक चेक करो भाई! 💰",
+      "title": "Shuddh kamai ka hisaab! 📊",
+      "message": "Aapki bachi hui net payable rashi ₹{netPayable} hai. Apni passbook check karo bhai! 💰",
       "priority": "normal",
-      "action": "passbook"
+      "action": "passbook",
+      "category": "earnings"
     },
     {
       "id": "earnings_005",
-      "category": "earnings",
-      "title": "कमाई का नया मुकाम! 🏆",
-      "message": "{userName}, इस साइकिल की आपकी कुल कमाई ₹{totalEarnings} तक पहुँच गई है!",
+      "title": "Kamai ka naya mukam! 🏆",
+      "message": "{userName}, is cycle ki aapki kul kamai ₹{totalEarnings} tak pahunch gayi hai!",
       "priority": "normal",
-      "action": "passbook"
+      "action": "passbook",
+      "category": "earnings"
     },
     {
       "id": "earnings_006",
-      "category": "earnings",
-      "title": "अग्रिम घटा दिया गया! ✂️",
-      "message": "अग्रिम कटौती: कुल कमाई ₹{totalEarnings} में से ₹{advance} एडवांस घटा दिया गया है।",
+      "title": "Advance ghata diya gaya! ✂️",
+      "message": "Advance deduction: Kul kamai ₹{totalEarnings} me se ₹{advance} advance ghata diya gaya hai.",
       "priority": "normal",
-      "action": "passbook"
+      "action": "passbook",
+      "category": "earnings"
     },
     {
       "id": "earnings_007",
-      "category": "earnings",
-      "title": "वित्तीय विवरण तैयार! 📑",
-      "message": "वित्तीय विवरण: कुल कमाई ₹{totalEarnings}, एडवांस ₹{advance}, बकाया ₹{netPayable}।",
+      "title": "Financial details ready! 📑",
+      "message": "Financial report: Kul kamai ₹{totalEarnings}, Advance ₹{advance}, Bakaya ₹{netPayable}.",
       "priority": "normal",
-      "action": "passbook"
+      "action": "passbook",
+      "category": "earnings"
     },
     {
       "id": "earnings_008",
-      "category": "earnings",
-      "title": "कुल नेट देय राशि! 💰",
-      "message": "नया अटेंडेंस और वेज एंट्री दर्ज! कुल नेट देय राशि ₹{netPayable} हो गई है।",
+      "title": "Total net payable amount! 💰",
+      "message": "Naya attendance aur wage entry record! Kul net payable rashi ₹{netPayable} ho gayi hai.",
       "priority": "normal",
-      "action": "passbook"
+      "action": "passbook",
+      "category": "earnings"
     },
     {
       "id": "earnings_009",
-      "category": "earnings",
-      "title": "एडवांस सेफ़ली सेव्ड! 🔐",
-      "message": "एडवांस रिकॉर्ड सुरक्षित: ₹{advance} का एडवांस आपकी लोकल पासबुक में सेव है।",
+      "title": "Kamai ka chhakka! 🏏",
+      "message": "{userName}, aapne is mahine kul ₹{totalEarnings} ki kamai ka mukam chhoo liya hai! 💪",
       "priority": "normal",
-      "action": "passbook"
+      "action": "passbook",
+      "category": "earnings"
     },
     {
       "id": "earnings_010",
-      "category": "earnings",
-      "title": "कमाई का छक्का! 🏏",
-      "message": "{userName}, आपने इस महीने कुल ₹{totalEarnings} की कमाई का मुकाम छू लिया है! 💪",
+      "title": "Pai-pai ka hisaab! 👍",
+      "message": "Mehnat ka pai-pai ka hisaab! Aapki net payable rashi ₹{netPayable} record hai! 👍",
       "priority": "normal",
-      "action": "passbook"
+      "action": "passbook",
+      "category": "earnings"
     },
     {
-      "id": "earnings_011",
-      "category": "earnings",
-      "title": "शुद्ध भुगतान कैलकुलेट! 🧮",
-      "message": "शुद्ध भुगतान गणना पूरी हुई। बची हुई राशि ₹{netPayable} है। रजिस्टर देखो!",
+      "id": "advance_001",
+      "title": "Advance ka hisaab yaad hai na? 😆",
+      "message": "Bhai ₹{advance} advance liya tha! Kharch ho gaya ya bachaya hai? Passbook me entry pakki hai! 😂",
       "priority": "normal",
-      "action": "passbook"
+      "action": "passbook",
+      "category": "advance"
     },
     {
-      "id": "earnings_012",
-      "category": "earnings",
-      "title": "पाई-पाई का हिसाब! 👍",
-      "message": "मेहनत का पाई-पाई का हिसाब! आपकी शुद्ध देय राशि ₹{netPayable} दर्ज है! 👍",
+      "id": "advance_002",
+      "title": "Advance entry locked! 💸",
+      "message": "{userName}, aapka ₹{advance} ka advance record ho gaya hai. Balance salary: ₹{netPayable}.",
       "priority": "normal",
-      "action": "passbook"
+      "action": "passbook",
+      "category": "advance"
+    },
+    {
+      "id": "advance_003",
+      "title": "Paisa pehle, kaam baad me? 😂",
+      "message": "Seth ji se advance le liya ₹{advance}? Chalo badhiya hai, ab kaam bhi dhang se kar lo! 😆",
+      "priority": "normal",
+      "action": "passbook",
+      "category": "advance"
+    },
+    {
+      "id": "advance_004",
+      "title": "Advance deduction updated! ✂️",
+      "message": "Dihadi me se ₹{advance} advance cut-off ho gaya hai. Net payable balance: ₹{netPayable}.",
+      "priority": "normal",
+      "action": "passbook",
+      "category": "advance"
+    },
+    {
+      "id": "advance_005",
+      "title": "Pocket money ya advance? 😜",
+      "message": "Arre {userName}, ₹{advance} ka advance entry mar liya! Passbook me check kar le.",
+      "priority": "normal",
+      "action": "passbook",
+      "category": "advance"
+    },
+    {
+      "id": "advance_006",
+      "title": "Hisab clear rakho! 📝",
+      "message": "Advance lene me koi burai nahi, bas WorkDaily me entry karke hisaab clear rakho! 👍",
+      "priority": "normal",
+      "action": "passbook",
+      "category": "advance"
+    },
+    {
+      "id": "advance_007",
+      "title": "Udhari nahi, advance hai! 💡",
+      "message": "Yeh udhari nahi, mehnat ka advance hai! ₹{advance} passbook me safely added.",
+      "priority": "normal",
+      "action": "passbook",
+      "category": "advance"
+    },
+    {
+      "id": "advance_008",
+      "title": "Advance ka meter chalu! ⏱️",
+      "message": "Kul advance ₹{advance} pahunch gaya hai {userName}. Net bachi kamai: ₹{netPayable}.",
+      "priority": "normal",
+      "action": "passbook",
+      "category": "advance"
+    },
+    {
+      "id": "advance_009",
+      "title": "Seth ji ne de diya advance! 💵",
+      "message": "Seth ji ne advance de diya? Badhiya hai bhai, ₹{advance} entry passbook me ho gayi!",
+      "priority": "normal",
+      "action": "passbook",
+      "category": "advance"
+    },
+    {
+      "id": "advance_010",
+      "title": "Passbook balance check! 📊",
+      "message": "Advance: ₹{advance}, Gross: ₹{totalEarnings}, Net Handout: ₹{netPayable}. Check karo!",
+      "priority": "normal",
+      "action": "passbook",
+      "category": "advance"
     },
     {
       "id": "passbook_001",
-      "category": "passbook",
-      "title": "हिसाब-किताब खोलो भाई! 📖",
-      "message": "अब तक की मेहनत और कमाई का पूरा हिसाब पासबुक में तैयार है। देख लो! 😂",
+      "title": "Hisaab-kitaab kholo bhai! 📖",
+      "message": "Ab tak ki mehnat aur kamai ka poora hisaab passbook me ready hai. Khol ke dekh le! 😂",
       "priority": "normal",
-      "action": "passbook"
+      "action": "passbook",
+      "category": "passbook"
     },
     {
       "id": "passbook_002",
-      "category": "passbook",
-      "title": "डिजिटल पासबुक अपडेट! 📄",
-      "message": "आपकी डिजिटल पासबुक अपडेट हो गई है! कुल शुद्ध बकाया राशि: ₹{netPayable}। 📖",
+      "title": "Digital passbook update! 📄",
+      "message": "Aapki digital passbook update ho gayi hai! Kul net bakaya rashi: ₹{netPayable}.",
       "priority": "normal",
-      "action": "passbook"
+      "action": "passbook",
+      "category": "passbook"
     },
     {
       "id": "passbook_003",
-      "category": "passbook",
-      "title": "पीडीएफ पासबुक रेडी! 📑",
-      "message": "{month} महीने की पासबुक पीडीएफ तैयार है। एक क्लिक में डाउनलोड और शेयर करो! 📄",
+      "title": "PDF passbook ready! 📑",
+      "message": "{month} mahine ki passbook PDF ready hai. Ek click me download aur share karo! 📄",
       "priority": "normal",
-      "action": "passbook"
+      "action": "passbook",
+      "category": "passbook"
     },
     {
       "id": "passbook_004",
-      "category": "passbook",
-      "title": "लोकल लेजर सुरक्षित! 🔐",
-      "message": "बिना इंटरनेट, 100% सुरक्षित! {date} की पासबुक एंट्री दर्ज कर ली गई है।",
+      "title": "Local ledger safe! 🔐",
+      "message": "Bina internet, 100% safe! {date} ki passbook entry record kar li gayi hai.",
       "priority": "normal",
-      "action": "passbook"
+      "action": "passbook",
+      "category": "passbook"
     },
     {
       "id": "passbook_005",
-      "category": "passbook",
-      "title": "पासबुक समरी देखो! 📊",
-      "message": "{userName}, सटीक दिहाड़ी ट्रैकिंग के लिए अपनी पासबुक एंट्रीज की जाँच करें।",
+      "title": "Passbook summary dekho! 📊",
+      "message": "{userName}, sateek dihadi tracking ke liye apni passbook entries ki jaanch karein.",
       "priority": "normal",
-      "action": "passbook"
+      "action": "passbook",
+      "category": "passbook"
     },
     {
       "id": "passbook_006",
-      "category": "passbook",
-      "title": "एंट्रीज वेरीफाई हो गईं! ✅",
-      "message": "आपकी हाज़िरी, ओवर-टाइम और एडवांस की सभी एंट्रीज पासबुक में वेरीफाई हो गई हैं।",
+      "title": "Entries verify ho gayi! ✅",
+      "message": "Aapki attendance, overtime aur advance ki sabhi entries passbook me verify ho gayi hain.",
       "priority": "normal",
-      "action": "passbook"
+      "action": "passbook",
+      "category": "passbook"
     },
     {
       "id": "passbook_007",
-      "category": "passbook",
-      "title": "साफ़-सुथरी पीडीएफ रिपोर्ट! 📑",
-      "message": "अपनी मासिक पासबुक को कभी भी साफ़-सुथरी पीडीएफ रिपोर्ट में एक्सपोर्ट करो! 📑",
+      "title": "100% offline passbook! 📱",
+      "message": "100% offline passbook: Aaj ki attendance aur dihadi ke saath update ho gayi hai.",
       "priority": "normal",
-      "action": "passbook"
+      "action": "passbook",
+      "category": "passbook"
     },
     {
       "id": "passbook_008",
-      "category": "passbook",
-      "title": "100% ऑफ़लाइन पासबुक! 📱",
-      "message": "100% ऑफ़लाइन पासबुक: आज की हाज़िरी और दिहाड़ी के साथ अपडेट हो गई है।",
+      "title": "Passbook record safe! 🛡️",
+      "message": "Aapki passbook ke records aapke phone me poori tarah safe hain. Kholkar dekhein!",
       "priority": "normal",
-      "action": "passbook"
+      "action": "passbook",
+      "category": "passbook"
     },
     {
       "id": "passbook_009",
-      "category": "passbook",
-      "title": "पासबुक रिकॉर्ड सेफ़! 🛡️",
-      "message": "आपकी पासबुक के रिकॉर्ड आपके फ़ोन में पूरी तरह सुरक्षित हैं। खोलकर देखें!",
+      "title": "Official passbook PDF! ⚡",
+      "message": "Official WorkDaily passbook PDF generate karo aur boss ko bhej do! ⚡",
       "priority": "normal",
-      "action": "passbook"
+      "action": "passbook",
+      "category": "passbook"
     },
     {
       "id": "passbook_010",
-      "category": "passbook",
-      "title": "कार्य दिवस दर्ज! 📅",
-      "message": "वर्तमान पासबुक स्टेटमेंट में {workingDays} कार्य दिवस दर्ज किए जा चुके हैं।",
+      "title": "Hisaab sheeshe ki tarah saaf! ✨",
+      "message": "Passbook ka hisaab sheeshe ki tarah saaf hai bhai! Apni kul kamai dekh lo.",
       "priority": "normal",
-      "action": "passbook"
-    },
-    {
-      "id": "passbook_011",
-      "category": "passbook",
-      "title": "ऑफिशियल पासबुक पीडीएफ! ⚡",
-      "message": "ऑफिशियल वर्कडेली पासबुक पीडीएफ जनरेट करो और मालिक को भेज दो! ⚡",
-      "priority": "normal",
-      "action": "passbook"
-    },
-    {
-      "id": "passbook_012",
-      "category": "passbook",
-      "title": "हिसाब शीशे की तरह साफ़! ✨",
-      "message": "पासबुक का हिसाब शीशे की तरह साफ़ है भाई! अपनी कुल कमाई देख लो।",
-      "priority": "normal",
-      "action": "passbook"
+      "action": "passbook",
+      "category": "passbook"
     },
     {
       "id": "calendar_001",
-      "category": "calendar",
-      "title": "कैलेंडर का चक्कर! 📅",
-      "message": "{month} {year} का अटेंडेंस कैलेंडर चेक करो भाई, सब रंग साफ़ दिख रहे हैं! 📅",
+      "title": "Calendar ka chakkar! 📅",
+      "message": "{month} {year} ka attendance calendar check karo bhai, sab colours saaf dikh rahe hain! 📅",
       "priority": "normal",
-      "action": "calendar"
+      "action": "calendar",
+      "category": "calendar"
     },
     {
       "id": "calendar_002",
-      "category": "calendar",
-      "title": "कैलेंडर हरा-भरा है! 🟢",
-      "message": "{userName}, कैलेंडर पर अपनी प्रेजेंट, एब्सेंट और एडवांस की तारीखें देखें।",
+      "title": "Calendar hara-bhara hai! 🟢",
+      "message": "{userName}, calendar par apni present, absent aur advance ki taarikhein dekhein.",
       "priority": "normal",
-      "action": "calendar"
+      "action": "calendar",
+      "category": "calendar"
     },
     {
       "id": "calendar_003",
-      "category": "calendar",
-      "title": "रंग पहचानो भाई! 🎨",
-      "message": "हरा = प्रेजेंट, लाल = एब्सेंट, नीला = एडवांस। अपना कैलेंडर रिव्यू करो! 🟢🔴",
+      "title": "Colour pehchano bhai! 🎨",
+      "message": "Hara = Present, Laal = Absent, Neela = Advance. Apna calendar review karo! 🟢🔴",
       "priority": "normal",
-      "action": "calendar"
+      "action": "calendar",
+      "category": "calendar"
     },
     {
       "id": "calendar_004",
-      "category": "calendar",
-      "title": "तारीखों का नक्शा! 🗺️",
-      "message": "{month} के सभी रिकॉर्ड्स कैलेंडर पर सज गए हैं। तारीखों पर टैप करके देखो!",
+      "title": "Taarikhon ka naksha! 🗺️",
+      "message": "{month} ke sabhi records calendar par saj gaye hain. Dates pe tap karke dekho!",
       "priority": "normal",
-      "action": "calendar"
+      "action": "calendar",
+      "category": "calendar"
     },
     {
       "id": "calendar_005",
-      "category": "calendar",
-      "title": "टैप करके एडिट करो! ✏️",
-      "message": "कैलेंडर में किसी भी तारीख पर टैप करके हाज़िरी या एडवांस एडिट कर सकते हो!",
+      "title": "Tap karke edit karo! ✏️",
+      "message": "Calendar me kisi bhi date pe tap karke attendance ya advance edit kar sakte ho!",
       "priority": "normal",
-      "action": "calendar"
+      "action": "calendar",
+      "category": "calendar"
     },
     {
       "id": "calendar_006",
-      "category": "calendar",
-      "title": "अटेंडेंस स्ट्राइक देखो! ⚡",
-      "message": "कैलेंडर स्क्रीन पर अपनी अटेंडेंस स्ट्राइक और वर्किंग डेज की जाँच करें।",
+      "title": "Attendance streak dekho! ⚡",
+      "message": "Calendar screen par apni attendance streak aur working days ki jaanch karein.",
       "priority": "normal",
-      "action": "calendar"
+      "action": "calendar",
+      "category": "calendar"
     },
     {
       "id": "calendar_007",
-      "category": "calendar",
-      "title": "कैलेंडर ग्रिड अपडेट! 📊",
-      "message": "{month} का कैलेंडर ग्रिड अपडेट हुआ: {presentDays} दिन प्रेजेंट दर्ज हैं।",
+      "title": "Calendar grid update! 📊",
+      "message": "{month} ka calendar grid update hua: {presentDays} din present record hain.",
       "priority": "normal",
-      "action": "calendar"
+      "action": "calendar",
+      "category": "calendar"
     },
     {
       "id": "calendar_008",
-      "category": "calendar",
-      "title": "शिफ्ट पैटर्न चेक करो! 🔍",
-      "message": "कैलेंडर व्यू में अपने काम के पैटर्न और छुट्टी के दिनों को आसानी से ट्रैक करें।",
+      "title": "Chhooti taarikhein bharo! 📝",
+      "message": "{userName}, chhooti hui dates ki attendance calendar view se turant bhar sakte ho!",
       "priority": "normal",
-      "action": "calendar"
+      "action": "calendar",
+      "category": "calendar"
     },
     {
       "id": "calendar_009",
-      "category": "calendar",
-      "title": "छूटी तारीखें भरो! 📝",
-      "message": "{userName}, छूटी हुई तारीखों की हाज़िरी कैलेंडर व्यू से तुरंत भर सकते हो!",
+      "title": "Hara colour badhao bhai! 🟢",
+      "message": "Calendar ka laal rang ghatao aur hara rang badhao bhai, kamai badhegi! 🟢",
       "priority": "normal",
-      "action": "calendar"
+      "action": "calendar",
+      "category": "calendar"
     },
     {
       "id": "calendar_010",
-      "category": "calendar",
-      "title": "लोकल कैलेंडर अप-टू-डेट! 🟢",
-      "message": "आपका लोकल अटेंडेंस कैलेंडर पूरी तरह से अप-टू-डेट है भाई!",
+      "title": "Taarikh-dar-taarikh hisaab! 🗓️",
+      "message": "Taarikh-dar-taarikh ka hisaab! Calendar kholkar apni poore mahine ki journey dekho!",
       "priority": "normal",
-      "action": "calendar"
-    },
-    {
-      "id": "calendar_011",
-      "category": "calendar",
-      "title": "हरा रंग बढ़ाओ भाई! 🟢",
-      "message": "कैलेंडर का लाल रंग घटाओ और हरा रंग बढ़ाओ भाई, कमाई बढ़ेगी! 🟢",
-      "priority": "normal",
-      "action": "calendar"
-    },
-    {
-      "id": "calendar_012",
-      "category": "calendar",
-      "title": "तारीख-दर-तारीख हिसाब! 🗓️",
-      "message": "तारीख-दर-तारीख का हिसाब! कैलेंडर खोलकर अपनी पूरे महीने की यात्रा देखो!",
-      "priority": "normal",
-      "action": "calendar"
+      "action": "calendar",
+      "category": "calendar"
     },
     {
       "id": "streak_001",
-      "category": "streak",
-      "title": "वाह भाई, रिकॉर्ड बन रहा है! 🔥",
-      "message": "लगातार हाज़िरी का सिलसिला बढ़ रहा है। ऐसे ही चलता रहा तो खुद ही अपने बॉस बन जाओगे! 😂",
+      "title": "Waah bhai, record ban raha hai! 🔥",
+      "message": "Lagatar attendance ka silsila badh raha hai. Aise hi chalta raha toh khud boss ban jaoge! 😂",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "streak"
     },
     {
       "id": "streak_002",
-      "category": "streak",
-      "title": "हाज़िरी की हैट्रिक! 🚀",
-      "message": "गजब! लगातार {streak} दिनों से बिना नागा काम पर जा रहे हो! स्ट्राइक ऑन फायर! 🔥",
+      "title": "Attendance ki hat-trick! 🚀",
+      "message": "Gajab! Lagatar {streak} dino se bina naga kaam pe ja rahe ho! Streak ON FIRE! 🔥",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "streak"
     },
     {
       "id": "streak_003",
-      "category": "streak",
-      "title": "रुकना मना है! 💪",
-      "message": "{streak} लगातार वर्किंग डेज दर्ज! इसी तरह रफ्तार बनाए रखो, {userName}! 🚀",
+      "title": "Rukna mana hai! 💪",
+      "message": "{streak} lagatar working days record! Isi tarah raftaar banaye rakho, {userName}! 🚀",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "streak"
     },
     {
       "id": "streak_004",
-      "category": "streak",
-      "title": "कंसिस्टेंसी किंग! 👑",
-      "message": "लगातार {streak} दिन ड्यूटी! आपकी लगन देखकर तो कंपनी भी खुश हो जाएगी! 💪",
+      "title": "Consistency King! 👑",
+      "message": "Lagatar {streak} din duty! Aapki lagan dekhkar toh company bhi khush ho jayegi! 💪",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "streak"
     },
     {
       "id": "streak_005",
-      "category": "streak",
-      "title": "अनुशासन का नया रिकॉर्ड! 🌟",
-      "message": "{streak} दिनों की वर्किंग स्ट्राइक पूरी हुई! अनुशासन का नया रिकॉर्ड! 🌟",
+      "title": "Anushasan ka naya record! 🌟",
+      "message": "{streak} dino ki working streak poori hui! Anushasan ka naya record! 🌟",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "streak"
     },
     {
       "id": "streak_006",
-      "category": "streak",
-      "title": "स्ट्राइक कायम रखो! 🎯",
-      "message": "{userName}, लगातार {streak} दिन प्रेजेंट! आज भी स्ट्राइक कायम रखो भाई!",
+      "title": "Streak kayam rakho! 🎯",
+      "message": "{userName}, lagatar {streak} din present! Aaj bhi streak kayam rakho bhai!",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "streak"
     },
     {
       "id": "streak_007",
-      "category": "streak",
-      "title": "कंसिस्टेंसी के राजा! 👑",
-      "message": "कंसिस्टेंसी के राजा! {streak} दिनों की अटेंडेंस स्ट्राइक हासिल हो चुकी है।",
+      "title": "Streak tootne na paye! 🛑",
+      "message": "Apni {streak} dino ki work streak tootne mat dena—aaj ki attendance mark karo!",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "streak"
     },
     {
       "id": "streak_008",
-      "category": "streak",
-      "title": "स्ट्राइक टूटने न पाए! 🛑",
-      "message": "अपनी {streak} दिनों की वर्क स्ट्राइक टूटने मत देना—आज की हाज़िरी दर्ज करो!",
+      "title": "Full productivity! 🏆",
+      "message": "WorkDaily me {streak} dino ki streak register ho gayi hai! Full productivity! 🏆",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "streak"
     },
     {
       "id": "streak_009",
-      "category": "streak",
-      "title": "फुल प्रोडक्टिविटी! 🏆",
-      "message": "वर्कडेली में {streak} दिनों की स्ट्राइक रजिस्टर हो गई है! फुल प्रोडक्टिविटी! 🏆",
+      "title": "Naya mukam chhoo lo! 🎯",
+      "message": "Aaj ki attendance lagakar apni {streak} dino ki streak ko naya mukam do! 🎯",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "streak"
     },
     {
       "id": "streak_010",
-      "category": "streak",
-      "title": "शानदार निरंतरता! 🌟",
-      "message": "शानदार निरंतरता! लगातार {streak} दिन प्रेजेंट दर्ज किए जा चुके हैं।",
+      "title": "Kamai aur streak! 💰",
+      "message": "Streak bani rahegi toh kamai bhi bani rahegi! {streak} din poore, aage badho bhai!",
       "priority": "normal",
-      "action": "home"
-    },
-    {
-      "id": "streak_011",
-      "category": "streak",
-      "title": "नया मुकाम छुओ! 🎯",
-      "message": "आज की हाज़िरी लगाकर अपनी {streak} दिनों की स्ट्राइक को नया मुकाम दो! 🎯",
-      "priority": "normal",
-      "action": "home"
-    },
-    {
-      "id": "streak_012",
-      "category": "streak",
-      "title": "कमाई और स्ट्राइक! 💰",
-      "message": "स्ट्राइक बनी रहेगी तो कमाई भी बनी रहेगी! {streak} दिन पूरे, आगे बढ़ो भाई!",
-      "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "streak"
     },
     {
       "id": "milestone_001",
-      "category": "milestone",
-      "title": "मुकाम हासिल हुआ! 🏆",
-      "message": "वर्कडेली में कुल {workingDays} वर्किंग डेज पूरे हो चुके हैं! मुकाम मुबारक! 🏆",
+      "title": "Mukam hasil hua! 🏆",
+      "message": "WorkDaily me kul {workingDays} working days poore ho chuke hain! Mukam mubarak! 🏆",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "milestone"
     },
     {
       "id": "milestone_002",
-      "category": "milestone",
-      "title": "कमाई का नया शिखर! 💰",
-      "message": "बधाई हो {userName}! आपने कुल कमाई में ₹{totalEarnings} का मुकाम पार कर लिया! 💰",
+      "title": "Kamai ka naya shikhar! 💰",
+      "message": "Badhai ho {userName}! Aapne kul kamai me ₹{totalEarnings} ka mukam paar kar liya! 💰",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "milestone"
     },
     {
       "id": "milestone_003",
-      "category": "milestone",
-      "title": "मील का पत्थर पार! 🌟",
-      "message": "मील का पत्थर पार: इस साल कुल {presentDays} प्रेजेंट डेज दर्ज हो चुके हैं! 🌟",
+      "title": "Meel ka patthar paar! 🌟",
+      "message": "Meel ka patthar paar: Is saal kul {presentDays} present days record ho chuke hain! 🌟",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "milestone"
     },
     {
       "id": "milestone_004",
-      "category": "milestone",
-      "title": "100 दिन पूरे! 👑",
-      "message": "100 कार्य दिवस पूरे! आप एक सच्चे और मेहनती वर्कर हैं, {userName}! 👑",
+      "title": "100 din poore! 👑",
+      "message": "100 working days poore! Aap ek sacche aur mehnati worker hain, {userName}! 👑",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "milestone"
     },
     {
       "id": "milestone_005",
-      "category": "milestone",
-      "title": "ओवरटाइम माइलस्टोन! 💪",
-      "message": "ओवरटाइम माइलस्टोन: कुल {overtime} घंटे की अतिरिक्त ड्यूटी पूरी हो चुकी है! 💪",
+      "title": "Overtime milestone! 💪",
+      "message": "Overtime milestone: Kul {overtime} ghante ki extra duty poori ho chuki hai! 💪",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "milestone"
     },
     {
       "id": "milestone_006",
-      "category": "milestone",
-      "title": "लेजर साफ़-सुथरा! 📖",
-      "message": "50+ पासबुक एंट्रीज दर्ज! आपका लेजर शीशे की तरह साफ़ और साफ़-सुथरा है।",
+      "title": "Ledger saaf-suthra! 📖",
+      "message": "50+ passbook entries record! Aapka ledger sheeshe ki tarah saaf aur neat hai.",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "milestone"
     },
     {
       "id": "milestone_007",
-      "category": "milestone",
-      "title": "उत्कृष्ट प्रतिबद्धता! 📈",
-      "message": "उत्कृष्ट प्रतिबद्धता! {attendancePercentage}% अटेंडेंस के साथ नया मुकाम हासिल!",
+      "title": "Utkrisht commitment! 📈",
+      "message": "Utkrisht commitment! {attendancePercentage}% attendance ke saath naya mukam hasil!",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "milestone"
     },
     {
       "id": "milestone_008",
-      "category": "milestone",
-      "title": "सालाना मुकाम! 🎉",
-      "message": "{userName}, आपने इस साल कुल {workingDays} दिन ड्यूटी की है! बहुत बढ़िया! 🎉",
+      "title": "Saalana mukam! 🎉",
+      "message": "{userName}, aapne is saal kul {workingDays} din duty ki hai! Bahut badiya! 🎉",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "milestone"
     },
     {
       "id": "milestone_009",
-      "category": "milestone",
-      "title": "पासबुक माइलस्टोन! 💵",
-      "message": "पासबुक माइलस्टोन: कुल नेट पेएबल राशि ₹{netPayable} कैलकुलेट हो चुकी है!",
+      "title": "Passbook milestone! 💵",
+      "message": "Passbook milestone: Kul net payable rashi ₹{netPayable} calculate ho chuki hai!",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "milestone"
     },
     {
       "id": "milestone_010",
-      "category": "milestone",
-      "title": "मजबूत काम का इतिहास! 🏆",
-      "message": "वर्कडेली पर आप एक मजबूत काम का इतिहास बना रहे हैं! आगे बढ़ते रहें! 🏆",
+      "title": "Bemisal record! 🌟",
+      "message": "Itihas rach rahe ho bhai! Aapki lagan aur record dono bemisal hain! 🌟",
       "priority": "normal",
-      "action": "home"
-    },
-    {
-      "id": "milestone_011",
-      "category": "milestone",
-      "title": "मेहनत का रिकॉर्ड लॉक! 🔒",
-      "message": "मेहनत का फल सामने है! {workingDays} दिनों की मेहनत का रिकॉर्ड लॉक हो गया।",
-      "priority": "normal",
-      "action": "home"
-    },
-    {
-      "id": "milestone_012",
-      "category": "milestone",
-      "title": "बेमिसाल रिकॉर्ड! 🌟",
-      "message": "इतिहास रच रहे हो भाई! आपकी लगन और रिकॉर्ड दोनों बेमिसाल हैं! 🌟",
-      "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "milestone"
     },
     {
       "id": "backup_001",
-      "category": "backup",
-      "title": "डेटा बचा लो भाई! 😭",
-      "message": "इतनी मेहनत से हाज़िरी भरी है, कहीं डेटा ने कल छुट्टी ले ली तो? बैकअप कर लो! 😂",
+      "title": "Data bacha lo bhai! 😭",
+      "message": "Itni mehnat se attendance bhari hai, kahin phone kho gaya toh? Settings me jaake backup le le! 😂",
       "priority": "normal",
-      "action": "settings"
+      "action": "settings",
+      "category": "backup"
     },
     {
       "id": "backup_002",
-      "category": "backup",
-      "title": "लोकल बैकअप रेडी! 💾",
-      "message": "अपने डेटा को सुरक्षित रखें! अपनी पासबुक का तुरंत एक लोकल बैकअप बना लें। 💾",
+      "title": "Local backup ready! 💾",
+      "message": "Apne data ko safe rakhein! Apni passbook ka turant ek local backup bana lein. 💾",
       "priority": "normal",
-      "action": "settings"
+      "action": "settings",
+      "category": "backup"
     },
     {
       "id": "backup_003",
-      "category": "backup",
-      "title": "बैकअप सफल रहा! ✅",
-      "message": "बैकअप सफलतापूर्वक बन गया! आपके अटेंडेंस रिकॉर्ड्स 100% सुरक्षित हैं।",
+      "title": "Backup successful! ✅",
+      "message": "Backup successfully ban gaya! Aapke attendance records 100% safe hain.",
       "priority": "normal",
-      "action": "settings"
+      "action": "settings",
+      "category": "backup"
     },
     {
       "id": "backup_004",
-      "category": "backup",
-      "title": "डेटा सुरक्षा अलर्ट! 🔐",
-      "message": "{userName}, पासबुक और कमाई को सुरक्षित रखने के लिए ज़िप बैकअप जनरेट करें।",
+      "title": "Data security alert! 🔐",
+      "message": "{userName}, passbook aur kamai ko safe rakhne ke liye ZIP backup generate karein.",
       "priority": "normal",
-      "action": "settings"
+      "action": "settings",
+      "category": "backup"
     },
     {
       "id": "backup_005",
-      "category": "backup",
-      "title": "ज़िप फाइल बना लो! 📦",
-      "message": "अपने वर्क लेजर की एक कॉपी फ़ोन स्टोरेज या एसडी कार्ड में सेव कर लें! 📦",
+      "title": "ZIP file bana lo! 📦",
+      "message": "Apne work ledger ki ek copy phone storage ya SD card me save kar lein! 📦",
       "priority": "normal",
-      "action": "settings"
+      "action": "settings",
+      "category": "backup"
     },
     {
       "id": "backup_006",
-      "category": "backup",
-      "title": "100% सुरक्षित डेटा! 🛡️",
-      "message": "लास्ट बैकअप स्मूथली हो गया था। आपका डेटा पूरी तरह ऑफ़लाइन और सेफ़ है।",
+      "title": "100% safe offline data! 🛡️",
+      "message": "Last backup smoothly ho gaya tha. Aapka data poori tarah offline aur safe hai.",
       "priority": "normal",
-      "action": "settings"
+      "action": "settings",
+      "category": "backup"
     },
     {
       "id": "backup_007",
-      "category": "backup",
-      "title": "बैकअप एक्सपोर्ट करो! 📤",
-      "message": "अपने वर्कडेली बैकअप ज़िप को कभी भी एक्सपोर्ट या रीस्टोर करें।",
+      "title": "Backup export karo! 📤",
+      "message": "Apne WorkDaily backup ZIP ko kabhi bhi export ya restore karein.",
       "priority": "normal",
-      "action": "settings"
+      "action": "settings",
+      "category": "backup"
     },
     {
       "id": "backup_008",
-      "category": "backup",
-      "title": "रिस्क मत लो भाई! 🔐",
-      "message": "कमाई का रिकॉर्ड खोने का रिस्क न लें—सेटिंग्स में जाकर बैकअप लें! 🔐",
+      "title": "Risk mat lo bhai! 🔐",
+      "message": "Kamai ka record khone ka risk mat lo—Settings me jaake backup len! 🔐",
       "priority": "normal",
-      "action": "settings"
+      "action": "settings",
+      "category": "backup"
     },
     {
       "id": "backup_009",
-      "category": "backup",
-      "title": "सुरक्षित लोकल स्टोरेज! 📱",
-      "message": "आपका डेटाबेस और प्रोफाइल सेटिंग्स आपके फ़ोन में सुरक्षित संग्रहित हैं।",
+      "title": "Aasani se restore karo! 🔄",
+      "message": "Naye phone me apna attendance record aasani se ZIP file se restore karein!",
       "priority": "normal",
-      "action": "settings"
+      "action": "settings",
+      "category": "backup"
     },
     {
       "id": "backup_010",
-      "category": "backup",
-      "title": "आसानी से रीस्टोर करो! 🔄",
-      "message": "नये फ़ोन में अपना अटेंडेंस रिकॉर्ड आसानी से ज़िप फाइल से रीस्टोर करें!",
+      "title": "Ek backup, sau tension khatam! 😌",
+      "message": "Ek backup, sau tension khatam! Settings me jaakar ZIP file export kar lo bhai!",
       "priority": "normal",
-      "action": "settings"
-    },
-    {
-      "id": "backup_011",
-      "category": "backup",
-      "title": "वित्तीय सुरक्षा! 💰",
-      "message": "{userName}, वित्तीय रिकॉर्ड सुरक्षित रखने के लिए आज ही बैकअप लें!",
-      "priority": "normal",
-      "action": "settings"
-    },
-    {
-      "id": "backup_012",
-      "category": "backup",
-      "title": "सौ टेंशन खत्म! 😌",
-      "message": "एक बैकअप, सौ टेंशन खत्म! सेटिंग्स में जाकर ज़िप फाइल एक्सपोर्ट कर लो भाई!",
-      "priority": "normal",
-      "action": "settings"
+      "action": "settings",
+      "category": "backup"
     },
     {
       "id": "export_001",
-      "category": "export",
-      "title": "पीडीएफ रिपोर्ट निकालो! 📄",
-      "message": "अपनी आधिकारिक मासिक पासबुक को पीडीएफ डॉक्यूमेंट में एक्सपोर्ट करो भाई! 📄",
+      "title": "PDF report nikalo! 📄",
+      "message": "Apni official masik passbook ko PDF document me export karo bhai! 📄",
       "priority": "normal",
-      "action": "settings"
+      "action": "settings",
+      "category": "export"
     },
     {
       "id": "export_002",
-      "category": "export",
-      "title": "पासबुक शेयर करो! 📤",
-      "message": "आपकी पासबुक पीडीएफ बन गई है! व्हाट्सएप या ईमेल पर तुरंत शेयर करें! 📤",
+      "title": "Passbook share karo! 📤",
+      "message": "Aapki passbook PDF ban gayi hai! WhatsApp ya email par turant share karein! 📤",
       "priority": "normal",
-      "action": "settings"
+      "action": "settings",
+      "category": "export"
     },
     {
       "id": "export_003",
-      "category": "export",
-      "title": "ऑफिशल रिपोर्ट तैयार! 📑",
-      "message": "मालिक या ठेकेदार को दिखाने के लिए साफ़-सुथरी पीडीएफ रिपोर्ट जनरेट करो।",
+      "title": "Official report taiyar! 📑",
+      "message": "Boss ya thekedar ko dikhane ke liye saaf-suthri PDF report generate karo.",
       "priority": "normal",
-      "action": "settings"
+      "action": "settings",
+      "category": "export"
     },
     {
       "id": "export_004",
-      "category": "export",
-      "title": "ऑल-टाइम रिपोर्ट एक्सपोर्ट! 📄",
-      "message": "अपनी पूरी ऑल-टाइम काम की हिस्ट्री एक सिंगल पीडीएफ रिपोर्ट में एक्सपोर्ट करें! 📑",
+      "title": "All-time report export! 📄",
+      "message": "Apni poori all-time kaam ki history ek single PDF report me export karein! 📑",
       "priority": "normal",
-      "action": "settings"
+      "action": "settings",
+      "category": "export"
     },
     {
       "id": "export_005",
-      "category": "export",
-      "title": "वेरीफाइड वर्क समरी! ✅",
-      "message": "वेरीफाइड वर्क समरी पीडीएफ को अपने मैनेजर के साथ शेयर करने के लिए टैप करें!",
+      "title": "Verified work summary! ✅",
+      "message": "Verified work summary PDF ko apne manager ke saath share karne ke liye tap karein!",
       "priority": "normal",
-      "action": "settings"
+      "action": "settings",
+      "category": "export"
     },
     {
       "id": "export_006",
-      "category": "export",
-      "title": "प्रिंट-रेडी पीडीएफ! 🖨️",
-      "message": "आपकी वर्कडेली पीडीएफ A4 पेपर पर प्रिंट करने के लिए पूरी तरह रेडी है।",
+      "title": "Print-ready PDF! 🖨️",
+      "message": "Aapki WorkDaily PDF A4 paper par print karne ke liye poori tarah ready hai.",
       "priority": "normal",
-      "action": "settings"
+      "action": "settings",
+      "category": "export"
     },
     {
       "id": "export_007",
-      "category": "export",
-      "title": "प्रोफेशनल रिपोर्ट! 👔",
-      "message": "{userName}, कभी भी प्रोफेशनल अटेंडेंस और वेज रिपोर्ट एक्सपोर्ट करें।",
+      "title": "Professional report! 👔",
+      "message": "{userName}, kabhi bhi professional attendance aur wage report export karein.",
       "priority": "normal",
-      "action": "settings"
+      "action": "settings",
+      "category": "export"
     },
     {
       "id": "export_008",
-      "category": "export",
-      "title": "साफ़-सुथरी जनरेट हुई! ✨",
-      "message": "पारदर्शी लोगो और कुल वेज समरी के साथ पीडीएफ साफ़-सुथरी जनरेट हुई!",
+      "title": "Ek click me report! ⚡",
+      "message": "Kisi bhi mahine ki kamai ka official statement seconds me banayein! ⚡",
       "priority": "normal",
-      "action": "settings"
+      "action": "settings",
+      "category": "export"
     },
     {
       "id": "export_009",
-      "category": "export",
-      "title": "एक क्लिक में रिपोर्ट! ⚡",
-      "message": "किसी भी महीने की कमाई का आधिकारिक स्टेटमेंट सेकेंडों में बनाएं! ⚡",
+      "title": "Boss ko pakda do! 😂",
+      "message": "Boss mange hisaab toh turant WorkDaily se PDF export karke pakda do! 😂",
       "priority": "normal",
-      "action": "settings"
+      "action": "settings",
+      "category": "export"
     },
     {
       "id": "export_010",
-      "category": "export",
-      "title": "स्थायी रिकॉर्ड रखो! 💾",
-      "message": "स्थायी रिकॉर्ड के लिए अपनी वेज रिपोर्ट को पीडीएफ में सेव करके रखें!",
+      "title": "Tension free raho! 😊",
+      "message": "Professional report card taiyar hai, ek tap me share karo aur tension free raho!",
       "priority": "normal",
-      "action": "settings"
-    },
-    {
-      "id": "export_011",
-      "category": "export",
-      "title": "मालिक को पकड़ा दो! 😂",
-      "message": "मालिक मांगे हिसाब तो तुरंत वर्कडेली से पीडीएफ एक्सपोर्ट करके पकड़ा दो! 😂",
-      "priority": "normal",
-      "action": "settings"
-    },
-    {
-      "id": "export_012",
-      "category": "export",
-      "title": "टेंशन फ्री रहो! 😊",
-      "message": "प्रोफेशनल रिपोर्ट कार्ड तैयार है, एक टैप में शेयर करो और टेंशन फ्री रहो!",
-      "priority": "normal",
-      "action": "settings"
+      "action": "settings",
+      "category": "export"
     },
     {
       "id": "holiday_001",
-      "category": "holiday",
-      "title": "आज छुट्टी है क्या? 🏖️",
-      "message": "आज छुट्टी का आनंद ले रहे हो {userName}? कैलेंडर में लीव या एब्सेंट दर्ज कर लो! 🏖️",
+      "title": "Aaj chhutti hai kya? 🏖️",
+      "message": "Aaj chhutti ka anand le rahe ho {userName}? Calendar me leave ya absent mark kar lo! 🏖️",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "holiday"
     },
     {
       "id": "holiday_002",
-      "category": "holiday",
-      "title": "त्योहार की छुट्टी! 🎉",
-      "message": "हैप्पी हॉलिडे! अगर लागू हो तो वर्कडेली में छुट्टी का स्टेटस दर्ज करें। 🎉",
+      "title": "Tyohar ki chhutti! 🎉",
+      "message": "Happy Holiday! Agar laagu ho toh WorkDaily me chhutti ka status mark karein. 🎉",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "holiday"
     },
     {
       "id": "holiday_003",
-      "category": "holiday",
-      "title": "काम से छुट्टी! 🏖️",
-      "message": "आज काम से छुट्टी मार ली है? वर्कडेली में हॉलिडे स्टेटस अपडेट कर दो भाई!",
+      "title": "Kaam se chhutti! 🏖️",
+      "message": "Aaj kaam se chhutti maar li hai? WorkDaily me holiday status update kar do bhai!",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "holiday"
     },
     {
       "id": "holiday_004",
-      "category": "holiday",
-      "title": "पेड लीव का हिसाब! 💰",
-      "message": "अपनी पेड लीव या छुट्टी का हिसाब मासिक लेजर में दर्ज करना न भूलें।",
+      "title": "Paid leave ka hisaab! 💰",
+      "message": "Apni paid leave ya chhutti ka hisaab masik ledger me mark karna mat bhoolna.",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "holiday"
     },
     {
       "id": "holiday_005",
-      "category": "holiday",
-      "title": "आराम फरमाओ भाई! 😴",
-      "message": "आराम करो और एन्जॉय करो {userName}! बस अटेंडेंस रजिस्टर अपडेट रखना।",
+      "title": "Aaram farmao bhai! 😴",
+      "message": "Aaram karo aur enjoy karo {userName}! Bas attendance register update rakhna.",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "holiday"
     },
     {
       "id": "holiday_006",
-      "category": "holiday",
-      "title": "छुट्टी में भी कमाई? 💰",
-      "message": "छुट्टी के दिन भी काम किया क्या एक्स्ट्रा कमाई के लिए? हाज़िरी लगा दो भाई! 💰",
+      "title": "Chhutti me bhi kamai? 💰",
+      "message": "Chhutti ke din bhi kaam kiya kya extra kamai ke liye? Haziri laga do bhai! 💰",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "holiday"
     },
     {
       "id": "holiday_007",
-      "category": "holiday",
-      "title": "लीव रिकॉर्ड साफ़! 📝",
-      "message": "कैलेंडर व्यू में अपनी छुट्टियों और लीव का सही रिकॉर्ड बनाए रखें।",
+      "title": "Leave record saaf! 📝",
+      "message": "Calendar view me apni chhuttiyon aur leave ka sahi record banaye rakhein.",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "holiday"
     },
     {
       "id": "holiday_008",
-      "category": "holiday",
-      "title": "स्पेशल अलाउंस चेक! 💵",
-      "message": "चेक करो कि क्या आज हॉलिडे ओवरटाइम या स्पेशल अलाउंस लागू होता है!",
+      "title": "Work-life balance! ⚖️",
+      "message": "Kaam aur zindagi ka balance! Chhutti manao, WorkDaily yahan hisaab rakhega.",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "holiday"
     },
     {
       "id": "holiday_009",
-      "category": "holiday",
-      "title": "छुट्टी दर्ज हो गई! 🌟",
-      "message": "छुट्टी दर्ज हो गई है! मस्त आराम करो और रिफ्रेश हो जाओ, {userName}! 🌟",
+      "title": "Chinta chhod do bhai! 😊",
+      "message": "Aaj ke din ka maza lo bhai, kaam ki chinta WorkDaily par chhod do! 😊",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "holiday"
     },
     {
       "id": "holiday_010",
-      "category": "holiday",
-      "title": "वर्क-लाइफ बैलेंस! ⚖️",
-      "message": "काम और ज़िंदगी का संतुलन! छुट्टी मनाओ, वर्कडेली यहाँ हिसाब रखेगा।",
+      "title": "Chai piyo, leave maro! ☕",
+      "message": "Chhutti ka din hai, chai piyo aur calendar me leave mark kar lo bhai!",
       "priority": "normal",
-      "action": "home"
-    },
-    {
-      "id": "holiday_011",
-      "category": "holiday",
-      "title": "चिंता छोड़ो भाई! 😊",
-      "message": "आज के दिन का मज़ा लो भाई, काम की चिंता वर्कडेली पर छोड़ दो! 😊",
-      "priority": "normal",
-      "action": "home"
-    },
-    {
-      "id": "holiday_012",
-      "category": "holiday",
-      "title": "चाय पियो, लीव मारो! ☕",
-      "message": "छुट्टी का दिन है, चाय पियो और कैलेंडर में लीव मार्क कर लो भाई!",
-      "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "holiday"
     },
     {
       "id": "weekend_001",
-      "category": "weekend",
-      "title": "आज कुर्सी को भी आराम दो! 😎",
-      "message": "आज काम से थोड़ी दूरी बनाओ। कुर्सी भी सोच रही होगी कि आज चैन मिलेगा या नहीं! 😂",
+      "title": "Aaj kursi ko bhi aaram do! 😎",
+      "message": "Aaj kaam se thodi doori banao. Kursi bhi soch rahi hogi ki aaj chain milega ya nahi! 😂",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "weekend"
     },
     {
       "id": "weekend_002",
-      "category": "weekend",
-      "title": "वीकेंड आ गया भाई! 🍹",
-      "message": "वीकेंड आ गया है! अपनी हफ्ते भर की कमाई और अटेंडेंस समरी चेक करो। 🍹",
+      "title": "Weekend aa gaya bhai! 🍹",
+      "message": "Weekend aa gaya hai! Apni hafte bhar ki kamai aur attendance summary check karo. 🍹",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "weekend"
     },
     {
       "id": "weekend_003",
-      "category": "weekend",
-      "title": "वीकेंड में भी ड्यूटी? 💼",
-      "message": "आज वीकेंड में भी ड्यूटी पर हो {userName}? हाज़िरी दर्ज करना मत भूलना!",
+      "title": "Weekend me bhi duty? 💼",
+      "message": "Aaj weekend me bhi duty pe ho {userName}? Attendance mark karna mat bhoolna!",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "weekend"
     },
     {
       "id": "weekend_004",
-      "category": "weekend",
-      "title": "वीकेंड वेज समरी! 💰",
-      "message": "वीकेंड रिकैप: इस हफ्ते की कुल कमाई ₹{totalEarnings} पर पहुँच गई है! 💰",
+      "title": "Weekend wage summary! 💰",
+      "message": "Weekend recap: Is hafte ki kul kamai ₹{totalEarnings} par pahunch gayi hai! 💰",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "weekend"
     },
     {
       "id": "weekend_005",
-      "category": "weekend",
-      "title": "पासबुक रिव्यू कर लो! 📖",
-      "message": "इस वीकेंड 1 मिनट निकालकर अपनी पासबुक एंट्रीज रिव्यू कर लो भाई! 📖",
+      "title": "Passbook review kar lo! 📖",
+      "message": "Is weekend 1 minute nikalkar apni passbook entries review kar lo bhai! 📖",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "weekend"
     },
     {
       "id": "weekend_006",
-      "category": "weekend",
-      "title": "रविवार की समरी! ☕",
-      "message": "रविवार की समरी ready: {workingDays} दिन काम किया, नेट देय ₹{netPayable}।",
+      "title": "Ravivar ki summary! ☕",
+      "message": "Sunday summary ready: {workingDays} days kaam kiya, net payable ₹{netPayable}.",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "weekend"
     },
     {
       "id": "weekend_007",
-      "category": "weekend",
-      "title": "कड़ाके की मेहनत! 💪",
-      "message": "वीकेंड पर अच्छे से आराम करो {userName}! हफ्ते भर की कड़ाके की मेहनत के बाद!",
+      "title": "Kadake ki mehnat! 💪",
+      "message": "Weekend par acche se aaram karo {userName}! Hafte bhar ki kadake ki mehnat ke baad!",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "weekend"
     },
     {
       "id": "weekend_008",
-      "category": "weekend",
-      "title": "वीकेंड ओवरटाइम! ⚡",
-      "message": "आज वीकेंड पर ओवरटाइम किया क्या? एक्स्ट्रा पे लेजर में जुड़ गई है!",
+      "title": "Weekend overtime! ⚡",
+      "message": "Aaj weekend par overtime kiya kya? Extra pay ledger me jud gayi hai!",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "weekend"
     },
     {
       "id": "weekend_009",
-      "category": "weekend",
-      "title": "रविवार की शिफ्ट! 🗓️",
-      "message": "रविवार को भी काम चालू है? सुनिश्चित करो कि वीकेंड शिफ्ट दर्ज हो गई है।",
+      "title": "Happy Weekend! 😊",
+      "message": "Happy Weekend {userName}! WorkDaily aapki kamai ko safe rakhta hai!",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "weekend"
     },
     {
       "id": "weekend_010",
-      "category": "weekend",
-      "title": "बैलेंस का मुआयना! 🔍",
-      "message": "इस वीकेंड अपने एडवांस और वेज बैलेंस का मुआयना कर लो भाई!",
+      "title": "Hisaab WorkDaily me lock! 😎",
+      "message": "Weekend ka maza lo bhai, hafte bhar ki mehnat ka hisaab WorkDaily me lock hai! 😎",
       "priority": "normal",
-      "action": "home"
-    },
-    {
-      "id": "weekend_011",
-      "category": "weekend",
-      "title": "हैप्पी वीकेंड! 😊",
-      "message": "हैप्पी वीकेंड {userName}! वर्कडेली आपकी कमाई को सेफ़ रखता है!",
-      "priority": "normal",
-      "action": "home"
-    },
-    {
-      "id": "weekend_012",
-      "category": "weekend",
-      "title": "हिसाब वर्कडेली में लॉक! 😎",
-      "message": "वीकेंड का मज़ा लो भाई, हफ्ते भर की मेहनत का हिसाब वर्कडेली में लॉक है! 😎",
-      "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "weekend"
     },
     {
       "id": "general_productivity_001",
-      "category": "general_productivity",
-      "title": "भूलक्कड़ मोड बंद करो! 😂",
-      "message": "याद दिलाने हम फिर आ गए। अबकी बार काम पूरा कर देना, हमें रोज़ याद दिलाने की नौकरी मत दो! 😑",
+      "title": "Bhulakkad mode band karo! 😂",
+      "message": "Yaad dilane hum phir aa gaye! Abki baar kaam poora kar dena, hume roz yaad dilane ki naukri mat do! 😑",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "general_productivity"
     },
     {
       "id": "general_productivity_002",
-      "category": "general_productivity",
-      "title": "स्मार्ट वर्कर टिप! 💡",
-      "message": "रोजाना हाज़िरी लगाने से महीने के अंत में मालिक से बहस नहीं होती! अपडेट रखो। 👍",
+      "title": "Smart worker tip! 💡",
+      "message": "Rozana attendance lagane se mahine ke end me boss se behas nahi hoti! Update rakho. 👍",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "general_productivity"
     },
     {
       "id": "general_productivity_003",
-      "category": "general_productivity",
-      "title": "पैसों का हिसाब साफ़! 💰",
-      "message": "एडवांस और ओवरटाइम रोजाना दर्ज करने से पैसों का हिसाब शीशे जैसा साफ़ रहता है! 💡",
+      "title": "Paiso ka hisaab saaf! 💰",
+      "message": "Advance aur overtime rozana mark karne se paiso ka hisaab sheeshe jaisa saaf rehta hai! 💡",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "general_productivity"
     },
     {
       "id": "general_productivity_004",
-      "category": "general_productivity",
-      "title": "100% ऑफ़लाइन और सेफ़! 🔐",
-      "message": "100% ऑफ़लाइन, प्राइवेट और सुरक्षित—आपकी कमाई का हिसाब सिर्फ आपके फ़ोन में।",
+      "title": "100% offline aur safe! 🔐",
+      "message": "100% offline, private aur safe—aapki kamai ka hisaab sirf aapke phone me.",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "general_productivity"
     },
     {
       "id": "general_productivity_005",
-      "category": "general_productivity",
-      "title": "मेहनत का पाई-पाई! 💵",
-      "message": "{userName}, सटीक हाज़िरी से सुनिश्चित होता है कि आपको मेहनत का पाई-पाई मिले! 💵",
+      "title": "Mehnat ka pai-pai! 💵",
+      "message": "{userName}, sateek attendance se sure hota hai ki aapko mehnat ka pai-pai mile! 💵",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "general_productivity"
     },
     {
       "id": "general_productivity_006",
-      "category": "general_productivity",
-      "title": "कड़ी मेहनत, सटीक हिसाब! 💪",
-      "message": "कड़ी मेहनत का हक़दार सटीक हिसाब है। वर्कडेली के साथ रोज ट्रैक करो! 💪",
+      "title": "Kadi mehnat, sateek hisaab! 💪",
+      "message": "Kadi mehnat ka haqdaar sateek hisaab hai. WorkDaily ke saath roz track karo! 💪",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "general_productivity"
     },
     {
       "id": "general_productivity_007",
-      "category": "general_productivity",
-      "title": "भरोसा बनाए रखो! 🤝",
-      "message": "साफ़ पासबुक से वर्कर और ठेकेदार के बीच भरोसा बढ़ता है! 🤝",
+      "title": "Din ke sirf 2 second! ⏱️",
+      "message": "Din ke sirf 2 second! Mahine bhar ka ledger bina kisi jhanjhat ke ready rahega. ⏱️",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "general_productivity"
     },
     {
       "id": "general_productivity_008",
-      "category": "general_productivity",
-      "title": "दिन के सिर्फ 2 सेकंड! ⏱️",
-      "message": "दिन के सिर्फ 2 सेकंड! महीने भर का लेजर विवाद-मुक्त रहेगा। ⏱️",
+      "title": "Shuddh payable rashi jano! 📈",
+      "message": "Boss se paise mangne se pehle apna sahi net payable balance jaan lo!",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "general_productivity"
     },
     {
       "id": "general_productivity_009",
-      "category": "general_productivity",
-      "title": "शुद्ध देय राशि जानो! 📈",
-      "message": "मालिक से पैसे मांगने से पहले अपना सही नेट पेएबल बैलेंस जान लो! 📈",
+      "title": "Digital work diary! 📱",
+      "message": "Aapka digital work diary, har waqt offline aapki seva me taiyar.",
       "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "general_productivity"
     },
     {
       "id": "general_productivity_010",
-      "category": "general_productivity",
-      "title": "डिजिटल वर्क डायरी! 📱",
-      "message": "आपका डिजिटल वर्क डायरी, हर वक्त ऑफ़लाइन आपकी सेवा में तैयार।",
+      "title": "Smart worker pehchan! 👍",
+      "message": "Kaam me imandari aur hisaab me safai—yahi hai asli smart worker ki pehchan! 👍",
       "priority": "normal",
-      "action": "home"
-    },
-    {
-      "id": "general_productivity_011",
-      "category": "general_productivity",
-      "title": "अपनी दिहाड़ी के राजा! 👑",
-      "message": "अपनी दिहाड़ी, ओवरटाइम और एडवांस को बिना किसी झंझट के ट्रैक करो! 🌟",
-      "priority": "normal",
-      "action": "home"
-    },
-    {
-      "id": "general_productivity_012",
-      "category": "general_productivity",
-      "title": "स्मार्ट वर्कर पहचान! 👍",
-      "message": "काम में ईमानदारी और हिसाब में सफाई—यही है असली स्मार्ट वर्कर की पहचान! 👍",
-      "priority": "normal",
-      "action": "home"
-    },
-    {
-      "id": "general_productivity_013",
-      "category": "general_productivity",
-      "title": "बेहतरीन आदत! 🌟",
-      "message": "{userName}, रोज़ाना हाज़िरी दर्ज करना एक बेहतरीन आदत है, इसे बनाए रखो!",
-      "priority": "normal",
-      "action": "home"
-    },
-    {
-      "id": "general_productivity_014",
-      "category": "general_productivity",
-      "title": "एंट्री मारते रहो! 😜",
-      "message": "पैसों का हिसाब गोल न हो, इसलिए वर्कडेली में रोज़ एंट्री मारते रहो भाई!",
-      "priority": "normal",
-      "action": "home"
-    },
-    {
-      "id": "general_productivity_015",
-      "category": "general_productivity",
-      "title": "हिसाब पक्का रखो! 💪",
-      "message": "अपनी मेहनत पर पूरा भरोसा रखो और हिसाब वर्कडेली में पक्का रखो! 💪",
-      "priority": "normal",
-      "action": "home"
-    },
-    {
-      "id": "general_productivity_016",
-      "category": "general_productivity",
-      "title": "हाज़िरी दर्ज करना मत भूलना! 📝",
-      "message": "काम पूरा हुआ हो या अधूरा, हाज़िरी दर्ज करना मत भूलना भाई!",
-      "priority": "normal",
-      "action": "home"
-    },
-    {
-      "id": "general_productivity_017",
-      "category": "general_productivity",
-      "title": "डिजिटल इंडिया का वर्कर! 📱",
-      "message": "डिजिटल इंडिया का डिजिटल वर्कर! अपनी पासबुक हमेशा जेब में रखो! 📱",
-      "priority": "normal",
-      "action": "home"
-    },
-    {
-      "id": "general_productivity_018",
-      "category": "general_productivity",
-      "title": "बिना इंटरनेट के भी चलता! ⚡",
-      "message": "बिना इंटरनेट के भी चलता है वर्कडेली, कहीं भी और कभी भी हिसाब दर्ज करो!",
-      "priority": "normal",
-      "action": "home"
-    },
-    {
-      "id": "general_productivity_019",
-      "category": "general_productivity",
-      "title": "कमाई के मालिक! 👑",
-      "message": "अपनी कमाई के मालिक खुद बनो, हर एक घंटे का हिसाब वर्कडेली में रखो! 👑",
-      "priority": "normal",
-      "action": "home"
-    },
-    {
-      "id": "general_productivity_020",
-      "category": "general_productivity",
-      "title": "मेहनत आपकी, हिसाब हमारा! 😊",
-      "message": "मेहनत आपकी, हिसाब हमारा! वर्कडेली के साथ अपनी दिहाड़ी सुरक्षित रखो! 😊",
-      "priority": "normal",
-      "action": "home"
+      "action": "home",
+      "category": "general_productivity"
     }
   ]
 }

@@ -10,21 +10,52 @@ import java.util.*
 class NotificationSystemTest {
 
     @Test
+    fun test200PlusNotificationTemplatesLoaded() {
+        val file = java.io.File("src/main/res/raw/notification_templates.json").takeIf { it.exists() }
+            ?: java.io.File("app/src/main/res/raw/notification_templates.json")
+        assertTrue("notification_templates.json must exist", file.exists())
+
+        val jsonString = file.readText()
+        val rootObj = com.google.gson.JsonParser.parseString(jsonString).asJsonObject
+        val array = rootObj.getAsJsonArray("templates")
+
+        assertTrue("Template count must be 200+", array.size() >= 200)
+
+        val ids = mutableSetOf<String>()
+        for (i in 0 until array.size()) {
+            val item = array.get(i).asJsonObject
+            val id = item.get("id").asString
+            val category = item.get("category").asString
+            val title = item.get("title").asString
+            val message = item.get("message").asString
+
+            assertFalse("ID must not be empty", id.isBlank())
+            assertFalse("Category must not be empty", category.isBlank())
+            assertFalse("Title must not be empty", title.isBlank())
+            assertFalse("Message must not be empty", message.isBlank())
+
+            ids.add(id)
+        }
+
+        assertEquals("All template IDs must be unique", array.size(), ids.size)
+    }
+
+    @Test
     fun testPlaceholderReplacementWithName() {
-        val template = "{userName}, आज की हाज़िरी अभी तक नहीं लगी है 😄"
-        val placeholders = mapOf("userName" to "धर्मजीत")
+        val template = "{userName}, aaj ki attendance nahi lagayi? 😄"
+        val placeholders = mapOf("userName" to "Rahul")
 
         val result = NotificationMessageSelector.evaluateTemplate(template, placeholders)
-        assertEquals("धर्मजीत, आज की हाज़िरी अभी तक नहीं लगी है 😄", result)
+        assertEquals("Rahul, aaj ki attendance nahi lagayi? 😄", result)
     }
 
     @Test
     fun testPlaceholderReplacementWithoutName() {
-        val template = "{userName}, आज की हाज़िरी अभी तक नहीं लगी है 😄"
+        val template = "{userName}, aaj ki attendance nahi lagayi? 😄"
         val placeholders = mapOf("userName" to "")
 
         val result = NotificationMessageSelector.evaluateTemplate(template, placeholders)
-        assertEquals("आज की हाज़िरी अभी तक नहीं लगी है 😄", result)
+        assertEquals("aaj ki attendance nahi lagayi? 😄", result)
     }
 
     @Test
@@ -42,11 +73,11 @@ class NotificationSystemTest {
 
     @Test
     fun testPlaceholderNullOrBlankCleanup() {
-        val template = "हेलो {userName}, आज काम किया या आराम?"
+        val template = "Hello {userName}, aaj kaam kiya ya aaram?"
         val placeholders = mapOf("userName" to "null")
 
         val result = NotificationMessageSelector.evaluateTemplate(template, placeholders)
-        assertEquals("हेलो , आज काम किया या आराम?", result)
+        assertEquals("Hello, aaj kaam kiya ya aaram?", result)
     }
 
     @Test
