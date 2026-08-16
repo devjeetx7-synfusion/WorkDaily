@@ -35,6 +35,7 @@ data class PdfData(
     val netPayable: Double,
     val periodStr: String, // added
     val generatedAtStr: String, // added
+    val settlement: FinancialSettlementResult? = null,
     val logs: List<PdfLog>
 )
 
@@ -381,14 +382,29 @@ object PassbookPdfGenerator {
         // Month Summary Section
         val rsStr = context.getString(R.string.pdf_rs)
         val baseSalary = data.grossEarned - data.totalOvertimeEarnings
+        val settlementMsg = data.settlement?.settlementMessage ?: if (data.netPayable > 0) "YOU WILL RECEIVE ₹${AmountFormatter.format(data.netPayable)}" else if (data.netPayable < 0) "YOU NEED TO PAY BACK ₹${AmountFormatter.format(kotlin.math.abs(data.netPayable))}" else "SETTLED — ₹0 PENDING"
+
+        val settlementLabel = when (data.settlement?.settlementState) {
+            SettlementState.PAY_BACK -> "Amount To Pay Back"
+            SettlementState.RECEIVE -> "Amount To Receive"
+            else -> if (data.netPayable < 0) "Amount To Pay Back" else "Amount To Receive"
+        }
+
+        val settlementVal = when (data.settlement?.settlementState) {
+            SettlementState.PAY_BACK -> "$rsStr ${AmountFormatter.format(data.settlement.amountToPayBack)}"
+            SettlementState.RECEIVE -> "$rsStr ${AmountFormatter.format(data.settlement.amountToReceive)}"
+            SettlementState.SETTLED -> "$rsStr 0"
+            else -> if (data.netPayable < 0) "$rsStr ${AmountFormatter.format(kotlin.math.abs(data.netPayable))}" else "$rsStr ${AmountFormatter.format(data.netPayable)}"
+        }
+
         val summaryItems = listOf(
             Pair(context.getString(R.string.pdf_earnings), "$rsStr ${AmountFormatter.format(data.grossEarned)}"),
             Pair(context.getString(R.string.salary), "$rsStr ${AmountFormatter.format(baseSalary)}"),
             Pair(context.getString(R.string.overtime), "$rsStr ${AmountFormatter.format(data.totalOvertimeEarnings)}"),
             Pair(context.getString(R.string.pdf_advance), "$rsStr ${AmountFormatter.format(data.advanceDeducted)}"),
+            Pair(settlementLabel, settlementVal),
             Pair(context.getString(R.string.present_1), data.totalPresent.toString()),
             Pair(context.getString(R.string.half_day), data.totalHalfDays.toString()),
-            Pair(context.getString(R.string.absent_1), data.totalAbsent.toString()),
             Pair(context.getString(R.string.pdf_working_days), AmountFormatter.format(data.totalManDays))
         )
 

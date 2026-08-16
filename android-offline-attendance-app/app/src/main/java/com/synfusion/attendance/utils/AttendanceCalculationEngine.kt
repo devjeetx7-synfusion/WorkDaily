@@ -17,6 +17,25 @@ data class DashboardCalculationResult(
     val advanceToday: Double
 )
 
+enum class SettlementState {
+    RECEIVE,
+    PAY_BACK,
+    SETTLED
+}
+
+data class FinancialSettlementResult(
+    val totalEarned: Double,
+    val regularEarnings: Double,
+    val overtimeEarnings: Double,
+    val totalAdvanceReceived: Double,
+    val totalDeductions: Double,
+    val netSettlement: Double,
+    val amountToReceive: Double,
+    val amountToPayBack: Double,
+    val settlementState: SettlementState,
+    val settlementMessage: String
+)
+
 data class PassbookCalculationResult(
     val present: Int,
     val absent: Int,
@@ -25,10 +44,76 @@ data class PassbookCalculationResult(
     val totalEarnings: Double,
     val netBalance: Double,
     val totalWorks: Double,
+    val settlement: FinancialSettlementResult,
     val logs: List<OfflinePassbookLog>
 )
 
 object AttendanceCalculationEngine {
+
+    fun calculateSettlement(
+        regularEarnings: Double,
+        overtimeEarnings: Double,
+        totalAdvanceReceived: Double,
+        totalDeductions: Double = 0.0
+    ): FinancialSettlementResult {
+        val regBd = toMoney(regularEarnings)
+        val otBd = toMoney(overtimeEarnings)
+        val totalEarnedBd = regBd.add(otBd)
+        val advBd = toMoney(totalAdvanceReceived)
+        val dedBd = toMoney(totalDeductions)
+
+        val netSettlementBd = totalEarnedBd.subtract(advBd).subtract(dedBd)
+        val netVal = netSettlementBd.toDouble()
+
+        val zeroBd = BigDecimal.ZERO.setScale(2, ROUNDING_MODE)
+
+        return when {
+            netSettlementBd.compareTo(zeroBd) > 0 -> {
+                val amtReceive = netSettlementBd.toDouble()
+                FinancialSettlementResult(
+                    totalEarned = totalEarnedBd.toDouble(),
+                    regularEarnings = regBd.toDouble(),
+                    overtimeEarnings = otBd.toDouble(),
+                    totalAdvanceReceived = advBd.toDouble(),
+                    totalDeductions = dedBd.toDouble(),
+                    netSettlement = netVal,
+                    amountToReceive = amtReceive,
+                    amountToPayBack = 0.0,
+                    settlementState = SettlementState.RECEIVE,
+                    settlementMessage = "YOU WILL RECEIVE ₹${AmountFormatter.format(amtReceive)}"
+                )
+            }
+            netSettlementBd.compareTo(zeroBd) < 0 -> {
+                val amtPayBack = netSettlementBd.abs().toDouble()
+                FinancialSettlementResult(
+                    totalEarned = totalEarnedBd.toDouble(),
+                    regularEarnings = regBd.toDouble(),
+                    overtimeEarnings = otBd.toDouble(),
+                    totalAdvanceReceived = advBd.toDouble(),
+                    totalDeductions = dedBd.toDouble(),
+                    netSettlement = netVal,
+                    amountToReceive = 0.0,
+                    amountToPayBack = amtPayBack,
+                    settlementState = SettlementState.PAY_BACK,
+                    settlementMessage = "YOU NEED TO PAY BACK ₹${AmountFormatter.format(amtPayBack)}"
+                )
+            }
+            else -> {
+                FinancialSettlementResult(
+                    totalEarned = totalEarnedBd.toDouble(),
+                    regularEarnings = regBd.toDouble(),
+                    overtimeEarnings = otBd.toDouble(),
+                    totalAdvanceReceived = advBd.toDouble(),
+                    totalDeductions = dedBd.toDouble(),
+                    netSettlement = 0.0,
+                    amountToReceive = 0.0,
+                    amountToPayBack = 0.0,
+                    settlementState = SettlementState.SETTLED,
+                    settlementMessage = "SETTLED — ₹0 PENDING"
+                )
+            }
+        }
+    }
 
     val ROUNDING_MODE: RoundingMode = RoundingMode.HALF_UP
 
@@ -119,6 +204,8 @@ object AttendanceCalculationEngine {
         defaultWage: Double
     ): OfflinePersonalStatsData {
         var allTimeEarningsBd = BigDecimal.ZERO.setScale(2, ROUNDING_MODE)
+        var allTimeBaseEarningsBd = BigDecimal.ZERO.setScale(2, ROUNDING_MODE)
+        var allTimeOtEarningsBd = BigDecimal.ZERO.setScale(2, ROUNDING_MODE)
         var allTimeDays = 0
         var allTimeOvertime = 0
         var allTimeAdvanceTotalBd = BigDecimal.ZERO.setScale(2, ROUNDING_MODE)
@@ -127,6 +214,8 @@ object AttendanceCalculationEngine {
         var allTimeHalfDays = 0
 
         var totalEarningsBd = BigDecimal.ZERO.setScale(2, ROUNDING_MODE)
+        var baseEarningsBd = BigDecimal.ZERO.setScale(2, ROUNDING_MODE)
+        var otEarningsBd = BigDecimal.ZERO.setScale(2, ROUNDING_MODE)
         var present = 0
         var absent = 0
         var halfDays = 0
@@ -185,6 +274,8 @@ object AttendanceCalculationEngine {
                 allTimeDays++
                 allTimePresent++
                 if (isHalf) allTimeHalfDays++
+                allTimeBaseEarningsBd = allTimeBaseEarningsBd.add(baseCostBd)
+                allTimeOtEarningsBd = allTimeOtEarningsBd.add(otAmtBd)
                 allTimeEarningsBd = allTimeEarningsBd.add(totalCostValBd)
                 allTimeOvertime += ot
             } else if (rec.status == "absent") {
@@ -201,6 +292,8 @@ object AttendanceCalculationEngine {
                 }
                 if (isPresent) {
                     present++
+                    baseEarningsBd = baseEarningsBd.add(baseCostBd)
+                    otEarningsBd = otEarningsBd.add(otAmtBd)
                     totalEarningsBd = totalEarningsBd.add(totalCostValBd)
                     if (isHalf) halfDays++
                     overtime += ot
@@ -273,6 +366,18 @@ object AttendanceCalculationEngine {
         val dailyRecordsList = if (filledMonthRecords.isNotEmpty()) filledMonthRecords else monthDailyMap.values.toList().sortedBy { it.dateStr }
         val allTimeDailyList = allTimeDailyMap.values.toList().sortedBy { it.dateStr }
 
+        val monthlySettlement = calculateSettlement(
+            regularEarnings = baseEarningsBd.toDouble(),
+            overtimeEarnings = otEarningsBd.toDouble(),
+            totalAdvanceReceived = advanceTotalBd.toDouble()
+        )
+
+        val allTimeSettlement = calculateSettlement(
+            regularEarnings = allTimeBaseEarningsBd.toDouble(),
+            overtimeEarnings = allTimeOtEarningsBd.toDouble(),
+            totalAdvanceReceived = allTimeAdvanceTotalBd.toDouble()
+        )
+
         return OfflinePersonalStatsData(
             present = present,
             absent = absent,
@@ -280,15 +385,21 @@ object AttendanceCalculationEngine {
             overtime = overtime,
             advanceTotal = advanceTotalBd.toDouble(),
             totalEarnings = totalEarningsBd.toDouble(),
+            regularEarnings = baseEarningsBd.toDouble(),
+            overtimeEarnings = otEarningsBd.toDouble(),
+            monthlySettlement = monthlySettlement,
             dailyRecords = dailyRecordsList,
             allTimeDailyRecords = allTimeDailyList,
             allTimeDays = allTimeDays,
             allTimeEarnings = allTimeEarningsBd.toDouble(),
+            allTimeRegularEarnings = allTimeBaseEarningsBd.toDouble(),
+            allTimeOvertimeEarnings = allTimeOtEarningsBd.toDouble(),
             allTimeOvertime = allTimeOvertime,
             allTimeAdvanceTotal = allTimeAdvanceTotalBd.toDouble(),
             allTimePresent = allTimePresent,
             allTimeAbsent = allTimeAbsent,
             allTimeHalfDays = allTimeHalfDays,
+            allTimeSettlement = allTimeSettlement,
             hasRecordsInPeriod = hasRecordsInPeriod,
             hasAllTimeRecords = hasAllTimeRecords
         )
@@ -303,6 +414,8 @@ object AttendanceCalculationEngine {
         var half = 0
         var totalAdvBd = BigDecimal.ZERO.setScale(2, ROUNDING_MODE)
         var totalEarningsBd = BigDecimal.ZERO.setScale(2, ROUNDING_MODE)
+        var totalBaseBd = BigDecimal.ZERO.setScale(2, ROUNDING_MODE)
+        var totalOtBd = BigDecimal.ZERO.setScale(2, ROUNDING_MODE)
 
         val wageBd = toMoney(wage)
         val halfWageBd = wageBd.divide(BigDecimal.valueOf(2), 2, ROUNDING_MODE)
@@ -329,6 +442,8 @@ object AttendanceCalculationEngine {
                     dailyBaseBd = wageBd
                 }
                 dailyOtBd = OvertimeCalculator.calculateOvertimeAmountBigDecimal(wage, otHours, note)
+                totalBaseBd = totalBaseBd.add(dailyBaseBd)
+                totalOtBd = totalOtBd.add(dailyOtBd)
                 totalEarningsBd = totalEarningsBd.add(dailyBaseBd.add(dailyOtBd))
             } else if (status == "absent") {
                 absent++
@@ -370,6 +485,12 @@ object AttendanceCalculationEngine {
         val netBalanceBd = totalEarningsBd.subtract(totalAdvBd)
         val totalWorks = (present - half) + (half * 0.5)
 
+        val settlement = calculateSettlement(
+            regularEarnings = totalBaseBd.toDouble(),
+            overtimeEarnings = totalOtBd.toDouble(),
+            totalAdvanceReceived = totalAdvBd.toDouble()
+        )
+
         return PassbookCalculationResult(
             present = present,
             absent = absent,
@@ -378,6 +499,7 @@ object AttendanceCalculationEngine {
             totalEarnings = totalEarningsBd.toDouble(),
             netBalance = netBalanceBd.toDouble(),
             totalWorks = totalWorks,
+            settlement = settlement,
             logs = finalLogs
         )
     }

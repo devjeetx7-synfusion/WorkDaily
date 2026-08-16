@@ -47,6 +47,7 @@ data class OfflineAllTimePassbookState(
     val totalOtEarned: Double = 0.0,
     val totalAdvance: Double = 0.0,
     val totalNetEarnings: Double = 0.0,
+    val settlement: com.synfusion.attendance.utils.FinancialSettlementResult? = null,
 
     val searchQuery: String = "",
 
@@ -194,6 +195,7 @@ class OfflineAllTimePassbookViewModel(
                         totalOtEarned = totalOt,
                         totalAdvance = calcResult.totalAdv,
                         totalNetEarnings = calcResult.netBalance,
+                        settlement = calcResult.settlement,
                         yearGroups = yearGroups
                     )
                 }

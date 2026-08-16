@@ -12,6 +12,45 @@ class AttendanceCalculationEngineTest {
     private val wage = 500.0
 
     @Test
+    fun testSettlementScenarios() {
+        // Scenario 1: Earned = 10000, Advance = 12000
+        val s1 = AttendanceCalculationEngine.calculateSettlement(
+            regularEarnings = 8000.0,
+            overtimeEarnings = 2000.0,
+            totalAdvanceReceived = 12000.0
+        )
+        assertEquals(-2000.0, s1.netSettlement, 0.0001)
+        assertEquals(0.0, s1.amountToReceive, 0.0001)
+        assertEquals(2000.0, s1.amountToPayBack, 0.0001)
+        assertEquals(SettlementState.PAY_BACK, s1.settlementState)
+        assertEquals("YOU NEED TO PAY BACK ₹2,000", s1.settlementMessage)
+
+        // Scenario 2: Earned = 10000, Advance = 2000
+        val s2 = AttendanceCalculationEngine.calculateSettlement(
+            regularEarnings = 8000.0,
+            overtimeEarnings = 2000.0,
+            totalAdvanceReceived = 2000.0
+        )
+        assertEquals(8000.0, s2.netSettlement, 0.0001)
+        assertEquals(8000.0, s2.amountToReceive, 0.0001)
+        assertEquals(0.0, s2.amountToPayBack, 0.0001)
+        assertEquals(SettlementState.RECEIVE, s2.settlementState)
+        assertEquals("YOU WILL RECEIVE ₹8,000", s2.settlementMessage)
+
+        // Scenario 3: Earned = 10000, Advance = 10000
+        val s3 = AttendanceCalculationEngine.calculateSettlement(
+            regularEarnings = 8000.0,
+            overtimeEarnings = 2000.0,
+            totalAdvanceReceived = 10000.0
+        )
+        assertEquals(0.0, s3.netSettlement, 0.0001)
+        assertEquals(0.0, s3.amountToReceive, 0.0001)
+        assertEquals(0.0, s3.amountToPayBack, 0.0001)
+        assertEquals(SettlementState.SETTLED, s3.settlementState)
+        assertEquals("SETTLED — ₹0 PENDING", s3.settlementMessage)
+    }
+
+    @Test
     fun testZeroAndSmallAmounts() {
         val records = listOf(
             AttendanceEntity(id = "1", workerId = null, date = "2025-02-01", status = "present", type = "full", wage = wage),
