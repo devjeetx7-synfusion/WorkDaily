@@ -4,7 +4,8 @@ import com.synfusion.attendance.data.entities.AttendanceEntity
 import com.synfusion.attendance.viewmodel.OfflinePassbookLog
 import com.synfusion.attendance.viewmodel.OfflinePersonalStatsData
 import com.synfusion.attendance.viewmodel.OfflineDailyRecord
-import java.util.Calendar
+import java.math.BigDecimal
+import java.math.RoundingMode
 
 data class DashboardCalculationResult(
     val todayEarned: Double,
@@ -29,19 +30,32 @@ data class PassbookCalculationResult(
 
 object AttendanceCalculationEngine {
 
+    val ROUNDING_MODE: RoundingMode = RoundingMode.HALF_UP
+
+    private fun toMoney(value: Double): BigDecimal {
+        return BigDecimal.valueOf(value).setScale(2, ROUNDING_MODE)
+    }
+
+    private fun toMoney(value: Long): BigDecimal {
+        return BigDecimal.valueOf(value).setScale(2, ROUNDING_MODE)
+    }
+
     fun calculateDashboardStats(
         records: List<AttendanceEntity>,
         todayStr: String,
         currentMonthStr: String,
         defaultWage: Double
     ): DashboardCalculationResult {
-        var todayEarned = 0.0
-        var monthEarned = 0.0
+        var todayEarnedBd = BigDecimal.ZERO.setScale(2, ROUNDING_MODE)
+        var monthEarnedBd = BigDecimal.ZERO.setScale(2, ROUNDING_MODE)
         var currentTodayStatus: String? = null
         var currentTodayType: String? = null
         var currentOvertime = 0
         var currentNote: String? = null
-        var advanceToday = 0.0
+        var advanceTodayBd = BigDecimal.ZERO.setScale(2, ROUNDING_MODE)
+
+        val wageBd = toMoney(defaultWage)
+        val halfWageBd = wageBd.divide(BigDecimal.valueOf(2), 2, ROUNDING_MODE)
 
         for (record in records) {
             val date = record.date
@@ -49,15 +63,17 @@ object AttendanceCalculationEngine {
             val type = record.type
             val otHours = record.overtimeHours
             val noteStr = record.note
-            val advanceAmt = record.advanceAmount
+            val advanceAmtBd = toMoney(record.advanceAmount)
 
-            val dailyBase = if (status == "present") {
-                if (type == "half") defaultWage / 2.0 else defaultWage
-            } else 0.0
+            val dailyBaseBd = if (status == "present") {
+                if (type == "half") halfWageBd else wageBd
+            } else BigDecimal.ZERO.setScale(2, ROUNDING_MODE)
 
-            val dailyOT = if (status == "present") {
-                OvertimeCalculator.calculateOvertimeAmount(defaultWage, otHours, noteStr)
-            } else 0.0
+            val dailyOtBd = if (status == "present") {
+                OvertimeCalculator.calculateOvertimeAmountBigDecimal(defaultWage, otHours, noteStr)
+            } else BigDecimal.ZERO.setScale(2, ROUNDING_MODE)
+
+            val dailyEarnedBd = dailyBaseBd.add(dailyOtBd)
 
             if (date == todayStr) {
                 if (status != "advance") {
@@ -65,25 +81,25 @@ object AttendanceCalculationEngine {
                     currentTodayType = type
                     currentOvertime = otHours
                     currentNote = OvertimeCalculator.cleanNote(noteStr)
-                    todayEarned = dailyBase + dailyOT
+                    todayEarnedBd = dailyEarnedBd
                 } else {
-                    advanceToday += advanceAmt
+                    advanceTodayBd = advanceTodayBd.add(advanceAmtBd)
                 }
             }
 
             if (date.startsWith(currentMonthStr)) {
-                monthEarned += (dailyBase + dailyOT)
+                monthEarnedBd = monthEarnedBd.add(dailyEarnedBd)
             }
         }
 
         return DashboardCalculationResult(
-            todayEarned = todayEarned,
-            monthEarned = monthEarned,
+            todayEarned = todayEarnedBd.toDouble(),
+            monthEarned = monthEarnedBd.toDouble(),
             currentTodayStatus = currentTodayStatus,
             currentTodayType = currentTodayType,
             currentOvertime = currentOvertime,
             currentNote = currentNote,
-            advanceToday = advanceToday
+            advanceToday = advanceTodayBd.toDouble()
         )
     }
 
@@ -92,17 +108,19 @@ object AttendanceCalculationEngine {
         currentMonthStr: String,
         defaultWage: Double
     ): OfflinePersonalStatsData {
-        var allTimeEarnings = 0.0
+        var allTimeEarningsBd = BigDecimal.ZERO.setScale(2, ROUNDING_MODE)
         var allTimeDays = 0
 
-        var totalEarnings = 0.0
+        var totalEarningsBd = BigDecimal.ZERO.setScale(2, ROUNDING_MODE)
         var present = 0
         var absent = 0
         var halfDays = 0
         var overtime = 0
-        var advanceTotal = 0.0
+        var advanceTotalBd = BigDecimal.ZERO.setScale(2, ROUNDING_MODE)
 
         val dailyRecordsMap = mutableMapOf<String, OfflineDailyRecord>()
+        val wageBd = toMoney(defaultWage)
+        val halfWageBd = wageBd.divide(BigDecimal.valueOf(2), 2, ROUNDING_MODE)
 
         for (rec in records) {
             val date = rec.date
@@ -110,43 +128,44 @@ object AttendanceCalculationEngine {
             val isHalf = rec.type == "half"
             val ot = rec.overtimeHours
             val noteStr = rec.note
-            val advanceAmt = rec.advanceAmount
+            val advanceAmtBd = toMoney(rec.advanceAmount)
 
-            val baseCost = if (isPresent) (if (isHalf) defaultWage / 2.0 else defaultWage) else 0.0
-            val otAmt = if (isPresent) OvertimeCalculator.calculateOvertimeAmount(defaultWage, ot, noteStr) else 0.0
-            val totalCostVal = baseCost + otAmt
+            val baseCostBd = if (isPresent) (if (isHalf) halfWageBd else wageBd) else BigDecimal.ZERO.setScale(2, ROUNDING_MODE)
+            val otAmtBd = if (isPresent) OvertimeCalculator.calculateOvertimeAmountBigDecimal(defaultWage, ot, noteStr) else BigDecimal.ZERO.setScale(2, ROUNDING_MODE)
+            val totalCostValBd = baseCostBd.add(otAmtBd)
 
             if (isPresent) {
                 allTimeDays++
-                allTimeEarnings += totalCostVal
+                allTimeEarningsBd = allTimeEarningsBd.add(totalCostValBd)
             }
 
             if (date.startsWith(currentMonthStr)) {
                 if (isPresent) {
                     present++
-                    totalEarnings += totalCostVal
+                    totalEarningsBd = totalEarningsBd.add(totalCostValBd)
                     if (isHalf) halfDays++
+                    overtime += ot
                 } else if (rec.status == "absent") {
                     absent++
                 }
 
                 if (rec.status == "advance") {
-                    advanceTotal += advanceAmt
+                    advanceTotalBd = advanceTotalBd.add(advanceAmtBd)
                 }
-                overtime += ot
 
                 if (rec.status != "advance") {
                     val attendanceVal = if (isPresent) (if (isHalf) 0.5 else 1.0) else 0.0
                     val existing = dailyRecordsMap[date]
                     if (existing != null) {
+                        val newEarnings = toMoney(existing.earnings).add(totalCostValBd).toDouble()
                         dailyRecordsMap[date] = existing.copy(
-                            earnings = existing.earnings + totalCostVal,
+                            earnings = newEarnings,
                             attendance = existing.attendance + attendanceVal
                         )
                     } else {
                         dailyRecordsMap[date] = OfflineDailyRecord(
                             dateStr = date,
-                            earnings = totalCostVal,
+                            earnings = totalCostValBd.toDouble(),
                             attendance = attendanceVal
                         )
                     }
@@ -161,11 +180,11 @@ object AttendanceCalculationEngine {
             absent = absent,
             halfDays = halfDays,
             overtime = overtime,
-            advanceTotal = advanceTotal,
-            totalEarnings = totalEarnings,
+            advanceTotal = advanceTotalBd.toDouble(),
+            totalEarnings = totalEarningsBd.toDouble(),
             dailyRecords = dailyRecordsList,
             allTimeDays = allTimeDays,
-            allTimeEarnings = allTimeEarnings
+            allTimeEarnings = allTimeEarningsBd.toDouble()
         )
     }
 
@@ -176,8 +195,11 @@ object AttendanceCalculationEngine {
         var present = 0
         var absent = 0
         var half = 0
-        var totalAdv = 0.0
-        var totalEarnings = 0.0
+        var totalAdvBd = BigDecimal.ZERO.setScale(2, ROUNDING_MODE)
+        var totalEarningsBd = BigDecimal.ZERO.setScale(2, ROUNDING_MODE)
+
+        val wageBd = toMoney(wage)
+        val halfWageBd = wageBd.divide(BigDecimal.valueOf(2), 2, ROUNDING_MODE)
 
         val logMap = mutableMapOf<String, OfflinePassbookLog>()
 
@@ -185,70 +207,70 @@ object AttendanceCalculationEngine {
             val date = rec.date
             val status = rec.status
             val type = rec.type
-            val adv = rec.advanceAmount
+            val advBd = toMoney(rec.advanceAmount)
             val note = rec.note
             val otHours = rec.overtimeHours
 
-            var dailyBase = 0.0
-            var dailyOT = 0.0
+            var dailyBaseBd = BigDecimal.ZERO.setScale(2, ROUNDING_MODE)
+            var dailyOtBd = BigDecimal.ZERO.setScale(2, ROUNDING_MODE)
 
             if (status == "present") {
                 present++
-                dailyBase = if (type == "half") {
+                if (type == "half") {
                     half++
-                    wage / 2.0
+                    dailyBaseBd = halfWageBd
                 } else {
-                    wage
+                    dailyBaseBd = wageBd
                 }
-                dailyOT = OvertimeCalculator.calculateOvertimeAmount(wage, otHours, note)
-                totalEarnings += (dailyBase + dailyOT)
+                dailyOtBd = OvertimeCalculator.calculateOvertimeAmountBigDecimal(wage, otHours, note)
+                totalEarningsBd = totalEarningsBd.add(dailyBaseBd.add(dailyOtBd))
             } else if (status == "absent") {
                 absent++
             }
 
             if (status == "advance") {
-                totalAdv += adv
+                totalAdvBd = totalAdvBd.add(advBd)
             }
 
-            val log = logMap[date]
-            if (log != null) {
-                val combinedAdv = (log.advanceAmount ?: 0.0) + adv
-                val finalStatus = if (status == "advance") log.status else status
-                val finalType = if (status == "advance") log.type else type
-                logMap[date] = log.copy(
-                    status = finalStatus,
-                    type = finalType,
-                    advanceAmount = if (combinedAdv > 0) combinedAdv else null,
-                    baseEarnings = log.baseEarnings + dailyBase,
-                    overtimeHours = log.overtimeHours + otHours,
-                    overtimeAmount = log.overtimeAmount + dailyOT,
-                    note = if (status != "advance") OvertimeCalculator.cleanNote(note) else log.note
-                )
-            } else {
-                logMap[date] = OfflinePassbookLog(
-                    date = date,
-                    status = status,
-                    type = type,
-                    advanceAmount = if (adv > 0) adv else null,
-                    baseEarnings = dailyBase,
-                    overtimeHours = otHours,
-                    overtimeAmount = dailyOT,
-                    note = if (status != "advance") OvertimeCalculator.cleanNote(note) else null
-                )
-            }
+            val existingLog = logMap[date]
+            val cleanedNote = if (status != "advance") OvertimeCalculator.cleanNote(note) else existingLog?.note
+
+            val mergedOtHours = maxOf(otHours, existingLog?.overtimeHours ?: 0)
+            val existingOtBd = toMoney(existingLog?.overtimeAmount ?: 0.0)
+            val mergedOtBd = dailyOtBd.add(existingOtBd)
+
+            val existingBaseBd = toMoney(existingLog?.baseEarnings ?: 0.0)
+            val mergedBaseBd = dailyBaseBd.add(existingBaseBd)
+
+            val existingAdvBd = toMoney(existingLog?.advanceAmount ?: 0.0)
+            val mergedAdvBd = existingAdvBd.add(advBd)
+
+            val finalStatus = if (status != "advance") status else existingLog?.status ?: "advance"
+            val finalType = if (status != "advance") type else existingLog?.type
+
+            logMap[date] = OfflinePassbookLog(
+                date = date,
+                status = finalStatus,
+                type = finalType,
+                note = cleanedNote,
+                advanceAmount = if (mergedAdvBd.compareTo(BigDecimal.ZERO) > 0) mergedAdvBd.toDouble() else null,
+                overtimeHours = mergedOtHours,
+                overtimeAmount = mergedOtBd.toDouble(),
+                baseEarnings = mergedBaseBd.toDouble()
+            )
         }
 
         val finalLogs = logMap.values.toList().sortedByDescending { it.date }
-        val netBalance = totalEarnings - totalAdv
+        val netBalanceBd = totalEarningsBd.subtract(totalAdvBd)
         val totalWorks = (present - half) + (half * 0.5)
 
         return PassbookCalculationResult(
             present = present,
             absent = absent,
             half = half,
-            totalAdv = totalAdv,
-            totalEarnings = totalEarnings,
-            netBalance = netBalance,
+            totalAdv = totalAdvBd.toDouble(),
+            totalEarnings = totalEarningsBd.toDouble(),
+            netBalance = netBalanceBd.toDouble(),
             totalWorks = totalWorks,
             logs = finalLogs
         )

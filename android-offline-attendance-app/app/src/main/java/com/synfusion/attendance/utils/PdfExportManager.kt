@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileInputStream
+import java.math.BigDecimal
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -92,16 +93,16 @@ class PdfExportManager(
                 )
             }
 
-            // populate running balance
-            var currentRunningBalance = 0.0
+            // populate running balance using exact BigDecimal arithmetic
+            var currentRunningBalanceBd = BigDecimal.ZERO.setScale(2, AttendanceCalculationEngine.ROUNDING_MODE)
             val sortedLogsWithBalance = calcResult.logs.sortedBy { it.date }.mapIndexed { idx, log ->
-                val dailyEarned = log.baseEarnings
-                val advanceAmt = log.advanceAmount ?: 0.0
-                val otAmt = log.overtimeAmount
-                currentRunningBalance += (dailyEarned + otAmt) - advanceAmt
+                val dailyEarnedBd = BigDecimal.valueOf(log.baseEarnings)
+                val advanceAmtBd = BigDecimal.valueOf(log.advanceAmount ?: 0.0)
+                val otAmtBd = BigDecimal.valueOf(log.overtimeAmount)
+                currentRunningBalanceBd = currentRunningBalanceBd.add(dailyEarnedBd).add(otAmtBd).subtract(advanceAmtBd)
 
                 val origPdfLog = sortedLogs[idx]
-                origPdfLog.copy(runningBalance = "$rsStr ${AmountFormatter.format(currentRunningBalance)}")
+                origPdfLog.copy(runningBalance = "$rsStr ${AmountFormatter.format(currentRunningBalanceBd.toDouble())}")
             }
 
             val calendar = java.util.Calendar.getInstance()
@@ -211,17 +212,17 @@ class PdfExportManager(
                 val monthGroups = groupedByMonth.map { (monthNum, monthLogs) ->
                     val monthName = getMonthName(monthNum.toInt())
 
-                    var mEarnings = 0.0
-                    var mAdvance = 0.0
-                    var mOvertime = 0.0
+                    var mEarningsBd = BigDecimal.ZERO.setScale(2, AttendanceCalculationEngine.ROUNDING_MODE)
+                    var mAdvanceBd = BigDecimal.ZERO.setScale(2, AttendanceCalculationEngine.ROUNDING_MODE)
+                    var mOvertimeBd = BigDecimal.ZERO.setScale(2, AttendanceCalculationEngine.ROUNDING_MODE)
                     var mPresent = 0
                     var mAbsent = 0
                     var mHalf = 0
 
                     monthLogs.forEach { log ->
-                        mEarnings += log.baseEarnings
-                        mAdvance += (log.advanceAmount ?: 0.0)
-                        mOvertime += log.overtimeAmount
+                        mEarningsBd = mEarningsBd.add(BigDecimal.valueOf(log.baseEarnings))
+                        mAdvanceBd = mAdvanceBd.add(BigDecimal.valueOf(log.advanceAmount ?: 0.0))
+                        mOvertimeBd = mOvertimeBd.add(BigDecimal.valueOf(log.overtimeAmount))
                         if (log.status == "present") {
                             mPresent++
                             if (log.type == "half") mHalf++
@@ -255,10 +256,10 @@ class PdfExportManager(
                     AllTimePdfMonthGroup(
                         monthName = monthName,
                         monthNumeric = monthNum,
-                        totalEarnings = mEarnings + mOvertime,
-                        totalSalary = mEarnings,
-                        totalOvertime = mOvertime,
-                        totalAdvance = mAdvance,
+                        totalEarnings = mEarningsBd.add(mOvertimeBd).toDouble(),
+                        totalSalary = mEarningsBd.toDouble(),
+                        totalOvertime = mOvertimeBd.toDouble(),
+                        totalAdvance = mAdvanceBd.toDouble(),
                         presentCount = mPresent,
                         halfCount = mHalf,
                         absentCount = mAbsent,
