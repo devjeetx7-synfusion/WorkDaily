@@ -157,7 +157,7 @@
     <string name="daily_attendance_for_all_workers">Daily attendance for all workers</string>
     <string name="no_workers_found_add_workers_first">No workers found. Add workers first.</string>
     <string name="tap_to_edit_attendance_or_add_noteadvanc_msg">Tap to edit attendance or add note/advance.</string>
-    <string name="advance_payment">Advance Payment (₹)</string>
+    <string name="advance_payment">Advance Payment</string>
     <string name="add_note">Add Note...</string>
     <string name="remove">Remove</string>
     <string name="manage_workers">Manage Workers</string>
@@ -424,4 +424,85 @@
     <string name="whatsapp_channel">WhatsApp Channel</string>
     <string name="follow_workdaily_desc">Follow WorkDaily for updates</string>
     <string name="follow_channel">Follow</string>
+
+    <!-- Settlement Strings -->
+    <string name="amount_to_receive">Amount To Receive</string>
+    <string name="amount_to_pay_back">Amount To Pay Back</string>
+    <string name="settlement_status">Settlement Status</string>
+    <string name="settled_zero_pending">SETTLED — ₹0 PENDING</string>
+    <string name="you_will_receive_msg">YOU WILL RECEIVE ₹%1$s</string>
+    <string name="you_need_to_pay_back_msg">YOU NEED TO PAY BACK ₹%1$s</string>
+
+    <!-- DrillDown Category Titles -->
+    <string name="drilldown_earnings">Earnings</string>
+    <string name="drilldown_present">Present</string>
+    <string name="drilldown_absent">Absent</string>
+    <string name="drilldown_half_day">Half Day</string>
+    <string name="drilldown_overtime">Overtime</string>
+    <string name="drilldown_advance">Advance</string>
+    <string name="drilldown_all_time_earnings">All Time Earnings</string>
+    <string name="drilldown_all_time_present">All Time Present</string>
+    <string name="drilldown_all_time_absent">All Time Absent</string>
+    <string name="drilldown_all_time_half_day">All Time Half Day</string>
+    <string name="drilldown_all_time_overtime">All Time Overtime</string>
+    <string name="drilldown_all_time_advance">All Time Advance</string>
+    <string name="records_count">%1$d records</string>
+
+    <!-- Dashboard Strings -->
+    <string name="advance_payment_rs">Advance Payment (₹)</string>
+    <string name="marked_half_day">Marked Half Day</string>
+    <string name="marked_present">Marked Present</string>
+    <string name="marked_absent">Marked Absent</string>
+
+    <!-- Chart Strings -->
+    <string name="earning_label">Earning: ₹%1$s</string>
+    <string name="regular_label">Regular: ₹%1$s</string>
+    <string name="overtime_label_hrs">Overtime: ₹%1$s (%2$dh)</string>
+    <string name="overtime_label">Overtime: ₹%1$s</string>
+    <string name="previous_month">Previous</string>
+    <string name="next_month">Next</string>
+
+    <!-- Passbook / Ledger Strings -->
+    <string name="active_status">Active</string>
+    <string name="retry">Retry</string>
+    <string name="hours_ot">%1$d hrs OT</string>
+    <string name="ot_short">OT</string>
+
+    <!-- Settings Strings -->
+    <string name="logout">Log Out</string>
+    <string name="logout_title">Logout</string>
+    <string name="user_profile">User Profile</string>
+    <string name="user_name">User Name</string>
+    <string name="category_profile_settings">Profile Settings</string>
+    <string name="category_stay_connected">Stay Connected</string>
+    <string name="category_app_preferences">App Preferences</string>
+    <string name="category_notifications">Notifications</string>
+    <string name="category_backup">Backup &amp; Restore</string>
+    <string name="category_info_support">Info &amp; Support</string>
+    <string name="logout_backup_question">Would you like to create a backup before logging out?</string>
+    <string name="profile_photo">Profile Photo</string>
+    <string name="change_photo">Change Photo</string>
+    <string name="remove_photo">Remove Photo</string>
+    <string name="never">Never</string>
+    <string name="external_files">External Files</string>
+
+    <!-- Backup & Restore Dialog Strings -->
+    <string name="restore_data_report">Restore Data Report</string>
+    <string name="attendance_database">Attendance Database</string>
+    <string name="media_files">Media Files</string>
+    <string name="application_settings">Application Settings</string>
+    <string name="replace_all">Replace All</string>
+    <string name="replace_all_desc">Deletes current records and replaces with backup data</string>
+    <string name="merge_data">Merge Data</string>
+    <string name="merge_data_desc">Combines backup records with your current data safely</string>
+
+    <!-- Crop Screen Strings -->
+    <string name="failed_to_load_image">Failed to load image</string>
+    <string name="go_back">Go Back</string>
+
+    <!-- Legal & Help Screen Strings -->
+    <string name="overtime_title">Overtime</string>
+    <string name="overtime_desc">Manage and calculate your overtime hours easily.</string>
+    <string name="advance_title">Advance</string>
+    <string name="advance_desc">Keep track of advances taken and deduct them accurately from your final earnings.</string>
 </resources>

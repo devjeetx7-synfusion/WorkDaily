@@ -256,8 +256,8 @@ fun HowToUseScreen(onNavigateBack: () -> Unit) {
             item {
                 TutorialStepCard(
                     stepNumber = "5",
-                    title = "Overtime",
-                    description = "Manage and calculate your overtime hours easily.",
+                    title = stringResource(R.string.overtime_title),
+                    description = stringResource(R.string.overtime_desc),
                     icon = Icons.Default.AccessTime
                 ) { OvertimeIllustration() }
             }
@@ -265,8 +265,8 @@ fun HowToUseScreen(onNavigateBack: () -> Unit) {
             item {
                 TutorialStepCard(
                     stepNumber = "6",
-                    title = "Advance",
-                    description = "Keep track of advances taken and deduct them accurately from your final earnings.",
+                    title = stringResource(R.string.advance_title),
+                    description = stringResource(R.string.advance_desc),
                     icon = Icons.Default.AccountBalanceWallet
                 ) { AdvanceIllustration() }
             }

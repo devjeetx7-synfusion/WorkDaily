@@ -156,7 +156,7 @@
     <string name="daily_attendance_for_all_workers">सभी वर्करों की रोज की हाजिरी</string>
     <string name="no_workers_found_add_workers_first">कोई वर्कर नहीं मिला, पहले वर्कर जोड़ें।</string>
     <string name="tap_to_edit_attendance_or_add_noteadvanc_msg">हाजिरी एडिट करने या नोट/एडवांस जोड़ने के लिए टैप करें।</string>
-    <string name="advance_payment">एडवांस पैसे (₹)</string>
+    <string name="advance_payment">एडवांस पैसे</string>
     <string name="add_note">नोट लिखें...</string>
     <string name="remove">हटाएं</string>
     <string name="manage_workers">वर्कर मैनेज करें</string>
@@ -423,4 +423,85 @@
     <string name="whatsapp_channel">व्हाट्सएप चैनल</string>
     <string name="follow_workdaily_desc">नये अपडेट के लिए WorkDaily फॉलो करें</string>
     <string name="follow_channel">फॉलो करें</string>
+
+    <!-- Settlement Strings -->
+    <string name="amount_to_receive">पैसे मिलने हैं</string>
+    <string name="amount_to_pay_back">पैसे वापस देने हैं</string>
+    <string name="settlement_status">फाइनल हिसाब का स्टेटस</string>
+    <string name="settled_zero_pending">फाइनल हिसाब पूरा — ₹0 बकाया</string>
+    <string name="you_will_receive_msg">आपको ₹%1$s मिलेंगे</string>
+    <string name="you_need_to_pay_back_msg">आपको ₹%1$s वापस देने हैं</string>
+
+    <!-- DrillDown Category Titles -->
+    <string name="drilldown_earnings">कमाई</string>
+    <string name="drilldown_present">प्रेजेंट</string>
+    <string name="drilldown_absent">एब्सेंट</string>
+    <string name="drilldown_half_day">हाफ डे</string>
+    <string name="drilldown_overtime">ओवरटाइम</string>
+    <string name="drilldown_advance">एडवांस</string>
+    <string name="drilldown_all_time_earnings">ऑल टाइम कमाई</string>
+    <string name="drilldown_all_time_present">ऑल टाइम प्रेजेंट</string>
+    <string name="drilldown_all_time_absent">ऑल टाइम एब्सेंट</string>
+    <string name="drilldown_all_time_half_day">ऑल टाइम हाफ डे</string>
+    <string name="drilldown_all_time_overtime">ऑल टाइम ओवरटाइम</string>
+    <string name="drilldown_all_time_advance">ऑल टाइम एडवांस</string>
+    <string name="records_count">%1$d रिकॉर्ड</string>
+
+    <!-- Dashboard Strings -->
+    <string name="advance_payment_rs">एडवांस पैसे (₹)</string>
+    <string name="marked_half_day">हाफ डे लग गया</string>
+    <string name="marked_present">प्रेजेंट लग गया</string>
+    <string name="marked_absent">एब्सेंट लग गया</string>
+
+    <!-- Chart Strings -->
+    <string name="earning_label">कमाई: ₹%1$s</string>
+    <string name="regular_label">दिहाड़ी: ₹%1$s</string>
+    <string name="overtime_label_hrs">ओवरटाइम: ₹%1$s (%2$d घंटे)</string>
+    <string name="overtime_label">ओवरटाइम: ₹%1$s</string>
+    <string name="previous_month">पिछला</string>
+    <string name="next_month">अगला</string>
+
+    <!-- Passbook / Ledger Strings -->
+    <string name="active_status">चालू</string>
+    <string name="retry">दोबारा कोशिश करें</string>
+    <string name="hours_ot">%1$d घंटे ओवरटाइम</string>
+    <string name="ot_short">ओवरटाइम</string>
+
+    <!-- Settings Strings -->
+    <string name="logout">लॉग आउट</string>
+    <string name="logout_title">लॉग आउट</string>
+    <string name="user_profile">यूजर प्रोफाइल</string>
+    <string name="user_name">यूजर का नाम</string>
+    <string name="category_profile_settings">प्रोफाइल सेटिंग</string>
+    <string name="category_stay_connected">जुड़े रहें</string>
+    <string name="category_app_preferences">ऐप सेटिंग्स</string>
+    <string name="category_notifications">नोटिफिकेशन</string>
+    <string name="category_backup">बैकअप और रिस्टोर</string>
+    <string name="category_info_support">मदद और जानकारी</string>
+    <string name="logout_backup_question">क्या आप लॉग आउट करने से पहले बैकअप बनाना चाहते हैं?</string>
+    <string name="profile_photo">प्रोफाइल फोटो</string>
+    <string name="change_photo">फोटो बदलें</string>
+    <string name="remove_photo">फोटो हटाएं</string>
+    <string name="never">कभी नहीं</string>
+    <string name="external_files">फोन स्टोरेज</string>
+
+    <!-- Backup & Restore Dialog Strings -->
+    <string name="restore_data_report">रिस्टोर रिपोर्ट</string>
+    <string name="attendance_database">हाजिरी डेटाबेस</string>
+    <string name="media_files">मीडिया फाइल्स</string>
+    <string name="application_settings">ऐप सेटिंग्स</string>
+    <string name="replace_all">पुराना हटाकर नया डालें</string>
+    <string name="replace_all_desc">मौजूदा रिकॉर्ड हटाकर बैकअप का डेटा डाल देगा</string>
+    <string name="merge_data">डेटा मिलाएं</string>
+    <string name="merge_data_desc">बैकअप और मौजूदा रिकॉर्ड को सेफ तरीके से मिला देगा</string>
+
+    <!-- Crop Screen Strings -->
+    <string name="failed_to_load_image">फोटो लोड नहीं हो पाई</string>
+    <string name="go_back">वापस जाएं</string>
+
+    <!-- Legal & Help Screen Strings -->
+    <string name="overtime_title">ओवरटाइम</string>
+    <string name="overtime_desc">अपने ओवरटाइम के घंटे और पैसे आसानी से मैनेज करें।</string>
+    <string name="advance_title">एडवांस</string>
+    <string name="advance_desc">लिए गए एडवांस पैसे दर्ज करें और फाइनल हिसाब में से अपने आप कटवाएं।</string>
 </resources>

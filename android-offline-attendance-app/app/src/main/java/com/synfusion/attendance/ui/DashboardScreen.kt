@@ -132,7 +132,7 @@ fun DashboardScreen(
 
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-        contentWindowInsets = WindowInsets.systemBars,
+        contentWindowInsets = WindowInsets.statusBars,
         bottomBar = {
             if (currentRoute == "main_pager" && isCompactPortrait) {
                 BottomNavigationBar(
@@ -273,7 +273,6 @@ fun DashboardScreen(
                                                         item {
                                                             PersonalDailyLog(dashboardState, dashboardViewModel)
                                                         }
-                                                        item { Spacer(modifier = Modifier.height(24.dp)) }
                                                     }
                                                 } else {
                                                     LazyColumn(
@@ -315,7 +314,6 @@ fun DashboardScreen(
                                                                 }
                                                             }
                                                         }
-                                                        item { Spacer(modifier = Modifier.height(16.dp)) }
                                                     }
                                                 }
                                             }
@@ -484,18 +482,19 @@ fun DashboardScreen(
         }
 
         dashboardState.selectedDrillDownType?.let { type ->
+            val titleRes = when(type) {
+                DrillDownType.EARNINGS -> com.synfusion.attendance.R.string.drilldown_earnings
+                DrillDownType.PRESENT -> com.synfusion.attendance.R.string.drilldown_present
+                DrillDownType.ABSENT -> com.synfusion.attendance.R.string.drilldown_absent
+                DrillDownType.HALF_DAY -> com.synfusion.attendance.R.string.drilldown_half_day
+                DrillDownType.OVERTIME -> com.synfusion.attendance.R.string.drilldown_overtime
+                DrillDownType.ADVANCE -> com.synfusion.attendance.R.string.drilldown_advance
+            }
             DrillDownBottomSheet(
-                title = when(type) {
-                    DrillDownType.EARNINGS -> "Earnings"
-                    DrillDownType.PRESENT -> "Present"
-                    DrillDownType.ABSENT -> "Absent"
-                    DrillDownType.HALF_DAY -> "Half Day"
-                    DrillDownType.OVERTIME -> "Overtime"
-                    DrillDownType.ADVANCE -> "Advance"
-                },
+                title = androidx.compose.ui.res.stringResource(titleRes),
                 logs = dashboardState.selectedLogs,
                 onDismiss = { dashboardViewModel.closeDrillDown() },
-                totalRecordsText = "${dashboardState.selectedLogs.size} records",
+                totalRecordsText = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.records_count, dashboardState.selectedLogs.size),
                 totalAmountText = if (type == DrillDownType.EARNINGS || type == DrillDownType.OVERTIME || type == DrillDownType.ADVANCE) {
                     val total = if (type == DrillDownType.ADVANCE) {
                         dashboardState.selectedLogs.sumOf { it.advanceAmount ?: 0.0 }
@@ -745,7 +744,7 @@ fun PersonalQuickActions(
                 Column {
                     if (todayAdvanceAmount != null && todayAdvanceAmount > 0.0) {
                         Text(
-                            text = "Advance Payment",
+                            text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.advance_payment),
                             fontSize = 12.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -763,7 +762,7 @@ fun PersonalQuickActions(
                             color = MaterialTheme.colorScheme.onBackground
                         )
                         Text(
-                            text = "Advance Payment (₹)",
+                            text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.advance_payment_rs),
                             fontSize = 12.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -903,7 +902,12 @@ fun PersonalDailyLog(state: OfflineDashboardState, dashboardViewModel: OfflineDa
                         }
                     }
                     Spacer(modifier = Modifier.height(12.dp))
-                    Text(if (isPresent) { if (isHalf) "Marked Half Day" else "Marked Present" } else "Marked Absent", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = bgColor)
+                    val markedText = if (isPresent) {
+                        if (isHalf) androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.marked_half_day) else androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.marked_present)
+                    } else {
+                        androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.marked_absent)
+                    }
+                    Text(markedText, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = bgColor)
                     if (note.isNotEmpty()) {
                         Spacer(modifier = Modifier.height(8.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {

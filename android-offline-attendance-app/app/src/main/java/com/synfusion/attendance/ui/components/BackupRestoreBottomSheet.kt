@@ -293,13 +293,13 @@ fun BackupRestoreBottomSheet(
                                 modifier = Modifier.padding(16.dp),
                                 verticalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
-                                Text("Restore Data Report", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.primary)
+                                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.restore_data_report), fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.primary)
                                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
 
-                                ReportRow(label = "Attendance Database", detail = "${report.attendanceCount}/${report.totalAttendanceRecords} Records", success = true)
-                                ReportRow(label = "User Profile", detail = "Imported", success = report.profileRestored)
-                                ReportRow(label = "Media Files", detail = "${report.mediaCount}/${report.totalMediaFiles} Files", success = true)
-                                ReportRow(label = "Application Settings", detail = "Verified", success = report.settingsRestored)
+                                ReportRow(label = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.attendance_database), detail = "${report.attendanceCount}/${report.totalAttendanceRecords} Records", success = true)
+                                ReportRow(label = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.user_profile), detail = "Imported", success = report.profileRestored)
+                                ReportRow(label = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.media_files), detail = "${report.mediaCount}/${report.totalMediaFiles} Files", success = true)
+                                ReportRow(label = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.application_settings), detail = "Verified", success = report.settingsRestored)
                             }
                         }
                     }
@@ -376,8 +376,8 @@ fun BackupRestoreBottomSheet(
                             colors = CardDefaults.cardColors(containerColor = if (!mergeMode) MaterialTheme.colorScheme.primary.copy(alpha = 0.05f) else Color.Transparent)
                         ) {
                             Column(modifier = Modifier.padding(12.dp)) {
-                                Text("Replace All", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                Text("Deletes current records and replaces with backup data", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.replace_all), fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.replace_all_desc), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
 
@@ -393,8 +393,8 @@ fun BackupRestoreBottomSheet(
                             colors = CardDefaults.cardColors(containerColor = if (mergeMode) MaterialTheme.colorScheme.primary.copy(alpha = 0.05f) else Color.Transparent)
                         ) {
                             Column(modifier = Modifier.padding(12.dp)) {
-                                Text("Merge Data", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                Text("Combines backup records with your current data safely", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.merge_data), fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.merge_data_desc), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
                     }
