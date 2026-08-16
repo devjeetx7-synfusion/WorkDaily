@@ -86,4 +86,50 @@ class AttendanceCalculationEngineTest {
         assertNotNull(feb15Log)
         assertEquals(150.50, feb15Log!!.advanceAmount!!, 0.0001)
     }
+
+    @Test
+    fun testMonthlyCalendarDaysAndExactFinancialTotals() {
+        val records = listOf(
+            AttendanceEntity(id = "1", workerId = null, date = "2024-02-01", status = "present", type = "full", wage = wage), // 500.0
+            AttendanceEntity(id = "2", workerId = null, date = "2024-02-15", status = "present", type = "half", wage = wage), // 250.0
+            AttendanceEntity(id = "3", workerId = null, date = "2024-02-29", status = "present", type = "full", overtimeHours = 2, wage = wage) // 500.0 + 125.0 = 625.0
+        )
+
+        val stats = AttendanceCalculationEngine.calculateStats(records, "2024-02", wage)
+
+        // Feb 2024 is leap year -> 29 days
+        assertEquals(29, stats.dailyRecords.size)
+        assertEquals(1375.0, stats.totalEarnings, 0.0001)
+
+        val dailySum = stats.dailyRecords.sumOf { it.earnings }
+        assertEquals(stats.totalEarnings, dailySum, 0.0001)
+
+        val passbook = AttendanceCalculationEngine.calculatePassbook(records, wage)
+        assertEquals(passbook.totalEarnings, stats.totalEarnings, 0.0001)
+
+        val feb29Record = stats.dailyRecords.find { it.dateStr == "2024-02-29" }
+        assertNotNull(feb29Record)
+        assertEquals(625.0, feb29Record!!.earnings, 0.0001)
+        assertEquals(500.0, feb29Record.baseEarnings, 0.0001)
+        assertEquals(125.0, feb29Record.overtimeAmount, 0.0001)
+        assertEquals(2, feb29Record.overtimeHours)
+    }
+
+    @Test
+    fun testAllTimeDailyRecordsExactTotals() {
+        val records = listOf(
+            AttendanceEntity(id = "1", workerId = null, date = "2023-12-31", status = "present", type = "full", wage = wage), // 500.0
+            AttendanceEntity(id = "2", workerId = null, date = "2024-01-15", status = "present", type = "half", wage = wage), // 250.0
+            AttendanceEntity(id = "3", workerId = null, date = "2024-02-10", status = "present", type = "full", overtimeHours = 4, wage = wage) // 500.0 + 250.0 = 750.0
+        )
+
+        val stats = AttendanceCalculationEngine.calculateStats(records, "2024-01", wage)
+
+        assertEquals(1500.0, stats.allTimeEarnings, 0.0001)
+        val allTimeDailySum = stats.allTimeDailyRecords.sumOf { it.earnings }
+        assertEquals(stats.allTimeEarnings, allTimeDailySum, 0.0001)
+
+        val passbook = AttendanceCalculationEngine.calculatePassbook(records, wage)
+        assertEquals(passbook.totalEarnings, stats.allTimeEarnings, 0.0001)
+    }
 }

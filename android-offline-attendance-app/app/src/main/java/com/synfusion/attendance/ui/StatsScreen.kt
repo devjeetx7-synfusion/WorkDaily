@@ -12,7 +12,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -314,18 +316,20 @@ fun PersonalStatsView(
                     }
                 }
 
-                if (!isAllTime && dailyRecords.isNotEmpty()) {
-                    item {
-                        Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp)) {
-                            Column {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.daily_earnings), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-                                }
-                                Spacer(modifier = Modifier.height(16.dp))
-                                Box {
-                                    EarningsLineChart(dailyRecords = dailyRecords)
-                                }
+                item {
+                    val currentDailyRecords = if (isAllTime) state.personalStats.allTimeDailyRecords else state.personalStats.dailyRecords
+                    val currentHasRecords = if (isAllTime) state.personalStats.hasAllTimeRecords else state.personalStats.hasRecordsInPeriod
+                    Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp)) {
+                        Column {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.daily_earnings), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                             }
+                            Spacer(modifier = Modifier.height(16.dp))
+                            EarningsLineChart(
+                                dailyRecords = currentDailyRecords,
+                                hasRecords = currentHasRecords,
+                                isAllTime = isAllTime
+                            )
                         }
                     }
                 }
@@ -548,17 +552,19 @@ fun PersonalStatsView(
                             modifier = Modifier.weight(1f),
                             verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
-                            if (!isAllTime && dailyRecords.isNotEmpty()) {
-                                Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp)) {
-                                    Column {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.daily_earnings), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-                                        }
-                                        Spacer(modifier = Modifier.height(16.dp))
-                                        Box {
-                                            EarningsLineChart(dailyRecords = dailyRecords)
-                                        }
+                            val currentDailyRecords = if (isAllTime) state.personalStats.allTimeDailyRecords else state.personalStats.dailyRecords
+                            val currentHasRecords = if (isAllTime) state.personalStats.hasAllTimeRecords else state.personalStats.hasRecordsInPeriod
+                            Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp)) {
+                                Column {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.daily_earnings), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                                     }
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    EarningsLineChart(
+                                        dailyRecords = currentDailyRecords,
+                                        hasRecords = currentHasRecords,
+                                        isAllTime = isAllTime
+                                    )
                                 }
                             }
 
@@ -670,77 +676,313 @@ fun PersonalStatsView(
 }
 
 @Composable
-fun EarningsLineChart(dailyRecords: List<OfflineDailyRecord>) {
-    if (dailyRecords.isEmpty()) return
+fun EarningsLineChart(
+    dailyRecords: List<OfflineDailyRecord>,
+    hasRecords: Boolean = true,
+    isAllTime: Boolean = false
+) {
+    if (!hasRecords || dailyRecords.isEmpty()) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(200.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(
+                    imageVector = Icons.Default.ShowChart,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                    modifier = Modifier.size(40.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.no_data),
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+        return
+    }
 
-    val maxEarning = dailyRecords.maxOfOrNull { it.earnings } ?: 1.0
-    val maxChartVal = if (maxEarning == 0.0) 1.0 else maxEarning * 1.2
+    val maxEarning = remember(dailyRecords) { dailyRecords.maxOfOrNull { it.earnings } ?: 0.0 }
+    val maxChartVal = remember(maxEarning) {
+        if (maxEarning == 0.0) 100.0 else maxEarning * 1.2
+    }
 
-    var selectedIndex by remember { mutableStateOf<Int?>(null) }
+    var selectedIndex by remember(dailyRecords) { mutableStateOf<Int?>(null) }
 
     val animationProgress by animateFloatAsState(
         targetValue = 1f,
-        animationSpec = tween(1500),
+        animationSpec = tween(1200),
         label = "chartAnim"
     )
 
     val primaryColor = MaterialTheme.colorScheme.primary
+    val outlineColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+    val labelTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+    val surfaceVariantColor = MaterialTheme.colorScheme.surfaceVariant
+    val onSurfaceVariantColor = MaterialTheme.colorScheme.onSurfaceVariant
 
-    Box(modifier = Modifier.fillMaxWidth().height(200.dp)) {
-        Canvas(
-            modifier = Modifier.fillMaxSize().pointerInput(dailyRecords) {
-                detectTapGestures { offset ->
-                    val spacing = size.width / (dailyRecords.size.coerceAtLeast(2) - 1)
-                    val index = (offset.x / spacing).toInt().coerceIn(0, dailyRecords.size - 1)
-                    selectedIndex = index
+    // Date Formatters
+    val inSdf = remember { SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()) }
+    val monthDaySdf = remember { SimpleDateFormat("d MMM", Locale.getDefault()) }
+    val fullDateSdf = remember { SimpleDateFormat("d MMM yyyy", Locale.getDefault()) }
+
+    fun formatDateForXAxis(dateStr: String): String {
+        return try {
+            val date = inSdf.parse(dateStr) ?: return dateStr
+            if (isAllTime) monthDaySdf.format(date) else dateStr.split("-").last().toInt().toString()
+        } catch (e: Exception) {
+            dateStr
+        }
+    }
+
+    fun formatDateForTooltip(dateStr: String): String {
+        return try {
+            val date = inSdf.parse(dateStr) ?: return dateStr
+            fullDateSdf.format(date)
+        } catch (e: Exception) {
+            dateStr
+        }
+    }
+
+    val pointWidthDp = if (dailyRecords.size > 31) 36.dp else if (dailyRecords.size > 15) 28.dp else 40.dp
+    val minChartWidthDp = pointWidthDp * dailyRecords.size.coerceAtLeast(1)
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        // Selected Data Point Tooltip Card
+        selectedIndex?.let { idx ->
+            if (idx in dailyRecords.indices) {
+                val record = dailyRecords[idx]
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 12.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(surfaceVariantColor)
+                        .border(1.dp, primaryColor.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
+                        .padding(12.dp)
+                ) {
+                    Column {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = formatDateForTooltip(record.dateStr),
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = onSurfaceVariantColor
+                            )
+                            IconButton(
+                                onClick = { selectedIndex = null },
+                                modifier = Modifier.size(20.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Close",
+                                    tint = onSurfaceVariantColor,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            Column {
+                                Text(
+                                    text = "Earning: ₹${AmountFormatter.format(record.earnings)}",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = primaryColor
+                                )
+                                Text(
+                                    text = "Regular: ₹${AmountFormatter.format(record.baseEarnings)}",
+                                    fontSize = 12.sp,
+                                    color = onSurfaceVariantColor
+                                )
+                            }
+                            if (record.overtimeAmount > 0 || record.overtimeHours > 0) {
+                                Column {
+                                    Text(
+                                        text = "Overtime: ₹${AmountFormatter.format(record.overtimeAmount)}",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = onSurfaceVariantColor
+                                    )
+                                    if (record.overtimeHours > 0) {
+                                        Text(
+                                            text = "${record.overtimeHours} hrs OT",
+                                            fontSize = 12.sp,
+                                            color = onSurfaceVariantColor
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
-        ) {
-            val width = size.width
-            val height = size.height
+        }
 
-            val spacing = if (dailyRecords.size > 1) width / (dailyRecords.size - 1) else width
+        Row(modifier = Modifier.fillMaxWidth().height(200.dp)) {
+            // Y-Axis Labels
+            Column(
+                modifier = Modifier
+                    .width(44.dp)
+                    .fillMaxHeight()
+                    .padding(vertical = 16.dp),
+                verticalArrangement = Arrangement.SpaceBetween,
+                horizontalAlignment = Alignment.End
+            ) {
+                val y1 = maxChartVal
+                val y2 = maxChartVal * 0.66
+                val y3 = maxChartVal * 0.33
+                val y4 = 0.0
 
-            val path = Path()
-            val points = mutableListOf<Offset>()
-
-            dailyRecords.forEachIndexed { index, record ->
-                val x = index * spacing
-                val y = height - ((record.earnings / maxChartVal) * height).toFloat()
-                points.add(Offset(x, y))
-
-                if (index == 0) {
-                    path.moveTo(x, y)
-                } else {
-                    path.lineTo(x, y)
-                }
+                Text(text = "₹${y1.toInt()}", fontSize = 9.sp, color = labelTextColor, maxLines = 1)
+                Text(text = "₹${y2.toInt()}", fontSize = 9.sp, color = labelTextColor, maxLines = 1)
+                Text(text = "₹${y3.toInt()}", fontSize = 9.sp, color = labelTextColor, maxLines = 1)
+                Text(text = "₹${y4.toInt()}", fontSize = 9.sp, color = labelTextColor, maxLines = 1)
             }
 
-            val animPath = Path()
-            val pathMeasure = android.graphics.PathMeasure(path.asAndroidPath(), false)
-            val length = pathMeasure.length
-            val dst = android.graphics.Path()
-            pathMeasure.getSegment(0f, length * animationProgress, dst, true)
-            animPath.addPath(dst.asComposePath())
+            Spacer(modifier = Modifier.width(6.dp))
 
-            drawPath(
-                path = animPath,
-                color = primaryColor,
-                style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
-            )
+            // Scrollable Chart Canvas area
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .horizontalScroll(rememberScrollState())
+            ) {
+                Box(
+                    modifier = Modifier
+                        .widthIn(min = minChartWidthDp)
+                        .fillMaxHeight()
+                ) {
+                    Canvas(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .pointerInput(dailyRecords) {
+                                detectTapGestures { offset ->
+                                    val topPadding = 20.dp.toPx()
+                                    val bottomPadding = 30.dp.toPx()
+                                    val chartHeight = size.height - topPadding - bottomPadding
 
-            val visiblePoints = (points.size * animationProgress).toInt()
-            points.take(visiblePoints).forEach { point ->
-                drawCircle(
-                    color = primaryColor,
-                    radius = 4.dp.toPx(),
-                    center = point
-                )
-                drawCircle(
-                    color = androidx.compose.ui.graphics.Color.White,
-                    radius = 2.dp.toPx(),
-                    center = point
-                )
+                                    val count = dailyRecords.size
+                                    val spacing = if (count > 1) size.width / (count - 1) else size.width
+                                    val index = if (count > 1) {
+                                        (offset.x / spacing).toInt().coerceIn(0, count - 1)
+                                    } else 0
+                                    selectedIndex = index
+                                }
+                            }
+                    ) {
+                        val width = size.width
+                        val height = size.height
+                        val topPadding = 20.dp.toPx()
+                        val bottomPadding = 30.dp.toPx()
+                        val usableHeight = height - topPadding - bottomPadding
+
+                        val count = dailyRecords.size
+                        val spacing = if (count > 1) width / (count - 1) else width / 2f
+
+                        // Draw background horizontal grid lines
+                        val gridLines = listOf(0f, 0.33f, 0.66f, 1f)
+                        gridLines.forEach { ratio ->
+                            val gridY = topPadding + usableHeight * (1f - ratio)
+                            drawLine(
+                                color = outlineColor,
+                                start = Offset(0f, gridY),
+                                end = Offset(width, gridY),
+                                strokeWidth = 1.dp.toPx()
+                            )
+                        }
+
+                        val points = mutableListOf<Offset>()
+                        dailyRecords.forEachIndexed { index, record ->
+                            val x = if (count > 1) index * spacing else width / 2f
+                            val ratio = (record.earnings / maxChartVal).coerceIn(0.0, 1.0).toFloat()
+                            val y = topPadding + usableHeight * (1f - ratio)
+                            points.add(Offset(x, y))
+                        }
+
+                        // Path calculation
+                        if (points.isNotEmpty()) {
+                            val path = Path()
+                            points.forEachIndexed { idx, pt ->
+                                if (idx == 0) path.moveTo(pt.x, pt.y) else path.lineTo(pt.x, pt.y)
+                            }
+
+                            val animPath = Path()
+                            val pathMeasure = android.graphics.PathMeasure(path.asAndroidPath(), false)
+                            val length = pathMeasure.length
+                            val dst = android.graphics.Path()
+                            pathMeasure.getSegment(0f, length * animationProgress, dst, true)
+                            animPath.addPath(dst.asComposePath())
+
+                            drawPath(
+                                path = animPath,
+                                color = primaryColor,
+                                style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
+                            )
+
+                            val visiblePointsCount = (points.size * animationProgress).toInt().coerceIn(0, points.size)
+                            for (i in 0 until visiblePointsCount) {
+                                val pt = points[i]
+                                val isSelected = selectedIndex == i
+
+                                drawCircle(
+                                    color = if (isSelected) primaryColor else primaryColor.copy(alpha = 0.9f),
+                                    radius = if (isSelected) 7.dp.toPx() else 4.dp.toPx(),
+                                    center = pt
+                                )
+                                drawCircle(
+                                    color = androidx.compose.ui.graphics.Color.White,
+                                    radius = if (isSelected) 3.5.dp.toPx() else 2.dp.toPx(),
+                                    center = pt
+                                )
+                            }
+                        }
+                    }
+
+                    // Adaptive X-Axis Labels Overlay
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .align(Alignment.BottomCenter)
+                            .height(24.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        val count = dailyRecords.size
+                        val step = when {
+                            count <= 10 -> 1
+                            count <= 20 -> 2
+                            count <= 31 -> 3
+                            else -> (count / 10).coerceAtLeast(1)
+                        }
+
+                        dailyRecords.forEachIndexed { index, record ->
+                            if (index % step == 0 || index == count - 1) {
+                                Text(
+                                    text = formatDateForXAxis(record.dateStr),
+                                    fontSize = 9.sp,
+                                    color = if (selectedIndex == index) primaryColor else labelTextColor,
+                                    fontWeight = if (selectedIndex == index) FontWeight.Bold else FontWeight.Normal,
+                                    maxLines = 1
+                                )
+                            } else {
+                                Spacer(modifier = Modifier.width(1.dp))
+                            }
+                        }
+                    }
+                }
             }
         }
     }
