@@ -5,7 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.synfusion.attendance.data.LocalAttendanceRepository
 import com.synfusion.attendance.data.OfflinePreferencesRepository
 import com.synfusion.attendance.data.entities.AttendanceEntity
-import com.synfusion.attendance.utils.OvertimeCalculator
+import com.synfusion.attendance.utils.AttendanceCalculationEngine
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -171,81 +171,24 @@ class OfflinePassbookViewModel(
             val isCurrentMonth = today.get(Calendar.YEAR) == cal.get(Calendar.YEAR) && today.get(Calendar.MONTH) == cal.get(Calendar.MONTH)
             val passedDays = if (isCurrentMonth) today.get(Calendar.DAY_OF_MONTH) else cal.getActualMaximum(Calendar.DAY_OF_MONTH)
 
-            var present = 0
-            var absent = 0
-            var half = 0
-            var totalAdv = 0.0
-            var totalEarnings = 0.0
-
-            val logMap = mutableMapOf<String, OfflinePassbookLog>()
             val wage = _state.value.dailyWage
+            val calcResult = AttendanceCalculationEngine.calculatePassbook(list, wage)
 
-            list.forEach { rec ->
-                val date = rec.date
-                val status = rec.status
-                val type = rec.type
-                val adv = rec.advanceAmount
-                val note = rec.note
-                val otHours = rec.overtimeHours
-
-                var dailyBase = 0.0
-                var dailyOT = 0.0
-
-                if (status == "present") {
-                    present++
-                    dailyBase = if (type == "half") {
-                        half++
-                        wage / 2.0
-                    } else {
-                        wage
-                    }
-                    dailyOT = OvertimeCalculator.calculateOvertimeAmount(wage, otHours, note)
-                    totalEarnings += (dailyBase + dailyOT)
-                } else if (status == "absent") {
-                    absent++
-                }
-                if (adv > 0) totalAdv += adv
-
-                val existingLog = logMap[date]
-                val cleanedNote = OvertimeCalculator.cleanNote(note) ?: existingLog?.note?.takeIf { note == null }
-
-                val mergedOtHours = maxOf(otHours, existingLog?.overtimeHours ?: 0)
-                val mergedOtAmount = dailyOT + (existingLog?.overtimeAmount ?: 0.0)
-                val mergedBaseEarnings = dailyBase + (existingLog?.baseEarnings ?: 0.0)
-
-                logMap[date] = OfflinePassbookLog(
-                    date = date,
-                    status = if (status != "advance") status else existingLog?.status ?: "advance",
-                    type = if (status != "advance") type else existingLog?.type,
-                    note = cleanedNote,
-                    advanceAmount = (existingLog?.advanceAmount ?: 0.0) + adv,
-                    overtimeHours = mergedOtHours,
-                    overtimeAmount = mergedOtAmount,
-                    baseEarnings = mergedBaseEarnings
-                )
-            }
-
-            val effectiveDays = present - (half * 0.5)
-            val grossEarned = totalEarnings
-            val finalBalance = grossEarned - totalAdv
-
-            val attRate = if (passedDays > 0) ((present.toDouble() / passedDays) * 100).toInt().coerceIn(0, 100) else 0
-
-            val sortedLogs = logMap.values.toList().sortedByDescending { it.date }
+            val attRate = if (passedDays > 0) ((calcResult.present.toDouble() / passedDays) * 100).toInt().coerceIn(0, 100) else 0
 
             _state.update { current ->
                 current.copy(
                     isLoading = false,
-                    presentDays = present,
-                    absentDays = absent,
-                    halfDays = half,
-                    totalDailyWorks = effectiveDays,
+                    presentDays = calcResult.present,
+                    absentDays = calcResult.absent,
+                    halfDays = calcResult.half,
+                    totalDailyWorks = calcResult.totalWorks,
                     passedDays = passedDays,
                     attendanceRate = attRate,
-                    grossEarned = grossEarned,
-                    totalAdvance = totalAdv,
-                    finalBalance = finalBalance,
-                    logs = sortedLogs,
+                    grossEarned = calcResult.totalEarnings,
+                    totalAdvance = calcResult.totalAdv,
+                    finalBalance = calcResult.netBalance,
+                    logs = calcResult.logs,
                     isRefreshing = false,
                     errorMessage = null
                 )

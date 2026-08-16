@@ -13,6 +13,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.math.BigDecimal
+import java.math.RoundingMode
 
 data class AllTimeGroup(
     val year: String,
@@ -131,7 +133,7 @@ class OfflineAllTimePassbookViewModel(
                     }
                 }
 
-                // Group Year -> Month -> Daily Records
+                // Group Year -> Month -> Daily Records using exact BigDecimal precision
                 val yearGroups = withContext(Dispatchers.Default) {
                     val grouped = filteredLogs.groupBy { it.date.substring(0, 4) } // Year
                     grouped.map { (year, yearLogs) ->
@@ -139,17 +141,17 @@ class OfflineAllTimePassbookViewModel(
                         val monthGroups = monthGrouped.map { (monthNum, monthLogs) ->
                             val monthName = getMonthName(monthNum.toInt())
 
-                            var mEarnings = 0.0
-                            var mAdvance = 0.0
-                            var mOvertime = 0.0
+                            var mEarningsBd = BigDecimal.ZERO.setScale(2, AttendanceCalculationEngine.ROUNDING_MODE)
+                            var mAdvanceBd = BigDecimal.ZERO.setScale(2, AttendanceCalculationEngine.ROUNDING_MODE)
+                            var mOvertimeBd = BigDecimal.ZERO.setScale(2, AttendanceCalculationEngine.ROUNDING_MODE)
                             var mPresent = 0
                             var mAbsent = 0
                             var mHalf = 0
 
                             monthLogs.forEach { log ->
-                                mEarnings += log.baseEarnings
-                                mAdvance += (log.advanceAmount ?: 0.0)
-                                mOvertime += log.overtimeAmount
+                                mEarningsBd = mEarningsBd.add(BigDecimal.valueOf(log.baseEarnings))
+                                mAdvanceBd = mAdvanceBd.add(BigDecimal.valueOf(log.advanceAmount ?: 0.0))
+                                mOvertimeBd = mOvertimeBd.add(BigDecimal.valueOf(log.overtimeAmount))
                                 if (log.status == "present") {
                                     mPresent++
                                     if (log.type == "half") mHalf++
@@ -162,9 +164,9 @@ class OfflineAllTimePassbookViewModel(
                                 year = year,
                                 month = monthName,
                                 monthNumeric = monthNum,
-                                totalEarnings = mEarnings,
-                                totalAdvance = mAdvance,
-                                totalOvertime = mOvertime,
+                                totalEarnings = mEarningsBd.toDouble(),
+                                totalAdvance = mAdvanceBd.toDouble(),
+                                totalOvertime = mOvertimeBd.toDouble(),
                                 presentCount = mPresent,
                                 absentCount = mAbsent,
                                 halfCount = mHalf,
@@ -176,7 +178,9 @@ class OfflineAllTimePassbookViewModel(
                     }.sortedByDescending { it.year }
                 }
 
-                val totalOt = calcResult.logs.sumOf { it.overtimeAmount }
+                val totalOt = calcResult.logs.fold(BigDecimal.ZERO.setScale(2, AttendanceCalculationEngine.ROUNDING_MODE)) { acc, log ->
+                    acc.add(BigDecimal.valueOf(log.overtimeAmount))
+                }.toDouble()
 
                 _state.update { current ->
                     current.copy(

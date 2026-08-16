@@ -1,24 +1,14 @@
 package com.synfusion.attendance.utils
 
+import java.math.BigDecimal
+import java.text.DecimalFormat
+import java.text.DecimalFormatSymbols
 import java.util.Locale
 
 object AmountFormatter {
     fun format(amount: Double): String {
-        val isNegative = amount < 0
-        val absAmount = Math.abs(amount)
-
-        val amountStr = String.format(Locale.US, "%.2f", absAmount)
-        val parts = amountStr.split(".")
-        val intPart = parts[0]
-        val decPart = if (parts.size > 1) parts[1] else ""
-
-        val formattedInt = formatIntegerStr(intPart)
-
-        val trimmedDec = decPart.trimEnd('0')
-        val decimalSuffix = if (trimmedDec.isNotEmpty()) ".$trimmedDec" else ""
-
-        val prefix = if (isNegative) "-" else ""
-        return "$prefix$formattedInt$decimalSuffix"
+        val bd = BigDecimal.valueOf(amount).setScale(2, AttendanceCalculationEngine.ROUNDING_MODE)
+        return formatBigDecimal(bd)
     }
 
     fun format(amount: Float): String {
@@ -26,10 +16,8 @@ object AmountFormatter {
     }
 
     fun format(amount: Long): String {
-        val isNegative = amount < 0
-        val absAmount = Math.abs(amount)
-        val prefix = if (isNegative) "-" else ""
-        return "$prefix${formatIntegerStr(absAmount.toString())}"
+        val bd = BigDecimal.valueOf(amount).setScale(2, AttendanceCalculationEngine.ROUNDING_MODE)
+        return formatBigDecimal(bd)
     }
 
     fun format(amount: Int): String {
@@ -38,12 +26,27 @@ object AmountFormatter {
 
     fun format(amountStr: String): String {
         val cleanStr = amountStr.replace(",", "").trim()
-        val dValue = cleanStr.toDoubleOrNull() ?: return amountStr
-        return if (dValue % 1.0 == 0.0) {
-            format(dValue.toLong())
-        } else {
-            format(dValue)
-        }
+        val bdValue = cleanStr.toBigDecimalOrNull() ?: return amountStr
+        val scaled = bdValue.setScale(2, AttendanceCalculationEngine.ROUNDING_MODE)
+        return formatBigDecimal(scaled)
+    }
+
+    private fun formatBigDecimal(bd: BigDecimal): String {
+        val isNegative = bd.compareTo(BigDecimal.ZERO) < 0
+        val absBd = bd.abs()
+
+        val plainStr = absBd.toPlainString()
+        val parts = plainStr.split(".")
+        val intPart = parts[0]
+        val decPart = if (parts.size > 1) parts[1] else "00"
+
+        val formattedInt = formatIntegerStr(intPart)
+
+        val trimmedDec = decPart.trimEnd('0')
+        val decimalSuffix = if (trimmedDec.isNotEmpty()) ".$trimmedDec" else ""
+
+        val prefix = if (isNegative) "-" else ""
+        return "$prefix$formattedInt$decimalSuffix"
     }
 
     private fun formatIntegerStr(intPart: String): String {
