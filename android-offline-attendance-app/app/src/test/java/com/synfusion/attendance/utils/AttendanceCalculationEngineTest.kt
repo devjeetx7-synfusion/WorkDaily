@@ -159,10 +159,10 @@ class AttendanceCalculationEngineTest {
         val aug31 = "2026-08-31"
         val sep1 = "2026-09-01"
 
-        assertTrue(aug1 >= start && aug1 < end)
-        assertTrue(aug16 >= start && aug16 < end)
-        assertTrue(aug31 >= start && aug31 < end)
-        assertFalse(sep1 >= start && sep1 < end)
+        assertTrue(AttendanceCalculationEngine.isDateInMonth(aug1, "2026-08"))
+        assertTrue(AttendanceCalculationEngine.isDateInMonth(aug16, "2026-08"))
+        assertTrue(AttendanceCalculationEngine.isDateInMonth(aug31, "2026-08"))
+        assertFalse(AttendanceCalculationEngine.isDateInMonth(sep1, "2026-08"))
     }
 
     @Test

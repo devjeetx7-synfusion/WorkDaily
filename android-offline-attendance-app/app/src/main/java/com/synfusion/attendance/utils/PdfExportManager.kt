@@ -54,7 +54,7 @@ class PdfExportManager(
 
             // Select only records matching the selected month
             val currentMonthPrefix = SimpleDateFormat("yyyy-MM", Locale.US).format(selectedMonthDate)
-            val monthlyRecords = records.filter { it.date.startsWith(currentMonthPrefix) }
+            val monthlyRecords = records.filter { AttendanceCalculationEngine.isDateInMonth(it.date, currentMonthPrefix) }
 
             val calcResult = withContext(Dispatchers.Default) {
                 AttendanceCalculationEngine.calculatePassbook(monthlyRecords, cachedDefaultWage)

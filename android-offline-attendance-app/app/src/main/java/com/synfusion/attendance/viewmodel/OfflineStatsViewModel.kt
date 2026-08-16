@@ -40,6 +40,11 @@ data class OfflinePersonalStatsData(
     val allTimeDailyRecords: List<OfflineDailyRecord> = emptyList(),
     val allTimeDays: Int = 0,
     val allTimeEarnings: Double = 0.0,
+    val allTimeOvertime: Int = 0,
+    val allTimeAdvanceTotal: Double = 0.0,
+    val allTimePresent: Int = 0,
+    val allTimeAbsent: Int = 0,
+    val allTimeHalfDays: Int = 0,
     val hasRecordsInPeriod: Boolean = false,
     val hasAllTimeRecords: Boolean = false
 )

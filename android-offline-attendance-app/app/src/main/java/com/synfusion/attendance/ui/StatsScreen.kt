@@ -259,6 +259,11 @@ fun PersonalStatsView(
 
     val currentEarnings = if (isAllTime) state.personalStats.allTimeEarnings else state.personalStats.totalEarnings
     val currentDays = if (isAllTime) state.personalStats.allTimeDays else (state.personalStats.present + state.personalStats.halfDays)
+    val currentOvertime = if (isAllTime) state.personalStats.allTimeOvertime else state.personalStats.overtime
+    val currentAdvance = if (isAllTime) state.personalStats.allTimeAdvanceTotal else state.personalStats.advanceTotal
+    val currentPresent = if (isAllTime) state.personalStats.allTimePresent else state.personalStats.present
+    val currentAbsent = if (isAllTime) state.personalStats.allTimeAbsent else state.personalStats.absent
+    val currentHalfDays = if (isAllTime) state.personalStats.allTimeHalfDays else state.personalStats.halfDays
     val dailyRecords = if (isAllTime) emptyList() else state.personalStats.dailyRecords
     val windowSizeInfo = LocalWindowSizeInfo.current
 
@@ -315,14 +320,14 @@ fun PersonalStatsView(
                             Column {
                                 Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.total_overtime), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 Spacer(modifier = Modifier.height(4.dp))
-                                AnimatedCounter(targetValue = state.personalStats.overtime, suffix = " hrs")
+                                AnimatedCounter(targetValue = currentOvertime, suffix = " hrs")
                             }
                         }
                         Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).clickable { viewModel.openDrillDown(DrillDownType.ADVANCE, isAllTime) }.padding(16.dp)) {
                             Column {
                                 Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.advance_deductions), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 Spacer(modifier = Modifier.height(4.dp))
-                                AnimatedCounter(targetValue = state.personalStats.advanceTotal.toInt(), prefix = "₹")
+                                AnimatedCounter(targetValue = currentAdvance.toInt(), prefix = "₹")
                             }
                         }
                     }
@@ -346,102 +351,100 @@ fun PersonalStatsView(
                     }
                 }
 
-                if (!isAllTime) {
-                    item {
-                        Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp)) {
-                            Column {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.attendance_breakdown), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                item {
+                    Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp)) {
+                        Column {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.attendance_breakdown), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                            }
+                            Spacer(modifier = Modifier.height(24.dp))
+
+                            val purePresent = currentPresent - currentHalfDays
+                            val total = (purePresent + currentAbsent + currentHalfDays).toFloat()
+                            if (total > 0) {
+                                val presentSweep = (purePresent / total) * 360f
+                                val halfSweep = (currentHalfDays / total) * 360f
+                                val absentSweep = (currentAbsent / total) * 360f
+
+                                val animatedPresentSweep by animateFloatAsState(targetValue = presentSweep, animationSpec = tween(1000), label = "present")
+                                val animatedHalfSweep by animateFloatAsState(targetValue = halfSweep, animationSpec = tween(1000), label = "half")
+                                val animatedAbsentSweep by animateFloatAsState(targetValue = absentSweep, animationSpec = tween(1000), label = "absent")
+
+                                val presentColor = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent()
+                                val halfColor = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay()
+                                val absentColor = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent()
+
+                                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                    Box(modifier = Modifier.size(120.dp), contentAlignment = Alignment.Center) {
+                                        Canvas(modifier = Modifier.size(100.dp)) {
+                                            val strokeWidth = 24.dp.toPx()
+
+                                            drawArc(
+                                                color = Color.LightGray.copy(alpha = 0.3f),
+                                                startAngle = 0f,
+                                                sweepAngle = 360f,
+                                                useCenter = false,
+                                                style = Stroke(strokeWidth, cap = StrokeCap.Round)
+                                            )
+
+                                            var currentStartAngle = -90f
+
+                                            drawArc(
+                                                color = presentColor,
+                                                startAngle = currentStartAngle,
+                                                sweepAngle = animatedPresentSweep,
+                                                useCenter = false,
+                                                style = Stroke(strokeWidth, cap = StrokeCap.Butt)
+                                            )
+                                            currentStartAngle += animatedPresentSweep
+
+                                            drawArc(
+                                                color = halfColor,
+                                                startAngle = currentStartAngle,
+                                                sweepAngle = animatedHalfSweep,
+                                                useCenter = false,
+                                                style = Stroke(strokeWidth, cap = StrokeCap.Butt)
+                                            )
+                                            currentStartAngle += animatedHalfSweep
+
+                                            drawArc(
+                                                color = absentColor,
+                                                startAngle = currentStartAngle,
+                                                sweepAngle = animatedAbsentSweep,
+                                                useCenter = false,
+                                                style = Stroke(strokeWidth, cap = StrokeCap.Butt)
+                                            )
+                                        }
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            val attendanceRate = if (total > 0) ((purePresent + currentHalfDays * 0.5) / total * 100).toInt() else 0
+                                            Text("${attendanceRate}%", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.attendance), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.width(24.dp))
+
+                                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                        Row(modifier = Modifier.clickable { viewModel.openDrillDown(DrillDownType.PRESENT, isAllTime) }.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                                            Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(presentColor))
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.stats_present_label, purePresent), fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                                        }
+                                        Row(modifier = Modifier.clickable { viewModel.openDrillDown(DrillDownType.HALF_DAY, isAllTime) }.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                                            Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(halfColor))
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.stats_half_label, currentHalfDays), fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                                        }
+                                        Row(modifier = Modifier.clickable { viewModel.openDrillDown(DrillDownType.ABSENT, isAllTime) }.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                                            Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(absentColor))
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.stats_absent_label, currentAbsent), fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                                        }
+                                    }
                                 }
-                                Spacer(modifier = Modifier.height(24.dp))
-
-                                val purePresent = state.personalStats.present - state.personalStats.halfDays
-                                val total = (purePresent + state.personalStats.absent + state.personalStats.halfDays).toFloat()
-                                if (total > 0) {
-                                    val presentSweep = (purePresent / total) * 360f
-                                    val halfSweep = (state.personalStats.halfDays / total) * 360f
-                                    val absentSweep = (state.personalStats.absent / total) * 360f
-
-                                    val animatedPresentSweep by animateFloatAsState(targetValue = presentSweep, animationSpec = tween(1000), label = "present")
-                                    val animatedHalfSweep by animateFloatAsState(targetValue = halfSweep, animationSpec = tween(1000), label = "half")
-                                    val animatedAbsentSweep by animateFloatAsState(targetValue = absentSweep, animationSpec = tween(1000), label = "absent")
-
-                                    val presentColor = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent()
-                                    val halfColor = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay()
-                                    val absentColor = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent()
-
-                                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                        Box(modifier = Modifier.size(120.dp), contentAlignment = Alignment.Center) {
-                                            Canvas(modifier = Modifier.size(100.dp)) {
-                                                val strokeWidth = 24.dp.toPx()
-
-                                                drawArc(
-                                                    color = Color.LightGray.copy(alpha = 0.3f),
-                                                    startAngle = 0f,
-                                                    sweepAngle = 360f,
-                                                    useCenter = false,
-                                                    style = Stroke(strokeWidth, cap = StrokeCap.Round)
-                                                )
-
-                                                var currentStartAngle = -90f
-
-                                                drawArc(
-                                                    color = presentColor,
-                                                    startAngle = currentStartAngle,
-                                                    sweepAngle = animatedPresentSweep,
-                                                    useCenter = false,
-                                                    style = Stroke(strokeWidth, cap = StrokeCap.Butt)
-                                                )
-                                                currentStartAngle += animatedPresentSweep
-
-                                                drawArc(
-                                                    color = halfColor,
-                                                    startAngle = currentStartAngle,
-                                                    sweepAngle = animatedHalfSweep,
-                                                    useCenter = false,
-                                                    style = Stroke(strokeWidth, cap = StrokeCap.Butt)
-                                                )
-                                                currentStartAngle += animatedHalfSweep
-
-                                                drawArc(
-                                                    color = absentColor,
-                                                    startAngle = currentStartAngle,
-                                                    sweepAngle = animatedAbsentSweep,
-                                                    useCenter = false,
-                                                    style = Stroke(strokeWidth, cap = StrokeCap.Butt)
-                                                )
-                                            }
-                                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                                val attendanceRate = if (total > 0) ((purePresent + state.personalStats.halfDays * 0.5) / total * 100).toInt() else 0
-                                                Text("${attendanceRate}%", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-                                                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.attendance), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                            }
-                                        }
-
-                                        Spacer(modifier = Modifier.width(24.dp))
-
-                                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                                            Row(modifier = Modifier.clickable { viewModel.openDrillDown(DrillDownType.PRESENT, isAllTime) }.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                                                Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(presentColor))
-                                                Spacer(modifier = Modifier.width(8.dp))
-                                                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.stats_present_label, purePresent), fontSize = 14.sp, fontWeight = FontWeight.Medium)
-                                            }
-                                            Row(modifier = Modifier.clickable { viewModel.openDrillDown(DrillDownType.HALF_DAY, isAllTime) }.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                                                Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(halfColor))
-                                                Spacer(modifier = Modifier.width(8.dp))
-                                                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.stats_half_label, state.personalStats.halfDays), fontSize = 14.sp, fontWeight = FontWeight.Medium)
-                                            }
-                                            Row(modifier = Modifier.clickable { viewModel.openDrillDown(DrillDownType.ABSENT, isAllTime) }.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                                                Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(absentColor))
-                                                Spacer(modifier = Modifier.width(8.dp))
-                                                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.stats_absent_label, state.personalStats.absent), fontSize = 14.sp, fontWeight = FontWeight.Medium)
-                                            }
-                                        }
-                                    }
-                                } else {
-                                    Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.no_data), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    }
+                            } else {
+                                Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.no_data), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
                         }
@@ -526,14 +529,14 @@ fun PersonalStatsView(
                                     Column {
                                         Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.total_overtime), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         Spacer(modifier = Modifier.height(4.dp))
-                                        AnimatedCounter(targetValue = state.personalStats.overtime, suffix = " hrs")
+                                        AnimatedCounter(targetValue = currentOvertime, suffix = " hrs")
                                     }
                                 }
                                 Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).clickable { viewModel.openDrillDown(DrillDownType.ADVANCE, isAllTime) }.padding(16.dp)) {
                                     Column {
                                         Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.advance_deductions), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         Spacer(modifier = Modifier.height(4.dp))
-                                        AnimatedCounter(targetValue = state.personalStats.advanceTotal.toInt(), prefix = "₹")
+                                        AnimatedCounter(targetValue = currentAdvance.toInt(), prefix = "₹")
                                     }
                                 }
                             }
@@ -580,101 +583,99 @@ fun PersonalStatsView(
                                 }
                             }
 
-                            if (!isAllTime) {
-                                Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp)) {
-                                    Column {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.attendance_breakdown), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                            Box(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(16.dp)) {
+                                Column {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.attendance_breakdown), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                                    }
+                                    Spacer(modifier = Modifier.height(24.dp))
+
+                                    val purePresent = currentPresent - currentHalfDays
+                                    val total = (purePresent + currentAbsent + currentHalfDays).toFloat()
+                                    if (total > 0) {
+                                        val presentSweep = (purePresent / total) * 360f
+                                        val halfSweep = (currentHalfDays / total) * 360f
+                                        val absentSweep = (currentAbsent / total) * 360f
+
+                                        val animatedPresentSweep by animateFloatAsState(targetValue = presentSweep, animationSpec = tween(1000), label = "present")
+                                        val animatedHalfSweep by animateFloatAsState(targetValue = halfSweep, animationSpec = tween(1000), label = "half")
+                                        val animatedAbsentSweep by animateFloatAsState(targetValue = absentSweep, animationSpec = tween(1000), label = "absent")
+
+                                        val presentColor = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent()
+                                        val halfColor = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay()
+                                        val absentColor = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent()
+
+                                        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                            Box(modifier = Modifier.size(120.dp), contentAlignment = Alignment.Center) {
+                                                Canvas(modifier = Modifier.size(100.dp)) {
+                                                    val strokeWidth = 24.dp.toPx()
+
+                                                    drawArc(
+                                                        color = Color.LightGray.copy(alpha = 0.3f),
+                                                        startAngle = 0f,
+                                                        sweepAngle = 360f,
+                                                        useCenter = false,
+                                                        style = Stroke(strokeWidth, cap = StrokeCap.Round)
+                                                    )
+
+                                                    var currentStartAngle = -90f
+
+                                                    drawArc(
+                                                        color = presentColor,
+                                                        startAngle = currentStartAngle,
+                                                        sweepAngle = animatedPresentSweep,
+                                                        useCenter = false,
+                                                        style = Stroke(strokeWidth, cap = StrokeCap.Butt)
+                                                    )
+                                                    currentStartAngle += animatedPresentSweep
+
+                                                    drawArc(
+                                                        color = halfColor,
+                                                        startAngle = currentStartAngle,
+                                                        sweepAngle = animatedHalfSweep,
+                                                        useCenter = false,
+                                                        style = Stroke(strokeWidth, cap = StrokeCap.Butt)
+                                                    )
+                                                    currentStartAngle += animatedHalfSweep
+
+                                                    drawArc(
+                                                        color = absentColor,
+                                                        startAngle = currentStartAngle,
+                                                        sweepAngle = animatedAbsentSweep,
+                                                        useCenter = false,
+                                                        style = Stroke(strokeWidth, cap = StrokeCap.Butt)
+                                                    )
+                                                }
+                                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                                    val attendanceRate = if (total > 0) ((purePresent + currentHalfDays * 0.5) / total * 100).toInt() else 0
+                                                    Text("${attendanceRate}%", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                                                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.attendance), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                }
+                                            }
+
+                                            Spacer(modifier = Modifier.width(24.dp))
+
+                                            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                                Row(modifier = Modifier.clickable { viewModel.openDrillDown(DrillDownType.PRESENT, isAllTime) }.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                                                    Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(presentColor))
+                                                    Spacer(modifier = Modifier.width(8.dp))
+                                                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.stats_present_label, purePresent), fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                                                }
+                                                Row(modifier = Modifier.clickable { viewModel.openDrillDown(DrillDownType.HALF_DAY, isAllTime) }.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                                                    Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(halfColor))
+                                                    Spacer(modifier = Modifier.width(8.dp))
+                                                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.stats_half_label, currentHalfDays), fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                                                }
+                                                Row(modifier = Modifier.clickable { viewModel.openDrillDown(DrillDownType.ABSENT, isAllTime) }.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                                                    Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(absentColor))
+                                                    Spacer(modifier = Modifier.width(8.dp))
+                                                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.stats_absent_label, currentAbsent), fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                                                }
+                                            }
                                         }
-                                        Spacer(modifier = Modifier.height(24.dp))
-
-                                        val purePresent = state.personalStats.present - state.personalStats.halfDays
-                                        val total = (purePresent + state.personalStats.absent + state.personalStats.halfDays).toFloat()
-                                        if (total > 0) {
-                                            val presentSweep = (purePresent / total) * 360f
-                                            val halfSweep = (state.personalStats.halfDays / total) * 360f
-                                            val absentSweep = (state.personalStats.absent / total) * 360f
-
-                                            val animatedPresentSweep by animateFloatAsState(targetValue = presentSweep, animationSpec = tween(1000), label = "present")
-                                            val animatedHalfSweep by animateFloatAsState(targetValue = halfSweep, animationSpec = tween(1000), label = "half")
-                                            val animatedAbsentSweep by animateFloatAsState(targetValue = absentSweep, animationSpec = tween(1000), label = "absent")
-
-                                            val presentColor = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent()
-                                            val halfColor = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay()
-                                            val absentColor = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent()
-
-                                            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                                Box(modifier = Modifier.size(120.dp), contentAlignment = Alignment.Center) {
-                                                    Canvas(modifier = Modifier.size(100.dp)) {
-                                                        val strokeWidth = 24.dp.toPx()
-
-                                                        drawArc(
-                                                            color = Color.LightGray.copy(alpha = 0.3f),
-                                                            startAngle = 0f,
-                                                            sweepAngle = 360f,
-                                                            useCenter = false,
-                                                            style = Stroke(strokeWidth, cap = StrokeCap.Round)
-                                                        )
-
-                                                        var currentStartAngle = -90f
-
-                                                        drawArc(
-                                                            color = presentColor,
-                                                            startAngle = currentStartAngle,
-                                                            sweepAngle = animatedPresentSweep,
-                                                            useCenter = false,
-                                                            style = Stroke(strokeWidth, cap = StrokeCap.Butt)
-                                                        )
-                                                        currentStartAngle += animatedPresentSweep
-
-                                                        drawArc(
-                                                            color = halfColor,
-                                                            startAngle = currentStartAngle,
-                                                            sweepAngle = animatedHalfSweep,
-                                                            useCenter = false,
-                                                            style = Stroke(strokeWidth, cap = StrokeCap.Butt)
-                                                        )
-                                                        currentStartAngle += animatedHalfSweep
-
-                                                        drawArc(
-                                                            color = absentColor,
-                                                            startAngle = currentStartAngle,
-                                                            sweepAngle = animatedAbsentSweep,
-                                                            useCenter = false,
-                                                            style = Stroke(strokeWidth, cap = StrokeCap.Butt)
-                                                        )
-                                                    }
-                                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                                        val attendanceRate = if (total > 0) ((purePresent + state.personalStats.halfDays * 0.5) / total * 100).toInt() else 0
-                                                        Text("${attendanceRate}%", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-                                                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.attendance), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                                    }
-                                                }
-
-                                                Spacer(modifier = Modifier.width(24.dp))
-
-                                                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                                                    Row(modifier = Modifier.clickable { viewModel.openDrillDown(DrillDownType.PRESENT, isAllTime) }.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                                                        Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(presentColor))
-                                                        Spacer(modifier = Modifier.width(8.dp))
-                                                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.stats_present_label, purePresent), fontSize = 14.sp, fontWeight = FontWeight.Medium)
-                                                    }
-                                                    Row(modifier = Modifier.clickable { viewModel.openDrillDown(DrillDownType.HALF_DAY, isAllTime) }.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                                                        Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(halfColor))
-                                                        Spacer(modifier = Modifier.width(8.dp))
-                                                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.stats_half_label, state.personalStats.halfDays), fontSize = 14.sp, fontWeight = FontWeight.Medium)
-                                                    }
-                                                    Row(modifier = Modifier.clickable { viewModel.openDrillDown(DrillDownType.ABSENT, isAllTime) }.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                                                        Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(absentColor))
-                                                        Spacer(modifier = Modifier.width(8.dp))
-                                                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.stats_absent_label, state.personalStats.absent), fontSize = 14.sp, fontWeight = FontWeight.Medium)
-                                                    }
-                                                }
-                                            }
-                                        } else {
-                                            Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                                                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.no_data), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                            }
+                                    } else {
+                                        Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.no_data), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         }
                                     }
                                 }

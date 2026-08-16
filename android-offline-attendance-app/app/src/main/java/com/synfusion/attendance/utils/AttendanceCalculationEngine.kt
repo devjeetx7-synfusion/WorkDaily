@@ -40,6 +40,15 @@ object AttendanceCalculationEngine {
         return BigDecimal.valueOf(value).setScale(2, ROUNDING_MODE)
     }
 
+    fun isDateInMonth(date: String, monthPrefix: String): Boolean {
+        return try {
+            val (startDate, endDate) = com.synfusion.attendance.data.DrillDownRepository.getMonthDateRange(monthPrefix)
+            date >= startDate && date < endDate
+        } catch (e: Exception) {
+            date.startsWith(monthPrefix)
+        }
+    }
+
     fun calculateDashboardStats(
         records: List<AttendanceEntity>,
         todayStr: String,
@@ -88,7 +97,7 @@ object AttendanceCalculationEngine {
                 }
             }
 
-            if (date.startsWith(currentMonthStr)) {
+            if (isDateInMonth(date, currentMonthStr)) {
                 monthEarnedBd = monthEarnedBd.add(dailyEarnedBd)
             }
         }
@@ -111,6 +120,11 @@ object AttendanceCalculationEngine {
     ): OfflinePersonalStatsData {
         var allTimeEarningsBd = BigDecimal.ZERO.setScale(2, ROUNDING_MODE)
         var allTimeDays = 0
+        var allTimeOvertime = 0
+        var allTimeAdvanceTotalBd = BigDecimal.ZERO.setScale(2, ROUNDING_MODE)
+        var allTimePresent = 0
+        var allTimeAbsent = 0
+        var allTimeHalfDays = 0
 
         var totalEarningsBd = BigDecimal.ZERO.setScale(2, ROUNDING_MODE)
         var present = 0
@@ -169,10 +183,19 @@ object AttendanceCalculationEngine {
 
             if (isPresent) {
                 allTimeDays++
+                allTimePresent++
+                if (isHalf) allTimeHalfDays++
                 allTimeEarningsBd = allTimeEarningsBd.add(totalCostValBd)
+                allTimeOvertime += ot
+            } else if (rec.status == "absent") {
+                allTimeAbsent++
             }
 
-            if (date.startsWith(currentMonthStr)) {
+            if (advanceAmtBd.compareTo(BigDecimal.ZERO) > 0) {
+                allTimeAdvanceTotalBd = allTimeAdvanceTotalBd.add(advanceAmtBd)
+            }
+
+            if (isDateInMonth(date, currentMonthStr)) {
                 if (rec.status != "advance") {
                     hasRecordsInPeriod = true
                 }
@@ -261,6 +284,11 @@ object AttendanceCalculationEngine {
             allTimeDailyRecords = allTimeDailyList,
             allTimeDays = allTimeDays,
             allTimeEarnings = allTimeEarningsBd.toDouble(),
+            allTimeOvertime = allTimeOvertime,
+            allTimeAdvanceTotal = allTimeAdvanceTotalBd.toDouble(),
+            allTimePresent = allTimePresent,
+            allTimeAbsent = allTimeAbsent,
+            allTimeHalfDays = allTimeHalfDays,
             hasRecordsInPeriod = hasRecordsInPeriod,
             hasAllTimeRecords = hasAllTimeRecords
         )
