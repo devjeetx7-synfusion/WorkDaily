@@ -102,13 +102,18 @@ object NotificationTemplateRepository {
         var result = rawMessage
 
         placeholders.forEach { (key, value) ->
-            val cleanVal = if (value.isBlank()) "" else value
+            val cleanVal = if (value.isBlank() || value == "null") "" else value
             result = result.replace("{$key}", cleanVal)
         }
 
         // Clean up any remaining unpopulated optional placeholders safely without crashing
         val cleanRegex = Regex("\\{[a-zA-Z0-9_]+\\}")
-        result = cleanRegex.replace(result, "").replace("  ", " ").trim()
+        result = cleanRegex.replace(result, "")
+            .replace("\\s+".toRegex(), " ")
+            .replace("\\s+,".toRegex(), ",")
+            .replace("^\\s*,\\s*".toRegex(), "")
+            .replace("^,\\s*".toRegex(), "")
+            .trim()
 
         return result
     }

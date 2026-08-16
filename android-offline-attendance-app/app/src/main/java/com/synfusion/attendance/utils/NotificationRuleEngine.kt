@@ -13,6 +13,7 @@ object NotificationRuleEngine {
     private const val TAG = "WorkDailyNotification"
     private const val PREFS_SPAM = "notification_spam_prevention"
     private const val KEY_LAST_ATTENDANCE_DATE = "last_attendance_reminder_date"
+    private const val KEY_LAST_DAILY_SUMMARY_DATE = "last_daily_summary_date"
     private const val KEY_LAST_WEEKLY_DATE = "last_weekly_report_date"
     private const val KEY_LAST_MONTH_DATE = "last_monthly_report_date"
     private const val KEY_LAST_YEAR_DATE = "last_yearly_report_date"
@@ -88,34 +89,66 @@ object NotificationRuleEngine {
                 }
             }
 
-            if (triggerCategory != null) {
-                val templatePair = NotificationTemplateRepository.selectTemplate(context, triggerCategory, placeholders)
+            val templatePair = NotificationTemplateRepository.selectTemplate(context, triggerCategory, placeholders)
+            if (templatePair != null) {
+                val (template, formattedMsg) = templatePair
+                title = template.title
+                message = formattedMsg
+            } else {
+                title = "Aaj attendance nahi lagayi? 😂"
+                message = NotificationTemplateRepository.formatMessage(
+                    "{userName}, aaj ki attendance pending hai bhai! Jaldi se laga lo. 😂",
+                    placeholders
+                )
+            }
+
+            val channel = LocalNotificationManager.mapCategoryToChannel(triggerCategory)
+
+            Log.i(TAG, "Daily Attendance Rule triggered! Category: $triggerCategory, Title: $title, Reason: $reason")
+
+            return RuleEvaluationResult(
+                triggerNotification = true,
+                channelId = channel,
+                title = title,
+                message = message,
+                category = triggerCategory,
+                reason = reason,
+                stateKeyToPersist = "${KEY_LAST_ATTENDANCE_DATE}_$userId",
+                stateValueToPersist = todayStr,
+                milestoneToPersist = milestoneToSave,
+                userId = userId
+            )
+        } else if (todayRecord != null) {
+            val calendar = Calendar.getInstance()
+            val hour = calendar.get(Calendar.HOUR_OF_DAY)
+            val canSendDailySummary = pref.getString("${KEY_LAST_DAILY_SUMMARY_DATE}_$userId", "") != todayStr
+
+            if (canSendDailySummary && hour >= 18) {
+                val cat = if (todayRecord.overtimeHours > 0) "overtime" else "daily_summary"
+                val templatePair = NotificationTemplateRepository.selectTemplate(context, cat, placeholders)
                 if (templatePair != null) {
                     val (template, formattedMsg) = templatePair
                     title = template.title
                     message = formattedMsg
                 } else {
-                    title = "अरे भाई, हाज़िरी लगा दे! 😂"
+                    title = "Aaj ka hisaab ready hai! 📊"
                     message = NotificationTemplateRepository.formatMessage(
-                        "{userName}, आज की हाज़िरी पेंडिंग है भाई! जल्दी से दर्ज कर लो। 😂",
+                        "{userName}, aaj ki shift poori. Passbook me hisaab dekh lo bhai! 💰",
                         placeholders
                     )
                 }
 
-                val channel = LocalNotificationManager.mapCategoryToChannel(triggerCategory)
-
-                Log.i(TAG, "Daily Attendance Rule triggered! Category: $triggerCategory, Title: $title, Reason: $reason")
+                val channel = LocalNotificationManager.mapCategoryToChannel(cat)
 
                 return RuleEvaluationResult(
                     triggerNotification = true,
                     channelId = channel,
                     title = title,
                     message = message,
-                    category = triggerCategory,
-                    reason = reason,
-                    stateKeyToPersist = "${KEY_LAST_ATTENDANCE_DATE}_$userId",
+                    category = cat,
+                    reason = "Daily summary for marked attendance",
+                    stateKeyToPersist = "${KEY_LAST_DAILY_SUMMARY_DATE}_$userId",
                     stateValueToPersist = todayStr,
-                    milestoneToPersist = milestoneToSave,
                     userId = userId
                 )
             }
@@ -132,9 +165,9 @@ object NotificationRuleEngine {
                 title = templatePair.first.title
                 message = templatePair.second
             } else {
-                title = "हफ़्ते का पूरा हिसाब! 📊"
+                title = "Hafte ka hisaab ready hai! 📊"
                 message = NotificationTemplateRepository.formatMessage(
-                    "{userName}, हफ़्ते की रिपोर्ट तैयार है भाई! पासबुक खोलकर देख लो।",
+                    "{userName}, hafte ki report ready hai! Passbook khol ke dekh le.",
                     placeholders
                 )
             }
@@ -164,9 +197,9 @@ object NotificationRuleEngine {
                 title = templatePair.first.title
                 message = templatePair.second
             } else {
-                title = "महीने का हिसाब देख लो! 📅"
+                title = "Mahine ka report card! 📅"
                 message = NotificationTemplateRepository.formatMessage(
-                    "{userName}, महीना पूरा हो गया है! पासबुक में देख लो कितनी कमाई हुई।",
+                    "{userName}, mahina poora ho gaya! Passbook me dekh kitni kamai hui. 💰",
                     placeholders
                 )
             }
@@ -196,9 +229,9 @@ object NotificationRuleEngine {
                 title = templatePair.first.title
                 message = templatePair.second
             } else {
-                title = "साल भर का महा-हिसाब! 🏆"
+                title = "Saal bhar ka maha-hisaab! 🏆"
                 message = NotificationTemplateRepository.formatMessage(
-                    "{userName}, पूरे साल की मेहनत और कमाई का लेखा-जोखा तैयार है भाई! देख लो।",
+                    "{userName}, poore saal ki mehnat ka hisaab ready hai bhai! Khol ke dekh le.",
                     placeholders
                 )
             }

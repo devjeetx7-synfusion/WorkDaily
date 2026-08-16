@@ -54,6 +54,7 @@ object NotificationMessageSelector {
 
         // Clean double spaces or leading/trailing commas left by missing userName
         result = result.replace("\\s+".toRegex(), " ")
+            .replace("\\s+,".toRegex(), ",")
             .replace("^\\s*,\\s*".toRegex(), "")
             .replace("^,\\s*".toRegex(), "")
             .trim()
