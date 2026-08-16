@@ -826,80 +826,6 @@
 
 
   /* Custom WorkDaily Video Player Styles */
-
-  /* Video Loader & Error Overlays */
-  .video-loader-overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(15, 23, 42, 0.75);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    color: #FFFFFF;
-    font-size: 13px;
-    font-weight: 600;
-    z-index: 20;
-    pointer-events: none;
-    transition: opacity 0.25s ease;
-  }
-
-  .video-loader-spinner {
-    width: 32px;
-    height: 32px;
-    border: 3px solid rgba(255, 255, 255, 0.2);
-    border-top-color: var(--mint-primary, #0F9F7A);
-    border-radius: 50%;
-    animation: videoSpinner 0.8s linear infinite;
-  }
-
-  @keyframes videoSpinner {
-    to { transform: rotate(360deg); }
-  }
-
-  .video-error-overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(15, 23, 42, 0.9);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    color: #FFFFFF;
-    z-index: 21;
-    padding: 16px;
-    text-align: center;
-  }
-
-  .video-error-text {
-    font-size: 14px;
-    font-weight: 600;
-    color: #F87171;
-  }
-
-  .video-retry-btn {
-    padding: 8px 18px;
-    background: var(--mint-primary, #0F9F7A);
-    color: #FFFFFF;
-    border: none;
-    border-radius: 8px;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.2s ease, transform 0.1s ease;
-  }
-
-  .video-retry-btn:hover {
-    background: var(--mint-hover, #0D8F6D);
-    transform: scale(1.03);
-  }
-
   .custom-video-wrapper {
     position: relative;
     width: 100%;
@@ -1958,7 +1884,7 @@
   }
 
   .blog-card {
-    background-color: var(--surface-light);
+    background-color: #FFFFFF;
     border: 1px solid var(--border-light);
     border-radius: 16px;
     overflow: hidden;
@@ -2895,22 +2821,8 @@
           <div class='video-card'>
             <div class='custom-video-wrapper' tabindex='0' aria-label='WorkDaily Demo Video 1'>
               <video class='custom-video-element' poster='https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&amp;fit=crop&amp;w=600&amp;q=80' preload='metadata'>
-                <source src='https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4' type='video/mp4'/>
+                <source src='http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4' type='video/mp4'/>
               </video>
-
-
-              <!-- Video Loading Indicator Overlay -->
-              <div class='video-loader-overlay'>
-                <div class='video-loader-spinner'></div>
-                <span>Loading video...</span>
-              </div>
-
-              <!-- Video Error Overlay -->
-              <div class='video-error-overlay' style='display:none;'>
-                <svg class='video-error-icon' style='width:28px;height:28px;fill:#F87171;' viewBox='0 0 24 24'><path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z'/></svg>
-                <span class='video-error-text'>Video unavailable</span>
-                <button class='video-retry-btn' type='button'>Retry</button>
-              </div>
 
               <!-- Touch / Tap Zones -->
               <div class='video-tap-zones'>
@@ -2976,22 +2888,8 @@
           <div class='video-card'>
             <div class='custom-video-wrapper' tabindex='0' aria-label='WorkDaily Demo Video 2'>
               <video class='custom-video-element' poster='https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&amp;fit=crop&amp;w=600&amp;q=80' preload='metadata'>
-                <source src='https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4' type='video/mp4'/>
+                <source src='http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4' type='video/mp4'/>
               </video>
-
-
-              <!-- Video Loading Indicator Overlay -->
-              <div class='video-loader-overlay'>
-                <div class='video-loader-spinner'></div>
-                <span>Loading video...</span>
-              </div>
-
-              <!-- Video Error Overlay -->
-              <div class='video-error-overlay' style='display:none;'>
-                <svg class='video-error-icon' style='width:28px;height:28px;fill:#F87171;' viewBox='0 0 24 24'><path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z'/></svg>
-                <span class='video-error-text'>Video unavailable</span>
-                <button class='video-retry-btn' type='button'>Retry</button>
-              </div>
 
               <!-- Touch / Tap Zones -->
               <div class='video-tap-zones'>
@@ -3057,22 +2955,8 @@
           <div class='video-card'>
             <div class='custom-video-wrapper' tabindex='0' aria-label='WorkDaily Demo Video 3'>
               <video class='custom-video-element' poster='https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&amp;fit=crop&amp;w=600&amp;q=80' preload='metadata'>
-                <source src='https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4' type='video/mp4'/>
+                <source src='http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4' type='video/mp4'/>
               </video>
-
-
-              <!-- Video Loading Indicator Overlay -->
-              <div class='video-loader-overlay'>
-                <div class='video-loader-spinner'></div>
-                <span>Loading video...</span>
-              </div>
-
-              <!-- Video Error Overlay -->
-              <div class='video-error-overlay' style='display:none;'>
-                <svg class='video-error-icon' style='width:28px;height:28px;fill:#F87171;' viewBox='0 0 24 24'><path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z'/></svg>
-                <span class='video-error-text'>Video unavailable</span>
-                <button class='video-retry-btn' type='button'>Retry</button>
-              </div>
 
               <!-- Touch / Tap Zones -->
               <div class='video-tap-zones'>
@@ -3290,371 +3174,29 @@
 <!-- VANILLA INTERACTIVE JS -->
   <script type='text/javascript'>
     //<![CDATA[
-    /* EARLY THEME & LANGUAGE SETUP (Prevents Flash of Unstyled Theme/Language) */
-    (function applyEarlyPreferences() {
-      try {
-        var savedTheme = localStorage.getItem('wd_theme');
-        if (savedTheme === 'dark' || (!savedTheme && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-          document.documentElement.setAttribute('data-theme', 'dark');
-        } else {
-          document.documentElement.removeAttribute('data-theme');
-        }
-
-        var savedLang = localStorage.getItem('wd_lang') || 'en';
-        document.documentElement.setAttribute('lang', savedLang);
-      } catch (e) {}
-    })();
-
-    /* TRANSLATIONS DICTIONARY */
-    var translations = {
-      en: {
-        navHome: "Home",
-        navAbout: "What is WorkDaily",
-        navHow: "How It Works",
-        navShowcase: "App Showcase",
-        navOffline: "Why Offline",
-        navDownload: "Download",
-        getApp: "Get App",
-        heroTitlePrefix: "Attendance & Daily Wage Tracker",
-        heroDescription: "Manage daily attendance, overtime, advance payments, and financial settlement records 100% offline with zero cloud dependency and total privacy.",
-        aboutTag: "About WorkDaily",
-        aboutTitle: "What is WorkDaily?",
-        aboutP1: "WorkDaily is a powerful, offline-first mobile application designed for workers, contractors, and daily wage earners to track daily attendance, overtime hours, advance payments, and overall monthly settlements without needing an active internet connection.",
-        aboutP2: "Built with modern Jetpack Compose and local Room database architecture, WorkDaily ensures your sensitive financial and attendance records stay entirely on your device with military-grade privacy, instant speed, and zero data usage.",
-        howTag: "Simple Workflow",
-        howTitle: "How WorkDaily Works",
-        howSubtitle: "Four simple steps to maintain complete control over your personal attendance and finances.",
-        step1Num: "01",
-        step1Title: "Daily Entry",
-        step1Desc: "Mark Present, Absent, Half Day, or Leave with a single tap every day.",
-        step2Num: "02",
-        step2Title: "Log Advances",
-        step2Desc: "Record advance payments and overtime hours accurately as they happen.",
-        step3Num: "03",
-        step3Title: "Track Passbook",
-        step3Desc: "Review total earnings, total advances, and net pending balance instantly.",
-        step4Num: "04",
-        step4Title: "Export PDF",
-        step4Desc: "Generate detailed PDF passbook reports to share via WhatsApp.",
-        showcaseTag: "WORKDAILY APP SHOWCASE",
-        showcaseTitle: "WorkDaily App Showcase",
-        showcaseSubtitle: "Explore the intuitive, fast, and modern Jetpack Compose user interface designed for daily wage tracking.",
-        offTag: "Offline First",
-        offTitle: "Why Offline?",
-        offSubtitle: "Your attendance records shouldn't depend on an internet connection or external servers.",
-        offCard1Title: "100% Data Privacy",
-        offCard1Desc: "All your records stay strictly on your local device storage. No cloud servers, no tracking.",
-        offCard2Title: "Zero Internet Required",
-        offCard2Desc: "Works perfectly in remote sites, underground work, or zero-network areas without lag.",
-        offCard3Title: "Instant Speed & No Ads",
-        offCard3Desc: "Zero loading times, instant reactivity, and a completely clean ad-free interface.",
-        trackTag: "App Features",
-        trackTitle: "What You Can Track",
-        trackSubtitle: "WorkDaily helps you organize all essential aspects of your personal daily work record.",
-        feedbackTag: "VIDEO PREVIEWS",
-        feedbackTitle: "Video Preview & Demo",
-        feedbackSubtitle: "Watch WorkDaily in action — daily entry, overtime logging, advance tracking, and PDF export.",
-        demoVideo1: "Demo Video 1",
-        demoVideo2: "Demo Video 2",
-        demoVideo3: "Demo Video 3",
-        demoRole: "Video Preview",
-        demoReview1: "Explore WorkDaily features, daily attendance entry, and wage total calculations.",
-        demoReview2: "Learn how to log overtime hours, manage advances, and check net settlements.",
-        demoReview3: "Discover 100% offline security, instant speed, and PDF report sharing via WhatsApp.",
-        downloadTitle: "Download WorkDaily Today",
-        downloadSubtitle: "Take complete control of your attendance and daily earnings with 100% offline privacy.",
-        downloadBtn: "Download on Google Play",
-        waTitle: "Stay Connected on WhatsApp",
-        waDesc: "Join our official WhatsApp Channel for WorkDaily updates, tips, and news.",
-        waBtn: "Follow WhatsApp Channel",
-        footerDesc: "WorkDaily is a 100% offline daily attendance and financial settlement tracking app for daily workers and contractors.",
-        footerBuiltFor: "Built by SynFusion",
-        footerRights: "All Rights Reserved.",
-        colProduct: "Product",
-        colSupport: "Support",
-        colCompany: "Company"
-      },
-      hi: {
-        navHome: "होम",
-        navAbout: "वर्कडेली क्या है",
-        navHow: "यह कैसे काम करता है",
-        navShowcase: "ऐप झलक",
-        navOffline: "ऑफलाइन क्यों",
-        navDownload: "डाउनलोड",
-        getApp: "ऐप पाएं",
-        heroTitlePrefix: "हाज़िरी और दिहाड़ी ट्रैकर",
-        heroDescription: "अपनी दैनिक हाज़िरी, ओवर-टाइम, एडवांस पेमेंट और वित्तीय हिसाब-किताब को 100% ऑफलाइन मैनेज करें — बिना किसी इंटरनेट या क्लाउड निर्भरता के।",
-        aboutTag: "वर्कडेली के बारे में",
-        aboutTitle: "वर्कडेली क्या है?",
-        aboutP1: "वर्कडेली श्रमिकों, ठेकेदारों और दैनिक वेतनभोगियों के लिए बनाया गया एक शक्तिशाली ऑफलाइन ऐप है, जो दैनिक उपस्थिति, ओवर-टाइम, अग्रिम भुगतान (एडवांस) और मासिक हिसाब-किताब को बिना इंटरनेट के ट्रैक करता है।",
-        aboutP2: "आधुनिक तकनीक और लोकल डेटाबेस से निर्मित, वर्कडेली आपके वित्तीय रिकॉर्ड को पूरी गोपनीयता, तेज गति और शून्य डेटा खपत के साथ पूरी तरह से आपके फोन पर सुरक्षित रखता है।",
-        howTag: "सरल प्रक्रिया",
-        howTitle: "यह कैसे काम करता है",
-        howSubtitle: "अपनी उपस्थिति और हिसाब-किताब पर पूर्ण नियंत्रण रखने के लिए 4 सरल चरण।",
-        step1Num: "01",
-        step1Title: "दैनिक प्रविष्टि",
-        step1Desc: "हर दिन एक टैप में प्रेजेंट, एब्सेंट, हाफ-डे या लीव दर्ज करें।",
-        step2Num: "02",
-        step2Title: "एडवांस दर्ज करें",
-        step2Desc: "एडवांस भुगतानों और ओवर-टाइम के घंटों का सही रिकॉर्ड रखें।",
-        step3Num: "03",
-        step3Title: "पासबुक देखें",
-        step3Desc: "अपनी कुल कमाई, एडवांस और शुद्ध बाकी राशि तुरंत देखें।",
-        step4Num: "04",
-        step4Title: "PDF रिपोर्ट पाएं",
-        step4Desc: "व्हाट्सएप पर शेयर करने के लिए विस्तृत PDF पासबुक रिपोर्ट जनरेट करें।",
-        showcaseTag: "वर्कडेली ऐप झलक",
-        showcaseTitle: "वर्कडेली ऐप इंटरफ़ेस",
-        showcaseSubtitle: "दैनिक हाज़िरी ट्रैकिंग के लिए डिज़ाइन किया गया सरल, तेज़ और आधुनिक इंटरफ़ेस देखें।",
-        offTag: "100% ऑफलाइन",
-        offTitle: "ऑफलाइन क्यों?",
-        offSubtitle: "आपकी हाज़िरी का रिकॉर्ड इंटरनेट कनेक्शन या बाहरी सर्वर पर निर्भर नहीं होना चाहिए।",
-        offCard1Title: "100% डेटा गोपनीयता",
-        offCard1Desc: "आपका डेटा केवल आपके फोन में रहता है। कोई क्लाउड सर्वर या ट्रैकिंग नहीं।",
-        offCard2Title: "शून्य इंटरनेट आवश्यकता",
-        offCard2Desc: "बिना नेटवर्क या बिना इंटरनेट वाले इलाकों में भी तुरंत और बिना रुकावट के काम करता है।",
-        offCard3Title: "सुपरफ़ास्ट स्पीड और विज्ञापन-मुक्त",
-        offCard3Desc: "बिना किसी लोडिंग टाइम के सुपरफ़ास्ट स्पीड और पूरी तरह से विज्ञापन-मुक्त इंटरफ़ेस।",
-        trackTag: "मुख्य विशेषताएं",
-        trackTitle: "आप क्या-क्या ट्रैक कर सकते हैं",
-        trackSubtitle: "वर्कडेली आपके दैनिक कार्य रिकॉर्ड के सभी आवश्यक पहलुओं को व्यवस्थित करने में मदद करता है।",
-        feedbackTag: "वीडियो झलक",
-        feedbackTitle: "वीडियो डेमो और गाइड",
-        feedbackSubtitle: "वर्कडेली को काम करते देखें — दैनिक प्रविष्टि, ओवरटाइम, एडवांस ट्रैकिंग और PDF रिपोर्ट।",
-        demoVideo1: "डेमो वीडियो 1",
-        demoVideo2: "डेमो वीडियो 2",
-        demoVideo3: "डेमो वीडियो 3",
-        demoRole: "वीडियो झलक",
-        demoReview1: "वर्कडेली के मुख्य फीचर्स, दैनिक हाज़िरी एंट्री और कुल दिहाड़ी की गणना देखें।",
-        demoReview2: "ओवरटाइम घंटे दर्ज करना, एडवांस संभालना और बाकी हिसाब चेक करना सीखें।",
-        demoReview3: "100% ऑफलाइन सुरक्षा, सुपरफ़ास्ट स्पीड और व्हाट्सएप पर PDF रिपोर्ट शेयर करना देखें।",
-        downloadTitle: "आज ही वर्कडेली डाउनलोड करें",
-        downloadSubtitle: "100% ऑफलाइन गोपनीयता के साथ अपनी हाज़िरी और दिहाड़ी पर पूरा नियंत्रण पाएं।",
-        downloadBtn: "गूगल प्ले से डाउनलोड करें",
-        waTitle: "व्हाट्सएप पर जुड़े रहें",
-        waDesc: "वर्कडेली के अपडेट, टिप्स और जानकारियों के लिए हमारे आधिकारिक व्हाट्सएप चैनल से जुड़ें।",
-        waBtn: "व्हाट्सएप चैनल फॉलो करें",
-        footerDesc: "वर्कडेली दैनिक श्रमिकों और ठेकेदारों के लिए 100% ऑफलाइन हाज़िरी और वित्तीय हिसाब-किताब ट्रैकिंग ऐप है।",
-        footerBuiltFor: "SynFusion द्वारा निर्मित",
-        footerRights: "सर्वाधिकार सुरक्षित।",
-        colProduct: "उत्पाद",
-        colSupport: "सहायता",
-        colCompany: "कंपनी"
-      }
-    };
-
-    /* SHOWCASE SLIDES TRANSLATION MAPPING */
-    var showcaseTranslations = {
-      en: [
-        { title: "Main Dashboard", desc: "Your day at a glance", chips: "Daily Summary,Quick Entry,Wage Total" },
-        { title: "Attendance", desc: "Mark your day", chips: "Present Status,Absent Status,Half Day Log,Holiday Marking" },
-        { title: "Calendar", desc: "Track your working days", chips: "Monthly Grid,Color Coded,Quick Edit,Attendance History" },
-        { title: "Earnings", desc: "Monitor wages & overtime", chips: "Daily Wage,Overtime Rate,Total Earned,Passbook Sync" },
-        { title: "Passbook", desc: "Complete financial ledger", chips: "Net Settlement,Advance Taken,Pending Balance,PDF Share" },
-        { title: "Statistics", desc: "Visual work analytics", chips: "Monthly Trends,Overtime Hours,Attendance Ratio,Wage Charts" },
-        { title: "Settings", desc: "Customize & back up data", chips: "100% Offline,Data Store,JSON Backup,Privacy First" },
-        { title: "Notifications", desc: "Daily Hinglish reminders", chips: "Attendance Reminders,Advance Prompts,Custom Alerts,Offline Engine" }
-      ],
-      hi: [
-        { title: "मुख्य डैशबोर्ड", desc: "आज का पूरा हिसाब एक नज़र में", chips: "दैनिक सारांश,त्वरित प्रविष्टि,कुल दिहाड़ी" },
-        { title: "हाज़िरी दर्ज करें", desc: "आज की उपस्थिति मार्क करें", chips: "प्रेजेंट स्टेटस,एब्सेंट स्टेटस,हाफ-डे लॉग,छुट्टी मार्किंग" },
-        { title: "मासिक कैलेंडर", desc: "कार्य दिवसों का रिकॉर्ड देखें", chips: "मासिक ग्रिड,रंग-कोडित,त्वरित संपादन,हाज़िरी इतिहास" },
-        { title: "कमाई और ओवर-टाइम", desc: "दिहाड़ी और ओवरटाइम ट्रैक करें", chips: "दैनिक दिहाड़ी,ओवरटाइम दर,कुल कमाई,पासबुक सिंक" },
-        { title: "पासबुक और हिसाब", desc: "संपूर्ण वित्तीय रजिस्टर", chips: "शुद्ध हिसाब,लिया गया एडवांस,बकाया राशि,PDF शेयर" },
-        { title: "आंकड़े और चार्ट", desc: "कार्य विश्लेषण और ग्राफ", chips: "मासिक रुझान,ओवरटाइम घंटे,हाज़िरी अनुपात,कमाई चार्ट" },
-        { title: "सेटिंग्स और बैकअप", desc: "डेटा अनुकूलित और सुरक्षित करें", chips: "100% ऑफलाइन,डेटा स्टोर,JSON बैकअप,पूर्ण गोपनीयता" },
-        { title: "स्मार्ट रिमाइंडर्स", desc: "दैनिक हिंग्लिश रिमाइंडर", chips: "हाज़िरी रिमाइंडर,एडवांस प्रॉम्प्ट,कस्टम अलर्ट,ऑफलाइन इंजन" }
-      ]
-    };
-
-    /* THEME MANAGEMENT SYSTEM */
-    function setTheme(theme) {
-      if (theme === 'dark') {
-        document.documentElement.setAttribute('data-theme', 'dark');
-      } else {
-        document.documentElement.removeAttribute('data-theme');
-      }
-      try { localStorage.setItem('wd_theme', theme); } catch (e) {}
-      updateThemeUI(theme);
-    }
-
-    function updateThemeUI(theme) {
-      var themeBtn = document.getElementById('wdThemeToggleBtn');
-      if (!themeBtn) return;
-      var iconMoon = themeBtn.querySelector('.icon-moon');
-      var iconSun = themeBtn.querySelector('.icon-sun');
-      if (theme === 'dark') {
-        if (iconMoon) iconMoon.style.display = 'none';
-        if (iconSun) iconSun.style.display = 'block';
-        themeBtn.setAttribute('aria-label', 'Switch to Light Mode');
-        themeBtn.setAttribute('title', 'Switch to Light Mode');
-      } else {
-        if (iconMoon) iconMoon.style.display = 'block';
-        if (iconSun) iconSun.style.display = 'none';
-        themeBtn.setAttribute('aria-label', 'Switch to Dark Mode');
-        themeBtn.setAttribute('title', 'Switch to Dark Mode');
-      }
-    }
-
-    /* LANGUAGE & TRANSLATION SYSTEM */
-    function setLanguage(lang) {
-      if (!translations[lang]) lang = 'en';
-      try { localStorage.setItem('wd_lang', lang); } catch (e) {}
-      document.documentElement.setAttribute('lang', lang);
-
-      // Update Header Label
-      var labelEl = document.getElementById('wdLangCurrentLabel');
-      if (labelEl) {
-        labelEl.textContent = lang === 'hi' ? 'HI' : 'EN';
-      }
-
-      // Update Option Checkmarks
-      var optionBtns = document.querySelectorAll('.wd-lang-option-btn');
-      optionBtns.forEach(function(btn) {
-        var btnLang = btn.getAttribute('data-lang');
-        if (btnLang === lang) {
-          btn.classList.add('selected');
-        } else {
-          btn.classList.remove('selected');
-        }
-      });
-
-      // Update data-i18n elements
-      var i18nElements = document.querySelectorAll('[data-i18n]');
-      i18nElements.forEach(function(el) {
-        var key = el.getAttribute('data-i18n');
-        if (translations[lang] && translations[lang][key]) {
-          el.textContent = translations[lang][key];
-        }
-      });
-
-      // Notify Showcase & Hero of language update if available
-      if (window.onLanguageChanged) {
-        window.onLanguageChanged(lang);
-      }
-    }
-
-    /* MAIN DOM INITIALIZATION */
     document.addEventListener('DOMContentLoaded', function() {
-      // 1. Header Scroll Effect
-      var header = document.getElementById('siteHeader');
-      if (header) {
-        window.addEventListener('scroll', function() {
-          if (window.scrollY > 40) {
-            header.classList.add('scrolled');
-          } else {
-            header.classList.remove('scrolled');
-          }
-        });
-      }
+      // Sticky header transformation on scroll
+      const header = document.getElementById('siteHeader');
+      window.addEventListener('scroll', function() {
+        if (window.scrollY > 50) {
+          header.classList.add('scrolled');
+        } else {
+          header.classList.remove('scrolled');
+        }
+      });
 
-      // 2. Theme Toggle Listener
-      var themeBtn = document.getElementById('wdThemeToggleBtn');
-      var initialTheme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
-      updateThemeUI(initialTheme);
-
-      if (themeBtn) {
-        themeBtn.addEventListener('click', function() {
-          var activeTheme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
-          var nextTheme = activeTheme === 'dark' ? 'light' : 'dark';
-          setTheme(nextTheme);
-        });
-      }
-
-      // 3. Language Selector Dropdown Listener
-      var langWrap = document.getElementById('wdLangDropdownWrap');
-      var langBtn = document.getElementById('wdLangToggleBtn');
-      var initialLang = localStorage.getItem('wd_lang') || 'en';
-      setLanguage(initialLang);
-
-      if (langBtn && langWrap) {
-        langBtn.addEventListener('click', function(e) {
-          e.stopPropagation();
-          var isOpen = langWrap.classList.contains('open');
-          if (isOpen) {
-            langWrap.classList.remove('open');
-            langBtn.setAttribute('aria-expanded', 'false');
-          } else {
-            langWrap.classList.add('open');
-            langBtn.setAttribute('aria-expanded', 'true');
-          }
-        });
-
-        document.querySelectorAll('.wd-lang-option-btn').forEach(function(btn) {
-          btn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            var selectedLang = this.getAttribute('data-lang');
-            setLanguage(selectedLang);
-            langWrap.classList.remove('open');
-            if (langBtn) langBtn.setAttribute('aria-expanded', 'false');
-          });
-        });
-
-        document.addEventListener('click', function(e) {
-          if (!langWrap.contains(e.target)) {
-            langWrap.classList.remove('open');
-            if (langBtn) langBtn.setAttribute('aria-expanded', 'false');
-          }
-        });
-
-        document.addEventListener('keydown', function(e) {
-          if (e.key === 'Escape') {
-            langWrap.classList.remove('open');
-            if (langBtn) langBtn.setAttribute('aria-expanded', 'false');
-          }
-        });
-      }
-
-      // 4. Mobile Navigation Drawer
-      var menuToggle = document.getElementById('menuToggle');
-      var navMenu = document.getElementById('navMenu');
-      var menuBackdrop = document.getElementById('menuBackdrop');
-
-      function closeMobileMenu() {
-        if (menuToggle) menuToggle.classList.remove('active');
-        if (navMenu) navMenu.classList.remove('active');
-        if (menuBackdrop) menuBackdrop.classList.remove('active');
-        document.body.style.overflow = '';
-      }
-
-      if (menuToggle && navMenu && menuBackdrop) {
-        menuToggle.addEventListener('click', function(e) {
-          e.stopPropagation();
-          var isActive = menuToggle.classList.contains('active');
-          if (isActive) {
-            closeMobileMenu();
-          } else {
-            menuToggle.classList.add('active');
-            navMenu.classList.add('active');
-            menuBackdrop.classList.add('active');
-            document.body.style.overflow = 'hidden';
-          }
-        });
-
-        menuBackdrop.addEventListener('click', closeMobileMenu);
-
-        var navLinks = navMenu.querySelectorAll('a');
-        navLinks.forEach(function(link) {
-          link.addEventListener('click', closeMobileMenu);
-        });
-
-        window.addEventListener('keydown', function(e) {
-          if (e.key === 'Escape') closeMobileMenu();
-        });
-      }
-
-      // 5. Dynamic Hero Benefit Phrase Rotation
+      // Dynamic Hero Benefit Phrase Rotation
       (function setupHeroRotation() {
-        var phraseEl = document.getElementById('heroRotatingPhrase');
+        const phraseEl = document.getElementById('heroRotatingPhrase');
         if (!phraseEl) return;
-        var currentIndex = 0;
-        var prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        let currentIndex = 0;
+        const prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
         if (prefersReducedMotion) return;
 
         setInterval(function() {
-          var currentLang = localStorage.getItem('wd_lang') || 'en';
-          var phrases = currentLang === 'hi' ? [
+          const currentLang = localStorage.getItem('wd_lang') || 'en';
+          const phrases = currentLang === 'hi' ? [
             'हर दिन हाजिरी लगाएं',
             'व्यवस्थित रहें',
             'अपनी कमाई जानें',
@@ -3685,79 +3227,70 @@
         }, 2800);
       })();
 
-      // 6. Custom WorkDaily Video Players Engine
+
+      // Custom WorkDaily Video Player Initialization & Double-Tap Logic
       (function setupCustomVideoPlayers() {
+        const wrappers = document.querySelectorAll('.custom-video-wrapper');
+        if (!wrappers.length) return;
+
         function formatTime(seconds) {
-          if (isNaN(seconds) || seconds < 0) return '0:00';
-          var mins = Math.floor(seconds / 60);
-          var secs = Math.floor(seconds % 60);
+          if (isNaN(seconds)) return '0:00';
+          const mins = Math.floor(seconds / 60);
+          const secs = Math.floor(seconds % 60);
           return mins + ':' + (secs < 10 ? '0' : '') + secs;
         }
 
-        var wrappers = document.querySelectorAll('.custom-video-wrapper');
         wrappers.forEach(function(wrapper) {
-          var video = wrapper.querySelector('.custom-video-element');
-          var centerPlayBtn = wrapper.querySelector('.video-center-play-btn');
-          var loaderOverlay = wrapper.querySelector('.video-loader-overlay');
-          var errorOverlay = wrapper.querySelector('.video-error-overlay');
-          var retryBtn = wrapper.querySelector('.video-retry-btn');
-          var btnMute = wrapper.querySelector('.btn-mute');
-          var btnFullscreen = wrapper.querySelector('.btn-fullscreen');
-          var seekbarContainer = wrapper.querySelector('.custom-seekbar-container');
-          var seekbarProgress = wrapper.querySelector('.custom-seekbar-progress');
-          var timeCurrent = wrapper.querySelector('.time-current');
-          var timeDuration = wrapper.querySelector('.time-duration');
-          var tapZones = wrapper.querySelectorAll('.video-tap-zone');
-          var feedbackLeft = wrapper.querySelector('.video-seek-feedback-left');
-          var feedbackRight = wrapper.querySelector('.video-seek-feedback-right');
+          const video = wrapper.querySelector('.custom-video-element');
+          const centerPlayBtn = wrapper.querySelector('.video-center-play-btn');
+          const btnMute = wrapper.querySelector('.btn-mute');
+          const btnFullscreen = wrapper.querySelector('.btn-fullscreen');
+          const seekbarContainer = wrapper.querySelector('.custom-seekbar-container');
+          const seekbarProgress = wrapper.querySelector('.custom-seekbar-progress');
+          const timeCurrent = wrapper.querySelector('.time-current');
+          const timeDuration = wrapper.querySelector('.time-duration');
+          const feedbackLeft = wrapper.querySelector('.video-seek-feedback-left');
+          const feedbackRight = wrapper.querySelector('.video-seek-feedback-right');
 
           if (!video) return;
 
-          function updatePlayUI() {
-            if (video.paused || video.ended) {
-              wrapper.classList.remove('playing');
-              if (centerPlayBtn) {
-                var playIcon = centerPlayBtn.querySelector('.icon-play');
-                var pauseIcon = centerPlayBtn.querySelector('.icon-pause');
-                if (playIcon) playIcon.style.display = 'block';
-                if (pauseIcon) pauseIcon.style.display = 'none';
-              }
-            } else {
-              wrapper.classList.add('playing');
-              if (centerPlayBtn) {
-                var playIcon = centerPlayBtn.querySelector('.icon-play');
-                var pauseIcon = centerPlayBtn.querySelector('.icon-pause');
-                if (playIcon) playIcon.style.display = 'none';
-                if (pauseIcon) pauseIcon.style.display = 'block';
-              }
-            }
-          }
-
           function togglePlay() {
             if (video.paused || video.ended) {
-              if (errorOverlay) errorOverlay.style.display = 'none';
-              var playPromise = video.play();
-              if (playPromise !== undefined) {
-                playPromise.catch(function(err) {
-                  console.log('Video play error handled:', err);
-                  updatePlayUI();
-                });
-              }
+              video.play().catch(function() {});
             } else {
               video.pause();
             }
           }
 
+          function updatePlayUI() {
+            const iconPlay = centerPlayBtn ? centerPlayBtn.querySelector('.icon-play') : null;
+            const iconPause = centerPlayBtn ? centerPlayBtn.querySelector('.icon-pause') : null;
+
+            if (video.paused || video.ended) {
+              wrapper.classList.remove('playing');
+              if (iconPlay) iconPlay.style.display = 'block';
+              if (iconPause) iconPause.style.display = 'none';
+              if (centerPlayBtn) centerPlayBtn.setAttribute('aria-label', 'Play Video');
+            } else {
+              wrapper.classList.add('playing');
+              if (iconPlay) iconPlay.style.display = 'none';
+              if (iconPause) iconPause.style.display = 'block';
+              if (centerPlayBtn) centerPlayBtn.setAttribute('aria-label', 'Pause Video');
+            }
+          }
+
           function updateMuteUI() {
             if (!btnMute) return;
-            var volIcon = btnMute.querySelector('.icon-volume');
-            var mutedIcon = btnMute.querySelector('.icon-muted');
+            const iconVol = btnMute.querySelector('.icon-volume');
+            const iconMuted = btnMute.querySelector('.icon-muted');
             if (video.muted) {
-              if (volIcon) volIcon.style.display = 'none';
-              if (mutedIcon) mutedIcon.style.display = 'block';
+              if (iconVol) iconVol.style.display = 'none';
+              if (iconMuted) iconMuted.style.display = 'block';
+              btnMute.setAttribute('aria-label', 'Unmute');
             } else {
-              if (volIcon) volIcon.style.display = 'block';
-              if (mutedIcon) mutedIcon.style.display = 'none';
+              if (iconVol) iconVol.style.display = 'block';
+              if (iconMuted) iconMuted.style.display = 'none';
+              btnMute.setAttribute('aria-label', 'Mute');
             }
           }
 
@@ -3766,51 +3299,10 @@
             element.classList.add('active');
             setTimeout(function() {
               element.classList.remove('active');
-            }, 600);
+            }, 400);
           }
 
-          // Video Load & Error Event Handlers
-          video.addEventListener('loadstart', function() {
-            if (loaderOverlay) loaderOverlay.style.display = 'flex';
-            if (errorOverlay) errorOverlay.style.display = 'none';
-          });
-
-          video.addEventListener('waiting', function() {
-            if (loaderOverlay) loaderOverlay.style.display = 'flex';
-          });
-
-          video.addEventListener('canplay', function() {
-            if (loaderOverlay) loaderOverlay.style.display = 'none';
-          });
-
-          video.addEventListener('playing', function() {
-            if (loaderOverlay) loaderOverlay.style.display = 'none';
-            if (errorOverlay) errorOverlay.style.display = 'none';
-            updatePlayUI();
-          });
-
-          video.addEventListener('error', function() {
-            if (loaderOverlay) loaderOverlay.style.display = 'none';
-            if (errorOverlay) errorOverlay.style.display = 'flex';
-            updatePlayUI();
-          });
-
-          if (retryBtn) {
-            retryBtn.addEventListener('click', function(e) {
-              e.stopPropagation();
-              if (errorOverlay) errorOverlay.style.display = 'none';
-              if (loaderOverlay) loaderOverlay.style.display = 'flex';
-              video.load();
-              var p = video.play();
-              if (p && p.catch) {
-                p.catch(function(err) {
-                  console.log('Retry play error:', err);
-                  updatePlayUI();
-                });
-              }
-            });
-          }
-
+          // Center Button Action
           if (centerPlayBtn) {
             centerPlayBtn.addEventListener('click', function(e) {
               e.stopPropagation();
@@ -3818,27 +3310,26 @@
             });
           }
 
-          // Tap Zones & Double-Tap Seeking
-          var tapTimer = null;
-          var lastTapTime = 0;
-          var lastZone = null;
+          // Double Tap & Single Tap Zone Gesture Handler
+          let lastTapTime = 0;
+          let tapTimer = null;
 
+          const tapZones = wrapper.querySelectorAll('.video-tap-zone');
           tapZones.forEach(function(zone) {
             zone.addEventListener('click', function(e) {
               e.stopPropagation();
-              var zoneName = zone.getAttribute('data-zone');
-              var now = Date.now();
-              var timeDiff = now - lastTapTime;
+              const currentTime = new Date().getTime();
+              const tapLength = currentTime - lastTapTime;
+              const zoneType = this.getAttribute('data-zone');
 
-              if (lastZone === zoneName && timeDiff < 300) {
-                // Double Tap Action
+              if (tapLength < 280 && tapLength > 0) {
+                // Double Tap Detected
                 clearTimeout(tapTimer);
                 tapTimer = null;
-
-                if (zoneName === 'left') {
+                if (zoneType === 'left') {
                   video.currentTime = Math.max(0, video.currentTime - 10);
                   showFeedback(feedbackLeft);
-                } else if (zoneName === 'right') {
+                } else if (zoneType === 'right') {
                   video.currentTime = Math.min(video.duration || 0, video.currentTime + 10);
                   showFeedback(feedbackRight);
                 } else {
@@ -3846,16 +3337,16 @@
                 }
               } else {
                 // Single Tap Candidate
+                clearTimeout(tapTimer);
                 tapTimer = setTimeout(function() {
                   togglePlay();
-                }, 300);
+                }, 280);
               }
-
-              lastTapTime = now;
-              lastZone = zoneName;
+              lastTapTime = currentTime;
             });
           });
 
+          // Mute Button Listener
           if (btnMute) {
             btnMute.addEventListener('click', function(e) {
               e.stopPropagation();
@@ -3864,68 +3355,55 @@
             });
           }
 
+          // Fullscreen Toggle
           if (btnFullscreen) {
             btnFullscreen.addEventListener('click', function(e) {
               e.stopPropagation();
+              const iconEnter = btnFullscreen.querySelector('.icon-fullscreen-enter');
+              const iconExit = btnFullscreen.querySelector('.icon-fullscreen-exit');
+
               if (!document.fullscreenElement) {
-                if (wrapper.requestFullscreen) {
-                  wrapper.requestFullscreen();
-                } else if (wrapper.webkitRequestFullscreen) {
-                  wrapper.webkitRequestFullscreen();
-                }
+                if (wrapper.requestFullscreen) wrapper.requestFullscreen();
+                else if (video.requestFullscreen) video.requestFullscreen();
+                if (iconEnter) iconEnter.style.display = 'none';
+                if (iconExit) iconExit.style.display = 'block';
               } else {
-                if (document.exitFullscreen) {
-                  document.exitFullscreen();
-                } else if (document.webkitExitFullscreen) {
-                  document.webkitExitFullscreen();
-                }
+                if (document.exitFullscreen) document.exitFullscreen();
+                if (iconEnter) iconEnter.style.display = 'block';
+                if (iconExit) iconExit.style.display = 'none';
               }
             });
           }
 
-          document.addEventListener('fullscreenchange', function() {
-            if (!btnFullscreen) return;
-            var enterIcon = btnFullscreen.querySelector('.icon-fullscreen-enter');
-            var exitIcon = btnFullscreen.querySelector('.icon-fullscreen-exit');
-            if (document.fullscreenElement === wrapper) {
-              if (enterIcon) enterIcon.style.display = 'none';
-              if (exitIcon) exitIcon.style.display = 'block';
-            } else {
-              if (enterIcon) enterIcon.style.display = 'block';
-              if (exitIcon) exitIcon.style.display = 'none';
-            }
-          });
-
           video.addEventListener('play', updatePlayUI);
           video.addEventListener('pause', updatePlayUI);
-
           video.addEventListener('loadedmetadata', function() {
             if (timeDuration) timeDuration.textContent = formatTime(video.duration);
           });
 
           video.addEventListener('timeupdate', function() {
-            if (timeCurrent) timeCurrent.textContent = formatTime(video.currentTime);
-            if (timeDuration && video.duration) timeDuration.textContent = formatTime(video.duration);
-            if (seekbarProgress && video.duration) {
-              var pct = (video.currentTime / video.duration) * 100;
-              seekbarProgress.style.width = pct + '%';
+            if (video.duration) {
+              const pct = (video.currentTime / video.duration) * 100;
+              if (seekbarProgress) seekbarProgress.style.width = pct + '%';
+              if (seekbarContainer) seekbarContainer.setAttribute('aria-valuenow', Math.round(pct));
+              if (timeCurrent) timeCurrent.textContent = formatTime(video.currentTime);
             }
           });
 
-          // Seekbar Drag & Click
+          // Custom Seekbar Drag & Click
           if (seekbarContainer) {
-            var isDragging = false;
+            let isDragging = false;
 
             function seek(e) {
-              if (!video.duration) return;
-              var rect = seekbarContainer.getBoundingClientRect();
-              var clientX = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0);
-              var pos = (clientX - rect.left) / rect.width;
-              pos = Math.max(0, Math.min(1, pos));
-              video.currentTime = pos * video.duration;
+              const rect = seekbarContainer.getBoundingClientRect();
+              const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+              if (video.duration) {
+                video.currentTime = pos * video.duration;
+              }
             }
 
             seekbarContainer.addEventListener('mousedown', function(e) {
+              e.stopPropagation();
               isDragging = true;
               seek(e);
             });
@@ -3937,23 +3415,14 @@
             window.addEventListener('mouseup', function() {
               isDragging = false;
             });
-
-            seekbarContainer.addEventListener('touchstart', function(e) {
-              isDragging = true;
-              seek(e);
-            }, { passive: true });
-
-            window.addEventListener('touchmove', function(e) {
-              if (isDragging) seek(e);
-            }, { passive: true });
-
-            window.addEventListener('touchend', function() {
-              isDragging = false;
-            });
           }
 
+          // Keyboard Support
           wrapper.addEventListener('keydown', function(e) {
-            if (e.key === ' ' || e.key === 'k') {
+            const tag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+            if (tag === 'input' || tag === 'textarea' || (document.activeElement && document.activeElement.isContentEditable)) return;
+
+            if (e.key === ' ' || e.key === 'k' || e.key === 'K') {
               e.preventDefault();
               togglePlay();
             } else if (e.key === 'ArrowLeft') {
@@ -3964,11 +3433,11 @@
               e.preventDefault();
               video.currentTime = Math.min(video.duration || 0, video.currentTime + 10);
               showFeedback(feedbackRight);
-            } else if (e.key === 'm') {
+            } else if (e.key === 'm' || e.key === 'M') {
               e.preventDefault();
               video.muted = !video.muted;
               updateMuteUI();
-            } else if (e.key === 'f') {
+            } else if (e.key === 'f' || e.key === 'F') {
               e.preventDefault();
               if (btnFullscreen) btnFullscreen.click();
             }
@@ -3976,154 +3445,495 @@
         });
       })();
 
-      // 7. Unified Showcase Carousel Engine
-      (function setupCarousel() {
-        var carousel = document.querySelector('[data-carousel="unified-showcase"]');
-        if (!carousel) return;
 
-        var track = carousel.querySelector('[data-carousel-track="true"]');
-        var slides = carousel.querySelectorAll('[data-carousel-slide="true"]');
-        var prevBtn = carousel.querySelector('[data-carousel-prev="true"]');
-        var nextBtn = carousel.querySelector('[data-carousel-next="true"]');
-        var dotsContainer = carousel.querySelector('[data-carousel-dots="true"]');
+      // Mobile Navigation Drawer Toggle
+      const menuToggle = document.getElementById('menuToggle');
+      const navMenu = document.getElementById('navMenu');
+      const menuBackdrop = document.getElementById('menuBackdrop');
 
-        if (!track || slides.length === 0) return;
+      if (menuToggle && navMenu && menuBackdrop) {
+        // Accessibility attributes init
+        menuToggle.setAttribute('aria-expanded', 'false');
+        menuToggle.setAttribute('aria-label', 'Open navigation');
+        menuToggle.setAttribute('aria-controls', 'navMenu');
 
-        var currentIndex = 0;
-
-        // Build dots
-        if (dotsContainer) {
-          dotsContainer.innerHTML = '';
-          slides.forEach(function(_, idx) {
-            var dot = document.createElement('button');
-            dot.className = 'wd-carousel-dot' + (idx === 0 ? ' active' : '');
-            dot.setAttribute('aria-label', 'Go to screenshot ' + (idx + 1));
-            dot.addEventListener('click', function() {
-              goToSlide(idx);
-            });
-            dotsContainer.appendChild(dot);
-          });
-        }
-
-        function updateShowcaseText(index) {
-          var lang = localStorage.getItem('wd_lang') || 'en';
-          var list = showcaseTranslations[lang] || showcaseTranslations['en'];
-          var item = list[index] || list[0];
-
-          var numEl = document.getElementById('showcaseSlideNum');
-          var titleEl = document.getElementById('showcaseSlideTitle');
-          var descEl = document.getElementById('showcaseSlideDesc');
-          var chipsEl = document.getElementById('showcaseSlideChips');
-
-          if (numEl) numEl.textContent = (index + 1) + ' / ' + slides.length;
-          if (titleEl) titleEl.textContent = item.title;
-          if (descEl) descEl.textContent = '"' + item.desc + '"';
-
-          if (chipsEl && item.chips) {
-            chipsEl.innerHTML = '';
-            var chipArr = item.chips.split(',');
-            var colors = [
-              { bg: 'var(--mint-light)', color: 'var(--mint-primary)' },
-              { bg: 'var(--blue-light)', color: 'var(--blue-secondary)' },
-              { bg: 'var(--orange-light)', color: 'var(--orange-tertiary)' },
-              { bg: 'var(--purple-light)', color: 'var(--purple-leave)' }
-            ];
-            chipArr.forEach(function(chipText, cIdx) {
-              var cScheme = colors[cIdx % colors.length];
-              var span = document.createElement('span');
-              span.style.background = cScheme.bg;
-              span.style.color = cScheme.color;
-              span.style.fontSize = '13px';
-              span.style.fontWeight = '600';
-              span.style.padding = '6px 14px';
-              span.style.borderRadius = '99px';
-              span.textContent = chipText.trim();
-              chipsEl.appendChild(span);
-            });
+        function toggleMenu() {
+          const isOpen = navMenu.classList.contains('open');
+          if (isOpen) {
+            closeMenu();
+          } else {
+            openMenu();
           }
         }
 
-        function goToSlide(index) {
-          if (index < 0) index = slides.length - 1;
-          if (index >= slides.length) index = 0;
-          currentIndex = index;
+        function openMenu() {
+          navMenu.classList.add('open');
+          menuToggle.classList.add('active');
+          menuBackdrop.classList.add('active');
+          menuToggle.setAttribute('aria-expanded', 'true');
+          menuToggle.setAttribute('aria-label', 'Close navigation');
+          document.body.style.overflow = 'hidden'; // Scroll lock
+        }
 
-          slides.forEach(function(slide, idx) {
-            if (idx === currentIndex) {
+        function closeMenu() {
+          navMenu.classList.remove('open');
+          menuToggle.classList.remove('active');
+          menuBackdrop.classList.remove('active');
+          menuToggle.setAttribute('aria-expanded', 'false');
+          menuToggle.setAttribute('aria-label', 'Open navigation');
+          document.body.style.overflow = ''; // Restore scrolling
+        }
+
+        // Hamburger click
+        menuToggle.addEventListener('click', function(e) {
+          e.stopPropagation();
+          toggleMenu();
+        });
+
+        // Backdrop click
+        menuBackdrop.addEventListener('click', function() {
+          closeMenu();
+        });
+
+        // ESC key close
+        window.addEventListener('keydown', function(e) {
+          if (e.key === 'Escape' || e.key === 'Esc') {
+            closeMenu();
+          }
+        });
+
+        // Close menu on navigation click
+        document.querySelectorAll('.nav-link').forEach(link => {
+          link.addEventListener('click', () => {
+            closeMenu();
+          });
+        });
+      }
+
+      // Reusable Lightweight Carousel Engine
+      const carousels = document.querySelectorAll('[data-carousel]');
+
+      carousels.forEach(carousel => {
+        const track = carousel.querySelector('[data-carousel-track]');
+        const slides = carousel.querySelectorAll('[data-carousel-slide]');
+        const prevBtn = carousel.querySelector('[data-carousel-prev]');
+        const nextBtn = carousel.querySelector('[data-carousel-next]');
+        const dots = carousel.querySelectorAll('.wd-dot');
+        let activeIndex = 0;
+
+        function updateUI(index) {
+          activeIndex = index;
+
+          // Update dots
+          dots.forEach((dot, idx) => {
+            if (idx === index) {
+              dot.classList.add('active');
+              dot.setAttribute('aria-selected', 'true');
+            } else {
+              dot.classList.remove('active');
+              dot.setAttribute('aria-selected', 'false');
+            }
+          });
+
+          // Update active-slide class for visual transitions
+          slides.forEach((slide, idx) => {
+            if (idx === index) {
               slide.classList.add('active-slide');
             } else {
               slide.classList.remove('active-slide');
             }
           });
 
-          var activeSlide = slides[currentIndex];
+          // Dynamic Showcase Label Update
+          const activeSlide = slides[index];
           if (activeSlide) {
-            var scrollLeftPos = activeSlide.offsetLeft;
-            track.scrollTo({ left: scrollLeftPos, behavior: 'smooth' });
-          }
+            const slideTitle = activeSlide.getAttribute('data-slide-title');
+            const slideDesc = activeSlide.getAttribute('data-slide-desc');
+            const slideChipsRaw = activeSlide.getAttribute('data-slide-chips');
 
-          if (dotsContainer) {
-            var dots = dotsContainer.querySelectorAll('.wd-carousel-dot');
-            dots.forEach(function(dot, idx) {
-              if (idx === currentIndex) {
-                dot.classList.add('active');
-              } else {
-                dot.classList.remove('active');
-              }
-            });
-          }
+            const numEl = document.getElementById('showcaseSlideNum');
+            const titleEl = document.getElementById('showcaseSlideTitle');
+            const descEl = document.getElementById('showcaseSlideDesc');
+            const chipsEl = document.getElementById('showcaseSlideChips');
 
-          updateShowcaseText(currentIndex);
-        }
+            if (numEl) numEl.innerText = (index + 1) + ' / ' + slides.length;
+            if (titleEl && slideTitle) titleEl.innerText = slideTitle;
+            if (descEl && slideDesc) descEl.innerText = '"' + slideDesc + '"';
 
-        if (prevBtn) {
-          prevBtn.addEventListener('click', function() {
-            goToSlide(currentIndex - 1);
-          });
-        }
-
-        if (nextBtn) {
-          nextBtn.addEventListener('click', function() {
-            goToSlide(currentIndex + 1);
-          });
-        }
-
-        var isScrollingTimer = null;
-        track.addEventListener('scroll', function() {
-          clearTimeout(isScrollingTimer);
-          isScrollingTimer = setTimeout(function() {
-            var trackLeft = track.scrollLeft;
-            var closestIdx = 0;
-            var minDiff = Infinity;
-            slides.forEach(function(slide, idx) {
-              var diff = Math.abs(slide.offsetLeft - trackLeft);
-              if (diff < minDiff) {
-                minDiff = diff;
-                closestIdx = idx;
-              }
-            });
-            if (closestIdx !== currentIndex) {
-              currentIndex = closestIdx;
-              if (dotsContainer) {
-                var dots = dotsContainer.querySelectorAll('.wd-carousel-dot');
-                dots.forEach(function(dot, idx) {
-                  if (idx === currentIndex) dot.classList.add('active');
-                  else dot.classList.remove('active');
-                });
-              }
-              updateShowcaseText(currentIndex);
+            if (chipsEl && slideChipsRaw) {
+              const chips = slideChipsRaw.split(',');
+              const colors = [
+                'background:var(--mint-light); color:var(--mint-primary);',
+                'background:var(--blue-light); color:var(--blue-secondary);',
+                'background:var(--orange-light); color:var(--orange-tertiary);',
+                'background:var(--purple-light); color:var(--purple-leave);'
+              ];
+              let html = '';
+              chips.forEach((c, i) => {
+                const style = colors[i % colors.length];
+                html += "<span style='" + style + " font-size:13px; font-weight:600; padding:6px 14px; border-radius:99px;'>" + c.trim() + "</span>";
+              });
+              chipsEl.innerHTML = html;
             }
-          }, 100);
+          }
+        }
+
+        // Initialize label values instantly on startup
+        updateUI(0);
+
+        // Scroll snap detection
+        let isScrolling;
+        if (track) {
+          track.addEventListener('scroll', function() {
+            window.clearTimeout(isScrolling);
+            isScrolling = setTimeout(function() {
+              const slideWidth = track.clientWidth;
+              if (slideWidth > 0) {
+                const index = Math.round(track.scrollLeft / slideWidth);
+                if (index !== activeIndex && index >= 0 && index < slides.length) {
+                  updateUI(index);
+                }
+              }
+            }, 60);
+          });
+        }
+
+        // Click on dots
+        dots.forEach((dot, index) => {
+          dot.addEventListener('click', () => {
+            const slideWidth = track.clientWidth;
+            track.scrollTo({
+              left: slideWidth * index,
+              behavior: 'smooth'
+            });
+            updateUI(index);
+          });
         });
 
-        window.onLanguageChanged = function(lang) {
-          updateShowcaseText(currentIndex);
-        };
+        // Click on next
+        if (nextBtn) {
+          nextBtn.addEventListener('click', () => {
+            const slideWidth = track.clientWidth;
+            let target = activeIndex + 1;
+            if (target >= slides.length) target = 0; // loop
+            track.scrollTo({
+              left: slideWidth * target,
+              behavior: 'smooth'
+            });
+            updateUI(target);
+          });
+        }
 
-        // Initialize first slide label
-        updateShowcaseText(0);
-      })();
+        // Click on prev
+        if (prevBtn) {
+          prevBtn.addEventListener('click', () => {
+            const slideWidth = track.clientWidth;
+            let target = activeIndex - 1;
+            if (target < 0) target = slides.length - 1; // loop
+            track.scrollTo({
+              left: slideWidth * target,
+              behavior: 'smooth'
+            });
+            updateUI(target);
+          });
+        }
+
+        // Keyboard Navigation
+        carousel.addEventListener('keydown', (e) => {
+          if (e.key === 'ArrowLeft') {
+            e.preventDefault();
+            prevBtn && prevBtn.click();
+          } else if (e.key === 'ArrowRight') {
+            e.preventDefault();
+            nextBtn && nextBtn.click();
+          }
+        });
+        carousel.setAttribute('tabindex', '0');
+      });
     });
+
+    /* LANGUAGE SELECTOR & TRANSLATION SYSTEM */
+    (function() {
+      const translations = {
+        "en": {
+                "navHome": "Home",
+                "navAbout": "What is WorkDaily",
+                "navHow": "How It Works",
+                "navShowcase": "App Showcase",
+                "navOffline": "Why Offline",
+                "navDownload": "Download",
+                "getApp": "Get App",
+                "officialRelease": "Official Release by SynFusion",
+                "heroTitlePrefix": "Keep your daily attendance simple, organized and",
+                "heroDescription": "Track your daily attendance, calculate wages, log overtime, and manage your advances. All your personal attendance records are stored securely inside your phone—completely offline.",
+                "downloadApp": "Download App",
+                "exploreFeatures": "Explore Features",
+                "heroPhrase1": "Track Every Day",
+                "heroPhrase2": "Stay Organized",
+                "heroPhrase3": "Know Your Earnings",
+                "heroPhrase4": "Track Overtime",
+                "heroPhrase5": "Your Daily Records",
+                "heroPhrase6": "Work. Track. Know.",
+                "fc1Title": "Daily Attendance",
+                "fc1Subtitle": "Quick Entry",
+                "fc2Title": "Wage Total",
+                "fc2Subtitle": "Instant Speed",
+                "trustStat1Val": "100%",
+                "trustStat1Lbl": "Offline Secured",
+                "trustStat2Val": "0",
+                "trustStat2Lbl": "No network required",
+                "trustStat3Val": "PDF",
+                "trustStat3Lbl": "One-Click PDF Passbooks",
+                "aboutTag": "ABOUT WORKDAILY",
+                "aboutTitle": "What is WorkDaily?",
+                "aboutSub": "WorkDaily is a simple, offline-first personal attendance application built to eliminate lost working-day records, manual calculation errors, and lost wage details.",
+                "aboutP1": "Keeping track of daily working shifts, overtime hours, and cash advances on paper or notes can be frustrating and unreliable. WorkDaily gives individuals an easy, organized way to mark daily attendance, track earnings, and generate clean PDF passbooks directly on their smartphones.",
+                "aboutP2": "Whether you work daily shifts, log regular overtime, or take periodic advance draws, WorkDaily keeps your personal work history organized, accurate, and completely under your control.",
+                "aboutBullet1": "Mark daily attendance with a quick tap (Present, Absent, Half Day, or Holiday).",
+                "aboutBullet2": "Keep working-day logs, overtime hours, and cash advances clearly organized in one ledger.",
+                "aboutBullet3": "Unicode Devanagari Hindi Support",
+                "howTag": "SIMPLE WORKFLOW",
+                "howTitle": "How WorkDaily Works",
+                "howSub": "Four simple steps to maintain complete control over your personal attendance records.",
+                "step1Num": "01 — Record",
+                "step1Title": "Record Attendance",
+                "step1Desc": "Mark Present, Absent, Half-Day, or Holiday for any day in seconds.",
+                "step2Num": "02 — Track",
+                "step2Title": "Track Shifts & Advances",
+                "step2Desc": "Log overtime hours and cash advances as they happen so nothing is forgotten.",
+                "step3Num": "03 — Calculate",
+                "step3Title": "Calculate Earnings",
+                "step3Desc": "Use attendance and wage rates to view clear wage estimates and balance totals instantly.",
+                "step4Num": "04 — Review",
+                "step4Title": "Review History",
+                "step4Desc": "Review monthly statistics, color-coded calendar grids, and export A4 PDF passbooks.",
+                "showcaseTag": "WORKDAILY APP SHOWCASE",
+                "showcaseTitle": "WorkDaily App Showcase",
+                "showcaseSubtitle": "Explore the app screen by screen.",
+                "offlineTag": "OFFLINE FIRST",
+                "offlineTitle": "Why Offline?",
+                "offlineSubtitle": "Your attendance records shouldn't depend on an internet connection or external servers.",
+                "offCard1Title": "100% Data Privacy",
+                "offCard1Desc": "Your shift records, wages, and cash advances stay stored locally in your phone's internal storage. No cloud leaks or external tracking.",
+                "offCard2Title": "Zero Network Dependency",
+                "offCard2Desc": "Log attendance anytime, anywhere—even in zero-reception zones, underground sites, or remote workplaces without active internet access.",
+                "offCard3Title": "Instant Speed",
+                "offCard3Desc": "Enjoy instant response times with zero loading delay, network timeouts, or battery-draining background sync tasks.",
+                "trackTag": "APP FEATURES",
+                "trackTitle": "What You Can Track",
+                "trackSub": "WorkDaily helps you organize all essential aspects of your personal daily work history.",
+                "trCard1Title": "Daily Attendance",
+                "trCard1Desc": "Mark Present, Absent, Half-Day, or Holiday with custom note attachments for any day.",
+                "trCard2Title": "Overtime Hours & Pay",
+                "trCard2Desc": "Log extra hours worked and calculate exact overtime earnings based on hourly rates.",
+                "trCard3Title": "Cash Advance Draws",
+                "trCard3Desc": "Record cash advances drawn throughout the month to maintain an accurate net wage balance.",
+                "trCard4Title": "A4 PDF Passbooks",
+                "trCard4Desc": "Generate professional, clean A4 monthly wage passbook summaries ready to print or share.",
+                "feedbackTag": "VIDEO PREVIEWS",
+                "feedbackTitle": "Video Preview & Demo",
+                "feedbackSubtitle": "Watch WorkDaily in action and explore how the app works.",
+                "demoVideo1": "Demo Video 1",
+                "demoVideo2": "Demo Video 2",
+                "demoVideo3": "Demo Video 3",
+                "demoRole": "Video Preview",
+                "demoReview1": "Explore WorkDaily features, daily attendance entry, and wage calculations.",
+                "demoReview2": "Learn how to log overtime hours, manage advances, and generate PDF summaries.",
+                "demoReview3": "Discover 100% offline security, instant speed, and personal data privacy.",
+                "downloadTitle": "Download WorkDaily Today",
+                "downloadSubtitle": "Keep your daily attendance simple, organized and offline.",
+                "downloadBtn": "Download WorkDaily",
+                "downloadPlayStore": "Google Play",
+                "waTag": "WHATSAPP CHANNEL",
+                "waTitle": "Follow DailyWork",
+                "waSubtitle": "Follow DailyWork for updates and announcements.",
+                "waBtn": "Join Channel",
+                "footerDesc": "Personal attendance, simplified.",
+                "footerCompany": "Built by SynFusion",
+                "colProduct": "Product",
+                "colSupport": "Support",
+                "colSocial": "Social",
+                "linkContact": "Contact",
+                "footerRights": "© 2026 SynFusion. All rights reserved.",
+                "footerBuiltFor": "Built by SynFusion for WorkDaily"
+        },
+        "hi": {
+                "navHome": "होम",
+                "navAbout": "वर्कडेली क्या है",
+                "navHow": "यह कैसे काम करता है",
+                "navShowcase": "ऐप झलकियां",
+                "navOffline": "ऑफलाइन क्यों",
+                "navDownload": "डाउनलोड",
+                "getApp": "ऐप पाएं",
+                "officialRelease": "SynFusion द्वारा आधिकारिक रिलीज़",
+                "heroTitlePrefix": "अपनी दैनिक हाजिरी को सरल, व्यवस्थित और",
+                "heroDescription": "अपनी दैनिक हाजिरी दर्ज करें, वेतन की गणना करें, ओवरटाइम जोड़ें और अग्रिम राशि (एडवांस) प्रबंधित करें। आपकी सभी हाजिरी का रिकॉर्ड आपके फोन में सुरक्षित है—पूरी तरह ऑफलाइन।",
+                "downloadApp": "ऐप डाउनलोड करें",
+                "exploreFeatures": "फीचर्स देखें",
+                "heroPhrase1": "हर दिन हाजिरी लगाएं",
+                "heroPhrase2": "व्यवस्थित रहें",
+                "heroPhrase3": "अपनी कमाई जानें",
+                "heroPhrase4": "ओवरटाइम ट्रैक करें",
+                "heroPhrase5": "आपका दैनिक रिकॉर्ड",
+                "heroPhrase6": "काम। रिकॉर्ड। हिसाब।",
+                "fc1Title": "दैनिक हाजिरी",
+                "fc1Subtitle": "त्वरित प्रविष्टि",
+                "fc2Title": "कुल कमाई",
+                "fc2Subtitle": "तुरंत हिसाब",
+                "trustStat1Val": "100%",
+                "trustStat1Lbl": "ऑफलाइन सुरक्षित",
+                "trustStat2Val": "0",
+                "trustStat2Lbl": "नेटवर्क की आवश्यकता नहीं",
+                "trustStat3Val": "PDF",
+                "trustStat3Lbl": "एक-क्लिक PDF पासबुक",
+                "aboutTag": "वर्कडेली के बारे में",
+                "aboutTitle": "वर्कडेली क्या है?",
+                "aboutSub": "वर्कडेली एक सरल, ऑफलाइन-प्रथम पर्सनल हाजिरी ऐप है, जो काम के दिनों के रिकॉर्ड खोने, हिसाब की गलतियों और वेतन के नुकसान को रोकने के लिए बनाई गई है।",
+                "aboutP1": "कागज या डायरी पर रोजाना की पाली (शिफ्ट), ओवरटाइम और एडवांस का हिसाब रखना मुश्किल और अविश्वसनीय हो सकता है। वर्कडेली आपको अपने स्मार्टफोन पर ही हाजिरी लगाने, कमाई का हिसाब रखने और सुंदर PDF पासबुक बनाने का आसान तरीका देता है।",
+                "aboutP2": "चाहे आप रोजाना दिहाड़ी पर काम करते हों, नियमित ओवरटाइम करते हों या बीच-बीच में एडवांस लेते हों, वर्कडेली आपके काम का पूरा इतिहास व्यवस्थित, सटीक और पूरी तरह आपके नियंत्रण में रखता है।",
+                "aboutBullet1": "एक टैप में दैनिक हाजिरी दर्ज करें (उपस्थित, अनुपस्थित, हाफ-डे या छुट्टी)।",
+                "aboutBullet2": "काम के दिन, ओवरटाइम के घंटे और एडवांस का हिसाब एक ही जगह रखें।",
+                "aboutBullet3": "हिंदी और देवनागरी भाषा का पूरा समर्थन।",
+                "howTag": "सरल कार्यप्रणाली",
+                "howTitle": "वर्कडेली कैसे काम करता है",
+                "howSub": "आपकी हाजिरी के रिकॉर्ड पर पूरा नियंत्रण रखने के लिए चार आसान चरण।",
+                "step1Num": "01 — दर्ज करें",
+                "step1Title": "हाजिरी लगाएं",
+                "step1Desc": "कुछ ही सेकंड में किसी भी दिन के लिए उपस्थित, अनुपस्थित, हाफ-डे या छुट्टी दर्ज करें।",
+                "step2Num": "02 — ट्रैक करें",
+                "step2Title": "शिफ्ट और एडवांस ट्रैक करें",
+                "step2Desc": "ओवरटाइम के घंटे और एडवांस की रकम तुरंत दर्ज करें ताकि कुछ भी न छूटे।",
+                "step3Num": "03 — गणना करें",
+                "step3Title": "कमाई की गणना करें",
+                "step3Desc": "अपनी दिहाड़ी दर के आधार पर कुल वेतन और बकाया राशि का तुरंत हिसाब देखें।",
+                "step4Num": "04 — समीक्षा करें",
+                "step4Title": "इतिहास देखें",
+                "step4Desc": "मासिक आंकड़े, रंग-बिरंगा कैलेंडर देखें और A4 PDF पासबुक डाउनलोड करें।",
+                "showcaseTag": "वर्कडेली ऐप झलकियां",
+                "showcaseTitle": "वर्कडेली ऐप झलकियां",
+                "showcaseSubtitle": "ऐप को स्क्रीन दर स्क्रीन देखें।",
+                "offlineTag": "ऑफलाइन प्रथम",
+                "offlineTitle": "ऑफलाइन ही क्यों?",
+                "offlineSubtitle": "आपकी हाजिरी के रिकॉर्ड इंटरनेट कनेक्शन या बाहरी सर्वर पर निर्भर नहीं होने चाहिए।",
+                "offCard1Title": "100% डेटा गोपनीयता",
+                "offCard1Desc": "आपकी शिफ्ट, वेतन और एडवांस का डेटा आपके फोन की इंटरनल स्टोरेज में सुरक्षित रहता है। कोई क्लाउड लीक या बाहरी ट्रैकिंग नहीं।",
+                "offCard2Title": "शून्य नेटवर्क निर्भरता",
+                "offCard2Desc": "कभी भी, कहीं भी हाजिरी दर्ज करें—बिना इंटरनेट वाले दूरदराज के क्षेत्रों, भूमिगत साइटों या नेटवर्क रहित स्थानों पर भी।",
+                "offCard3Title": "अत्यधिक तेज़ गति",
+                "offCard3Desc": "बिना किसी लोडिंग देरी, नेटवर्क समस्या या बैटरी खर्च किए तुरंत काम करने का अनुभव पाएं।",
+                "trackTag": "ऐप की विशेषताएं",
+                "trackTitle": "आप क्या-क्या रिकॉर्ड कर सकते हैं",
+                "trackSub": "वर्कडेली आपके दैनिक काम के सभी महत्वपूर्ण पहलुओं को व्यवस्थित करने में मदद करता है।",
+                "trCard1Title": "दैनिक हाजिरी",
+                "trCard1Desc": "प्रत्येक दिन के लिए उपस्थित, अनुपस्थित, हाफ-डे या छुट्टी आसानी से दर्ज करें।",
+                "trCard2Title": "ओवरटाइम घंटे और भुगतान",
+                "trCard2Desc": "अतिरिक्त काम के घंटे दर्ज करें और घंटे के हिसाब से सटीक ओवरटाइम कमाई की गणना करें।",
+                "trCard3Title": "एडवांस (अग्रिम) भुगतान",
+                "trCard3Desc": "महीने के दौरान ली गई एडवांस राशि को रिकॉर्ड करें ताकि शुद्ध वेतन का सही हिसाब रहे।",
+                "trCard4Title": "A4 PDF पासबुक",
+                "trCard4Desc": "शेयर या प्रिंट करने के लिए पेशेवर और साफ-सुथरी A4 मासिक वेतन पासबुक बनाएं।",
+                "feedbackTag": "वीडियो पूर्वदर्शन",
+                "feedbackTitle": "वीडियो पूर्वदर्शन और डेमो",
+                "feedbackSubtitle": "वर्कडेली को कार्य करते हुए देखें और जानें कि यह ऐप कैसे काम करता है।",
+                "demoVideo1": "डेमो वीडियो 1",
+                "demoVideo2": "डेमो वीडियो 2",
+                "demoVideo3": "डेमो वीडियो 3",
+                "demoRole": "वीडियो पूर्वदर्शन",
+                "demoReview1": "वर्कडेली की सुविधाओं, दैनिक हाजिरी दर्ज करने और वेतन गणना को समझें।",
+                "demoReview2": "जानें कि ओवरटाइम घंटे कैसे जोड़ें, एडवांस प्रबंधित करें और PDF बनाएं।",
+                "demoReview3": "100% ऑफलाइन सुरक्षा, त्वरित गति और डेटा गोपनीयता का अनुभव करें।",
+                "downloadTitle": "आज ही वर्कडेली डाउनलोड करें",
+                "downloadSubtitle": "अपनी दैनिक हाजिरी को सरल, व्यवस्थित और ऑफलाइन रखें।",
+                "downloadBtn": "वर्कडेली डाउनलोड करें",
+                "downloadPlayStore": "गूगल प्ले स्टोर",
+                "waTag": "व्हाट्सएप चैनल",
+                "waTitle": "DailyWork चैनल से जुड़ें",
+                "waSubtitle": "नवीनतम अपडेट और घोषणाओं के लिए DailyWork व्हाट्सएप चैनल से जुड़ें।",
+                "waBtn": "चैनल से जुड़ें",
+                "footerDesc": "पर्सनल हाजिरी, अब और भी आसान।",
+                "footerCompany": "SynFusion द्वारा निर्मित",
+                "colProduct": "उत्पाद",
+                "colSupport": "सहायता",
+                "colSocial": "सोशल मीडिया",
+                "linkContact": "संपर्क करें",
+                "footerRights": "© 2026 SynFusion. सर्वाधिकार सुरक्षित।",
+                "footerBuiltFor": "WorkDaily के लिए SynFusion द्वारा निर्मित"
+        }
+};
+
+      function setLanguage(lang) {
+        if (!translations[lang]) return;
+        localStorage.setItem('wd_lang', lang);
+        document.documentElement.setAttribute('lang', lang);
+
+        document.querySelectorAll('.wd-lang-btn').forEach(btn => {
+          if (btn.getAttribute('data-lang') === lang) {
+            btn.classList.add('active');
+          } else {
+            btn.classList.remove('active');
+          }
+        });
+
+        const t = translations[lang];
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+          const key = el.getAttribute('data-i18n');
+          if (t[key]) {
+            el.innerText = t[key];
+          }
+        });
+      }
+
+      document.addEventListener('DOMContentLoaded', function() {
+        const savedLang = localStorage.getItem('wd_lang') || 'en';
+        setLanguage(savedLang);
+
+        document.querySelectorAll('.wd-lang-btn').forEach(btn => {
+          btn.addEventListener('click', function() {
+            const lang = this.getAttribute('data-lang');
+            setLanguage(lang);
+          });
+        });
+      });
+    })();
+
+    /* LIGHT / DARK MODE SYSTEM */
+    (function() {
+      function setTheme(theme) {
+        if (theme === 'dark') {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        } else {
+          document.documentElement.removeAttribute('data-theme');
+        }
+        localStorage.setItem('wd_theme', theme);
+
+        document.querySelectorAll('.wd-theme-btn').forEach(btn => {
+          if (btn.getAttribute('data-theme-val') === theme) {
+            btn.classList.add('active');
+          } else {
+            btn.classList.remove('active');
+          }
+        });
+      }
+
+      // Initial theme setup
+      const savedTheme = localStorage.getItem('wd_theme');
+      if (savedTheme) {
+        setTheme(savedTheme);
+      } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        setTheme('dark');
+      } else {
+        setTheme('light');
+      }
+
+      document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.wd-theme-btn').forEach(btn => {
+          btn.addEventListener('click', function() {
+            const val = this.getAttribute('data-theme-val');
+            setTheme(val);
+          });
+        });
+      });
+    })();
     //]]>
   </script>
 
