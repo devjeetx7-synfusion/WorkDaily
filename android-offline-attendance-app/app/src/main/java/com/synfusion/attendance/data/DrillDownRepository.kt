@@ -31,14 +31,28 @@ class DrillDownRepository(
                 DrillDownType.EARNINGS -> attendanceDao.getAllTimeEarnings()
             }
         } else {
+            val (startDate, endDate) = getMonthDateRange(monthPrefix)
             when (type) {
-                DrillDownType.PRESENT -> attendanceDao.getPresentByMonth(monthPrefix)
-                DrillDownType.ABSENT -> attendanceDao.getAbsentByMonth(monthPrefix)
-                DrillDownType.HALF_DAY -> attendanceDao.getHalfDayByMonth(monthPrefix)
-                DrillDownType.OVERTIME -> attendanceDao.getOvertimeByMonth(monthPrefix)
-                DrillDownType.ADVANCE -> attendanceDao.getAdvanceByMonth(monthPrefix)
-                DrillDownType.EARNINGS -> attendanceDao.getEarningsByMonth(monthPrefix)
+                DrillDownType.PRESENT -> attendanceDao.getPresentByMonth(startDate, endDate)
+                DrillDownType.ABSENT -> attendanceDao.getAbsentByMonth(startDate, endDate)
+                DrillDownType.HALF_DAY -> attendanceDao.getHalfDayByMonth(startDate, endDate)
+                DrillDownType.OVERTIME -> attendanceDao.getOvertimeByMonth(startDate, endDate)
+                DrillDownType.ADVANCE -> attendanceDao.getAdvanceByMonth(startDate, endDate)
+                DrillDownType.EARNINGS -> attendanceDao.getEarningsByMonth(startDate, endDate)
             }
+        }
+    }
+
+    companion object {
+        fun getMonthDateRange(monthPrefix: String): Pair<String, String> {
+            val parts = monthPrefix.split("-")
+            val year = parts[0].toInt()
+            val month = parts[1].toInt()
+            val startDate = String.format(java.util.Locale.US, "%04d-%02d-01", year, month)
+            val nextYear = if (month == 12) year + 1 else year
+            val nextMonth = if (month == 12) 1 else month + 1
+            val endDate = String.format(java.util.Locale.US, "%04d-%02d-01", nextYear, nextMonth)
+            return Pair(startDate, endDate)
         }
     }
 }
