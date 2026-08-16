@@ -74,13 +74,13 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.safeDrawing
 
-enum class SettingsCategory(val title: String, val icon: androidx.compose.ui.graphics.vector.ImageVector) {
-    PROFILE("Profile Settings", Icons.Default.Person),
-    STAY_CONNECTED("Stay Connected", Icons.Default.Favorite),
-    PREFERENCES("App Preferences", Icons.Default.Settings),
-    NOTIFICATIONS("Notifications", Icons.Default.Notifications),
-    BACKUP("Backup & Restore", Icons.Default.Backup),
-    INFO_SUPPORT("Info & Support", Icons.Default.Info)
+enum class SettingsCategory(val titleRes: Int, val icon: androidx.compose.ui.graphics.vector.ImageVector) {
+    PROFILE(com.synfusion.attendance.R.string.category_profile_settings, Icons.Default.Person),
+    STAY_CONNECTED(com.synfusion.attendance.R.string.category_stay_connected, Icons.Default.Favorite),
+    PREFERENCES(com.synfusion.attendance.R.string.category_app_preferences, Icons.Default.Settings),
+    NOTIFICATIONS(com.synfusion.attendance.R.string.category_notifications, Icons.Default.Notifications),
+    BACKUP(com.synfusion.attendance.R.string.category_backup, Icons.Default.Backup),
+    INFO_SUPPORT(com.synfusion.attendance.R.string.category_info_support, Icons.Default.Info)
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -296,7 +296,7 @@ fun SettingsScreen(
                     ) {
                         Icon(Icons.Default.Logout, contentDescription = null, modifier = Modifier.size(24.dp))
                         Spacer(modifier = Modifier.width(12.dp))
-                        Text(text = "Log Out", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        Text(text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.logout), fontSize = 16.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             } else {
@@ -326,7 +326,7 @@ fun SettingsScreen(
                             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                                 Column(modifier = Modifier.padding(start = 8.dp, top = 8.dp, bottom = 8.dp)) {
                                     Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.settings), fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-                                    Text(state.name.ifEmpty { "User Profile" }, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(state.name.ifEmpty { androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.user_profile) }, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
 
                                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
@@ -368,7 +368,7 @@ fun SettingsScreen(
                                             )
                                             Spacer(modifier = Modifier.width(16.dp))
                                             Text(
-                                                text = category.title,
+                                                text = androidx.compose.ui.res.stringResource(category.titleRes),
                                                 fontSize = 15.sp,
                                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                                 color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
@@ -388,7 +388,7 @@ fun SettingsScreen(
                             ) {
                                 Icon(Icons.Default.Logout, contentDescription = null, modifier = Modifier.size(20.dp))
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text(text = "Log Out", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                Text(text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.logout), fontSize = 14.sp, fontWeight = FontWeight.Bold)
                             }
                         }
                     }
@@ -405,7 +405,7 @@ fun SettingsScreen(
                             verticalArrangement = Arrangement.spacedBy(20.dp)
                         ) {
                             Text(
-                                text = selectedCategory.title,
+                                text = androidx.compose.ui.res.stringResource(selectedCategory.titleRes),
                                 fontSize = 22.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onBackground
@@ -730,7 +730,7 @@ fun ProfileCardSection(
             }
 
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(text = state.name.ifEmpty { "User Name" }, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                Text(text = state.name.ifEmpty { androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.user_name) }, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                 if (state.phone.isNotEmpty()) {
                     Text(text = "+91 ${state.phone}", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
@@ -1038,12 +1038,15 @@ fun BackupRestoreCardSection(
             border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
         ) {
             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                val neverStr = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.never)
+                val externalFilesStr = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.external_files)
+
                 val lastDateStr = if (state.lastBackupTime != null && state.lastBackupTime!! > 0L) {
                     SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault()).format(Date(state.lastBackupTime!!))
                 } else {
                     lastBackupFile?.let {
                         SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault()).format(Date(it.lastModified()))
-                    } ?: "Never"
+                    } ?: neverStr
                 }
 
                 val lastSizeStr = if (state.lastBackupSize != null && state.lastBackupSize!! > 0L) {
@@ -1060,7 +1063,7 @@ fun BackupRestoreCardSection(
                     } ?: "N/A"
                 }
 
-                val lastLocStr = state.lastBackupLoc ?: (lastBackupFile?.let { "External Files" } ?: "N/A")
+                val lastLocStr = state.lastBackupLoc ?: (lastBackupFile?.let { externalFilesStr } ?: "N/A")
 
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -1215,14 +1218,14 @@ fun LogoutBottomSheet(
             )
 
             Text(
-                text = "Logout",
+                text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.logout_title),
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground
             )
 
             Text(
-                text = "Would you like to create a backup before logging out?",
+                text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.logout_backup_question),
                 fontSize = 14.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
@@ -1679,7 +1682,7 @@ fun OfflineProfileEditBottomSheet(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
-                                text = "Profile Photo",
+                                text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.profile_photo),
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface,
@@ -1706,7 +1709,7 @@ fun OfflineProfileEditBottomSheet(
                                 )
                                 Spacer(modifier = Modifier.width(16.dp))
                                 Text(
-                                    text = "Change Photo",
+                                    text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.change_photo),
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.Medium,
                                     color = MaterialTheme.colorScheme.onSurface
@@ -1735,7 +1738,7 @@ fun OfflineProfileEditBottomSheet(
                                     )
                                     Spacer(modifier = Modifier.width(16.dp))
                                     Text(
-                                        text = "Remove Photo",
+                                        text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.remove_photo),
                                         fontSize = 16.sp,
                                         fontWeight = FontWeight.Medium,
                                         color = MaterialTheme.colorScheme.error

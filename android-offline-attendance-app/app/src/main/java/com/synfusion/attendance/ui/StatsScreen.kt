@@ -22,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -67,14 +68,26 @@ import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 
 @Composable
-fun AnimatedCounter(targetValue: Int, prefix: String = "", suffix: String = "") {
-    var animatedValue by remember { mutableStateOf(0) }
+fun AnimatedCounter(
+    targetValue: Int,
+    prefix: String = "",
+    suffix: String = ""
+) {
+    var hasCompletedAnimation by rememberSaveable { mutableStateOf(false) }
+    var animatedValue by remember { mutableStateOf(if (hasCompletedAnimation) targetValue else 0) }
 
     LaunchedEffect(targetValue) {
         animatedValue = targetValue
     }
 
-    val count by animateIntAsState(targetValue = animatedValue, animationSpec = tween(1500), label = "counter")
+    val count by animateIntAsState(
+        targetValue = animatedValue,
+        animationSpec = if (hasCompletedAnimation) tween(0) else tween(1500),
+        label = "counter",
+        finishedListener = {
+            hasCompletedAnimation = true
+        }
+    )
     val formattedCount = if (prefix == "₹" || prefix == "Rs.") {
         AmountFormatter.format(count)
     } else {
@@ -184,18 +197,19 @@ fun StatsScreen(
         }
 
         state.selectedDrillDownType?.let { type ->
+            val titleRes = when(type) {
+                DrillDownType.EARNINGS -> com.synfusion.attendance.R.string.drilldown_earnings
+                DrillDownType.PRESENT -> com.synfusion.attendance.R.string.drilldown_present
+                DrillDownType.ABSENT -> com.synfusion.attendance.R.string.drilldown_absent
+                DrillDownType.HALF_DAY -> com.synfusion.attendance.R.string.drilldown_half_day
+                DrillDownType.OVERTIME -> com.synfusion.attendance.R.string.drilldown_overtime
+                DrillDownType.ADVANCE -> com.synfusion.attendance.R.string.drilldown_advance
+            }
             DrillDownBottomSheet(
-                title = when(type) {
-                    DrillDownType.EARNINGS -> "Earnings"
-                    DrillDownType.PRESENT -> "Present"
-                    DrillDownType.ABSENT -> "Absent"
-                    DrillDownType.HALF_DAY -> "Half Day"
-                    DrillDownType.OVERTIME -> "Overtime"
-                    DrillDownType.ADVANCE -> "Advance"
-                },
+                title = androidx.compose.ui.res.stringResource(titleRes),
                 logs = state.selectedLogs,
                 onDismiss = { viewModel.closeDrillDown() },
-                totalRecordsText = "${state.selectedLogs.size} records",
+                totalRecordsText = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.records_count, state.selectedLogs.size),
                 totalAmountText = if (type == DrillDownType.EARNINGS || type == DrillDownType.OVERTIME || type == DrillDownType.ADVANCE) {
                     val total = if (type == DrillDownType.ADVANCE) {
                         state.selectedLogs.sumOf { it.advanceAmount ?: 0.0 }
@@ -266,6 +280,7 @@ fun PersonalStatsView(
     val currentHalfDays = if (isAllTime) state.personalStats.allTimeHalfDays else state.personalStats.halfDays
     val dailyRecords = if (isAllTime) emptyList() else state.personalStats.dailyRecords
     val windowSizeInfo = LocalWindowSizeInfo.current
+
 
     ResponsiveContainer {
         if (windowSizeInfo.isCompact) {
@@ -460,14 +475,14 @@ fun PersonalStatsView(
                                 Column {
                                     Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.total_earnings), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     Spacer(modifier = Modifier.height(4.dp))
-                                    AnimatedCounter(targetValue = state.personalStats.allTimeEarnings.toInt(), prefix = "₹")
+                                AnimatedCounter(targetValue = state.personalStats.allTimeEarnings.toInt(), prefix = "₹")
                                 }
                             }
                             Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).clickable { viewModel.openDrillDown(DrillDownType.PRESENT, true) }.padding(16.dp)) {
                                 Column {
                                     Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.total_days), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     Spacer(modifier = Modifier.height(4.dp))
-                                    AnimatedCounter(targetValue = state.personalStats.allTimeDays)
+                                AnimatedCounter(targetValue = state.personalStats.allTimeDays)
                                 }
                             }
                         }
@@ -865,29 +880,29 @@ fun EarningsLineChart(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "Earning: ₹${AmountFormatter.format(record.earnings)}",
+                                text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.earning_label, AmountFormatter.format(record.earnings)),
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = primaryColor
                             )
                             if (record.baseEarnings > 0 && record.baseEarnings != record.earnings) {
                                 Text(
-                                    text = "Regular: ₹${AmountFormatter.format(record.baseEarnings)}",
+                                    text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.regular_label, AmountFormatter.format(record.baseEarnings)),
                                     fontSize = 12.sp,
                                     color = onSurfaceVariantColor
                                 )
                             } else if (record.earnings > 0 && record.overtimeAmount > 0) {
                                 Text(
-                                    text = "Regular: ₹${AmountFormatter.format(record.baseEarnings)}",
+                                    text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.regular_label, AmountFormatter.format(record.baseEarnings)),
                                     fontSize = 12.sp,
                                     color = onSurfaceVariantColor
                                 )
                             }
                             if (record.overtimeAmount > 0 || record.overtimeHours > 0) {
                                 val otText = if (record.overtimeHours > 0) {
-                                    "Overtime: ₹${AmountFormatter.format(record.overtimeAmount)} (${record.overtimeHours}h)"
+                                    androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.overtime_label_hrs, AmountFormatter.format(record.overtimeAmount), record.overtimeHours)
                                 } else {
-                                    "Overtime: ₹${AmountFormatter.format(record.overtimeAmount)}"
+                                    androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.overtime_label, AmountFormatter.format(record.overtimeAmount))
                                 }
                                 Text(
                                     text = otText,

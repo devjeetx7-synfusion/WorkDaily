@@ -122,9 +122,9 @@ fun CropScreenContent(
             if (bitmap == null) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("Failed to load image", color = Color.White)
+                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.failed_to_load_image), color = Color.White)
                         Button(onClick = onCancel) {
-                            Text("Go Back")
+                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.go_back))
                         }
                     }
                 }
