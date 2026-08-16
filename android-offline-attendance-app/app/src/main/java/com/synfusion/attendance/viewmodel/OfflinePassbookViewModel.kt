@@ -134,7 +134,7 @@ class OfflinePassbookViewModel(
                     val personal = withContext(Dispatchers.IO) {
                         localAttendanceRepository.getPersonalAttendance()
                     }
-                    val filtered = personal.filter { it.date.startsWith(yearMonth) }
+                    val filtered = personal.filter { AttendanceCalculationEngine.isDateInMonth(it.date, yearMonth) }
                     calculatePassbook(filtered)
 
                     if (isRefreshing) {

@@ -98,7 +98,7 @@ class OfflineCalendarViewModel(
                 val personal = withContext(Dispatchers.IO) {
                     localAttendanceRepository.getPersonalAttendance()
                 }
-                val filtered = personal.filter { it.date.startsWith(monthPrefix) }
+                val filtered = personal.filter { com.synfusion.attendance.utils.AttendanceCalculationEngine.isDateInMonth(it.date, monthPrefix) }
                 val mappedRecords = filtered.map { rec ->
                     OfflineAttendanceRecord(
                         id = rec.id,

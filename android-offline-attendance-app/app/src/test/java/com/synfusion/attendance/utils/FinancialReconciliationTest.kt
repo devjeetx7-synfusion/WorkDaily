@@ -48,6 +48,59 @@ class FinancialReconciliationTest {
     }
 
     @Test
+    fun testRealWorldCoreRequirementScenario() {
+        // Test setup matching real-world scenario specified in prompt:
+        // July: 10 July 2026 -> Advance ₹2,500; 10 OT hours = ₹1,000 (at daily wage 800 -> hourly rate 100)
+        // August: 16 August 2026 -> Advance ₹200; 12 OT hours = ₹1,200
+        val testWage = 800.0 // 800/8 = 100 per OT hour
+
+        val records = listOf(
+            AttendanceEntity(id = "july_att", workerId = null, date = "2026-07-10", status = "present", type = "full", overtimeHours = 10, advanceAmount = 2500.0, wage = testWage),
+            AttendanceEntity(id = "aug_adv", workerId = null, date = "2026-08-16", status = "advance", type = "full", advanceAmount = 200.0, wage = testWage),
+            AttendanceEntity(id = "aug_att", workerId = null, date = "2026-08-16_att", status = "present", type = "full", overtimeHours = 12, wage = testWage)
+        )
+
+        val julyStats = AttendanceCalculationEngine.calculateStats(records, "2026-07", testWage)
+        val augStats = AttendanceCalculationEngine.calculateStats(records, "2026-08", testWage)
+
+        // July Monthly Checks
+        assertEquals(2500.0, julyStats.advanceTotal, 0.0001)
+        assertEquals(10, julyStats.overtime)
+        assertEquals(1800.0, julyStats.totalEarnings, 0.0001) // 800 base + 1000 OT
+
+        // August Monthly Checks
+        assertEquals(200.0, augStats.advanceTotal, 0.0001)
+        assertEquals(12, augStats.overtime)
+        assertEquals(2000.0, augStats.totalEarnings, 0.0001) // 800 base + 1200 OT
+
+        // All-Time Checks (Consistent across any month view selection)
+        assertEquals(2700.0, julyStats.allTimeAdvanceTotal, 0.0001)
+        assertEquals(22, julyStats.allTimeOvertime)
+        assertEquals(3800.0, julyStats.allTimeEarnings, 0.0001)
+        assertEquals(2, julyStats.allTimePresent)
+        assertEquals(0, julyStats.allTimeAbsent)
+        assertEquals(0, julyStats.allTimeHalfDays)
+
+        assertEquals(2700.0, augStats.allTimeAdvanceTotal, 0.0001)
+        assertEquals(22, augStats.allTimeOvertime)
+        assertEquals(3800.0, augStats.allTimeEarnings, 0.0001)
+        assertEquals(2, augStats.allTimePresent)
+        assertEquals(0, augStats.allTimeAbsent)
+        assertEquals(0, augStats.allTimeHalfDays)
+
+        // Summary vs Drill-Down Reconciliation Test for All-Time Advances
+        val drillDownAllTimeAdvRecords = records.filter { it.advanceAmount > 0 }
+        val drillDownAllTimeAdvSum = drillDownAllTimeAdvRecords.sumOf { it.advanceAmount }
+        assertEquals("Summary card All-Time advance must equal sum of drill-down records", augStats.allTimeAdvanceTotal, drillDownAllTimeAdvSum, 0.0001)
+
+        // Summary vs Drill-Down Reconciliation Test for August Monthly Advances
+        val (augStart, augEnd) = com.synfusion.attendance.data.DrillDownRepository.getMonthDateRange("2026-08")
+        val drillDownAugAdvRecords = records.filter { it.date >= augStart && it.date < augEnd && it.advanceAmount > 0 }
+        val drillDownAugAdvSum = drillDownAugAdvRecords.sumOf { it.advanceAmount }
+        assertEquals("Summary card August advance must equal sum of August drill-down records", augStats.advanceTotal, drillDownAugAdvSum, 0.0001)
+    }
+
+    @Test
     fun testAmountFormatterPrecision() {
         assertEquals("0", AmountFormatter.format(0.0))
         assertEquals("1", AmountFormatter.format(1.0))
