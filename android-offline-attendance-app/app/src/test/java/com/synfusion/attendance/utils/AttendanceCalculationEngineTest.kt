@@ -2,7 +2,9 @@ package com.synfusion.attendance.utils
 
 import com.synfusion.attendance.data.entities.AttendanceEntity
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class AttendanceCalculationEngineTest {
@@ -113,6 +115,54 @@ class AttendanceCalculationEngineTest {
         assertEquals(500.0, feb29Record.baseEarnings, 0.0001)
         assertEquals(125.0, feb29Record.overtimeAmount, 0.0001)
         assertEquals(2, feb29Record.overtimeHours)
+    }
+
+    @Test
+    fun testAdvanceRecordedOnPresentAndAdvanceStatuses() {
+        // Test case reflecting real bug case:
+        // 10 July 2026 -> ₹2,500 advance recorded on attendance record (status = "present")
+        // 16 August 2026 -> ₹200 advance recorded on separate advance record (status = "advance")
+        val records = listOf(
+            AttendanceEntity(id = "1", workerId = null, date = "2026-07-10", status = "present", type = "full", advanceAmount = 2500.0, wage = wage),
+            AttendanceEntity(id = "2", workerId = null, date = "2026-08-16", status = "advance", type = "full", advanceAmount = 200.0, wage = wage)
+        )
+
+        // July stats
+        val julyStats = AttendanceCalculationEngine.calculateStats(records, "2026-07", wage)
+        assertEquals(2500.0, julyStats.advanceTotal, 0.0001)
+
+        // August stats
+        val augStats = AttendanceCalculationEngine.calculateStats(records, "2026-08", wage)
+        assertEquals(200.0, augStats.advanceTotal, 0.0001)
+
+        // DrillDown date range testing for August 2026
+        val (augStart, augEnd) = com.synfusion.attendance.data.DrillDownRepository.getMonthDateRange("2026-08")
+        assertEquals("2026-08-01", augStart)
+        assertEquals("2026-09-01", augEnd)
+
+        // Filter August records using ISO range date >= augStart AND date < augEnd
+        val augRecords = records.filter { it.date >= augStart && it.date < augEnd }
+        assertEquals(1, augRecords.size)
+        assertEquals("2026-08-16", augRecords[0].date)
+        assertEquals(200.0, augRecords[0].advanceAmount, 0.0001)
+    }
+
+    @Test
+    fun testMonthDateRangeBoundaries() {
+        val (start, end) = com.synfusion.attendance.data.DrillDownRepository.getMonthDateRange("2026-08")
+        assertEquals("2026-08-01", start)
+        assertEquals("2026-09-01", end)
+
+        // Verify day 1, middle, and last day of month are included
+        val aug1 = "2026-08-01"
+        val aug16 = "2026-08-16"
+        val aug31 = "2026-08-31"
+        val sep1 = "2026-09-01"
+
+        assertTrue(aug1 >= start && aug1 < end)
+        assertTrue(aug16 >= start && aug16 < end)
+        assertTrue(aug31 >= start && aug31 < end)
+        assertFalse(sep1 >= start && sep1 < end)
     }
 
     @Test

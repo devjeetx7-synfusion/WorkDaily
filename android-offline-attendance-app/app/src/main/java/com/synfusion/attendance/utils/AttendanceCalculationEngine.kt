@@ -82,7 +82,8 @@ object AttendanceCalculationEngine {
                     currentOvertime = otHours
                     currentNote = OvertimeCalculator.cleanNote(noteStr)
                     todayEarnedBd = dailyEarnedBd
-                } else {
+                }
+                if (advanceAmtBd.compareTo(BigDecimal.ZERO) > 0) {
                     advanceTodayBd = advanceTodayBd.add(advanceAmtBd)
                 }
             }
@@ -184,7 +185,7 @@ object AttendanceCalculationEngine {
                     absent++
                 }
 
-                if (rec.status == "advance") {
+                if (advanceAmtBd.compareTo(BigDecimal.ZERO) > 0) {
                     advanceTotalBd = advanceTotalBd.add(advanceAmtBd)
                 }
 
@@ -305,7 +306,7 @@ object AttendanceCalculationEngine {
                 absent++
             }
 
-            if (status == "advance") {
+            if (advBd.compareTo(BigDecimal.ZERO) > 0) {
                 totalAdvBd = totalAdvBd.add(advBd)
             }
 

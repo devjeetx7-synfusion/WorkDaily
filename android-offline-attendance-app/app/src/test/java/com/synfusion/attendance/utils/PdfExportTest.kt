@@ -91,12 +91,12 @@ class PdfExportTest {
         assertEquals(1050.0, calc.totalEarnings, 0.0)
 
         // Verifying Advances:
-        // Day 4 has status == "advance", so 200.0.
-        // AttendanceCalculationEngine.calculatePassbook only sums dedicated status == "advance" records.
-        assertEquals(200.0, calc.totalAdv, 0.0)
+        // Day 1 has advanceAmount = 100.0 (present status) and Day 4 has advanceAmount = 200.0 (advance status).
+        // Total advance = 100.0 + 200.0 = 300.0.
+        assertEquals(300.0, calc.totalAdv, 0.0)
 
-        // Net Balance = 1050.0 - 200.0 = 850.0
-        assertEquals(850.0, calc.netBalance, 0.0)
+        // Net Balance = 1050.0 - 300.0 = 750.0
+        assertEquals(750.0, calc.netBalance, 0.0)
     }
 
     @Test
