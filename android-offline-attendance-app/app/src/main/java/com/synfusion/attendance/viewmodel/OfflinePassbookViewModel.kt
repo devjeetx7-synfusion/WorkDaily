@@ -49,6 +49,7 @@ data class OfflinePassbookState(
     val grossEarned: Double = 0.0,
     val totalAdvance: Double = 0.0,
     val finalBalance: Double = 0.0,
+    val settlement: com.synfusion.attendance.utils.FinancialSettlementResult? = null,
     val phone: String = "",
 
     val logs: List<OfflinePassbookLog> = emptyList(),
@@ -188,6 +189,7 @@ class OfflinePassbookViewModel(
                     grossEarned = calcResult.totalEarnings,
                     totalAdvance = calcResult.totalAdv,
                     finalBalance = calcResult.netBalance,
+                    settlement = calcResult.settlement,
                     logs = calcResult.logs,
                     isRefreshing = false,
                     errorMessage = null

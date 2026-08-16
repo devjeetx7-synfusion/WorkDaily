@@ -362,10 +362,45 @@ fun EmploymentSummarySection(state: com.synfusion.attendance.viewmodel.OfflineAl
                     HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.net_salary), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-                        Text("₹${AmountFormatter.format(state.totalNetEarnings)}", fontSize = 20.sp, fontWeight = FontWeight.Black, color = if (state.totalNetEarnings >= 0) com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent() else com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent())
+                    val settlement = state.settlement
+                    val settlementState = settlement?.settlementState ?: if (state.totalNetEarnings > 0) com.synfusion.attendance.utils.SettlementState.RECEIVE else if (state.totalNetEarnings < 0) com.synfusion.attendance.utils.SettlementState.PAY_BACK else com.synfusion.attendance.utils.SettlementState.SETTLED
+                    val statusColor = when (settlementState) {
+                        com.synfusion.attendance.utils.SettlementState.RECEIVE -> com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent()
+                        com.synfusion.attendance.utils.SettlementState.PAY_BACK -> com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent()
+                        com.synfusion.attendance.utils.SettlementState.SETTLED -> MaterialTheme.colorScheme.primary
                     }
+
+                    when (settlementState) {
+                        com.synfusion.attendance.utils.SettlementState.RECEIVE -> {
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                Text("Amount To Receive", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                Text("₹${AmountFormatter.format(settlement?.amountToReceive ?: state.totalNetEarnings)}", fontSize = 18.sp, fontWeight = FontWeight.Black, color = statusColor)
+                            }
+                        }
+                        com.synfusion.attendance.utils.SettlementState.PAY_BACK -> {
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                Text("Amount To Pay Back", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent())
+                                Text("₹${AmountFormatter.format(settlement?.amountToPayBack ?: kotlin.math.abs(state.totalNetEarnings))}", fontSize = 18.sp, fontWeight = FontWeight.Black, color = statusColor)
+                            }
+                        }
+                        com.synfusion.attendance.utils.SettlementState.SETTLED -> {
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                Text("Settlement Status", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                Text("SETTLED — ₹0 PENDING", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = statusColor)
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    val msg = settlement?.settlementMessage ?: if (state.totalNetEarnings > 0) "YOU WILL RECEIVE ₹${AmountFormatter.format(state.totalNetEarnings)}" else if (state.totalNetEarnings < 0) "YOU NEED TO PAY BACK ₹${AmountFormatter.format(kotlin.math.abs(state.totalNetEarnings))}" else "SETTLED — ₹0 PENDING"
+                    Text(
+                        text = msg,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = statusColor,
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
                 }
             }
         }
@@ -519,10 +554,45 @@ fun EmploymentSummarySection(state: com.synfusion.attendance.viewmodel.OfflineAl
                     HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.net_salary), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-                        Text("₹${AmountFormatter.format(state.totalNetEarnings)}", fontSize = 20.sp, fontWeight = FontWeight.Black, color = if (state.totalNetEarnings >= 0) com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent() else com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent())
+                    val settlement = state.settlement
+                    val settlementState = settlement?.settlementState ?: if (state.totalNetEarnings > 0) com.synfusion.attendance.utils.SettlementState.RECEIVE else if (state.totalNetEarnings < 0) com.synfusion.attendance.utils.SettlementState.PAY_BACK else com.synfusion.attendance.utils.SettlementState.SETTLED
+                    val statusColor = when (settlementState) {
+                        com.synfusion.attendance.utils.SettlementState.RECEIVE -> com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent()
+                        com.synfusion.attendance.utils.SettlementState.PAY_BACK -> com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent()
+                        com.synfusion.attendance.utils.SettlementState.SETTLED -> MaterialTheme.colorScheme.primary
                     }
+
+                    when (settlementState) {
+                        com.synfusion.attendance.utils.SettlementState.RECEIVE -> {
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                Text("Amount To Receive", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                Text("₹${AmountFormatter.format(settlement?.amountToReceive ?: state.totalNetEarnings)}", fontSize = 18.sp, fontWeight = FontWeight.Black, color = statusColor)
+                            }
+                        }
+                        com.synfusion.attendance.utils.SettlementState.PAY_BACK -> {
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                Text("Amount To Pay Back", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent())
+                                Text("₹${AmountFormatter.format(settlement?.amountToPayBack ?: kotlin.math.abs(state.totalNetEarnings))}", fontSize = 18.sp, fontWeight = FontWeight.Black, color = statusColor)
+                            }
+                        }
+                        com.synfusion.attendance.utils.SettlementState.SETTLED -> {
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                Text("Settlement Status", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                Text("SETTLED — ₹0 PENDING", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = statusColor)
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    val msg = settlement?.settlementMessage ?: if (state.totalNetEarnings > 0) "YOU WILL RECEIVE ₹${AmountFormatter.format(state.totalNetEarnings)}" else if (state.totalNetEarnings < 0) "YOU NEED TO PAY BACK ₹${AmountFormatter.format(kotlin.math.abs(state.totalNetEarnings))}" else "SETTLED — ₹0 PENDING"
+                    Text(
+                        text = msg,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = statusColor,
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
                 }
             }
         }

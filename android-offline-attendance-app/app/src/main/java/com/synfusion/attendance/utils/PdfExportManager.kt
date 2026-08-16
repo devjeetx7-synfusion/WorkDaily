@@ -138,6 +138,7 @@ class PdfExportManager(
                 netPayable = calcResult.netBalance,
                 periodStr = periodStr,
                 generatedAtStr = generatedAtStr,
+                settlement = calcResult.settlement,
                 logs = sortedLogsWithBalance
             )
 
