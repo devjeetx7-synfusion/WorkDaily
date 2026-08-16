@@ -54,6 +54,25 @@
     --phone-h: 600px;
   }
 
+  /* Dark Theme Variable Overrides */
+  [data-theme='dark'] {
+    --mint-light: rgba(15, 159, 122, 0.15);
+    --blue-light: rgba(37, 99, 235, 0.15);
+    --orange-light: rgba(234, 88, 12, 0.15);
+    --purple-light: rgba(124, 58, 237, 0.15);
+
+    --bg-light: #0B0F19;
+    --surface-light: #111827;
+    --text-primary: #F8FAFC;
+    --text-secondary: #94A3B8;
+    --text-muted: #64748B;
+    --border-light: #1E293B;
+    --card-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.4);
+    --hover-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.6);
+    --glass-bg: rgba(17, 24, 39, 0.85);
+    --glass-border: rgba(30, 41, 59, 0.8);
+  }
+
   @media (max-width: 480px) {
     :root {
       --phone-w: 280px;
@@ -294,7 +313,46 @@
   .header-actions {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 12px;
+  }
+
+  /* Segmented Controls for Language & Theme */
+  .wd-segmented-control {
+    display: inline-flex;
+    align-items: center;
+    background-color: var(--bg-card, #F1F5F9);
+    border: 1px solid var(--border-color, #E2E8F0);
+    border-radius: 99px;
+    padding: 3px;
+    gap: 2px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .wd-segmented-btn {
+    border: none;
+    background: transparent;
+    color: var(--text-secondary, #64748B);
+    padding: 5px 12px;
+    border-radius: 99px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .wd-segmented-btn:hover {
+    color: var(--text-primary, #0F172A);
+  }
+
+  .wd-segmented-btn.active {
+    background-color: var(--mint-primary, #0F9F7A);
+    color: #FFFFFF;
+    box-shadow: 0 2px 6px rgba(15, 159, 122, 0.25);
   }
 
   /* Hamburger / Mobile Nav Button */
@@ -696,6 +754,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    user-select: none;
+    touch-action: manipulation;
   }
 
   .custom-video-element {
@@ -705,6 +765,102 @@
     display: block;
   }
 
+  /* Tap Zones for Touch & Double Tap */
+  .video-tap-zones {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    z-index: 5;
+  }
+
+  .video-tap-zone {
+    height: 100%;
+    cursor: pointer;
+  }
+
+  .video-tap-zone-left {
+    width: 35%;
+  }
+
+  .video-tap-zone-center {
+    width: 30%;
+  }
+
+  .video-tap-zone-right {
+    width: 35%;
+  }
+
+  /* Centered Play / Pause Button Overlay */
+  .video-center-play-btn {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(1);
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: rgba(15, 23, 42, 0.75);
+    backdrop-filter: blur(8px);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    color: #FFFFFF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 12;
+    transition: transform 0.2s ease, background-color 0.2s ease, opacity 0.25s ease;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    pointer-events: auto;
+  }
+
+  .video-center-play-btn:hover {
+    transform: translate(-50%, -50%) scale(1.1);
+    background: rgba(15, 159, 122, 0.9);
+    border-color: #FFFFFF;
+  }
+
+  .custom-video-wrapper.playing:not(:hover):not(:focus-within) .video-center-play-btn {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* Double-Tap Seeking Feedback Overlay */
+  .video-seek-feedback {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%) scale(0.8);
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #FFFFFF;
+    padding: 10px 18px;
+    border-radius: 99px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    font-weight: 700;
+    pointer-events: none;
+    opacity: 0;
+    z-index: 15;
+    transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  .video-seek-feedback-left {
+    left: 10%;
+  }
+
+  .video-seek-feedback-right {
+    right: 10%;
+  }
+
+  .video-seek-feedback.active {
+    opacity: 1;
+    transform: translateY(-50%) scale(1);
+  }
+
+  /* Bottom Controls Bar */
   .custom-player-controls {
     position: absolute;
     bottom: 0;
@@ -722,26 +878,42 @@
 
   .custom-video-wrapper:hover .custom-player-controls,
   .custom-video-wrapper:focus-within .custom-player-controls,
-  .custom-player-controls.active {
+  .custom-player-controls.active,
+  .custom-video-wrapper:not(.playing) .custom-player-controls {
     opacity: 1;
   }
 
-  .custom-player-progress-bar {
+  /* Thick Bold Seekbar */
+  .custom-seekbar-container {
     width: 100%;
-    height: 6px;
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 3px;
+    height: 12px;
+    display: flex;
+    align-items: center;
     cursor: pointer;
     position: relative;
-    overflow: hidden;
+    padding: 2px 0;
   }
 
-  .custom-player-progress-filled {
+  .custom-seekbar-track {
+    width: 100%;
+    height: 8px;
+    background-color: rgba(255, 255, 255, 0.25);
+    border-radius: 99px;
+    position: relative;
+    overflow: hidden;
+    transition: height 0.15s ease;
+  }
+
+  .custom-seekbar-container:hover .custom-seekbar-track {
+    height: 10px;
+  }
+
+  .custom-seekbar-progress {
     height: 100%;
     width: 0%;
-    background: var(--mint-primary);
-    border-radius: 3px;
-    transition: width 0.1s linear;
+    background: linear-gradient(90deg, var(--mint-primary, #0F9F7A), #2563EB);
+    border-radius: 99px;
+    transition: width 0.05s linear;
   }
 
   .custom-player-row {
@@ -755,7 +927,7 @@
   .custom-player-btn-group {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 12px;
   }
 
   .custom-player-btn {
@@ -2171,16 +2343,32 @@
 
         <nav>
           <ul class='nav-menu' id='navMenu'>
-            <li><a class='nav-link active' href='#'>Home</a></li>
-            <li><a class='nav-link' href='#about'>What is WorkDaily</a></li>
-            <li><a class='nav-link' href='#how-it-works'>How It Works</a></li>
-            <li><a class='nav-link' href='#showcase'>App Showcase</a></li>
-            <li><a class='nav-link' href='#offline'>Why Offline</a></li>
-            <li><a class='nav-link' href='#download'>Download</a></li>
+            <li><a class='nav-link active' data-i18n='navHome' href='#'>Home</a></li>
+            <li><a class='nav-link' data-i18n='navAbout' href='#about'>What is WorkDaily</a></li>
+            <li><a class='nav-link' data-i18n='navHow' href='#how-it-works'>How It Works</a></li>
+            <li><a class='nav-link' data-i18n='navShowcase' href='#showcase'>App Showcase</a></li>
+            <li><a class='nav-link' data-i18n='navOffline' href='#offline'>Why Offline</a></li>
+            <li><a class='nav-link' data-i18n='navDownload' href='#download'>Download</a></li>
           </ul>
         </nav>
 
         <div class='header-actions'>
+          <!-- Theme Appearance Selector -->
+          <div class='wd-segmented-control wd-theme-control' role='group' aria-label='Appearance Selector'>
+            <button class='wd-segmented-btn wd-theme-btn active' data-theme-val='light' aria-label='Light Mode'>
+              <svg style='width:14px;height:14px;fill:currentColor;' viewBox='0 0 24 24'><path d='M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58c-.39-.39-1.03-.39-1.41 0s-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37c-.39-.39-1.03-.39-1.41 0s-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41l-1.06-1.06zm1.06-10.96c.39-.39.39-1.03 0-1.41s-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.36c.39-.39.39-1.03 0-1.41s-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z'/></svg>
+            </button>
+            <button class='wd-segmented-btn wd-theme-btn' data-theme-val='dark' aria-label='Dark Mode'>
+              <svg style='width:14px;height:14px;fill:currentColor;' viewBox='0 0 24 24'><path d='M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4C12.92 3.04 12.46 3 12 3z'/></svg>
+            </button>
+          </div>
+
+          <!-- Language Selector -->
+          <div class='wd-segmented-control wd-lang-control' role='group' aria-label='Language Selector'>
+            <button class='wd-segmented-btn wd-lang-btn active' data-lang='en' aria-label='English'>EN</button>
+            <button class='wd-segmented-btn wd-lang-btn' data-lang='hi' aria-label='Hindi'>हिन्दी</button>
+          </div>
+
           <a class='btn btn-primary' href='#download' style='padding: 10px 20px; font-size: 14px;'>Get App</a>
           <button aria-label='Toggle Navigation' class='menu-toggle' id='menuToggle'>
             <span></span>
@@ -2318,14 +2506,14 @@
     <section class='preview-section' id='showcase'>
       <div class='showcase-container'>
         <div style='text-align:center;display:flex;flex-direction:column;align-items:center;margin-bottom:48px;'>
-          <span class='section-tag'>WORKDAILY APP SHOWCASE</span>
-          <h2 class='section-title' style='text-align:center;'>WorkDaily App Showcase</h2>
-          <p class='section-subtitle' style='text-align:center;margin-bottom:24px;'>Explore the app screen by screen.</p>
+          <span class='section-tag' data-i18n='showcaseTag'>WORKDAILY APP SHOWCASE</span>
+          <h2 class='section-title' data-i18n='showcaseTitle' style='text-align:center;'>WorkDaily App Showcase</h2>
+          <p class='section-subtitle' data-i18n='showcaseSubtitle' style='text-align:center;margin-bottom:24px;'>Explore the app screen by screen.</p>
           <a class='btn btn-primary' href='#download' style='box-shadow: 0 10px 25px -5px rgba(15, 159, 122, 0.4);'>
             <svg style='width:20px;height:20px;fill:currentColor;margin-right:8px;' viewBox='0 0 24 24'>
               <path d='M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z'/>
             </svg>
-            Download WorkDaily
+            <span data-i18n='downloadBtn'>Download WorkDaily</span>
           </a>
         </div>
 
@@ -2335,18 +2523,15 @@
             <div class='showcase-text-col' id='showcaseDynamicInfo'>
               <div style='display:inline-flex; align-items:center; gap:8px; margin-bottom:12px;'>
                 <span class='section-tag' id='showcaseSlideNum' style='margin:0;'>1 / 8</span>
-                <span id='showcaseSlideCategory' style='font-size:12px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.05em;'>FEATURE PREVIEW</span>
               </div>
               <h3 id='showcaseSlideTitle' style='font-size:32px; font-weight:800; margin-bottom:12px; color:var(--text-primary);'>Main Dashboard</h3>
               <p id='showcaseSlideDesc' style='font-size:18px; color:var(--mint-primary); font-weight:600; margin-bottom:20px;'>Your day at a glance</p>
 
-              <div id='showcaseSlideChips' style='display:flex; flex-wrap:wrap; gap:8px; margin-bottom:32px;'>
+              <div id='showcaseSlideChips' style='display:flex; flex-wrap:wrap; gap:8px; margin-bottom:0;'>
                 <span style='background:var(--mint-light); color:var(--mint-primary); font-size:13px; font-weight:600; padding:6px 14px; border-radius:99px;'>Daily Summary</span>
                 <span style='background:var(--blue-light); color:var(--blue-secondary); font-size:13px; font-weight:600; padding:6px 14px; border-radius:99px;'>Quick Entry</span>
                 <span style='background:var(--orange-light); color:var(--orange-tertiary); font-size:13px; font-weight:600; padding:6px 14px; border-radius:99px;'>Wage Total</span>
               </div>
-
-              <a class='btn btn-primary' href='#download'>Download App</a>
             </div>
 
             <!-- Single Carousel Phone Screen -->
@@ -2554,29 +2739,47 @@
               <video class='custom-video-element' poster='https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&amp;fit=crop&amp;w=600&amp;q=80' preload='metadata'>
                 <source src='https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4' type='video/mp4'/>
               </video>
+
+              <!-- Touch / Tap Zones -->
+              <div class='video-tap-zones'>
+                <div class='video-tap-zone video-tap-zone-left' data-zone='left'></div>
+                <div class='video-tap-zone video-tap-zone-center' data-zone='center'></div>
+                <div class='video-tap-zone video-tap-zone-right' data-zone='right'></div>
+              </div>
+
+              <!-- Center Play/Pause Overlay Button -->
+              <button class='video-center-play-btn' aria-label='Play / Pause Video'>
+                <svg class='icon-play' style='width:24px;height:24px;fill:currentColor;margin-left:2px;' viewBox='0 0 24 24'><path d='M8 5v14l11-7z'/></svg>
+                <svg class='icon-pause' style='width:24px;height:24px;fill:currentColor;display:none;' viewBox='0 0 24 24'><path d='M6 19h4V5H6v14zm8-14v14h4V5h-4z'/></svg>
+              </button>
+
+              <!-- Double Tap Feedback Overlays -->
+              <div class='video-seek-feedback video-seek-feedback-left'>
+                <svg style='width:20px;height:20px;fill:currentColor;' viewBox='0 0 24 24'><path d='M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z'/></svg>
+                <span>-10s</span>
+              </div>
+              <div class='video-seek-feedback video-seek-feedback-right'>
+                <svg style='width:20px;height:20px;fill:currentColor;' viewBox='0 0 24 24'><path d='M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z'/></svg>
+                <span>+10s</span>
+              </div>
+
+              <!-- Bottom Controls -->
               <div class='custom-player-controls'>
-                <div class='custom-player-progress-bar' role='progressbar' aria-valuemin='0' aria-valuemax='100' aria-valuenow='0'>
-                  <div class='custom-player-progress-filled'></div>
+                <div class='custom-seekbar-container' role='slider' aria-label='Seek Bar' aria-valuemin='0' aria-valuemax='100' aria-valuenow='0' tabindex='0'>
+                  <div class='custom-seekbar-track'>
+                    <div class='custom-seekbar-progress'></div>
+                  </div>
                 </div>
                 <div class='custom-player-row'>
-                  <div class='custom-player-btn-group'>
-                    <button class='custom-player-btn btn-play-pause' aria-label='Play'>
-                      <svg style='width:18px;height:18px;fill:currentColor;' viewBox='0 0 24 24'><path d='M8 5v14l11-7z'/></svg>
-                    </button>
-                    <button class='custom-player-btn btn-rewind' aria-label='Rewind 10 seconds' title='-10s'>
-                      <svg style='width:18px;height:18px;fill:currentColor;' viewBox='0 0 24 24'><path d='M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z'/></svg>
-                    </button>
-                    <button class='custom-player-btn btn-forward' aria-label='Forward 10 seconds' title='+10s'>
-                      <svg style='width:18px;height:18px;fill:currentColor;' viewBox='0 0 24 24'><path d='M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z'/></svg>
-                    </button>
-                  </div>
                   <div class='custom-player-time'><span class='time-current'>0:00</span> / <span class='time-duration'>0:00</span></div>
                   <div class='custom-player-btn-group'>
                     <button class='custom-player-btn btn-mute' aria-label='Mute'>
-                      <svg style='width:18px;height:18px;fill:currentColor;' viewBox='0 0 24 24'><path d='M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z'/></svg>
+                      <svg class='icon-volume' style='width:20px;height:20px;fill:currentColor;' viewBox='0 0 24 24'><path d='M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z'/></svg>
+                      <svg class='icon-muted' style='width:20px;height:20px;fill:currentColor;display:none;' viewBox='0 0 24 24'><path d='M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z'/></svg>
                     </button>
                     <button class='custom-player-btn btn-fullscreen' aria-label='Fullscreen'>
-                      <svg style='width:18px;height:18px;fill:currentColor;' viewBox='0 0 24 24'><path d='M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z'/></svg>
+                      <svg class='icon-fullscreen-enter' style='width:20px;height:20px;fill:currentColor;' viewBox='0 0 24 24'><path d='M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z'/></svg>
+                      <svg class='icon-fullscreen-exit' style='width:20px;height:20px;fill:currentColor;display:none;' viewBox='0 0 24 24'><path d='M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z'/></svg>
                     </button>
                   </div>
                 </div>
@@ -2607,29 +2810,47 @@
               <video class='custom-video-element' poster='https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&amp;fit=crop&amp;w=600&amp;q=80' preload='metadata'>
                 <source src='https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4' type='video/mp4'/>
               </video>
+
+              <!-- Touch / Tap Zones -->
+              <div class='video-tap-zones'>
+                <div class='video-tap-zone video-tap-zone-left' data-zone='left'></div>
+                <div class='video-tap-zone video-tap-zone-center' data-zone='center'></div>
+                <div class='video-tap-zone video-tap-zone-right' data-zone='right'></div>
+              </div>
+
+              <!-- Center Play/Pause Overlay Button -->
+              <button class='video-center-play-btn' aria-label='Play / Pause Video'>
+                <svg class='icon-play' style='width:24px;height:24px;fill:currentColor;margin-left:2px;' viewBox='0 0 24 24'><path d='M8 5v14l11-7z'/></svg>
+                <svg class='icon-pause' style='width:24px;height:24px;fill:currentColor;display:none;' viewBox='0 0 24 24'><path d='M6 19h4V5H6v14zm8-14v14h4V5h-4z'/></svg>
+              </button>
+
+              <!-- Double Tap Feedback Overlays -->
+              <div class='video-seek-feedback video-seek-feedback-left'>
+                <svg style='width:20px;height:20px;fill:currentColor;' viewBox='0 0 24 24'><path d='M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z'/></svg>
+                <span>-10s</span>
+              </div>
+              <div class='video-seek-feedback video-seek-feedback-right'>
+                <svg style='width:20px;height:20px;fill:currentColor;' viewBox='0 0 24 24'><path d='M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z'/></svg>
+                <span>+10s</span>
+              </div>
+
+              <!-- Bottom Controls -->
               <div class='custom-player-controls'>
-                <div class='custom-player-progress-bar' role='progressbar' aria-valuemin='0' aria-valuemax='100' aria-valuenow='0'>
-                  <div class='custom-player-progress-filled'></div>
+                <div class='custom-seekbar-container' role='slider' aria-label='Seek Bar' aria-valuemin='0' aria-valuemax='100' aria-valuenow='0' tabindex='0'>
+                  <div class='custom-seekbar-track'>
+                    <div class='custom-seekbar-progress'></div>
+                  </div>
                 </div>
                 <div class='custom-player-row'>
-                  <div class='custom-player-btn-group'>
-                    <button class='custom-player-btn btn-play-pause' aria-label='Play'>
-                      <svg style='width:18px;height:18px;fill:currentColor;' viewBox='0 0 24 24'><path d='M8 5v14l11-7z'/></svg>
-                    </button>
-                    <button class='custom-player-btn btn-rewind' aria-label='Rewind 10 seconds' title='-10s'>
-                      <svg style='width:18px;height:18px;fill:currentColor;' viewBox='0 0 24 24'><path d='M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z'/></svg>
-                    </button>
-                    <button class='custom-player-btn btn-forward' aria-label='Forward 10 seconds' title='+10s'>
-                      <svg style='width:18px;height:18px;fill:currentColor;' viewBox='0 0 24 24'><path d='M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z'/></svg>
-                    </button>
-                  </div>
                   <div class='custom-player-time'><span class='time-current'>0:00</span> / <span class='time-duration'>0:00</span></div>
                   <div class='custom-player-btn-group'>
                     <button class='custom-player-btn btn-mute' aria-label='Mute'>
-                      <svg style='width:18px;height:18px;fill:currentColor;' viewBox='0 0 24 24'><path d='M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z'/></svg>
+                      <svg class='icon-volume' style='width:20px;height:20px;fill:currentColor;' viewBox='0 0 24 24'><path d='M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z'/></svg>
+                      <svg class='icon-muted' style='width:20px;height:20px;fill:currentColor;display:none;' viewBox='0 0 24 24'><path d='M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z'/></svg>
                     </button>
                     <button class='custom-player-btn btn-fullscreen' aria-label='Fullscreen'>
-                      <svg style='width:18px;height:18px;fill:currentColor;' viewBox='0 0 24 24'><path d='M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z'/></svg>
+                      <svg class='icon-fullscreen-enter' style='width:20px;height:20px;fill:currentColor;' viewBox='0 0 24 24'><path d='M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z'/></svg>
+                      <svg class='icon-fullscreen-exit' style='width:20px;height:20px;fill:currentColor;display:none;' viewBox='0 0 24 24'><path d='M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z'/></svg>
                     </button>
                   </div>
                 </div>
@@ -2908,7 +3129,7 @@
       })();
 
 
-      // Custom WorkDaily Video Player Initialization & Keyboard Controls
+      // Custom WorkDaily Video Player Initialization & Double-Tap Logic
       (function setupCustomVideoPlayers() {
         const wrappers = document.querySelectorAll('.custom-video-wrapper');
         if (!wrappers.length) return;
@@ -2922,15 +3143,15 @@
 
         wrappers.forEach(function(wrapper) {
           const video = wrapper.querySelector('.custom-video-element');
-          const btnPlayPause = wrapper.querySelector('.btn-play-pause');
-          const btnRewind = wrapper.querySelector('.btn-rewind');
-          const btnForward = wrapper.querySelector('.btn-forward');
+          const centerPlayBtn = wrapper.querySelector('.video-center-play-btn');
           const btnMute = wrapper.querySelector('.btn-mute');
           const btnFullscreen = wrapper.querySelector('.btn-fullscreen');
-          const progressBar = wrapper.querySelector('.custom-player-progress-bar');
-          const progressFilled = wrapper.querySelector('.custom-player-progress-filled');
+          const seekbarContainer = wrapper.querySelector('.custom-seekbar-container');
+          const seekbarProgress = wrapper.querySelector('.custom-seekbar-progress');
           const timeCurrent = wrapper.querySelector('.time-current');
           const timeDuration = wrapper.querySelector('.time-duration');
+          const feedbackLeft = wrapper.querySelector('.video-seek-feedback-left');
+          const feedbackRight = wrapper.querySelector('.video-seek-feedback-right');
 
           if (!video) return;
 
@@ -2942,46 +3163,118 @@
             }
           }
 
-          function updatePlayButton() {
-            if (!btnPlayPause) return;
+          function updatePlayUI() {
+            const iconPlay = centerPlayBtn ? centerPlayBtn.querySelector('.icon-play') : null;
+            const iconPause = centerPlayBtn ? centerPlayBtn.querySelector('.icon-pause') : null;
+
             if (video.paused || video.ended) {
-              btnPlayPause.innerHTML = "<svg style='width:18px;height:18px;fill:currentColor;' viewBox='0 0 24 24'><path d='M8 5v14l11-7z'/></svg>";
-              btnPlayPause.setAttribute('aria-label', 'Play');
+              wrapper.classList.remove('playing');
+              if (iconPlay) iconPlay.style.display = 'block';
+              if (iconPause) iconPause.style.display = 'none';
+              if (centerPlayBtn) centerPlayBtn.setAttribute('aria-label', 'Play Video');
             } else {
-              btnPlayPause.innerHTML = "<svg style='width:18px;height:18px;fill:currentColor;' viewBox='0 0 24 24'><path d='M6 19h4V5H6v14zm8-14v14h4V5h-4z'/></svg>";
-              btnPlayPause.setAttribute('aria-label', 'Pause');
+              wrapper.classList.add('playing');
+              if (iconPlay) iconPlay.style.display = 'none';
+              if (iconPause) iconPause.style.display = 'block';
+              if (centerPlayBtn) centerPlayBtn.setAttribute('aria-label', 'Pause Video');
             }
           }
 
-          function updateMuteButton() {
+          function updateMuteUI() {
             if (!btnMute) return;
+            const iconVol = btnMute.querySelector('.icon-volume');
+            const iconMuted = btnMute.querySelector('.icon-muted');
             if (video.muted) {
-              btnMute.innerHTML = "<svg style='width:18px;height:18px;fill:currentColor;' viewBox='0 0 24 24'><path d='M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z'/></svg>";
+              if (iconVol) iconVol.style.display = 'none';
+              if (iconMuted) iconMuted.style.display = 'block';
               btnMute.setAttribute('aria-label', 'Unmute');
             } else {
-              btnMute.innerHTML = "<svg style='width:18px;height:18px;fill:currentColor;' viewBox='0 0 24 24'><path d='M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z'/></svg>";
+              if (iconVol) iconVol.style.display = 'block';
+              if (iconMuted) iconMuted.style.display = 'none';
               btnMute.setAttribute('aria-label', 'Mute');
             }
           }
 
-          if (btnPlayPause) btnPlayPause.addEventListener('click', togglePlay);
-          if (btnRewind) btnRewind.addEventListener('click', function() { video.currentTime = Math.max(0, video.currentTime - 10); });
-          if (btnForward) btnForward.addEventListener('click', function() { video.currentTime = Math.min(video.duration || 0, video.currentTime + 10); });
-          if (btnMute) btnMute.addEventListener('click', function() { video.muted = !video.muted; updateMuteButton(); });
+          function showFeedback(element) {
+            if (!element) return;
+            element.classList.add('active');
+            setTimeout(function() {
+              element.classList.remove('active');
+            }, 600);
+          }
 
+          // Center Button Action
+          if (centerPlayBtn) {
+            centerPlayBtn.addEventListener('click', function(e) {
+              e.stopPropagation();
+              togglePlay();
+            });
+          }
+
+          // Double Tap & Single Tap Zone Gesture Handler
+          let lastTapTime = 0;
+          let tapTimer = null;
+
+          const tapZones = wrapper.querySelectorAll('.video-tap-zone');
+          tapZones.forEach(function(zone) {
+            zone.addEventListener('click', function(e) {
+              const currentTime = new Date().getTime();
+              const tapLength = currentTime - lastTapTime;
+              const zoneType = this.getAttribute('data-zone');
+
+              if (tapLength < 250 && tapLength > 0) {
+                // Double Tap Detected
+                clearTimeout(tapTimer);
+                if (zoneType === 'left') {
+                  video.currentTime = Math.max(0, video.currentTime - 10);
+                  showFeedback(feedbackLeft);
+                } else if (zoneType === 'right') {
+                  video.currentTime = Math.min(video.duration || 0, video.currentTime + 10);
+                  showFeedback(feedbackRight);
+                } else {
+                  togglePlay();
+                }
+              } else {
+                // Single Tap Candidate
+                tapTimer = setTimeout(function() {
+                  togglePlay();
+                }, 250);
+              }
+              lastTapTime = currentTime;
+            });
+          });
+
+          // Mute Button Listener
+          if (btnMute) {
+            btnMute.addEventListener('click', function(e) {
+              e.stopPropagation();
+              video.muted = !video.muted;
+              updateMuteUI();
+            });
+          }
+
+          // Fullscreen Toggle
           if (btnFullscreen) {
-            btnFullscreen.addEventListener('click', function() {
+            btnFullscreen.addEventListener('click', function(e) {
+              e.stopPropagation();
+              const iconEnter = btnFullscreen.querySelector('.icon-fullscreen-enter');
+              const iconExit = btnFullscreen.querySelector('.icon-fullscreen-exit');
+
               if (!document.fullscreenElement) {
                 if (wrapper.requestFullscreen) wrapper.requestFullscreen();
                 else if (video.requestFullscreen) video.requestFullscreen();
+                if (iconEnter) iconEnter.style.display = 'none';
+                if (iconExit) iconExit.style.display = 'block';
               } else {
                 if (document.exitFullscreen) document.exitFullscreen();
+                if (iconEnter) iconEnter.style.display = 'block';
+                if (iconExit) iconExit.style.display = 'none';
               }
             });
           }
 
-          video.addEventListener('play', updatePlayButton);
-          video.addEventListener('pause', updatePlayButton);
+          video.addEventListener('play', updatePlayUI);
+          video.addEventListener('pause', updatePlayUI);
           video.addEventListener('loadedmetadata', function() {
             if (timeDuration) timeDuration.textContent = formatTime(video.duration);
           });
@@ -2989,49 +3282,61 @@
           video.addEventListener('timeupdate', function() {
             if (video.duration) {
               const pct = (video.currentTime / video.duration) * 100;
-              if (progressFilled) progressFilled.style.width = pct + '%';
-              if (progressBar) progressBar.setAttribute('aria-valuenow', Math.round(pct));
+              if (seekbarProgress) seekbarProgress.style.width = pct + '%';
+              if (seekbarContainer) seekbarContainer.setAttribute('aria-valuenow', Math.round(pct));
               if (timeCurrent) timeCurrent.textContent = formatTime(video.currentTime);
             }
           });
 
-          if (progressBar) {
-            progressBar.addEventListener('click', function(e) {
-              const rect = progressBar.getBoundingClientRect();
-              const pos = (e.clientX - rect.left) / rect.width;
+          // Custom Seekbar Drag & Click
+          if (seekbarContainer) {
+            let isDragging = false;
+
+            function seek(e) {
+              const rect = seekbarContainer.getBoundingClientRect();
+              const pos = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
               if (video.duration) {
                 video.currentTime = pos * video.duration;
               }
+            }
+
+            seekbarContainer.addEventListener('mousedown', function(e) {
+              isDragging = true;
+              seek(e);
+            });
+
+            window.addEventListener('mousemove', function(e) {
+              if (isDragging) seek(e);
+            });
+
+            window.addEventListener('mouseup', function() {
+              isDragging = false;
             });
           }
 
-          // Keyboard Support when wrapper or video is focused
+          // Keyboard Support
           wrapper.addEventListener('keydown', function(e) {
             const tag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
-            if (tag === 'input' || tag === 'textarea' || document.activeElement.isContentEditable) return;
+            if (tag === 'input' || tag === 'textarea' || (document.activeElement && document.activeElement.isContentEditable)) return;
 
-            switch(e.code) {
-              case 'Space':
-                e.preventDefault();
-                togglePlay();
-                break;
-              case 'ArrowLeft':
-                e.preventDefault();
-                video.currentTime = Math.max(0, video.currentTime - 10);
-                break;
-              case 'ArrowRight':
-                e.preventDefault();
-                video.currentTime = Math.min(video.duration || 0, video.currentTime + 10);
-                break;
-              case 'KeyM':
-                e.preventDefault();
-                video.muted = !video.muted;
-                updateMuteButton();
-                break;
-              case 'KeyF':
-                e.preventDefault();
-                if (btnFullscreen) btnFullscreen.click();
-                break;
+            if (e.key === ' ' || e.key === 'k' || e.key === 'K') {
+              e.preventDefault();
+              togglePlay();
+            } else if (e.key === 'ArrowLeft') {
+              e.preventDefault();
+              video.currentTime = Math.max(0, video.currentTime - 10);
+              showFeedback(feedbackLeft);
+            } else if (e.key === 'ArrowRight') {
+              e.preventDefault();
+              video.currentTime = Math.min(video.duration || 0, video.currentTime + 10);
+              showFeedback(feedbackRight);
+            } else if (e.key === 'm' || e.key === 'M') {
+              e.preventDefault();
+              video.muted = !video.muted;
+              updateMuteUI();
+            } else if (e.key === 'f' || e.key === 'F') {
+              e.preventDefault();
+              if (btnFullscreen) btnFullscreen.click();
             }
           });
         });
@@ -3243,6 +3548,123 @@
         carousel.setAttribute('tabindex', '0');
       });
     });
+
+    /* LANGUAGE SELECTOR & TRANSLATION SYSTEM */
+    (function() {
+      const translations = {
+        en: {
+          navHome: "Home",
+          navAbout: "What is WorkDaily",
+          navHow: "How It Works",
+          navShowcase: "App Showcase",
+          navOffline: "Why Offline",
+          navDownload: "Download",
+          getApp: "Get App",
+          showcaseTag: "WORKDAILY APP SHOWCASE",
+          showcaseTitle: "WorkDaily App Showcase",
+          showcaseSubtitle: "Explore the app screen by screen.",
+          downloadBtn: "Download WorkDaily",
+          feedbackTag: "REAL FEEDBACK",
+          feedbackTitle: "Real Feedback. Real Experience.",
+          feedbackSubtitle: "Hear directly from workers, site supervisors, and daily wage earners using WorkDaily.",
+          offlineTag: "OFFLINE FIRST",
+          offlineTitle: "Why Offline?",
+          offlineSubtitle: "Your attendance records shouldn't depend on an internet connection or external servers."
+        },
+        hi: {
+          navHome: "होम",
+          navAbout: "वर्कडेली क्या है",
+          navHow: "यह कैसे काम करता है",
+          navShowcase: "ऐप झलकियां",
+          navOffline: "ऑफलाइन क्यों",
+          navDownload: "डाउनलोड",
+          getApp: "ऐप पाएं",
+          showcaseTag: "वर्कडेली ऐप झलकियां",
+          showcaseTitle: "वर्कडेली ऐप झलकियां",
+          showcaseSubtitle: "ऐप को स्क्रीन दर स्क्रीन देखें।",
+          downloadBtn: "वर्कडेली डाउनलोड करें",
+          feedbackTag: "असली अनुभव",
+          feedbackTitle: "असली फीडबैक। असली अनुभव।",
+          feedbackSubtitle: "वर्कडेली का उपयोग करने वाले कामगारों और सुपरवाइजरों से सीधे सुनें।",
+          offlineTag: "ऑफलाइन प्रथम",
+          offlineTitle: "ऑफलाइन ही क्यों?",
+          offlineSubtitle: "आपके हाजिरी रिकॉर्ड इंटरनेट कनेक्शन या बाहरी सर्वर पर निर्भर नहीं होने चाहिए।"
+        }
+      };
+
+      function setLanguage(lang) {
+        if (!translations[lang]) return;
+        localStorage.setItem('wd_lang', lang);
+        document.documentElement.setAttribute('lang', lang);
+
+        document.querySelectorAll('.wd-lang-btn').forEach(btn => {
+          if (btn.getAttribute('data-lang') === lang) {
+            btn.classList.add('active');
+          } else {
+            btn.classList.remove('active');
+          }
+        });
+
+        const t = translations[lang];
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+          const key = el.getAttribute('data-i18n');
+          if (t[key]) {
+            el.innerText = t[key];
+          }
+        });
+      }
+
+      document.addEventListener('DOMContentLoaded', function() {
+        const savedLang = localStorage.getItem('wd_lang') || 'en';
+        setLanguage(savedLang);
+
+        document.querySelectorAll('.wd-lang-btn').forEach(btn => {
+          btn.addEventListener('click', function() {
+            const lang = this.getAttribute('data-lang');
+            setLanguage(lang);
+          });
+        });
+      });
+    })();
+
+    /* LIGHT / DARK MODE SYSTEM */
+    (function() {
+      function setTheme(theme) {
+        if (theme === 'dark') {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        } else {
+          document.documentElement.removeAttribute('data-theme');
+        }
+        localStorage.setItem('wd_theme', theme);
+
+        document.querySelectorAll('.wd-theme-btn').forEach(btn => {
+          if (btn.getAttribute('data-theme-val') === theme) {
+            btn.classList.add('active');
+          } else {
+            btn.classList.remove('active');
+          }
+        });
+      }
+
+      // Initial theme setup
+      const savedTheme = localStorage.getItem('wd_theme');
+      if (savedTheme) {
+        setTheme(savedTheme);
+      } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        setTheme('dark');
+      } else {
+        setTheme('light');
+      }
+
+      document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.wd-theme-btn').forEach(btn => {
+          btn.addEventListener('click', function() {
+            const val = this.getAttribute('data-theme-val');
+            setTheme(val);
+          });
+        });
+      });
+    })();
     //]]>
   </script>
 
