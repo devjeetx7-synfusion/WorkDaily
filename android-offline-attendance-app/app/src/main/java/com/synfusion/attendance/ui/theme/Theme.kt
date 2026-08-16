@@ -58,6 +58,10 @@ fun DailyWorkTheme(
             window.statusBarColor = transparentColor
             window.navigationBarColor = transparentColor
 
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                window.isNavigationBarContrastEnforced = false
+            }
+
             val insetsController = WindowCompat.getInsetsController(window, view)
             insetsController.isAppearanceLightStatusBars = !darkTheme
             insetsController.isAppearanceLightNavigationBars = !darkTheme

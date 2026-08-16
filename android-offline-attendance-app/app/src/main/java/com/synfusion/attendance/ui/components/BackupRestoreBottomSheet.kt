@@ -25,10 +25,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.synfusion.attendance.R
 import com.synfusion.attendance.backup.BackupManager
 import com.synfusion.attendance.backup.BackupManifest
 import com.synfusion.attendance.backup.ProgressTracker
@@ -110,7 +112,7 @@ fun BackupRestoreBottomSheet(
                     }
                 }
             } else {
-                Toast.makeText(context, "Backup cancelled by user", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.cancel), Toast.LENGTH_SHORT).show()
             }
         }
     )
@@ -137,14 +139,14 @@ fun BackupRestoreBottomSheet(
                             restoreFileToApply = tempFile
                         } else {
                             tempFile.delete()
-                            Toast.makeText(context, "Invalid or corrupt backup package", Toast.LENGTH_LONG).show()
+                            Toast.makeText(context, context.getString(R.string.invalid_corrupt_backup), Toast.LENGTH_LONG).show()
                         }
                     } catch (e: Exception) {
-                        Toast.makeText(context, "Failed to load backup: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                        Toast.makeText(context, context.getString(R.string.failed_to_load_backup, e.localizedMessage ?: ""), Toast.LENGTH_LONG).show()
                     }
                 }
             } else {
-                Toast.makeText(context, "Restore selection cancelled", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.restore_selection_cancelled), Toast.LENGTH_SHORT).show()
             }
         }
     )
@@ -194,13 +196,13 @@ fun BackupRestoreBottomSheet(
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
                     Text(
-                        text = "Backup & Restore",
+                        text = stringResource(R.string.backup_and_restore_title),
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground
                     )
                     Text(
-                        text = "Export and secure your application state",
+                        text = stringResource(R.string.backup_subtitle),
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -229,7 +231,7 @@ fun BackupRestoreBottomSheet(
                         textAlign = TextAlign.Center
                     )
                     Text(
-                        text = "Please do not close or exit the app during this process.",
+                        text = stringResource(R.string.backup_dont_close_msg),
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
@@ -262,17 +264,17 @@ fun BackupRestoreBottomSheet(
                     }
 
                     Text(
-                        text = if (isSuccess) "Success!" else "Failed!",
+                        text = if (isSuccess) stringResource(R.string.success_exclamation) else stringResource(R.string.failed_exclamation),
                         fontSize = 22.sp,
                         fontWeight = FontWeight.Bold
                     )
 
                     Text(
                         text = if (isSuccess) {
-                            if (operationType == "BACKUP") "Your application state backup has been generated and saved securely."
-                            else "Your data has been completely restored."
+                            if (operationType == "BACKUP") stringResource(R.string.backup_generated_success_msg)
+                            else stringResource(R.string.restore_data_success_msg)
                         } else {
-                            errorMessage ?: "An unexpected error occurred during the process."
+                            errorMessage ?: stringResource(R.string.unexpected_error_occurred)
                         },
                         fontSize = 14.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -320,7 +322,7 @@ fun BackupRestoreBottomSheet(
                         modifier = Modifier.fillMaxWidth().height(50.dp),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text(if (isSuccess && operationType == "RESTORE") "Restart App" else "Done", fontWeight = FontWeight.Bold)
+                            Text(if (isSuccess && operationType == "RESTORE") stringResource(R.string.restart_app) else stringResource(R.string.done), fontWeight = FontWeight.Bold)
                     }
                 }
             } else if (restorePreview != null) {
@@ -331,7 +333,7 @@ fun BackupRestoreBottomSheet(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Text(
-                        text = "Backup Package Preview",
+                        text = stringResource(R.string.backup_package_preview),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
@@ -345,17 +347,17 @@ fun BackupRestoreBottomSheet(
                             modifier = Modifier.padding(16.dp),
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            PreviewItem(label = "Backup Date", value = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault()).format(Date(preview.backupDate)))
-                            PreviewItem(label = "Device Info", value = preview.deviceModel)
-                            PreviewItem(label = "App Version", value = preview.appVersion)
-                            PreviewItem(label = "Database Version", value = "v${preview.databaseVersion}")
-                            PreviewItem(label = "Total Records", value = preview.recordCounts.map { "${it.key}: ${it.value}" }.joinToString(", "))
-                            PreviewItem(label = "Backup File Size", value = "${String.format("%.2f", preview.backupSize / 1024.0 / 1024.0)} MB")
+                            PreviewItem(label = stringResource(R.string.last_backup), value = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault()).format(Date(preview.backupDate)))
+                            PreviewItem(label = stringResource(R.string.device_info_line, "").removePrefix("• ").removeSuffix(": "), value = preview.deviceModel)
+                            PreviewItem(label = stringResource(R.string.app_version_line, "").removePrefix("• ").removeSuffix(": "), value = preview.appVersion)
+                            PreviewItem(label = stringResource(R.string.attendance_database), value = "v${preview.databaseVersion}")
+                            PreviewItem(label = stringResource(R.string.all_records_drilldown), value = preview.recordCounts.map { "${it.key}: ${it.value}" }.joinToString(", "))
+                            PreviewItem(label = stringResource(R.string.backup_size), value = "${String.format("%.2f", preview.backupSize / 1024.0 / 1024.0)} MB")
                         }
                     }
 
                     Text(
-                        text = "Restore Mode",
+                        text = stringResource(R.string.restore_mode),
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -414,7 +416,7 @@ fun BackupRestoreBottomSheet(
                             modifier = Modifier.weight(1f).height(50.dp),
                             shape = RoundedCornerShape(12.dp)
                         ) {
-                            Text("Cancel")
+                            Text(stringResource(R.string.cancel))
                         }
 
                         Button(
@@ -431,14 +433,14 @@ fun BackupRestoreBottomSheet(
                                         restoreSummaryReport = report
                                         operationSuccess = report != null
                                         if (report == null) {
-                                            errorMessage = "Restore verification or execution failed."
+                                            errorMessage = context.getString(R.string.restore_failed_msg)
                                             isOperating = false
                                         } else {
                                             restoreManager.triggerCleanRestart()
                                         }
                                         file.delete()
                                     } else {
-                                        errorMessage = "Internal file resolution error."
+                                        errorMessage = context.getString(R.string.internal_file_error)
                                         operationSuccess = false
                                         isOperating = false
                                     }
@@ -448,7 +450,7 @@ fun BackupRestoreBottomSheet(
                             shape = RoundedCornerShape(12.dp),
                             enabled = !isOperating
                         ) {
-                            Text("Start Restore", fontWeight = FontWeight.Bold)
+                            Text(stringResource(R.string.start_restore), fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -459,8 +461,8 @@ fun BackupRestoreBottomSheet(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     BackupOptionCard(
-                        title = "Create New Backup",
-                        subtitle = "Saves your entire application state (profile, attendance database, settings, images) into a ZIP file.",
+                        title = stringResource(R.string.create_new_backup),
+                        subtitle = stringResource(R.string.create_new_backup_subtitle),
                         icon = Icons.Default.CloudUpload,
                         onClick = {
                             createBackupLauncher.launch("AttendanceBackup_${SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())}.zip")
@@ -468,8 +470,8 @@ fun BackupRestoreBottomSheet(
                     )
 
                     BackupOptionCard(
-                        title = "Restore from Backup",
-                        subtitle = "Import and parse standard Backup packages with atomic validations and rollbacks on failure.",
+                        title = stringResource(R.string.restore_from_backup),
+                        subtitle = stringResource(R.string.restore_from_backup_subtitle),
                         icon = Icons.Default.CloudDownload,
                         onClick = {
                             pickRestoreLauncher.launch(arrayOf("application/zip"))

@@ -504,4 +504,55 @@
     <string name="overtime_desc">अपने ओवरटाइम के घंटे और पैसे आसानी से मैनेज करें।</string>
     <string name="advance_title">एडवांस</string>
     <string name="advance_desc">लिए गए एडवांस पैसे दर्ज करें और फाइनल हिसाब में से अपने आप कटवाएं।</string>
+
+    <!-- Additional Localized Audit Strings -->
+    <string name="empty_passbook_pdf_msg">पासबुक में अभी कोई डेटा नहीं है। पहले कोई रिकॉर्ड जोड़ो।</string>
+    <string name="backup_and_restore_title">बैकअप और रिस्टोर</string>
+    <string name="backup_subtitle">अपने डेटा का सेफ बैकअप बनाएं और सुरक्षित रखें</string>
+    <string name="backup_dont_close_msg">इस प्रोसेस के दौरान ऐप बंद या एग्जिट न करें।</string>
+    <string name="success_exclamation">सफल रहा!</string>
+    <string name="failed_exclamation">नाकाम रहा!</string>
+    <string name="backup_generated_success_msg">आपके ऐप डेटा का बैकअप बन गया है और सुरक्षित सेव हो गया है।</string>
+    <string name="restore_data_success_msg">आपका डेटा पूरी तरह रिस्टोर हो गया है।</string>
+    <string name="unexpected_error_occurred">इस प्रोसेस के दौरान कोई दिक्कत आ गई।</string>
+    <string name="backup_package_preview">बैकअप पैकेज का प्रिव्यू</string>
+    <string name="restore_mode">रिस्टोर करने का तरीका</string>
+    <string name="start_restore">रिस्टोर शुरू करें</string>
+    <string name="create_new_backup">नया बैकअप बनाएं</string>
+    <string name="create_new_backup_subtitle">आपका पूरा ऐप डेटा (प्रोफाइल, हाजिरी डेटाबेस, सेटिंग्स, फोटो) एक ZIP फाइल में सेव करता है।</string>
+    <string name="restore_from_backup">बैकअप से रिस्टोर करें</string>
+    <string name="restore_from_backup_subtitle">बैकअप पैकेज इंपोर्ट करें और अपने पुराने रिकॉर्ड्स वापस लाएं।</string>
+
+    <string name="sort_oldest_first">पुराना पहले</string>
+    <string name="sort_newest_first">नया पहले</string>
+    <string name="no_advance_records_title">एडवांस का कोई रिकॉर्ड नहीं</string>
+    <string name="no_advance_records_desc">इस समय के लिए कोई एडवांस पेमेंट दर्ज नहीं की गई है।</string>
+    <string name="no_overtime_records_title">ओवरटाइम का कोई रिकॉर्ड नहीं</string>
+    <string name="no_overtime_records_desc">इस समय के लिए कोई ओवरटाइम दर्ज नहीं किया गया है।</string>
+    <string name="no_attendance_records_title">हाजिरी का कोई रिकॉर्ड नहीं</string>
+    <string name="no_attendance_records_desc">इस समय के लिए इस स्टेटस का कोई हाजिरी रिकॉर्ड नहीं मिला।</string>
+    <string name="no_attendance_for_date_title">इस तारीख की कोई हाजिरी नहीं</string>
+    <string name="no_attendance_for_date_desc">इस तारीख के लिए कोई हाजिरी या काम दर्ज नहीं किया गया है।</string>
+    <string name="no_records_yet_title">अभी कोई रिकॉर्ड नहीं है</string>
+    <string name="no_records_yet_desc">इस सेक्शन में अभी कोई रिकॉर्ड दर्ज नहीं है।</string>
+
+    <string name="tab_monthly">मंथली</string>
+    <string name="tab_all_time">ऑल-टाइम</string>
+
+    <string name="crop_photo">फोटो क्रॉप करें</string>
+    <string name="processing_dots">प्रोसेसिंग...</string>
+    <string name="failed_to_crop_image">फोटो क्रॉप नहीं हो पाई</string>
+
+    <string name="legend">संकेत</string>
+
+    <string name="pdf_amount_to_receive">कुल मिलने वाली राशि</string>
+    <string name="pdf_amount_to_pay_back">कुल वापस देने वाली राशि</string>
+    <string name="pdf_month_summary_strip">कमाई: %1$s  |  दिहाड़ी: %2$s  |  ओवरटाइम: %3$s  |  एडवांस: %4$s  |  प्रेजेंट: %5$d  |  हाफ: %6$d  |  एब्सेंट: %7$d</string>
+
+    <string name="invalid_corrupt_backup">बैकअप पैकेज सही नहीं है या खराब है</string>
+    <string name="failed_to_load_backup">बैकअप लोड नहीं हो पाया: %1$s</string>
+    <string name="restore_selection_cancelled">रिस्टोर कैंसिल कर दिया गया</string>
+    <string name="restore_failed_msg">रिस्टोर वेरिफिकेशन या प्रोसेस फेल हो गया।</string>
+    <string name="internal_file_error">इंटरनल फाइल एरर आई।</string>
+    <string name="unable_to_open_settings">सेटिंग्स नहीं खुल पाई</string>
 </resources>

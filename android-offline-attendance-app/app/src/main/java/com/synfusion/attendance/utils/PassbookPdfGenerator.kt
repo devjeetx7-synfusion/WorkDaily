@@ -385,9 +385,9 @@ object PassbookPdfGenerator {
         val settlementMsg = data.settlement?.settlementMessage ?: if (data.netPayable > 0) "YOU WILL RECEIVE ₹${AmountFormatter.format(data.netPayable)}" else if (data.netPayable < 0) "YOU NEED TO PAY BACK ₹${AmountFormatter.format(kotlin.math.abs(data.netPayable))}" else "SETTLED — ₹0 PENDING"
 
         val settlementLabel = when (data.settlement?.settlementState) {
-            SettlementState.PAY_BACK -> "Amount To Pay Back"
-            SettlementState.RECEIVE -> "Amount To Receive"
-            else -> if (data.netPayable < 0) "Amount To Pay Back" else "Amount To Receive"
+            SettlementState.PAY_BACK -> context.getString(R.string.pdf_amount_to_pay_back)
+            SettlementState.RECEIVE -> context.getString(R.string.pdf_amount_to_receive)
+            else -> if (data.netPayable < 0) context.getString(R.string.pdf_amount_to_pay_back) else context.getString(R.string.pdf_amount_to_receive)
         }
 
         val settlementVal = when (data.settlement?.settlementState) {
@@ -618,7 +618,16 @@ object PassbookPdfGenerator {
                 renderContext.yPos += 18f
 
                 // Monthly Summary bar
-                val mSumStr = "Earn: $rsStr${AmountFormatter.format(monthGroup.totalEarnings)}  |  Sal: $rsStr${AmountFormatter.format(monthGroup.totalSalary)}  |  OT: $rsStr${AmountFormatter.format(monthGroup.totalOvertime)}  |  Adv: $rsStr${AmountFormatter.format(monthGroup.totalAdvance)}  |  P: ${monthGroup.presentCount}  |  H: ${monthGroup.halfCount}  |  A: ${monthGroup.absentCount}"
+                val mSumStr = context.getString(
+                    R.string.pdf_month_summary_strip,
+                    "$rsStr${AmountFormatter.format(monthGroup.totalEarnings)}",
+                    "$rsStr${AmountFormatter.format(monthGroup.totalSalary)}",
+                    "$rsStr${AmountFormatter.format(monthGroup.totalOvertime)}",
+                    "$rsStr${AmountFormatter.format(monthGroup.totalAdvance)}",
+                    monthGroup.presentCount,
+                    monthGroup.halfCount,
+                    monthGroup.absentCount
+                )
                 drawMonthlySummaryStrip(renderContext, mSumStr)
 
                 // Table Headers

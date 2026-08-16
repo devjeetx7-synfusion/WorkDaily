@@ -762,7 +762,7 @@ fun GettingStartedIllustration() {
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
         ) {
             Row(modifier = Modifier.padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text("Daily Wage", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.daily_wage), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text("₹ 500", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
             }
         }
@@ -783,9 +783,9 @@ fun AttendanceIllustration() {
     )
 
     val options = listOf(
-        Pair("Present", Color(0xFF4CAF50)),
-        Pair("Half Day", Color(0xFFFF9800)),
-        Pair("Absent", Color(0xFFF44336))
+        Pair(stringResource(R.string.present_1), Color(0xFF4CAF50)),
+        Pair(stringResource(R.string.half_day), Color(0xFFFF9800)),
+        Pair(stringResource(R.string.absent_1), Color(0xFFF44336))
     )
 
     Row(
@@ -830,7 +830,7 @@ fun EarningsIllustration() {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Text("Total Earnings", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(stringResource(R.string.gross_earned), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(
             text = "₹ ${value.toInt()}",
             style = MaterialTheme.typography.headlineSmall,
@@ -867,7 +867,7 @@ fun OvertimeIllustration() {
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Default.AccessTime, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-            Text("2 Hours OT", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+            Text("2 " + stringResource(R.string.overtime_hours), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
         }
         Text(
             text = "+ ₹ ${value.toInt()}",
@@ -897,7 +897,7 @@ fun AdvanceIllustration() {
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Default.AccountBalanceWallet, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-            Text("Advance Taken", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.advance), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
         }
         Text(
             text = "- ₹ ${value.toInt()}",
@@ -970,7 +970,7 @@ fun PassbookIllustration() {
                 Row(modifier = Modifier.padding(12.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Column {
                         Text(if (i==0) "15 Oct" else "14 Oct", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
-                        Text(if (i==0) "Present" else "Half Day", style = MaterialTheme.typography.labelSmall, color = if(i==0) Color(0xFF4CAF50) else Color(0xFFFF9800))
+                        Text(if (i==0) stringResource(R.string.present_1) else stringResource(R.string.half_day), style = MaterialTheme.typography.labelSmall, color = if(i==0) Color(0xFF4CAF50) else Color(0xFFFF9800))
                     }
                     Text(if (i==0) "₹ 500" else "₹ 250", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                 }

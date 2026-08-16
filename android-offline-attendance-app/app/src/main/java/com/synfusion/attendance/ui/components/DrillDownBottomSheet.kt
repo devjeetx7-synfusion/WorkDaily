@@ -19,9 +19,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.synfusion.attendance.R
 import com.synfusion.attendance.utils.AmountFormatter
 import com.synfusion.attendance.viewmodel.OfflinePassbookLog
 
@@ -122,7 +124,7 @@ fun DrillDownBottomSheet(
                     horizontalArrangement = Arrangement.End
                 ) {
                     TextButton(onClick = { sortAscending = !sortAscending }) {
-                        Text(if (sortAscending) "Sort: Oldest First" else "Sort: Newest First")
+                        Text(if (sortAscending) stringResource(R.string.sort_oldest_first) else stringResource(R.string.sort_newest_first))
                     }
                 }
 
@@ -206,40 +208,40 @@ fun ContextualEmptyState(title: String) {
             EmptyStateDetails(
                 Icons.Default.AccountBalanceWallet,
                 MaterialTheme.colorScheme.primary,
-                "No Advance Records",
-                "You haven\'t logged any advance payments for this period."
+                stringResource(R.string.no_advance_records_title),
+                stringResource(R.string.no_advance_records_desc)
             )
         }
         lowerTitle.contains("overtime") -> {
             EmptyStateDetails(
                 Icons.Default.Schedule,
                 MaterialTheme.colorScheme.secondary,
-                "No Overtime Records",
-                "No overtime hours have been logged for this period."
+                stringResource(R.string.no_overtime_records_title),
+                stringResource(R.string.no_overtime_records_desc)
             )
         }
         lowerTitle.contains("present") || lowerTitle.contains("absent") || lowerTitle.contains("half") || lowerTitle.contains("attendance") -> {
             EmptyStateDetails(
                 Icons.Default.DateRange,
                 MaterialTheme.colorScheme.tertiary,
-                "No Attendance Records",
-                "No attendance records match this status for this period."
+                stringResource(R.string.no_attendance_records_title),
+                stringResource(R.string.no_attendance_records_desc)
             )
         }
         lowerTitle.contains("date") -> {
             EmptyStateDetails(
                 Icons.Default.Today,
                 MaterialTheme.colorScheme.primary,
-                "No Attendance for This Date",
-                "There are no attendance or work logs recorded for this specific date."
+                stringResource(R.string.no_attendance_for_date_title),
+                stringResource(R.string.no_attendance_for_date_desc)
             )
         }
         else -> { // earnings / default
             EmptyStateDetails(
                 Icons.Default.History,
                 MaterialTheme.colorScheme.primary,
-                "No Records Yet",
-                "There are no records logged in this section yet."
+                stringResource(R.string.no_records_yet_title),
+                stringResource(R.string.no_records_yet_desc)
             )
         }
     }

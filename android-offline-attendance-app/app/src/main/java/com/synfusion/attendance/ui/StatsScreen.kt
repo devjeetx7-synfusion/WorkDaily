@@ -113,7 +113,9 @@ fun StatsScreen(
     val state by viewModel.statsState.collectAsStateWithLifecycle(initialValue = OfflineStatsState(isLoading = true))
 
     var selectedTabIndex by remember { mutableStateOf(0) }
-    val tabs = listOf("Monthly", "All-Time")
+    val tabMonthly = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.tab_monthly)
+    val tabAllTime = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.tab_all_time)
+    val tabs = listOf(tabMonthly, tabAllTime)
 
     val pullRefreshState = rememberPullToRefreshState()
     LaunchedEffect(pullRefreshState.isRefreshing) {

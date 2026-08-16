@@ -217,18 +217,18 @@ fun LoginScreen(
                                         operationSuccess = true
                                         restoreManager.triggerCleanRestart()
                                     } else {
-                                        errorMessage = "Failed to restore backup database."
+                                        errorMessage = context.getString(com.synfusion.attendance.R.string.restore_failed_msg)
                                         operationSuccess = false
                                         isOperating = false
                                     }
                                     file.delete()
                                 } else {
-                                    errorMessage = "Internal backup file error."
+                                    errorMessage = context.getString(com.synfusion.attendance.R.string.internal_file_error)
                                     operationSuccess = false
                                     isOperating = false
                                 }
                             } catch (e: Exception) {
-                                errorMessage = e.localizedMessage ?: "Restore process failed."
+                                errorMessage = e.localizedMessage ?: context.getString(com.synfusion.attendance.R.string.restore_failed_msg)
                                 operationSuccess = false
                                 isOperating = false
                             }
@@ -314,10 +314,10 @@ fun LoginScreen(
         AlertDialog(
             onDismissRequest = { operationSuccess = null },
             title = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.restore_failed), fontWeight = FontWeight.Bold) },
-            text = { Text(errorMessage ?: "An unexpected error occurred during the restore.") },
+            text = { Text(errorMessage ?: androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.unexpected_error_occurred)) },
             confirmButton = {
                 Button(onClick = { operationSuccess = null }) {
-                    Text("OK")
+                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.close))
                 }
             }
         )
