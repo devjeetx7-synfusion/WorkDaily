@@ -47,12 +47,24 @@ import com.synfusion.attendance.ui.components.DrillDownBottomSheet
 import com.synfusion.attendance.utils.collectAsStateWithLifecycle
 import com.synfusion.attendance.ui.responsive.LocalWindowSizeInfo
 import com.synfusion.attendance.ui.responsive.ResponsiveContainer
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.platform.LocalDensity
 import java.text.SimpleDateFormat
+import java.util.Locale
+import kotlin.math.abs
+import kotlin.math.ceil
+import kotlin.math.floor
+import kotlin.math.log10
+import kotlin.math.pow
+import kotlin.math.roundToInt
+import kotlinx.coroutines.launch
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import java.util.Locale
 
 @Composable
 fun AnimatedCounter(targetValue: Int, prefix: String = "", suffix: String = "") {
@@ -675,6 +687,57 @@ fun PersonalStatsView(
     }
 }
 
+data class ChartNiceScale(
+    val maxVal: Double,
+    val ticks: List<Double>
+)
+
+fun calculateNiceScale(maxDataValue: Double): ChartNiceScale {
+    if (maxDataValue <= 0.0) {
+        return ChartNiceScale(
+            maxVal = 500.0,
+            ticks = listOf(500.0, 375.0, 250.0, 125.0, 0.0)
+        )
+    }
+
+    val maxTicks = 4
+    val rawInterval = maxDataValue / maxTicks
+    val magnitude = 10.0.pow(floor(log10(rawInterval)))
+    val residual = rawInterval / magnitude
+
+    val niceInterval = when {
+        residual <= 1.0 -> 1.0 * magnitude
+        residual <= 2.0 -> 2.0 * magnitude
+        residual <= 2.5 -> 2.5 * magnitude
+        residual <= 5.0 -> 5.0 * magnitude
+        else -> 10.0 * magnitude
+    }
+
+    var niceMax = ceil(maxDataValue / niceInterval) * niceInterval
+    if (niceMax <= maxDataValue) {
+        niceMax += niceInterval
+    }
+
+    val ticks = mutableListOf<Double>()
+    var curr = niceMax
+    while (curr >= -0.0001) {
+        ticks.add(curr.coerceAtLeast(0.0))
+        curr -= niceInterval
+    }
+
+    return ChartNiceScale(maxVal = niceMax, ticks = ticks)
+}
+
+fun formatYAxisLabel(value: Double): String {
+    if (value == 0.0) return "₹0"
+    return if (value >= 1000) {
+        val kVal = value / 1000.0
+        if (kVal % 1.0 == 0.0) "₹${kVal.toInt()}K" else "₹${"%.1f".format(Locale.US, kVal)}K"
+    } else {
+        "₹${value.toInt()}"
+    }
+}
+
 @Composable
 fun EarningsLineChart(
     dailyRecords: List<OfflineDailyRecord>,
@@ -707,23 +770,28 @@ fun EarningsLineChart(
     }
 
     val maxEarning = remember(dailyRecords) { dailyRecords.maxOfOrNull { it.earnings } ?: 0.0 }
-    val maxChartVal = remember(maxEarning) {
-        if (maxEarning == 0.0) 100.0 else maxEarning * 1.2
-    }
+    val niceScale = remember(maxEarning) { calculateNiceScale(maxEarning) }
 
     var selectedIndex by remember(dailyRecords) { mutableStateOf<Int?>(null) }
+    if (selectedIndex != null && selectedIndex!! >= dailyRecords.size) {
+        selectedIndex = if (dailyRecords.isNotEmpty()) dailyRecords.size - 1 else null
+    }
 
     val animationProgress by animateFloatAsState(
         targetValue = 1f,
-        animationSpec = tween(1200),
+        animationSpec = tween(1000),
         label = "chartAnim"
     )
 
     val primaryColor = MaterialTheme.colorScheme.primary
-    val outlineColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+    val outlineColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)
     val labelTextColor = MaterialTheme.colorScheme.onSurfaceVariant
     val surfaceVariantColor = MaterialTheme.colorScheme.surfaceVariant
     val onSurfaceVariantColor = MaterialTheme.colorScheme.onSurfaceVariant
+
+    val scrollState = rememberScrollState()
+    val coroutineScope = rememberCoroutineScope()
+    val density = LocalDensity.current
 
     // Date Formatters
     val inSdf = remember { SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()) }
@@ -748,11 +816,11 @@ fun EarningsLineChart(
         }
     }
 
-    val pointWidthDp = if (dailyRecords.size > 31) 36.dp else if (dailyRecords.size > 15) 28.dp else 40.dp
+    val pointWidthDp = 44.dp
     val minChartWidthDp = pointWidthDp * dailyRecords.size.coerceAtLeast(1)
 
     Column(modifier = Modifier.fillMaxWidth()) {
-        // Selected Data Point Tooltip Card
+        // Selected Data Point Compact Tooltip Card
         selectedIndex?.let { idx ->
             if (idx in dailyRecords.indices) {
                 val record = dailyRecords[idx]
@@ -792,15 +860,22 @@ fun EarningsLineChart(
                         Spacer(modifier = Modifier.height(4.dp))
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Column {
+                            Text(
+                                text = "Earning: ₹${AmountFormatter.format(record.earnings)}",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = primaryColor
+                            )
+                            if (record.baseEarnings > 0 && record.baseEarnings != record.earnings) {
                                 Text(
-                                    text = "Earning: ₹${AmountFormatter.format(record.earnings)}",
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = primaryColor
+                                    text = "Regular: ₹${AmountFormatter.format(record.baseEarnings)}",
+                                    fontSize = 12.sp,
+                                    color = onSurfaceVariantColor
                                 )
+                            } else if (record.earnings > 0 && record.overtimeAmount > 0) {
                                 Text(
                                     text = "Regular: ₹${AmountFormatter.format(record.baseEarnings)}",
                                     fontSize = 12.sp,
@@ -808,21 +883,17 @@ fun EarningsLineChart(
                                 )
                             }
                             if (record.overtimeAmount > 0 || record.overtimeHours > 0) {
-                                Column {
-                                    Text(
-                                        text = "Overtime: ₹${AmountFormatter.format(record.overtimeAmount)}",
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = onSurfaceVariantColor
-                                    )
-                                    if (record.overtimeHours > 0) {
-                                        Text(
-                                            text = "${record.overtimeHours} hrs OT",
-                                            fontSize = 12.sp,
-                                            color = onSurfaceVariantColor
-                                        )
-                                    }
+                                val otText = if (record.overtimeHours > 0) {
+                                    "Overtime: ₹${AmountFormatter.format(record.overtimeAmount)} (${record.overtimeHours}h)"
+                                } else {
+                                    "Overtime: ₹${AmountFormatter.format(record.overtimeAmount)}"
                                 }
+                                Text(
+                                    text = otText,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = onSurfaceVariantColor
+                                )
                             }
                         }
                     }
@@ -830,155 +901,236 @@ fun EarningsLineChart(
             }
         }
 
-        Row(modifier = Modifier.fillMaxWidth().height(200.dp)) {
-            // Y-Axis Labels
+        Row(modifier = Modifier.fillMaxWidth().height(220.dp)) {
+            // Dynamic Nice Scale Y-Axis Labels
             Column(
                 modifier = Modifier
-                    .width(44.dp)
+                    .width(48.dp)
                     .fillMaxHeight()
-                    .padding(vertical = 16.dp),
+                    .padding(top = 20.dp, bottom = 30.dp),
                 verticalArrangement = Arrangement.SpaceBetween,
                 horizontalAlignment = Alignment.End
             ) {
-                val y1 = maxChartVal
-                val y2 = maxChartVal * 0.66
-                val y3 = maxChartVal * 0.33
-                val y4 = 0.0
-
-                Text(text = "₹${y1.toInt()}", fontSize = 9.sp, color = labelTextColor, maxLines = 1)
-                Text(text = "₹${y2.toInt()}", fontSize = 9.sp, color = labelTextColor, maxLines = 1)
-                Text(text = "₹${y3.toInt()}", fontSize = 9.sp, color = labelTextColor, maxLines = 1)
-                Text(text = "₹${y4.toInt()}", fontSize = 9.sp, color = labelTextColor, maxLines = 1)
+                niceScale.ticks.forEach { tickVal ->
+                    Text(
+                        text = formatYAxisLabel(tickVal),
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = labelTextColor,
+                        maxLines = 1
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.width(6.dp))
 
             // Scrollable Chart Canvas area
-            Box(
+            BoxWithConstraints(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight()
-                    .horizontalScroll(rememberScrollState())
             ) {
-                Box(
-                    modifier = Modifier
-                        .widthIn(min = minChartWidthDp)
-                        .fillMaxHeight()
-                ) {
-                    Canvas(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .pointerInput(dailyRecords) {
-                                detectTapGestures { offset ->
-                                    val topPadding = 20.dp.toPx()
-                                    val bottomPadding = 30.dp.toPx()
-                                    val chartHeight = size.height - topPadding - bottomPadding
+                val viewportWidthPx = with(density) { maxWidth.toPx() }
+                val minChartWidthPx = with(density) { minChartWidthDp.toPx() }
+                val chartWidthPx = maxOf(viewportWidthPx, minChartWidthPx)
+                val chartWidthDp = with(density) { chartWidthPx.toDp() }
 
-                                    val count = dailyRecords.size
-                                    val spacing = if (count > 1) size.width / (count - 1) else size.width
-                                    val index = if (count > 1) {
-                                        (offset.x / spacing).toInt().coerceIn(0, count - 1)
-                                    } else 0
-                                    selectedIndex = index
+                val count = dailyRecords.size
+                val spacing = if (count > 1) chartWidthPx / (count - 1) else chartWidthPx / 2f
+
+                // Auto-scroll logic when selectedIndex changes
+                LaunchedEffect(selectedIndex, dailyRecords) {
+                    selectedIndex?.let { idx ->
+                        if (idx in dailyRecords.indices) {
+                            val targetX = if (count > 1) idx * spacing else chartWidthPx / 2f
+                            val maxScroll = scrollState.maxValue
+                            if (maxScroll > 0) {
+                                val targetScroll = (targetX - viewportWidthPx / 2f).roundToInt().coerceIn(0, maxScroll)
+                                coroutineScope.launch {
+                                    scrollState.animateScrollTo(targetScroll)
                                 }
-                            }
-                    ) {
-                        val width = size.width
-                        val height = size.height
-                        val topPadding = 20.dp.toPx()
-                        val bottomPadding = 30.dp.toPx()
-                        val usableHeight = height - topPadding - bottomPadding
-
-                        val count = dailyRecords.size
-                        val spacing = if (count > 1) width / (count - 1) else width / 2f
-
-                        // Draw background horizontal grid lines
-                        val gridLines = listOf(0f, 0.33f, 0.66f, 1f)
-                        gridLines.forEach { ratio ->
-                            val gridY = topPadding + usableHeight * (1f - ratio)
-                            drawLine(
-                                color = outlineColor,
-                                start = Offset(0f, gridY),
-                                end = Offset(width, gridY),
-                                strokeWidth = 1.dp.toPx()
-                            )
-                        }
-
-                        val points = mutableListOf<Offset>()
-                        dailyRecords.forEachIndexed { index, record ->
-                            val x = if (count > 1) index * spacing else width / 2f
-                            val ratio = (record.earnings / maxChartVal).coerceIn(0.0, 1.0).toFloat()
-                            val y = topPadding + usableHeight * (1f - ratio)
-                            points.add(Offset(x, y))
-                        }
-
-                        // Path calculation
-                        if (points.isNotEmpty()) {
-                            val path = Path()
-                            points.forEachIndexed { idx, pt ->
-                                if (idx == 0) path.moveTo(pt.x, pt.y) else path.lineTo(pt.x, pt.y)
-                            }
-
-                            val animPath = Path()
-                            val pathMeasure = android.graphics.PathMeasure(path.asAndroidPath(), false)
-                            val length = pathMeasure.length
-                            val dst = android.graphics.Path()
-                            pathMeasure.getSegment(0f, length * animationProgress, dst, true)
-                            animPath.addPath(dst.asComposePath())
-
-                            drawPath(
-                                path = animPath,
-                                color = primaryColor,
-                                style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
-                            )
-
-                            val visiblePointsCount = (points.size * animationProgress).toInt().coerceIn(0, points.size)
-                            for (i in 0 until visiblePointsCount) {
-                                val pt = points[i]
-                                val isSelected = selectedIndex == i
-
-                                drawCircle(
-                                    color = if (isSelected) primaryColor else primaryColor.copy(alpha = 0.9f),
-                                    radius = if (isSelected) 7.dp.toPx() else 4.dp.toPx(),
-                                    center = pt
-                                )
-                                drawCircle(
-                                    color = androidx.compose.ui.graphics.Color.White,
-                                    radius = if (isSelected) 3.5.dp.toPx() else 2.dp.toPx(),
-                                    center = pt
-                                )
                             }
                         }
                     }
+                }
 
-                    // Adaptive X-Axis Labels Overlay
-                    Row(
+                fun findNearestIndex(touchX: Float): Int {
+                    if (count <= 0) return -1
+                    if (count == 1) return 0
+                    return (touchX / spacing).roundToInt().coerceIn(0, count - 1)
+                }
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .horizontalScroll(scrollState)
+                ) {
+                    Box(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .align(Alignment.BottomCenter)
-                            .height(24.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                            .width(chartWidthDp)
+                            .fillMaxHeight()
                     ) {
-                        val count = dailyRecords.size
-                        val step = when {
-                            count <= 10 -> 1
-                            count <= 20 -> 2
-                            count <= 31 -> 3
-                            else -> (count / 10).coerceAtLeast(1)
+                        Canvas(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .pointerInput(dailyRecords, chartWidthPx) {
+                                    detectTapGestures { offset ->
+                                        val idx = findNearestIndex(offset.x)
+                                        if (idx != -1) selectedIndex = idx
+                                    }
+                                }
+                                .pointerInput(dailyRecords, chartWidthPx) {
+                                    detectHorizontalDragGestures(
+                                        onDragStart = { offset ->
+                                            val idx = findNearestIndex(offset.x)
+                                            if (idx != -1) selectedIndex = idx
+                                        },
+                                        onHorizontalDrag = { change, _ ->
+                                            val idx = findNearestIndex(change.position.x)
+                                            if (idx != -1) selectedIndex = idx
+                                        }
+                                    )
+                                }
+                        ) {
+                            val width = size.width
+                            val height = size.height
+                            val topPadding = 20.dp.toPx()
+                            val bottomPadding = 30.dp.toPx()
+                            val usableHeight = height - topPadding - bottomPadding
+
+                            // Background Horizontal Grid Lines matching Y-Axis Ticks
+                            niceScale.ticks.forEach { tickVal ->
+                                val ratio = (tickVal / niceScale.maxVal).coerceIn(0.0, 1.0).toFloat()
+                                val gridY = topPadding + usableHeight * (1f - ratio)
+                                drawLine(
+                                    color = outlineColor,
+                                    start = Offset(0f, gridY),
+                                    end = Offset(width, gridY),
+                                    strokeWidth = 1.dp.toPx()
+                                )
+                            }
+
+                            val points = mutableListOf<Offset>()
+                            dailyRecords.forEachIndexed { index, record ->
+                                val x = if (count > 1) index * spacing else width / 2f
+                                val ratio = (record.earnings / niceScale.maxVal).coerceIn(0.0, 1.0).toFloat()
+                                val y = topPadding + usableHeight * (1f - ratio)
+                                points.add(Offset(x, y))
+                            }
+
+                            if (points.isNotEmpty()) {
+                                // Draw Line Path
+                                val path = Path()
+                                points.forEachIndexed { idx, pt ->
+                                    if (idx == 0) path.moveTo(pt.x, pt.y) else path.lineTo(pt.x, pt.y)
+                                }
+
+                                val animPath = Path()
+                                val pathMeasure = android.graphics.PathMeasure(path.asAndroidPath(), false)
+                                val length = pathMeasure.length
+                                val dst = android.graphics.Path()
+                                pathMeasure.getSegment(0f, length * animationProgress, dst, true)
+                                animPath.addPath(dst.asComposePath())
+
+                                drawPath(
+                                    path = animPath,
+                                    color = primaryColor,
+                                    style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
+                                )
+
+                                // Vertical Guide Line for Selected Point
+                                selectedIndex?.let { selIdx ->
+                                    if (selIdx in points.indices) {
+                                        val selPt = points[selIdx]
+                                        drawLine(
+                                            color = primaryColor.copy(alpha = 0.45f),
+                                            start = Offset(selPt.x, topPadding),
+                                            end = Offset(selPt.x, height - bottomPadding),
+                                            strokeWidth = 1.5.dp.toPx(),
+                                            pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
+                                        )
+                                    }
+                                }
+
+                                // Draw Data Points & Outer Pulse Highlight Ring
+                                val visibleCount = (points.size * animationProgress).toInt().coerceIn(0, points.size)
+                                for (i in 0 until visibleCount) {
+                                    val pt = points[i]
+                                    val isSelected = selectedIndex == i
+
+                                    if (isSelected) {
+                                        // Outer pulse highlight ring
+                                        drawCircle(
+                                            color = primaryColor.copy(alpha = 0.2f),
+                                            radius = 14.dp.toPx(),
+                                            center = pt
+                                        )
+                                        drawCircle(
+                                            color = primaryColor.copy(alpha = 0.4f),
+                                            radius = 10.dp.toPx(),
+                                            center = pt
+                                        )
+                                        drawCircle(
+                                            color = primaryColor,
+                                            radius = 7.dp.toPx(),
+                                            center = pt
+                                        )
+                                        drawCircle(
+                                            color = Color.White,
+                                            radius = 3.5.dp.toPx(),
+                                            center = pt
+                                        )
+                                    } else {
+                                        drawCircle(
+                                            color = primaryColor.copy(alpha = 0.85f),
+                                            radius = 4.dp.toPx(),
+                                            center = pt
+                                        )
+                                        drawCircle(
+                                            color = Color.White,
+                                            radius = 2.dp.toPx(),
+                                            center = pt
+                                        )
+                                    }
+                                }
+                            }
                         }
 
-                        dailyRecords.forEachIndexed { index, record ->
-                            if (index % step == 0 || index == count - 1) {
-                                Text(
-                                    text = formatDateForXAxis(record.dateStr),
-                                    fontSize = 9.sp,
-                                    color = if (selectedIndex == index) primaryColor else labelTextColor,
-                                    fontWeight = if (selectedIndex == index) FontWeight.Bold else FontWeight.Normal,
-                                    maxLines = 1
-                                )
-                            } else {
-                                Spacer(modifier = Modifier.width(1.dp))
+                        // Adaptive X-Axis Labels Overlay
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .align(Alignment.BottomCenter)
+                                .height(28.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            val step = when {
+                                count <= 10 -> 1
+                                count <= 20 -> 2
+                                count <= 31 -> 3
+                                else -> (count / 10).coerceAtLeast(1)
+                            }
+
+                            dailyRecords.forEachIndexed { index, record ->
+                                val isSelected = selectedIndex == index
+                                val recordDateLabel = formatDateForXAxis(record.dateStr)
+                                val accessibleText = "${formatDateForTooltip(record.dateStr)}, earning ₹${AmountFormatter.format(record.earnings)}${if (isSelected) ", selected" else ""}"
+
+                                if (index % step == 0 || index == count - 1 || isSelected) {
+                                    Text(
+                                        text = recordDateLabel,
+                                        fontSize = 9.sp,
+                                        color = if (isSelected) primaryColor else labelTextColor,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                        maxLines = 1,
+                                        modifier = Modifier.semantics {
+                                            contentDescription = accessibleText
+                                        }
+                                    )
+                                } else {
+                                    Spacer(modifier = Modifier.width(1.dp))
+                                }
                             }
                         }
                     }
