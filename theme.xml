@@ -75,8 +75,8 @@
 
   @media (max-width: 480px) {
     :root {
-      --phone-w: 280px;
-      --phone-h: 560px;
+      --phone-w: min(280px, calc(100vw - 32px)) !important;
+      --phone-h: min(560px, calc((100vw - 32px) * 2)) !important;
     }
   }
 
@@ -122,8 +122,14 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+  }
   body {
-    overflow-x: hidden;
     line-height: 1.6;
   }
 
@@ -567,10 +573,14 @@
     display: flex;
     justify-content: center;
     align-items: center;
+    max-width: 100%;
+    box-sizing: border-box;
   }
 
   .phone-frame {
-    width: var(--phone-w) !important;
+    max-width: 100% !important;
+    max-width: var(--phone-w) !important;
+    box-sizing: border-box !important;
     height: var(--phone-h) !important;
     background-color: #020617 !important;
     border: 12px solid #1E293B !important;
@@ -920,9 +930,13 @@
   .video-tap-zone::before,
   .video-tap-zone::after,
   .video-tap-zones::before,
-  .video-tap-zones::after {
+  .video-tap-zones::after,
+  .video-center-play-btn::before,
+  .video-center-play-btn::after {
     display: none !important;
     content: none !important;
+    animation: none !important;
+    background: none !important;
   }
 
   .custom-video-wrapper {
@@ -1408,7 +1422,7 @@
   /* Carousel Wrapper */
   .wd-carousel {
     position: relative !important;
-    width: 100% !important;
+    max-width: 100% !important;
     max-width: var(--phone-w) !important;
     margin: 0 auto !important;
   }
@@ -1422,7 +1436,9 @@
 
   /* Phone Mockup Design */
   .phone-frame {
-    width: var(--phone-w) !important;
+    max-width: 100% !important;
+    max-width: var(--phone-w) !important;
+    box-sizing: border-box !important;
     height: var(--phone-h) !important;
     background-color: #020617 !important;
     border: 12px solid #1E293B !important;
@@ -1476,23 +1492,41 @@
   .wd-carousel-slide {
     flex: 0 0 100%;
     width: 100%;
+    max-width: 100% !important;
+  }
+  .wd-carousel-slide .phone-frame {
+    max-width: 100% !important;
+    max-width: var(--phone-w, 280px) !important;
+    box-sizing: border-box !important;
+  }
+    .wd-carousel-slide img {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+    box-sizing: border-box !important;
+  }
     height: 100%;
     scroll-snap-align: center;
-    box-sizing: border-box;
+    box-sizing: border-box !important;
     padding: 0;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    overflow: hidden !important;
     -ms-overflow-style: none;
     scrollbar-width: none;
     position: relative;
   }
 
   /* Screenshot Image inside Slide */
-  .screenshot-img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
+    .screenshot-img,
+  #showcase img,
+  .phone-screen img {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    height: 100% !important;
+    object-fit: contain !important;
     background-color: #000000;
     display: block;
     border-radius: 24px;
@@ -1585,7 +1619,7 @@
     .wd-carousel-container {
       flex-direction: column !important;
       align-items: center !important;
-      width: 100% !important;
+      max-width: 100% !important;
       gap: 16px !important;
     }
 
@@ -2248,7 +2282,7 @@
       position: static !important;
       transform: none !important;
       animation: none !important;
-      width: 100% !important;
+      max-width: 100% !important;
       max-width: 300px !important;
       margin: 12px auto !important;
       display: flex !important;
@@ -2346,13 +2380,13 @@
     }
 
     .nav-menu li {
-      width: 100% !important;
+      max-width: 100% !important;
       list-style: none !important;
     }
 
     .nav-link {
       display: block !important;
-      width: 100% !important;
+      max-width: 100% !important;
       padding: 12px 0 !important;
       font-size: 16px !important;
       font-weight: 600 !important;
@@ -2434,7 +2468,7 @@
       border-radius: 30px !important;
     }
     .wd-carousel {
-      max-width: 280px !important;
+      max-width: calc(100vw - 32px) !important;
     }
     .container {
       padding: 0 16px !important;
@@ -2465,14 +2499,14 @@
       flex-direction: column !important;
       align-items: center !important;
       justify-content: center !important;
-      width: 100% !important;
+      max-width: 100% !important;
       gap: 20px !important;
     }
     .floating-card {
       position: static !important;
       transform: none !important;
       animation: none !important;
-      width: 100% !important;
+      max-width: 100% !important;
       max-width: 300px !important;
       margin: 0 auto !important;
       display: flex !important;
@@ -2483,11 +2517,11 @@
   @media (max-width: 480px) {
     .hero-actions {
       flex-direction: column !important;
-      width: 100% !important;
+      max-width: 100% !important;
       gap: 12px !important;
     }
     .hero-actions .btn {
-      width: 100% !important;
+      max-width: 100% !important;
     }
   }
 
@@ -2518,9 +2552,17 @@
 
   .wd-posts-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    grid-template-columns: repeat(3, 1fr);
     gap: 28px;
     margin-top: 24px;
+    width: 100%;
+  }
+
+  @media (max-width: 1023px) {
+    .wd-posts-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+    }
   }
 
   @media (max-width: 640px) {
@@ -2655,22 +2697,76 @@
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 16px;
+    padding: 10px 20px;
+    min-height: 44px;
     border-radius: 99px;
     background: var(--surface-light, #FFFFFF);
     border: 1px solid var(--border-light, #E2E8F0);
     color: var(--text-primary, #0F172A);
     font-size: 14px;
     font-weight: 600;
-    text-decoration: none;
-    transition: all 0.2s ease;
+    text-decoration: none !important;
+    margin-top: 24px;
     margin-bottom: 24px;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   }
 
   .post-back-btn:hover {
     background: var(--mint-light, rgba(15, 159, 122, 0.1));
     color: var(--mint-primary, #0F9F7A);
     border-color: var(--mint-primary, #0F9F7A);
+    transform: translateX(-3px);
+  }
+
+  .post-back-btn:focus-visible {
+    outline: 2px solid var(--mint-primary, #0F9F7A);
+    outline-offset: 2px;
+  }
+
+  .post-back-btn:active {
+    transform: translateX(-1px) scale(0.98);
+  }
+
+  @media (max-width: 640px) {
+    .post-back-btn {
+      margin-top: 16px;
+      margin-bottom: 16px;
+      padding: 8px 16px;
+      font-size: 13px;
+    }
+    .post-back-btn-text-full {
+      display: none;
+    }
+    .post-back-btn-text-short {
+      display: inline;
+    }
+  }
+
+  @media (min-width: 641px) {
+    .post-back-btn-text-full {
+      display: inline;
+    }
+    .post-back-btn-text-short {
+      display: none;
+    }
+  }
+
+  .wd-related-posts-section {
+    margin-top: 60px;
+    padding-top: 40px;
+    border-top: 1px solid var(--border-light, #E2E8F0);
+  }
+
+  .wd-related-header {
+    margin-bottom: 24px;
+  }
+
+  .wd-related-title {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--text-primary, #0F172A);
+    margin-top: 8px;
   }
 
   .wd-article-header {
@@ -3294,6 +3390,175 @@
       </div>
     </section>
 
+</b:if>
+
+  <!-- NATIVE BLOGGER MAIN SECTION -->
+  <b:section id='main-section' showaddelement='yes'>
+    <b:widget id='Blog1' locked='true' mobile='yes' title='Blog Posts' type='Blog'>
+            <b:includable id='main'>
+        <b:if cond='data:view.isSingleItem'>
+          <!-- SINGLE ARTICLE PAGE -->
+          <b:loop values='data:posts' var='post'>
+            <b:include name='post' data='post'/>
+          </b:loop>
+        </b:if>
+
+        <b:if cond='data:view.isHomepage'>
+          <!-- HOMEPAGE ARTICLES SECTION -->
+          <b:if cond='data:posts'>
+            <section class='features-section' id='articles' style='background-color: var(--surface-light); border-top: 1px solid var(--border-light); padding: 80px 0;'>
+              <div class='section-container' style='max-width: 1200px; margin: 0 auto; padding: 0 24px;'>
+                <div class='section-header' style='text-align:center; margin-bottom: 48px;'>
+                  <span class='section-badge' style='background: var(--mint-light); color: var(--mint-primary); font-size: 12px; font-weight: 700; padding: 6px 12px; border-radius: 99px; text-transform: uppercase;'>WORKDAILY UPDATES &amp; ARTICLES</span>
+                  <h2 class='section-title' style='font-size: 32px; font-weight: 800; margin-top: 12px;'>WorkDaily Updates &amp; Articles</h2>
+                  <p class='section-subtitle' style='color: var(--text-secondary); max-width: 600px; margin: 8px auto 0;'>Stay updated with the latest WorkDaily features, guides, and announcements.</p>
+                </div>
+                <div class='wd-posts-grid'>
+                  <b:loop values='data:posts' var='post'>
+                    <b:include name='postCard' data='post'/>
+                  </b:loop>
+                </div>
+                <div style='text-align: center; margin-top: 40px;'>
+                  <a class='post-back-btn' expr:href='data:blog.homepageUrl + "search"'>
+                    <span>View All Updates &amp; Articles</span>
+                    <svg viewBox='0 0 24 24' style='width:16px;height:16px;fill:currentColor;'><path d='M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z'/></svg>
+                  </a>
+                </div>
+              </div>
+            </section>
+          </b:if>
+        </b:if>
+
+        <b:if cond='!data:view.isHomepage and !data:view.isSingleItem'>
+          <!-- INNER LIST VIEW (Label search, search, archive) -->
+          <div class='wd-blog-list-container' style='max-width: 1200px; margin: 40px auto; padding: 0 24px;'>
+            <div class='wd-blog-list-header' style='margin-bottom: 32px; text-align: center;'>
+              <a class='post-back-btn' expr:href='data:blog.homepageUrl' aria-label='Back to Home'>
+                <svg viewBox='0 0 24 24' style='width:18px;height:18px;fill:currentColor;'>
+                  <path d='M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z'/>
+                </svg>
+                <span class='post-back-btn-text-full'>Back to Home</span>
+                <span class='post-back-btn-text-short'>Home</span>
+              </a>
+              <h1 class='wd-blog-list-title' style='font-size: 32px; font-weight: 800; color: var(--text-primary);'>
+                <b:if cond='data:view.isLabelSearch'>
+                  Articles in <data:view.search.label/>
+                <b:else/>
+                  WorkDaily Blog &amp; Updates
+                </b:if>
+              </h1>
+            </div>
+            <div class='wd-posts-grid'>
+              <b:loop values='data:posts' var='post'>
+                <b:include name='postCard' data='post'/>
+              </b:loop>
+            </div>
+          </div>
+        </b:if>
+      </b:includable>
+
+      <b:includable id='mobile-main' var='top'>
+        <b:include name='main'/>
+      </b:includable>
+
+            <b:includable id='postCard' var='post'>
+        <article class='wd-post-card'>
+          <b:if cond='data:post.featuredImage'>
+            <a class='wd-post-card-thumb-link' expr:href='data:post.url'>
+              <img class='wd-post-card-thumb' expr:src='data:post.featuredImage' expr:alt='data:post.title' loading='lazy'/>
+            </a>
+          </b:if>
+          <div class='wd-post-card-content'>
+            <div class='wd-post-card-meta'>
+              <b:if cond='data:post.labels'>
+                <span class='wd-category-chip'>
+                  <b:loop values='data:post.labels' var='label' index='i'>
+                    <b:if cond='data:i == 0'>
+                      <span class='wd-category-text' expr:data-raw-label='data:label.name'><data:label.name/></span>
+                    </b:if>
+                  </b:loop>
+                </span>
+              <b:else/>
+                <span class='wd-category-chip'>UPDATE</span>
+              </b:if>
+              <span class='wd-post-date'><data:post.date/></span>
+            </div>
+            <h3 class='wd-post-card-title'>
+              <a expr:href='data:post.url'><data:post.title/></a>
+            </h3>
+            <p class='wd-post-card-snippet'>
+              <b:if cond='data:post.snippet'>
+                <data:post.snippet/>
+              <b:else/>
+                Explore this article on WorkDaily.
+              </b:if>
+            </p>
+            <a class='wd-btn-read' expr:href='data:post.url'>
+              <span>Read Article</span>
+              <svg viewBox='0 0 24 24' style='width:16px;height:16px;fill:currentColor;'><path d='M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z'/></svg>
+            </a>
+          </div>
+        </article>
+      </b:includable>
+
+            <b:includable id='post' var='post'>
+        <article class='wd-article' expr:data-post-id='data:post.id' expr:data-post-url='data:post.url'>
+          <a class='post-back-btn' expr:href='data:blog.homepageUrl' aria-label='Back to Home'>
+            <svg viewBox='0 0 24 24' style='width:18px;height:18px;fill:currentColor;'>
+              <path d='M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z'/>
+            </svg>
+            <span class='post-back-btn-text-full'>Back to Home</span>
+            <span class='post-back-btn-text-short'>Home</span>
+          </a>
+
+          <header class='wd-article-header'>
+            <div class='wd-article-meta-top'>
+              <b:if cond='data:post.labels'>
+                <span class='wd-category-chip'>
+                  <b:loop values='data:post.labels' var='label' index='i'>
+                    <b:if cond='data:i == 0'>
+                      <span class='wd-category-text' expr:data-raw-label='data:label.name'><data:label.name/></span>
+                    </b:if>
+                  </b:loop>
+                </span>
+              <b:else/>
+                <span class='wd-category-chip'>UPDATE</span>
+              </b:if>
+            </div>
+            <h1 class='wd-article-title'><data:post.title/></h1>
+            <div class='wd-article-meta'>
+              <span>Published: <data:post.date/></span>
+              <span class='meta-sep'>•</span>
+              <span>By SynFusion Team</span>
+            </div>
+          </header>
+
+          <b:if cond='data:post.featuredImage'>
+            <div class='wd-article-featured-image'>
+              <img expr:src='data:post.featuredImage' expr:alt='data:post.title'/>
+            </div>
+          </b:if>
+
+          <div class='wd-article-body'>
+            <data:post.body/>
+          </div>
+
+          <!-- RELATED POSTS SECTION -->
+          <section class='wd-related-posts-section' id='wdRelatedPostsSection' style='display:none;'>
+            <div class='wd-related-header'>
+              <span class='section-badge' style='background: var(--mint-light); color: var(--mint-primary); font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 99px; text-transform: uppercase;'>MORE CONTENT</span>
+              <h3 class='wd-related-title'>More from WorkDaily</h3>
+            </div>
+            <div class='wd-posts-grid' id='wdRelatedPostsGrid'>
+            </div>
+          </section>
+        </article>
+      </b:includable>
+
+    </b:widget>
+  </b:section>
+
+  <b:if cond='data:view.isHomepage'>
     <!-- USER VIDEO FEEDBACK SECTION -->
     <section class='features-section' id='feedback' style='background-color: var(--bg-light); border-top: 1px solid var(--border-light); border-bottom: 1px solid var(--border-light);'>
       <div class='container'>
@@ -3552,6 +3817,8 @@
         </div>
       </div></section>
 
+  </b:if>
+
 <!-- DOWNLOAD / CONVERSION ZONE -->
     <section class='download-section' id='download'>
       <div class='container'>
@@ -3650,191 +3917,7 @@
       </div>
     </footer>
 
-  </b:if>
-
-  <!-- NATIVE BLOGGER MAIN SECTION -->
-  <b:section id='main-section' showaddelement='yes'>
-    <b:widget id='Blog1' locked='true' mobile='yes' title='Blog Posts' type='Blog'>
-      <b:includable id='main'>
-        <b:if cond='data:view.isSingleItem'>
-          <!-- SINGLE ARTICLE PAGE -->
-          <b:loop values='data:posts' var='post'>
-            <b:include name='post' data='post'/>
-          </b:loop>
-        <b:else/>
-          <!-- MULTI-POST / INDEX / LABEL / HOMEPAGE POSTS -->
-          <b:if cond='data:view.isHomepage'>
-            <!-- On homepage: landing sections are above. If posts exist, render Homepage Articles Section -->
-            <b:if cond='data:posts'>
-              <section class='features-section' id='articles' style='background-color: var(--surface-light); border-top: 1px solid var(--border-light); padding: 80px 0;'>
-                <div class='section-container' style='max-width: 1200px; margin: 0 auto; padding: 0 24px;'>
-                  <div class='section-header' style='text-align:center; margin-bottom: 48px;'>
-                    <span class='section-badge' style='background: var(--mint-light); color: var(--mint-primary); font-size: 12px; font-weight: 700; padding: 6px 12px; border-radius: 99px; text-transform: uppercase;'>LATEST UPDATES</span>
-                    <h2 class='section-title' style='font-size: 32px; font-weight: 800; margin-top: 12px;'>WorkDaily Blog &amp; Articles</h2>
-                    <p class='section-subtitle' style='color: var(--text-secondary); max-width: 600px; margin: 8px auto 0;'>Stay updated with the latest WorkDaily features, guides, and announcements.</p>
-                  </div>
-                  <div class='wd-posts-grid'>
-                    <b:loop values='data:posts' var='post'>
-                      <b:include name='postCard' data='post'/>
-                    </b:loop>
-                  </div>
-                  <div style='text-align: center; margin-top: 40px;'>
-                    <a class='post-back-btn' expr:href='data:blog.homepageUrl + "search"'>
-                      <span>View All Updates &amp; Articles</span>
-                      <svg viewBox='0 0 24 24' style='width:16px;height:16px;fill:currentColor;'><path d='M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z'/></svg>
-                    </a>
-                  </div>
-                </div>
-              </section>
-            </b:if>
-          <b:else/>
-            <!-- INNER LIST VIEW (Label search, search, archive) -->
-            <div class='wd-blog-list-container' style='max-width: 1200px; margin: 40px auto; padding: 0 24px;'>
-              <div class='wd-blog-list-header' style='margin-bottom: 32px; text-align: center;'>
-                <a class='post-back-btn' expr:href='data:blog.homepageUrl'>
-                  <svg viewBox='0 0 24 24' style='width:18px;height:18px;fill:currentColor;'>
-                    <path d='M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z'/>
-                  </svg>
-                  Back to Home
-                </a>
-                <h1 class='wd-blog-list-title' style='font-size: 32px; font-weight: 800; color: var(--text-primary);'>
-                  <b:if cond='data:view.isLabelSearch'>
-                    Articles in <data:view.search.label/>
-                  <b:else/>
-                    WorkDaily Blog &amp; Updates
-                  </b:if>
-                </h1>
-              </div>
-              <div class='wd-posts-grid'>
-                <b:loop values='data:posts' var='post'>
-                  <b:include name='postCard' data='post'/>
-                </b:loop>
-              </div>
-            </div>
-          </b:if>
-        </b:if>
-      </b:includable>
-
-      <b:includable id='mobile-main' var='top'>
-        <b:include name='main'/>
-      </b:includable>
-
-      <b:includable id='postCard' var='post'>
-        <article class='wd-post-card'>
-          <b:if cond='data:post.featuredImage'>
-            <a class='wd-post-card-thumb-link' expr:href='data:post.url'>
-              <img class='wd-post-card-thumb' expr:src='data:post.featuredImage' expr:alt='data:post.title' loading='lazy'/>
-            </a>
-          </b:if>
-          <div class='wd-post-card-content'>
-            <div class='wd-post-card-meta'>
-              <b:if cond='data:post.labels'>
-                <span class='wd-category-chip'>
-                  <b:loop values='data:post.labels' var='label' index='i'>
-                    <b:if cond='data:i == 0'>
-                      <b:if cond='data:label.name == "Update"'>APP UPDATE</b:if>
-                      <b:if cond='data:label.name == "Feature"'>FEATURE</b:if>
-                      <b:if cond='data:label.name == "Article"'>ARTICLE</b:if>
-                      <b:if cond='data:label.name == "Review"'>REVIEW</b:if>
-                      <b:if cond='data:label.name == "Tutorial"'>TUTORIAL</b:if>
-                      <b:if cond='data:label.name == "News"'>NEWS</b:if>
-                      <b:if cond='data:label.name == "Feedback"'>FEEDBACK</b:if>
-                      <b:if cond='data:label.name != "Update" and data:label.name != "Feature" and data:label.name != "Article" and data:label.name != "Review" and data:label.name != "Tutorial" and data:label.name != "News" and data:label.name != "Feedback"'>
-                        <data:label.name/>
-                      </b:if>
-                    </b:if>
-                  </b:loop>
-                </span>
-              <b:else/>
-                <span class='wd-category-chip'>APP UPDATE</span>
-              </b:if>
-              <span class='wd-post-date'><data:post.date/></span>
-            </div>
-            <h3 class='wd-post-card-title'>
-              <a expr:href='data:post.url'><data:post.title/></a>
-            </h3>
-            <p class='wd-post-card-snippet'>
-              <b:if cond='data:post.snippet'>
-                <data:post.snippet/>
-              <b:else/>
-                Explore this article on WorkDaily.
-              </b:if>
-            </p>
-            <a class='wd-btn-read' expr:href='data:post.url'>
-              <span>
-                <b:if cond='data:post.labels'>
-                  <b:loop values='data:post.labels' var='lbl' index='li'>
-                    <b:if cond='data:li == 0'>
-                      <b:if cond='data:lbl.name == "Update"'>Read Update</b:if>
-                      <b:if cond='data:lbl.name == "Feature"'>Read Article</b:if>
-                      <b:if cond='data:lbl.name == "Feedback"'>View Feedback</b:if>
-                      <b:if cond='data:lbl.name == "Review"'>Read Review</b:if>
-                      <b:if cond='data:lbl.name == "Tutorial"'>Read Guide</b:if>
-                      <b:if cond='data:lbl.name == "News"'>Read News</b:if>
-                      <b:if cond='data:lbl.name != "Update" and data:lbl.name != "Feature" and data:lbl.name != "Feedback" and data:lbl.name != "Review" and data:lbl.name != "Tutorial" and data:lbl.name != "News"'>Read Article</b:if>
-                    </b:if>
-                  </b:loop>
-                <b:else/>
-                  Read Article
-                </b:if>
-              </span>
-              <svg viewBox='0 0 24 24' style='width:16px;height:16px;fill:currentColor;'><path d='M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z'/></svg>
-            </a>
-          </div>
-        </article>
-      </b:includable>
-
-      <b:includable id='post' var='post'>
-        <article class='wd-article'>
-          <header class='wd-article-header'>
-            <a class='post-back-btn' expr:href='data:blog.homepageUrl'>
-              <svg viewBox='0 0 24 24' style='width:18px;height:18px;fill:currentColor;'>
-                <path d='M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z'/>
-              </svg>
-              Back to Home
-            </a>
-            <div class='wd-article-meta-top'>
-              <b:if cond='data:post.labels'>
-                <b:loop values='data:post.labels' var='label'>
-                  <a class='wd-category-chip' expr:href='data:label.url'><data:label.name/></a>
-                </b:loop>
-              <b:else/>
-                <span class='wd-category-chip'>Updates</span>
-              </b:if>
-            </div>
-            <h1 class='wd-article-title'><data:post.title/></h1>
-            <div class='wd-article-meta'>
-              <span>Published: <data:post.date/></span>
-              <span class='meta-sep'>•</span>
-              <span>By SynFusion Team</span>
-            </div>
-          </header>
-
-          <b:if cond='data:post.featuredImage'>
-            <div class='wd-article-featured-image'>
-              <img expr:src='data:post.featuredImage' expr:alt='data:post.title'/>
-            </div>
-          </b:if>
-
-          <div class='wd-article-body'>
-            <data:post.body/>
-          </div>
-
-          <footer class='wd-article-footer'>
-            <a class='post-back-btn' expr:href='data:blog.homepageUrl'>
-              <svg viewBox='0 0 24 24' style='width:18px;height:18px;fill:currentColor;'>
-                <path d='M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z'/>
-              </svg>
-              Back to Home
-            </a>
-          </footer>
-        </article>
-      </b:includable>
-
-    </b:widget>
-  </b:section>
-
-<!-- VANILLA INTERACTIVE JS -->
+  <!-- VANILLA INTERACTIVE JS -->
   <script type='text/javascript'>
     //<![CDATA[
     /* EARLY THEME & LANGUAGE SETUP (Prevents Flash of Unstyled Theme/Language) */
@@ -4658,11 +4741,160 @@
           });
         }
 
-        window.initAllVideoPlayers = initAllVideoPlayers;
+
+      // Category Chip Sanitizer
+      function sanitizeCategoryChips() {
+        var allowed = ['UPDATE', 'FEATURE', 'ARTICLE', 'REVIEW', 'FEEDBACK', 'TUTORIAL', 'NEWS'];
+        var chips = document.querySelectorAll('.wd-category-chip');
+        chips.forEach(function(chip) {
+          var rawText = chip.textContent.trim().toUpperCase();
+          if (allowed.indexOf(rawText) !== -1) {
+            chip.textContent = rawText;
+          } else if (rawText.indexOf('UPDATE') !== -1) {
+            chip.textContent = 'UPDATE';
+          } else if (rawText.indexOf('FEATURE') !== -1) {
+            chip.textContent = 'FEATURE';
+          } else if (rawText.indexOf('REVIEW') !== -1) {
+            chip.textContent = 'REVIEW';
+          } else if (rawText.indexOf('TUTORIAL') !== -1 || rawText.indexOf('GUIDE') !== -1) {
+            chip.textContent = 'TUTORIAL';
+          } else if (rawText.indexOf('NEWS') !== -1) {
+            chip.textContent = 'NEWS';
+          } else if (rawText.indexOf('FEEDBACK') !== -1) {
+            chip.textContent = 'FEEDBACK';
+          } else {
+            chip.textContent = 'ARTICLE';
+          }
+        });
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', sanitizeCategoryChips);
+      } else {
+        sanitizeCategoryChips();
+      }
+
+      window.initAllVideoPlayers = initAllVideoPlayers;
         initAllVideoPlayers();
       })();
 
-      // 7. Unified Showcase Carousel Engine
+
+      // 8. Dynamic Related Posts Loader
+      (function setupRelatedPosts() {
+        try {
+          var articleEl = document.querySelector('.wd-article');
+          if (!articleEl) return;
+
+          var gridEl = document.getElementById('wdRelatedPostsGrid');
+          var sectionEl = document.getElementById('wdRelatedPostsSection');
+          if (!gridEl || !sectionEl) return;
+
+          var currentPath = window.location.pathname;
+          var rawTextEl = articleEl.querySelector('.wd-article-meta-top .wd-category-text');
+          var rawLabel = rawTextEl ? (rawTextEl.getAttribute('data-raw-label') || rawTextEl.textContent).trim() : '';
+
+          var feedUrl = '/feeds/posts/summary?alt=json&max-results=8';
+          if (rawLabel) {
+            feedUrl = '/feeds/posts/summary/-/' + encodeURIComponent(rawLabel) + '?alt=json&max-results=8';
+          }
+
+          fetch(feedUrl)
+            .then(function(res) {
+              if (!res.ok) throw new Error('HTTP ' + res.status);
+              return res.json();
+            })
+            .then(function(data) {
+              if (!data || !data.feed || !Array.isArray(data.feed.entry)) {
+                sectionEl.style.display = 'none';
+                return;
+              }
+
+              var entries = data.feed.entry;
+              var filtered = [];
+              var seenUrls = {};
+
+              entries.forEach(function(entry) {
+                if (!entry) return;
+                var href = '';
+                if (Array.isArray(entry.link)) {
+                  entry.link.forEach(function(l) {
+                    if (l && l.rel === 'alternate') href = l.href;
+                  });
+                }
+                if (!href) return;
+
+                var entryPath = href;
+                try {
+                  var u = new URL(href, window.location.origin);
+                  entryPath = u.pathname;
+                } catch(e) {}
+
+                if (entryPath !== currentPath && !seenUrls[entryPath] && filtered.length < 3) {
+                  seenUrls[entryPath] = true;
+
+                  var titleText = (entry.title && entry.title['']) ? entry.title[''] : 'WorkDaily Article';
+                  var pubDate = (entry.published && entry.published['']) ? entry.published[''] : '';
+                  var summaryObj = (entry.summary && entry.summary['']) ? entry.summary[''] : '';
+                  var rawSnippet = typeof summaryObj === 'string' ? summaryObj.replace(/<[^>]*>/g, '') : '';
+                  var thumbUrl = (entry['media'] && entry['media'].url) ? entry['media'].url.replace('/s72-c/', '/s600/') : '';
+
+                  var catLabel = 'ARTICLE';
+                  if (rawLabel) {
+                    var allowed = ['UPDATE', 'FEATURE', 'ARTICLE', 'REVIEW', 'FEEDBACK', 'TUTORIAL', 'NEWS'];
+                    var uLabel = rawLabel.toUpperCase();
+                    catLabel = (allowed.indexOf(uLabel) !== -1) ? uLabel : 'ARTICLE';
+                  }
+
+                  filtered.push({
+                    title: titleText,
+                    url: href,
+                    category: catLabel,
+                    date: pubDate ? new Date(pubDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '',
+                    snippet: rawSnippet ? rawSnippet.substring(0, 110) + '...' : 'Explore this update on WorkDaily.',
+                    thumb: thumbUrl
+                  });
+                }
+              });
+
+              if (filtered.length === 0) {
+                sectionEl.style.display = 'none';
+                return;
+              }
+
+              var html = '';
+              filtered.forEach(function(item) {
+                var thumbHTML = item.thumb ?
+                  '<a class="wd-post-card-thumb-link" href="' + item.url + '"><img class="wd-post-card-thumb" src="' + item.thumb + '" alt="' + item.title + '" loading="lazy"/></a>' : '';
+
+                html += [
+                  '<article class="wd-post-card">',
+                  thumbHTML,
+                  '  <div class="wd-post-card-content">',
+                  '    <div class="wd-post-card-meta">',
+                  '      <span class="wd-category-chip">' + item.category + '</span>',
+                  '      <span class="wd-post-date">' + item.date + '</span>',
+                  '    </div>',
+                  '    <h3 class="wd-post-card-title"><a href="' + item.url + '">' + item.title + '</a></h3>',
+                  '    <p class="wd-post-card-snippet">' + item.snippet + '</p>',
+                  '    <a class="wd-btn-read" href="' + item.url + '"><span>Read Article</span><svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor;"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg></a>',
+                  '  </div>',
+                  '</article>'
+                ].join('');
+              });
+
+              gridEl.innerHTML = html;
+              sectionEl.style.display = 'block';
+            })
+            .catch(function(err) {
+              sectionEl.style.display = 'none';
+            });
+        } catch(e) {
+          var s = document.getElementById('wdRelatedPostsSection');
+          if (s) s.style.display = 'none';
+        }
+      })();
+
+// 7. Unified Showcase Carousel Engine
       (function setupCarousel() {
         var carousel = document.querySelector('[data-carousel="unified-showcase"]');
         if (!carousel) return;
