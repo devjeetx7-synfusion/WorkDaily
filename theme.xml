@@ -834,7 +834,7 @@
     background: rgba(15, 23, 42, 0.75);
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
-    display: flex;
+    display: none;
     flex-direction: column;
     align-items: center;
     justify-content: center;
@@ -906,17 +906,37 @@
     transform: scale(1.03);
   }
 
+  .custom-video-wrapper,
+  .custom-video-wrapper *,
+  .video-tap-zone,
+  .video-center-play-btn,
+  .custom-player-btn {
+    -webkit-tap-highlight-color: transparent !important;
+    outline: none !important;
+  }
+
+  .custom-video-wrapper::before,
+  .custom-video-wrapper::after,
+  .video-tap-zone::before,
+  .video-tap-zone::after,
+  .video-tap-zones::before,
+  .video-tap-zones::after {
+    display: none !important;
+    content: none !important;
+  }
+
   .custom-video-wrapper {
     position: relative;
     width: 100%;
     aspect-ratio: 16 / 9;
     background-color: #0F172A;
     border-radius: 12px;
-    overflow: hidden;
+    overflow: hidden !important;
     display: flex;
     align-items: center;
     justify-content: center;
     user-select: none;
+    -webkit-user-select: none;
     touch-action: manipulation;
   }
 
@@ -961,6 +981,7 @@
     width: 60px;
     height: 60px;
     border-radius: 50%;
+    overflow: hidden !important;
     background: rgba(15, 23, 42, 0.75);
     backdrop-filter: blur(8px);
     border: 2px solid rgba(255, 255, 255, 0.3);
@@ -3292,7 +3313,7 @@
 
 
               <!-- Video Loading Indicator Overlay -->
-              <div class='video-loader-overlay'>
+              <div class='video-loader-overlay' style='display:none;'>
                 <div class='video-loader-spinner'></div>
                 <span class='video-loader-text'>Loading video...</span>
               </div>
@@ -3374,7 +3395,7 @@
 
 
               <!-- Video Loading Indicator Overlay -->
-              <div class='video-loader-overlay'>
+                  <div class='video-loader-overlay' style='display:none;'>
                 <div class='video-loader-spinner'></div>
                 <span class='video-loader-text'>Loading video...</span>
               </div>
@@ -3456,7 +3477,7 @@
 
 
               <!-- Video Loading Indicator Overlay -->
-              <div class='video-loader-overlay'>
+                  <div class='video-loader-overlay' style='display:none;'>
                 <div class='video-loader-spinner'></div>
                 <span class='video-loader-text'>Loading video...</span>
               </div>
@@ -3657,6 +3678,12 @@
                       <b:include name='postCard' data='post'/>
                     </b:loop>
                   </div>
+                  <div style='text-align: center; margin-top: 40px;'>
+                    <a class='post-back-btn' expr:href='data:blog.homepageUrl + "search"'>
+                      <span>View All Updates &amp; Articles</span>
+                      <svg viewBox='0 0 24 24' style='width:16px;height:16px;fill:currentColor;'><path d='M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z'/></svg>
+                    </a>
+                  </div>
                 </div>
               </section>
             </b:if>
@@ -3705,12 +3732,21 @@
                 <span class='wd-category-chip'>
                   <b:loop values='data:post.labels' var='label' index='i'>
                     <b:if cond='data:i == 0'>
-                      <data:label.name/>
+                      <b:if cond='data:label.name == "Update"'>APP UPDATE</b:if>
+                      <b:if cond='data:label.name == "Feature"'>FEATURE</b:if>
+                      <b:if cond='data:label.name == "Article"'>ARTICLE</b:if>
+                      <b:if cond='data:label.name == "Review"'>REVIEW</b:if>
+                      <b:if cond='data:label.name == "Tutorial"'>TUTORIAL</b:if>
+                      <b:if cond='data:label.name == "News"'>NEWS</b:if>
+                      <b:if cond='data:label.name == "Feedback"'>FEEDBACK</b:if>
+                      <b:if cond='data:label.name != "Update" and data:label.name != "Feature" and data:label.name != "Article" and data:label.name != "Review" and data:label.name != "Tutorial" and data:label.name != "News" and data:label.name != "Feedback"'>
+                        <data:label.name/>
+                      </b:if>
                     </b:if>
                   </b:loop>
                 </span>
               <b:else/>
-                <span class='wd-category-chip'>Updates</span>
+                <span class='wd-category-chip'>APP UPDATE</span>
               </b:if>
               <span class='wd-post-date'><data:post.date/></span>
             </div>
@@ -3725,7 +3761,23 @@
               </b:if>
             </p>
             <a class='wd-btn-read' expr:href='data:post.url'>
-              <span>Read Article</span>
+              <span>
+                <b:if cond='data:post.labels'>
+                  <b:loop values='data:post.labels' var='lbl' index='li'>
+                    <b:if cond='data:li == 0'>
+                      <b:if cond='data:lbl.name == "Update"'>Read Update</b:if>
+                      <b:if cond='data:lbl.name == "Feature"'>Read Article</b:if>
+                      <b:if cond='data:lbl.name == "Feedback"'>View Feedback</b:if>
+                      <b:if cond='data:lbl.name == "Review"'>Read Review</b:if>
+                      <b:if cond='data:lbl.name == "Tutorial"'>Read Guide</b:if>
+                      <b:if cond='data:lbl.name == "News"'>Read News</b:if>
+                      <b:if cond='data:lbl.name != "Update" and data:lbl.name != "Feature" and data:lbl.name != "Feedback" and data:lbl.name != "Review" and data:lbl.name != "Tutorial" and data:lbl.name != "News"'>Read Article</b:if>
+                    </b:if>
+                  </b:loop>
+                <b:else/>
+                  Read Article
+                </b:if>
+              </span>
               <svg viewBox='0 0 24 24' style='width:16px;height:16px;fill:currentColor;'><path d='M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z'/></svg>
             </a>
           </div>
@@ -4182,78 +4234,25 @@
 
       // 6. Custom WorkDaily Video Players Engine
       (function setupCustomVideoPlayers() {
-        function enhanceArticleVideos() {
-          var articleVideos = document.querySelectorAll('.wd-article-body video, .post-body video');
-          articleVideos.forEach(function(vid) {
-            if (vid.closest('.custom-video-wrapper')) return;
+        window.WorkDailyVideoRegistry = window.WorkDailyVideoRegistry || {
+          videos: [],
+          register: function(video) {
+            if (!video || video.getAttribute('data-wd-registered') === 'true') return;
+            video.setAttribute('data-wd-registered', 'true');
+            this.videos.push(video);
+            video.addEventListener('play', function() {
+              window.WorkDailyVideoRegistry.pauseOthers(video);
+            });
+          },
+          pauseOthers: function(currentVid) {
+            this.videos.forEach(function(v) {
+              if (v !== currentVid && !v.paused) {
+                try { v.pause(); } catch(e) {}
+              }
+            });
+          }
+        };
 
-            vid.classList.add('custom-video-element');
-            if (!vid.getAttribute('preload')) vid.setAttribute('preload', 'metadata');
-            vid.setAttribute('playsinline', 'true');
-
-            var wrapper = document.createElement('div');
-            wrapper.className = 'custom-video-wrapper';
-            wrapper.setAttribute('tabindex', '0');
-            wrapper.setAttribute('aria-label', 'WorkDaily Article Video');
-
-            vid.parentNode.insertBefore(wrapper, vid);
-            wrapper.appendChild(vid);
-
-            var controlsHTML = [
-              '<div class="video-loader-overlay">',
-              '  <div class="video-loader-spinner"></div>',
-              '  <span class="video-loader-text">Loading video...</span>',
-              '</div>',
-              '<div class="video-error-overlay" style="display:none;">',
-              '  <svg class="video-error-icon" style="width:28px;height:28px;fill:#F87171;" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>',
-              '  <span class="video-error-text">Video unavailable</span>',
-              '  <span class="video-error-subtext">Unable to load this video.</span>',
-              '  <button class="video-retry-btn" type="button">Retry</button>',
-              '</div>',
-              '<div class="video-tap-zones">',
-              '  <div class="video-tap-zone video-tap-zone-left" data-zone="left"></div>',
-              '  <div class="video-tap-zone video-tap-zone-center" data-zone="center"></div>',
-              '  <div class="video-tap-zone video-tap-zone-right" data-zone="right"></div>',
-              '</div>',
-              '<button class="video-center-play-btn" aria-label="Play / Pause Video">',
-              '  <svg class="icon-play" style="width:24px;height:24px;fill:currentColor;margin-left:2px;" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>',
-              '  <svg class="icon-pause" style="width:24px;height:24px;fill:currentColor;display:none;" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>',
-              '</button>',
-              '<div class="video-seek-feedback video-seek-feedback-left">',
-              '  <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24"><path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"/></svg>',
-              '  <span>↶ 10 sec</span>',
-              '</div>',
-              '<div class="video-seek-feedback video-seek-feedback-right">',
-              '  <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24"><path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"/></svg>',
-              '  <span>↷ 10 sec</span>',
-              '</div>',
-              '<div class="custom-player-controls">',
-              '  <div class="custom-seekbar-container" role="slider" aria-label="Seek Bar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0">',
-              '    <div class="custom-seekbar-track">',
-              '      <div class="custom-seekbar-progress"></div>',
-              '    </div>',
-              '  </div>',
-              '  <div class="custom-player-row">',
-              '    <div class="custom-player-time"><span class="time-current">0:00</span> / <span class="time-duration">0:00</span></div>',
-              '    <div class="custom-player-btn-group">',
-              '      <button class="custom-player-btn btn-mute" aria-label="Mute">',
-              '        <svg class="icon-volume" style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>',
-              '        <svg class="icon-muted" style="width:20px;height:20px;fill:currentColor;display:none;" viewBox="0 0 24 24"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>',
-              '      </button>',
-              '      <button class="custom-player-btn btn-fullscreen" aria-label="Fullscreen">',
-              '        <svg class="icon-fullscreen-enter" style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>',
-              '        <svg class="icon-fullscreen-exit" style="width:20px;height:20px;fill:currentColor;display:none;" viewBox="0 0 24 24"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>',
-              '      </button>',
-              '    </div>',
-              '  </div>',
-              '</div>'
-            ].join('');
-
-            wrapper.insertAdjacentHTML('beforeend', controlsHTML);
-          });
-        }
-
-        enhanceArticleVideos();
         function formatTime(seconds) {
           if (isNaN(seconds) || seconds < 0) return '0:00';
           var mins = Math.floor(seconds / 60);
@@ -4261,9 +4260,15 @@
           return mins + ':' + (secs < 10 ? '0' : '') + secs;
         }
 
-        var wrappers = document.querySelectorAll('.custom-video-wrapper');
-        wrappers.forEach(function(wrapper) {
+        function initVideoPlayer(wrapper) {
+          if (!wrapper || wrapper.getAttribute('data-wd-initialized') === 'true') return;
+          wrapper.setAttribute('data-wd-initialized', 'true');
+
           var video = wrapper.querySelector('.custom-video-element');
+          if (!video) return;
+
+          window.WorkDailyVideoRegistry.register(video);
+
           var centerPlayBtn = wrapper.querySelector('.video-center-play-btn');
           var loaderOverlay = wrapper.querySelector('.video-loader-overlay');
           var errorOverlay = wrapper.querySelector('.video-error-overlay');
@@ -4278,7 +4283,32 @@
           var feedbackLeft = wrapper.querySelector('.video-seek-feedback-left');
           var feedbackRight = wrapper.querySelector('.video-seek-feedback-right');
 
-          if (!video) return;
+          var userRequestedPlay = false;
+
+          if (loaderOverlay) loaderOverlay.style.display = 'none';
+          if (errorOverlay) errorOverlay.style.display = 'none';
+
+          function showLoader(msg) {
+            if (loaderOverlay && userRequestedPlay) {
+              var txt = loaderOverlay.querySelector('.video-loader-text') || loaderOverlay.querySelector('span');
+              if (txt) txt.textContent = msg || 'Loading video...';
+              loaderOverlay.style.display = 'flex';
+            }
+          }
+
+          function hideLoader() {
+            if (loaderOverlay) loaderOverlay.style.display = 'none';
+          }
+
+          function showError() {
+            hideLoader();
+            if (errorOverlay) errorOverlay.style.display = 'flex';
+            updatePlayUI();
+          }
+
+          function hideError() {
+            if (errorOverlay) errorOverlay.style.display = 'none';
+          }
 
           function updatePlayUI() {
             if (video.paused || video.ended) {
@@ -4302,11 +4332,20 @@
 
           function togglePlay() {
             if (video.paused || video.ended) {
-              if (errorOverlay) errorOverlay.style.display = 'none';
+              userRequestedPlay = true;
+              hideError();
+              if (video.readyState < 3) {
+                showLoader('Buffering...');
+              }
               var playPromise = video.play();
               if (playPromise !== undefined) {
-                playPromise.catch(function(err) {
+                playPromise.then(function() {
+                  hideLoader();
+                  hideError();
+                  updatePlayUI();
+                }).catch(function(err) {
                   console.log('Video play error handled:', err);
+                  hideLoader();
                   updatePlayUI();
                 });
               }
@@ -4336,60 +4375,12 @@
             }, 600);
           }
 
-          // Diagnostic Logger for Network & Playback Diagnostics
-          ['loadstart', 'loadedmetadata', 'loadeddata', 'canplay', 'canplaythrough', 'play', 'playing', 'pause', 'waiting', 'stalled', 'progress', 'timeupdate', 'ended', 'abort', 'error', 'emptied'].forEach(function(evtName) {
-            video.addEventListener(evtName, function() {
-              if (evtName === 'timeupdate' || evtName === 'progress') return;
-              var diagInfo = {
-                event: evtName,
-                src: video.currentSrc || video.src,
-                readyState: video.readyState,
-                networkState: video.networkState,
-                error: video.error ? { code: video.error.code, message: video.error.message } : null
-              };
-              if (evtName === 'error') {
-                console.error('[WorkDaily Video Diagnostic]', diagInfo);
-              } else {
-                console.log('[WorkDaily Video Diagnostic]', diagInfo);
-              }
-            });
-          });
-
-          function showLoader(msg) {
-            if (loaderOverlay) {
-              var txt = loaderOverlay.querySelector('.video-loader-text') || loaderOverlay.querySelector('span');
-              if (txt) txt.textContent = msg || 'Loading video...';
-              loaderOverlay.style.display = 'flex';
-            }
-          }
-
-          function hideLoader() {
-            if (loaderOverlay) loaderOverlay.style.display = 'none';
-          }
-
-          function showError() {
-            hideLoader();
-            if (errorOverlay) errorOverlay.style.display = 'flex';
-            updatePlayUI();
-          }
-
-          function hideError() {
-            if (errorOverlay) errorOverlay.style.display = 'none';
-          }
-
-          video.addEventListener('loadstart', function() {
-            showLoader('Loading video...');
-            hideError();
-          });
-
           video.addEventListener('waiting', function() {
-            showLoader('Buffering...');
+            if (userRequestedPlay) showLoader('Buffering...');
           });
 
           video.addEventListener('stalled', function() {
-            if (!video.paused) {
-              showLoader('Buffering...');
-            }
+            if (userRequestedPlay && !video.paused) showLoader('Buffering...');
           });
 
           video.addEventListener('canplay', function() {
@@ -4406,9 +4397,13 @@
             updatePlayUI();
           });
 
-          video.addEventListener('pause', updatePlayUI);
+          video.addEventListener('pause', function() {
+            hideLoader();
+            updatePlayUI();
+          });
 
           video.addEventListener('ended', function() {
+            userRequestedPlay = false;
             hideLoader();
             updatePlayUI();
           });
@@ -4420,6 +4415,7 @@
           if (retryBtn) {
             retryBtn.addEventListener('click', function(e) {
               e.stopPropagation();
+              userRequestedPlay = true;
               hideError();
               showLoader('Loading video...');
               try {
@@ -4446,7 +4442,6 @@
             });
           }
 
-          // Tap Zones & Double-Tap Seeking
           var tapTimer = null;
           var lastTapTime = 0;
           var lastZone = null;
@@ -4459,7 +4454,6 @@
               var timeDiff = now - lastTapTime;
 
               if (lastZone === zoneName && timeDiff < 300) {
-                // Double Tap Action
                 clearTimeout(tapTimer);
                 tapTimer = null;
 
@@ -4473,7 +4467,6 @@
                   togglePlay();
                 }
               } else {
-                // Single Tap Candidate
                 tapTimer = setTimeout(function() {
                   togglePlay();
                 }, 300);
@@ -4511,22 +4504,6 @@
             });
           }
 
-          document.addEventListener('fullscreenchange', function() {
-            if (!btnFullscreen) return;
-            var enterIcon = btnFullscreen.querySelector('.icon-fullscreen-enter');
-            var exitIcon = btnFullscreen.querySelector('.icon-fullscreen-exit');
-            if (document.fullscreenElement === wrapper) {
-              if (enterIcon) enterIcon.style.display = 'none';
-              if (exitIcon) exitIcon.style.display = 'block';
-            } else {
-              if (enterIcon) enterIcon.style.display = 'block';
-              if (exitIcon) exitIcon.style.display = 'none';
-            }
-          });
-
-          video.addEventListener('play', updatePlayUI);
-          video.addEventListener('pause', updatePlayUI);
-
           video.addEventListener('loadedmetadata', function() {
             if (timeDuration) timeDuration.textContent = formatTime(video.duration);
           });
@@ -4540,10 +4517,8 @@
             }
           });
 
-          // Seekbar Drag & Click
           if (seekbarContainer) {
             var isDragging = false;
-
             function seek(e) {
               if (!video.duration) return;
               var rect = seekbarContainer.getBoundingClientRect();
@@ -4601,7 +4576,90 @@
               if (btnFullscreen) btnFullscreen.click();
             }
           });
-        });
+        }
+
+        function enhanceArticleVideos() {
+          var articleVideos = document.querySelectorAll('.wd-article-body video, .post-body video');
+          articleVideos.forEach(function(vid) {
+            if (vid.closest('.custom-video-wrapper')) return;
+
+            vid.classList.add('custom-video-element');
+            if (!vid.getAttribute('preload')) vid.setAttribute('preload', 'metadata');
+            vid.setAttribute('playsinline', 'true');
+
+            var wrapper = document.createElement('div');
+            wrapper.className = 'custom-video-wrapper';
+            wrapper.setAttribute('tabindex', '0');
+            wrapper.setAttribute('aria-label', 'WorkDaily Article Video');
+
+            vid.parentNode.insertBefore(wrapper, vid);
+            wrapper.appendChild(vid);
+
+            var controlsHTML = [
+              '<div class="video-loader-overlay" style="display:none;">',
+              '  <div class="video-loader-spinner"></div>',
+              '  <span class="video-loader-text">Loading video...</span>',
+              '</div>',
+              '<div class="video-error-overlay" style="display:none;">',
+              '  <svg class="video-error-icon" style="width:28px;height:28px;fill:#F87171;" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>',
+              '  <span class="video-error-text">Video unavailable</span>',
+              '  <span class="video-error-subtext">Unable to load this video.</span>',
+              '  <button class="video-retry-btn" type="button">Retry</button>',
+              '</div>',
+              '<div class="video-tap-zones">',
+              '  <div class="video-tap-zone video-tap-zone-left" data-zone="left"></div>',
+              '  <div class="video-tap-zone video-tap-zone-center" data-zone="center"></div>',
+              '  <div class="video-tap-zone video-tap-zone-right" data-zone="right"></div>',
+              '</div>',
+              '<button class="video-center-play-btn" aria-label="Play / Pause Video">',
+              '  <svg class="icon-play" style="width:24px;height:24px;fill:currentColor;margin-left:2px;" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>',
+              '  <svg class="icon-pause" style="width:24px;height:24px;fill:currentColor;display:none;" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>',
+              '</button>',
+              '<div class="video-seek-feedback video-seek-feedback-left">',
+              '  <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24"><path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"/></svg>',
+              '  <span>↶ 10 sec</span>',
+              '</div>',
+              '<div class="video-seek-feedback video-seek-feedback-right">',
+              '  <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24"><path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"/></svg>',
+              '  <span>↷ 10 sec</span>',
+              '</div>',
+              '<div class="custom-player-controls">',
+              '  <div class="custom-seekbar-container" role="slider" aria-label="Seek Bar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0">',
+              '    <div class="custom-seekbar-track">',
+              '      <div class="custom-seekbar-progress"></div>',
+              '    </div>',
+              '  </div>',
+              '  <div class="custom-player-row">',
+              '    <div class="custom-player-time"><span class="time-current">0:00</span> / <span class="time-duration">0:00</span></div>',
+              '    <div class="custom-player-btn-group">',
+              '      <button class="custom-player-btn btn-mute" aria-label="Mute">',
+              '        <svg class="icon-volume" style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>',
+              '        <svg class="icon-muted" style="width:20px;height:20px;fill:currentColor;display:none;" viewBox="0 0 24 24"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>',
+              '      </button>',
+              '      <button class="custom-player-btn btn-fullscreen" aria-label="Fullscreen">',
+              '        <svg class="icon-fullscreen-enter" style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>',
+              '        <svg class="icon-fullscreen-exit" style="width:20px;height:20px;fill:currentColor;display:none;" viewBox="0 0 24 24"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>',
+              '      </button>',
+              '    </div>',
+              '  </div>',
+              '</div>'
+            ].join('');
+
+            wrapper.insertAdjacentHTML('beforeend', controlsHTML);
+            initVideoPlayer(wrapper);
+          });
+        }
+
+        function initAllVideoPlayers() {
+          enhanceArticleVideos();
+          var wrappers = document.querySelectorAll('.custom-video-wrapper');
+          wrappers.forEach(function(w) {
+            initVideoPlayer(w);
+          });
+        }
+
+        window.initAllVideoPlayers = initAllVideoPlayers;
+        initAllVideoPlayers();
       })();
 
       // 7. Unified Showcase Carousel Engine
