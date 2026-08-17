@@ -883,6 +883,12 @@
     color: #F87171;
   }
 
+  .video-error-subtext {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 2px;
+  }
+
   .video-retry-btn {
     padding: 8px 18px;
     background: var(--mint-primary, #0F9F7A);
@@ -2484,7 +2490,393 @@
     margin: 0 !important;
     padding: 0 !important;
   }
-  ]]></b:skin>
+
+  /* ==========================================================================
+     WORKDAILY CUSTOM BLOGGER POST & ARTICLE STYLING
+     ========================================================================== */
+
+  .wd-posts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 28px;
+    margin-top: 24px;
+  }
+
+  @media (max-width: 640px) {
+    .wd-posts-grid {
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+  }
+
+  .wd-post-card {
+    background: var(--surface-light, #FFFFFF);
+    border: 1px solid var(--border-light, #E2E8F0);
+    border-radius: 16px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  }
+
+  .wd-post-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
+    border-color: var(--mint-primary, #0F9F7A);
+  }
+
+  .wd-post-card-thumb-link {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    background-color: var(--bg-light, #F8FAFC);
+  }
+
+  .wd-post-card-thumb {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+  }
+
+  .wd-post-card:hover .wd-post-card-thumb {
+    transform: scale(1.04);
+  }
+
+  .wd-post-card-content {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+  }
+
+  .wd-post-card-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .wd-category-chip {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 99px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: rgba(15, 159, 122, 0.1);
+    color: var(--mint-primary, #0F9F7A);
+    text-decoration: none !important;
+  }
+
+  .wd-post-date {
+    font-size: 12px;
+    color: var(--text-muted, #94A3B8);
+    font-weight: 500;
+  }
+
+  .wd-post-card-title {
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.4;
+    margin-bottom: 10px;
+  }
+
+  .wd-post-card-title a {
+    color: var(--text-primary, #0F172A);
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+
+  .wd-post-card-title a:hover {
+    color: var(--mint-primary, #0F9F7A);
+  }
+
+  .wd-post-card-snippet {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-secondary, #475569);
+    margin-bottom: 20px;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    flex-grow: 1;
+  }
+
+  .wd-btn-read {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--mint-primary, #0F9F7A);
+    text-decoration: none;
+    transition: gap 0.2s ease, color 0.2s ease;
+    margin-top: auto;
+  }
+
+  .wd-btn-read:hover {
+    gap: 10px;
+    color: var(--mint-hover, #0D8F6D);
+  }
+
+  .wd-article {
+    max-width: 840px;
+    margin: 40px auto 80px;
+    padding: 0 24px;
+  }
+
+  .post-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 99px;
+    background: var(--surface-light, #FFFFFF);
+    border: 1px solid var(--border-light, #E2E8F0);
+    color: var(--text-primary, #0F172A);
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    margin-bottom: 24px;
+  }
+
+  .post-back-btn:hover {
+    background: var(--mint-light, rgba(15, 159, 122, 0.1));
+    color: var(--mint-primary, #0F9F7A);
+    border-color: var(--mint-primary, #0F9F7A);
+  }
+
+  .wd-article-header {
+    margin-bottom: 32px;
+  }
+
+  .wd-article-meta-top {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .wd-article-title {
+    font-size: 2.25rem;
+    font-weight: 800;
+    line-height: 1.25;
+    color: var(--text-primary, #0F172A);
+    margin-bottom: 16px;
+    letter-spacing: -0.02em;
+  }
+
+  @media (max-width: 640px) {
+    .wd-article-title {
+      font-size: 1.65rem;
+    }
+  }
+
+  .wd-article-meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 14px;
+    color: var(--text-secondary, #64748B);
+    font-weight: 500;
+  }
+
+  .wd-article-meta .meta-sep {
+    color: var(--text-muted, #94A3B8);
+  }
+
+  .wd-article-featured-image {
+    width: 100%;
+    max-height: 480px;
+    border-radius: 20px;
+    overflow: hidden;
+    margin-bottom: 36px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
+  }
+
+  .wd-article-featured-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .wd-article-body {
+    font-size: 1.1rem;
+    line-height: 1.8;
+    color: var(--text-primary, #0F172A);
+    word-break: break-word;
+  }
+
+  .wd-article-body h1,
+  .wd-article-body h2,
+  .wd-article-body h3,
+  .wd-article-body h4 {
+    color: var(--text-primary, #0F172A);
+    font-weight: 800;
+    line-height: 1.3;
+    margin: 36px 0 16px;
+    letter-spacing: -0.01em;
+  }
+
+  .wd-article-body h1 { font-size: 1.85rem; }
+  .wd-article-body h2 { font-size: 1.55rem; }
+  .wd-article-body h3 { font-size: 1.3rem; }
+  .wd-article-body h4 { font-size: 1.1rem; }
+
+  .wd-article-body p {
+    margin-bottom: 20px;
+    color: var(--text-secondary, #334155);
+  }
+
+  .wd-article-body strong,
+  .wd-article-body b {
+    font-weight: 700;
+    color: var(--text-primary, #0F172A);
+  }
+
+  .wd-article-body em,
+  .wd-article-body i {
+    font-style: italic;
+  }
+
+  .wd-article-body a {
+    color: var(--mint-primary, #0F9F7A);
+    text-decoration: underline;
+    font-weight: 600;
+    transition: color 0.2s ease;
+  }
+
+  .wd-article-body a:hover {
+    color: var(--mint-hover, #0D8F6D);
+  }
+
+  .wd-article-body ul,
+  .wd-article-body ol {
+    margin: 0 0 24px 24px;
+    padding-left: 8px;
+    color: var(--text-secondary, #334155);
+  }
+
+  .wd-article-body li {
+    margin-bottom: 8px;
+    line-height: 1.7;
+  }
+
+  .wd-article-body blockquote {
+    margin: 28px 0;
+    padding: 18px 24px;
+    background: var(--surface-light, #F8FAFC);
+    border-left: 4px solid var(--mint-primary, #0F9F7A);
+    border-radius: 0 16px 16px 0;
+    font-style: italic;
+    color: var(--text-primary, #0F172A);
+    font-size: 1.125rem;
+  }
+
+  .wd-article-body img {
+    max-width: 100% !important;
+    height: auto !important;
+    border-radius: 16px;
+    display: block;
+    margin: 28px auto;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+  }
+
+  .wd-article-body figure {
+    margin: 28px 0;
+    text-align: center;
+  }
+
+  .wd-article-body figcaption {
+    font-size: 13px;
+    color: var(--text-muted, #94A3B8);
+    margin-top: 8px;
+    text-align: center;
+  }
+
+  .wd-article-body table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 28px 0;
+    display: block;
+    overflow-x: auto;
+    border-radius: 12px;
+    border: 1px solid var(--border-light, #E2E8F0);
+  }
+
+  .wd-article-body th,
+  .wd-article-body td {
+    padding: 12px 16px;
+    border: 1px solid var(--border-light, #E2E8F0);
+    text-align: left;
+  }
+
+  .wd-article-body th {
+    background: var(--bg-light, #F1F5F9);
+    font-weight: 700;
+    color: var(--text-primary, #0F172A);
+  }
+
+  .wd-article-body pre,
+  .wd-article-body code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.9em;
+  }
+
+  .wd-article-body pre {
+    background: #0F172A;
+    color: #F8FAFC;
+    padding: 20px;
+    border-radius: 12px;
+    overflow-x: auto;
+    margin: 24px 0;
+  }
+
+  .wd-article-body code {
+    background: rgba(15, 23, 42, 0.06);
+    color: var(--mint-primary, #0F9F7A);
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+
+  .wd-article-body pre code {
+    background: transparent;
+    color: inherit;
+    padding: 0;
+  }
+
+  .wd-article-body video,
+  .wd-article-body iframe {
+    max-width: 100%;
+    border-radius: 16px;
+    margin: 24px 0;
+  }
+
+  .wd-article-footer {
+    margin-top: 48px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border-light, #E2E8F0);
+  }
+
+  .blog-feeds,
+  .post-feeds,
+  .feed-links,
+  #blog-pager,
+  .widget-item-control,
+  .item-control,
+  .quickedit {
+    display: none !important;
+  }
+
+]]></b:skin>
 </head>
 <body>
 
@@ -2894,21 +3286,22 @@
           <!-- Video Card 1 -->
           <div class='video-card'>
             <div class='custom-video-wrapper' tabindex='0' aria-label='WorkDaily Demo Video 1'>
-              <video class='custom-video-element' poster='https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&amp;fit=crop&amp;w=600&amp;q=80' preload='metadata'>
-                <source src='https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4' type='video/mp4'/>
+              <video class='custom-video-element' poster='https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&amp;fit=crop&amp;w=600&amp;q=80' preload='metadata' playsinline='true'>
+                <source src='https://vjs.zencdn.net/v/oceans.mp4' type='video/mp4'/>
               </video>
 
 
               <!-- Video Loading Indicator Overlay -->
               <div class='video-loader-overlay'>
                 <div class='video-loader-spinner'></div>
-                <span>Loading video...</span>
+                <span class='video-loader-text'>Loading video...</span>
               </div>
 
               <!-- Video Error Overlay -->
               <div class='video-error-overlay' style='display:none;'>
                 <svg class='video-error-icon' style='width:28px;height:28px;fill:#F87171;' viewBox='0 0 24 24'><path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z'/></svg>
                 <span class='video-error-text'>Video unavailable</span>
+                <span class='video-error-subtext'>Unable to load this demo video.</span>
                 <button class='video-retry-btn' type='button'>Retry</button>
               </div>
 
@@ -2932,7 +3325,7 @@
               </div>
               <div class='video-seek-feedback video-seek-feedback-right'>
                 <svg style='width:20px;height:20px;fill:currentColor;' viewBox='0 0 24 24'><path d='M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z'/></svg>
-                <span>10 sec ↷</span>
+                <span>↷ 10 sec</span>
               </div>
 
               <!-- Bottom Controls -->
@@ -2975,21 +3368,22 @@
           <!-- Video Card 2 -->
           <div class='video-card'>
             <div class='custom-video-wrapper' tabindex='0' aria-label='WorkDaily Demo Video 2'>
-              <video class='custom-video-element' poster='https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&amp;fit=crop&amp;w=600&amp;q=80' preload='metadata'>
-                <source src='https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4' type='video/mp4'/>
+              <video class='custom-video-element' poster='https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&amp;fit=crop&amp;w=600&amp;q=80' preload='metadata' playsinline='true'>
+                <source src='https://media.w3.org/2010/05/sintel/trailer.mp4' type='video/mp4'/>
               </video>
 
 
               <!-- Video Loading Indicator Overlay -->
               <div class='video-loader-overlay'>
                 <div class='video-loader-spinner'></div>
-                <span>Loading video...</span>
+                <span class='video-loader-text'>Loading video...</span>
               </div>
 
               <!-- Video Error Overlay -->
               <div class='video-error-overlay' style='display:none;'>
                 <svg class='video-error-icon' style='width:28px;height:28px;fill:#F87171;' viewBox='0 0 24 24'><path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z'/></svg>
                 <span class='video-error-text'>Video unavailable</span>
+                <span class='video-error-subtext'>Unable to load this demo video.</span>
                 <button class='video-retry-btn' type='button'>Retry</button>
               </div>
 
@@ -3013,7 +3407,7 @@
               </div>
               <div class='video-seek-feedback video-seek-feedback-right'>
                 <svg style='width:20px;height:20px;fill:currentColor;' viewBox='0 0 24 24'><path d='M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z'/></svg>
-                <span>10 sec ↷</span>
+                <span>↷ 10 sec</span>
               </div>
 
               <!-- Bottom Controls -->
@@ -3056,21 +3450,22 @@
           <!-- Video Card 3 -->
           <div class='video-card'>
             <div class='custom-video-wrapper' tabindex='0' aria-label='WorkDaily Demo Video 3'>
-              <video class='custom-video-element' poster='https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&amp;fit=crop&amp;w=600&amp;q=80' preload='metadata'>
-                <source src='https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4' type='video/mp4'/>
+              <video class='custom-video-element' poster='https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&amp;fit=crop&amp;w=600&amp;q=80' preload='metadata' playsinline='true'>
+                <source src='https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4' type='video/mp4'/>
               </video>
 
 
               <!-- Video Loading Indicator Overlay -->
               <div class='video-loader-overlay'>
                 <div class='video-loader-spinner'></div>
-                <span>Loading video...</span>
+                <span class='video-loader-text'>Loading video...</span>
               </div>
 
               <!-- Video Error Overlay -->
               <div class='video-error-overlay' style='display:none;'>
                 <svg class='video-error-icon' style='width:28px;height:28px;fill:#F87171;' viewBox='0 0 24 24'><path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z'/></svg>
                 <span class='video-error-text'>Video unavailable</span>
+                <span class='video-error-subtext'>Unable to load this demo video.</span>
                 <button class='video-retry-btn' type='button'>Retry</button>
               </div>
 
@@ -3094,7 +3489,7 @@
               </div>
               <div class='video-seek-feedback video-seek-feedback-right'>
                 <svg style='width:20px;height:20px;fill:currentColor;' viewBox='0 0 24 24'><path d='M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z'/></svg>
-                <span>10 sec ↷</span>
+                <span>↷ 10 sec</span>
               </div>
 
               <!-- Bottom Controls -->
@@ -3240,50 +3635,150 @@
   <b:section id='main-section' showaddelement='yes'>
     <b:widget id='Blog1' locked='true' mobile='yes' title='Blog Posts' type='Blog'>
       <b:includable id='main'>
-        <b:if cond='data:view.isHomepage'>
-          <!-- Homepage main content is handled by landing layout above -->
+        <b:if cond='data:view.isSingleItem'>
+          <!-- SINGLE ARTICLE PAGE -->
+          <b:loop values='data:posts' var='post'>
+            <b:include name='post' data='post'/>
+          </b:loop>
         <b:else/>
-          <!-- INNER PAGES VIEW -->
-          <b:if cond='data:view.isSingleItem'>
-            <!-- SINGLE ARTICLE VIEW -->
-            <b:loop values='data:posts' var='post'>
-              <article class='blog-container'>
-                <div class='post-header'>
-                  <a class='post-back-btn' expr:href='data:blog.homepageUrl'>
-                    <svg viewBox='0 0 24 24'>
-                      <path d='M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z'/>
-                    </svg>
-                    Back to Home
-                  </a>
-                  <h1 class='post-title'><data:post.title/></h1>
-                  <div class='post-meta'>
-                    <span>Published on: <data:post.date/></span> • <span>Author: SynFusion Team</span>
+          <!-- MULTI-POST / INDEX / LABEL / HOMEPAGE POSTS -->
+          <b:if cond='data:view.isHomepage'>
+            <!-- On homepage: landing sections are above. If posts exist, render Homepage Articles Section -->
+            <b:if cond='data:posts'>
+              <section class='features-section' id='articles' style='background-color: var(--surface-light); border-top: 1px solid var(--border-light); padding: 80px 0;'>
+                <div class='section-container' style='max-width: 1200px; margin: 0 auto; padding: 0 24px;'>
+                  <div class='section-header' style='text-align:center; margin-bottom: 48px;'>
+                    <span class='section-badge' style='background: var(--mint-light); color: var(--mint-primary); font-size: 12px; font-weight: 700; padding: 6px 12px; border-radius: 99px; text-transform: uppercase;'>LATEST UPDATES</span>
+                    <h2 class='section-title' style='font-size: 32px; font-weight: 800; margin-top: 12px;'>WorkDaily Blog &amp; Articles</h2>
+                    <p class='section-subtitle' style='color: var(--text-secondary); max-width: 600px; margin: 8px auto 0;'>Stay updated with the latest WorkDaily features, guides, and announcements.</p>
+                  </div>
+                  <div class='wd-posts-grid'>
+                    <b:loop values='data:posts' var='post'>
+                      <b:include name='postCard' data='post'/>
+                    </b:loop>
                   </div>
                 </div>
-
-                <div class='post-body'>
-                  <b:if cond='data:post.featuredImage'>
-                    <div style='text-align:center;margin-bottom:32px;border-radius:16px;overflow:hidden;'>
-                      <img expr:src='data:post.featuredImage' style='max-width:100%;height:auto;border-radius:16px;'/>
-                    </div>
-                  </b:if>
-                  <data:post.body/>
-                </div>
-              </article>
-            </b:loop>
+              </section>
+            </b:if>
           <b:else/>
-            <!-- DEFAULT POSTS LIST VIEW -->
-            <div class='blog-container'>
-              <b:loop values='data:posts' var='post'>
-                <div style='background:#FFFFFF;border:1px solid var(--border-light);border-radius:16px;padding:24px;margin-bottom:24px;'>
-                  <h2 style='margin-bottom:8px;'><a expr:href='data:post.url'><data:post.title/></a></h2>
-                  <p style='color:var(--text-secondary);'><data:post.snippet/></p>
-                </div>
-              </b:loop>
+            <!-- INNER LIST VIEW (Label search, search, archive) -->
+            <div class='wd-blog-list-container' style='max-width: 1200px; margin: 40px auto; padding: 0 24px;'>
+              <div class='wd-blog-list-header' style='margin-bottom: 32px; text-align: center;'>
+                <a class='post-back-btn' expr:href='data:blog.homepageUrl'>
+                  <svg viewBox='0 0 24 24' style='width:18px;height:18px;fill:currentColor;'>
+                    <path d='M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z'/>
+                  </svg>
+                  Back to Home
+                </a>
+                <h1 class='wd-blog-list-title' style='font-size: 32px; font-weight: 800; color: var(--text-primary);'>
+                  <b:if cond='data:view.isLabelSearch'>
+                    Articles in <data:view.search.label/>
+                  <b:else/>
+                    WorkDaily Blog &amp; Updates
+                  </b:if>
+                </h1>
+              </div>
+              <div class='wd-posts-grid'>
+                <b:loop values='data:posts' var='post'>
+                  <b:include name='postCard' data='post'/>
+                </b:loop>
+              </div>
             </div>
           </b:if>
         </b:if>
       </b:includable>
+
+      <b:includable id='mobile-main' var='top'>
+        <b:include name='main'/>
+      </b:includable>
+
+      <b:includable id='postCard' var='post'>
+        <article class='wd-post-card'>
+          <b:if cond='data:post.featuredImage'>
+            <a class='wd-post-card-thumb-link' expr:href='data:post.url'>
+              <img class='wd-post-card-thumb' expr:src='data:post.featuredImage' expr:alt='data:post.title' loading='lazy'/>
+            </a>
+          </b:if>
+          <div class='wd-post-card-content'>
+            <div class='wd-post-card-meta'>
+              <b:if cond='data:post.labels'>
+                <span class='wd-category-chip'>
+                  <b:loop values='data:post.labels' var='label' index='i'>
+                    <b:if cond='data:i == 0'>
+                      <data:label.name/>
+                    </b:if>
+                  </b:loop>
+                </span>
+              <b:else/>
+                <span class='wd-category-chip'>Updates</span>
+              </b:if>
+              <span class='wd-post-date'><data:post.date/></span>
+            </div>
+            <h3 class='wd-post-card-title'>
+              <a expr:href='data:post.url'><data:post.title/></a>
+            </h3>
+            <p class='wd-post-card-snippet'>
+              <b:if cond='data:post.snippet'>
+                <data:post.snippet/>
+              <b:else/>
+                Explore this article on WorkDaily.
+              </b:if>
+            </p>
+            <a class='wd-btn-read' expr:href='data:post.url'>
+              <span>Read Article</span>
+              <svg viewBox='0 0 24 24' style='width:16px;height:16px;fill:currentColor;'><path d='M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z'/></svg>
+            </a>
+          </div>
+        </article>
+      </b:includable>
+
+      <b:includable id='post' var='post'>
+        <article class='wd-article'>
+          <header class='wd-article-header'>
+            <a class='post-back-btn' expr:href='data:blog.homepageUrl'>
+              <svg viewBox='0 0 24 24' style='width:18px;height:18px;fill:currentColor;'>
+                <path d='M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z'/>
+              </svg>
+              Back to Home
+            </a>
+            <div class='wd-article-meta-top'>
+              <b:if cond='data:post.labels'>
+                <b:loop values='data:post.labels' var='label'>
+                  <a class='wd-category-chip' expr:href='data:label.url'><data:label.name/></a>
+                </b:loop>
+              <b:else/>
+                <span class='wd-category-chip'>Updates</span>
+              </b:if>
+            </div>
+            <h1 class='wd-article-title'><data:post.title/></h1>
+            <div class='wd-article-meta'>
+              <span>Published: <data:post.date/></span>
+              <span class='meta-sep'>•</span>
+              <span>By SynFusion Team</span>
+            </div>
+          </header>
+
+          <b:if cond='data:post.featuredImage'>
+            <div class='wd-article-featured-image'>
+              <img expr:src='data:post.featuredImage' expr:alt='data:post.title'/>
+            </div>
+          </b:if>
+
+          <div class='wd-article-body'>
+            <data:post.body/>
+          </div>
+
+          <footer class='wd-article-footer'>
+            <a class='post-back-btn' expr:href='data:blog.homepageUrl'>
+              <svg viewBox='0 0 24 24' style='width:18px;height:18px;fill:currentColor;'>
+                <path d='M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z'/>
+              </svg>
+              Back to Home
+            </a>
+          </footer>
+        </article>
+      </b:includable>
+
     </b:widget>
   </b:section>
 
@@ -3687,6 +4182,78 @@
 
       // 6. Custom WorkDaily Video Players Engine
       (function setupCustomVideoPlayers() {
+        function enhanceArticleVideos() {
+          var articleVideos = document.querySelectorAll('.wd-article-body video, .post-body video');
+          articleVideos.forEach(function(vid) {
+            if (vid.closest('.custom-video-wrapper')) return;
+
+            vid.classList.add('custom-video-element');
+            if (!vid.getAttribute('preload')) vid.setAttribute('preload', 'metadata');
+            vid.setAttribute('playsinline', 'true');
+
+            var wrapper = document.createElement('div');
+            wrapper.className = 'custom-video-wrapper';
+            wrapper.setAttribute('tabindex', '0');
+            wrapper.setAttribute('aria-label', 'WorkDaily Article Video');
+
+            vid.parentNode.insertBefore(wrapper, vid);
+            wrapper.appendChild(vid);
+
+            var controlsHTML = [
+              '<div class="video-loader-overlay">',
+              '  <div class="video-loader-spinner"></div>',
+              '  <span class="video-loader-text">Loading video...</span>',
+              '</div>',
+              '<div class="video-error-overlay" style="display:none;">',
+              '  <svg class="video-error-icon" style="width:28px;height:28px;fill:#F87171;" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>',
+              '  <span class="video-error-text">Video unavailable</span>',
+              '  <span class="video-error-subtext">Unable to load this video.</span>',
+              '  <button class="video-retry-btn" type="button">Retry</button>',
+              '</div>',
+              '<div class="video-tap-zones">',
+              '  <div class="video-tap-zone video-tap-zone-left" data-zone="left"></div>',
+              '  <div class="video-tap-zone video-tap-zone-center" data-zone="center"></div>',
+              '  <div class="video-tap-zone video-tap-zone-right" data-zone="right"></div>',
+              '</div>',
+              '<button class="video-center-play-btn" aria-label="Play / Pause Video">',
+              '  <svg class="icon-play" style="width:24px;height:24px;fill:currentColor;margin-left:2px;" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>',
+              '  <svg class="icon-pause" style="width:24px;height:24px;fill:currentColor;display:none;" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>',
+              '</button>',
+              '<div class="video-seek-feedback video-seek-feedback-left">',
+              '  <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24"><path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"/></svg>',
+              '  <span>↶ 10 sec</span>',
+              '</div>',
+              '<div class="video-seek-feedback video-seek-feedback-right">',
+              '  <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24"><path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"/></svg>',
+              '  <span>↷ 10 sec</span>',
+              '</div>',
+              '<div class="custom-player-controls">',
+              '  <div class="custom-seekbar-container" role="slider" aria-label="Seek Bar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0">',
+              '    <div class="custom-seekbar-track">',
+              '      <div class="custom-seekbar-progress"></div>',
+              '    </div>',
+              '  </div>',
+              '  <div class="custom-player-row">',
+              '    <div class="custom-player-time"><span class="time-current">0:00</span> / <span class="time-duration">0:00</span></div>',
+              '    <div class="custom-player-btn-group">',
+              '      <button class="custom-player-btn btn-mute" aria-label="Mute">',
+              '        <svg class="icon-volume" style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>',
+              '        <svg class="icon-muted" style="width:20px;height:20px;fill:currentColor;display:none;" viewBox="0 0 24 24"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>',
+              '      </button>',
+              '      <button class="custom-player-btn btn-fullscreen" aria-label="Fullscreen">',
+              '        <svg class="icon-fullscreen-enter" style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>',
+              '        <svg class="icon-fullscreen-exit" style="width:20px;height:20px;fill:currentColor;display:none;" viewBox="0 0 24 24"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>',
+              '      </button>',
+              '    </div>',
+              '  </div>',
+              '</div>'
+            ].join('');
+
+            wrapper.insertAdjacentHTML('beforeend', controlsHTML);
+          });
+        }
+
+        enhanceArticleVideos();
         function formatTime(seconds) {
           if (isNaN(seconds) || seconds < 0) return '0:00';
           var mins = Math.floor(seconds / 60);
@@ -3769,44 +4336,105 @@
             }, 600);
           }
 
-          // Video Load & Error Event Handlers
-          video.addEventListener('loadstart', function() {
-            if (loaderOverlay) loaderOverlay.style.display = 'flex';
+          // Diagnostic Logger for Network & Playback Diagnostics
+          ['loadstart', 'loadedmetadata', 'loadeddata', 'canplay', 'canplaythrough', 'play', 'playing', 'pause', 'waiting', 'stalled', 'progress', 'timeupdate', 'ended', 'abort', 'error', 'emptied'].forEach(function(evtName) {
+            video.addEventListener(evtName, function() {
+              if (evtName === 'timeupdate' || evtName === 'progress') return;
+              var diagInfo = {
+                event: evtName,
+                src: video.currentSrc || video.src,
+                readyState: video.readyState,
+                networkState: video.networkState,
+                error: video.error ? { code: video.error.code, message: video.error.message } : null
+              };
+              if (evtName === 'error') {
+                console.error('[WorkDaily Video Diagnostic]', diagInfo);
+              } else {
+                console.log('[WorkDaily Video Diagnostic]', diagInfo);
+              }
+            });
+          });
+
+          function showLoader(msg) {
+            if (loaderOverlay) {
+              var txt = loaderOverlay.querySelector('.video-loader-text') || loaderOverlay.querySelector('span');
+              if (txt) txt.textContent = msg || 'Loading video...';
+              loaderOverlay.style.display = 'flex';
+            }
+          }
+
+          function hideLoader() {
+            if (loaderOverlay) loaderOverlay.style.display = 'none';
+          }
+
+          function showError() {
+            hideLoader();
+            if (errorOverlay) errorOverlay.style.display = 'flex';
+            updatePlayUI();
+          }
+
+          function hideError() {
             if (errorOverlay) errorOverlay.style.display = 'none';
+          }
+
+          video.addEventListener('loadstart', function() {
+            showLoader('Loading video...');
+            hideError();
           });
 
           video.addEventListener('waiting', function() {
-            if (loaderOverlay) loaderOverlay.style.display = 'flex';
+            showLoader('Buffering...');
+          });
+
+          video.addEventListener('stalled', function() {
+            if (!video.paused) {
+              showLoader('Buffering...');
+            }
           });
 
           video.addEventListener('canplay', function() {
-            if (loaderOverlay) loaderOverlay.style.display = 'none';
+            hideLoader();
+          });
+
+          video.addEventListener('canplaythrough', function() {
+            hideLoader();
           });
 
           video.addEventListener('playing', function() {
-            if (loaderOverlay) loaderOverlay.style.display = 'none';
-            if (errorOverlay) errorOverlay.style.display = 'none';
+            hideLoader();
+            hideError();
+            updatePlayUI();
+          });
+
+          video.addEventListener('pause', updatePlayUI);
+
+          video.addEventListener('ended', function() {
+            hideLoader();
             updatePlayUI();
           });
 
           video.addEventListener('error', function() {
-            if (loaderOverlay) loaderOverlay.style.display = 'none';
-            if (errorOverlay) errorOverlay.style.display = 'flex';
-            updatePlayUI();
+            showError();
           });
 
           if (retryBtn) {
             retryBtn.addEventListener('click', function(e) {
               e.stopPropagation();
-              if (errorOverlay) errorOverlay.style.display = 'none';
-              if (loaderOverlay) loaderOverlay.style.display = 'flex';
-              video.load();
-              var p = video.play();
-              if (p && p.catch) {
-                p.catch(function(err) {
-                  console.log('Retry play error:', err);
-                  updatePlayUI();
-                });
+              hideError();
+              showLoader('Loading video...');
+              try {
+                video.load();
+                var p = video.play();
+                if (p && p.catch) {
+                  p.catch(function(err) {
+                    console.warn('[WorkDaily Retry Play Rejected]', err);
+                    updatePlayUI();
+                    showError();
+                  });
+                }
+              } catch(err) {
+                console.warn('[WorkDaily Retry Exception]', err);
+                showError();
               }
             });
           }
