@@ -105,84 +105,72 @@
 
   @media (max-width: 480px) {
     :root {
-  --wd-bg: #F8FAFB;
-  --wd-surface: #FFFFFF;
-  --wd-surface-2: #F1F5F9;
-  --wd-text: #0F172A;
-  --wd-text-muted: #64748B;
-  --wd-border: #E2E8F0;
-  --wd-accent: #0F9F7A;
-    --wd-bg: #F8FAFB;
-    --wd-surface: #FFFFFF;
-    --wd-surface-2: #F1F5F9;
-    --wd-text: #0F172A;
-    --wd-text-muted: #64748B;
-    --wd-border: #E2E8F0;
-    --wd-accent: #0F9F7A;
+      --wd-bg: #F8FAFB;
+      --wd-surface: #FFFFFF;
+      --wd-surface-2: #F1F5F9;
+      --wd-text: #0F172A;
+      --wd-text-muted: #64748B;
+      --wd-border: #E2E8F0;
+      --wd-accent: #0F9F7A;
 
-    --mint-primary: #0F9F7A;
-    --mint-light: #EBFDF7;
-    --mint-hover: #0D8F6D;
-    --blue-secondary: #2563EB;
-    --blue-light: #EFF6FF;
-    --orange-tertiary: #EA580C;
-    --orange-light: #FFF7ED;
-    --purple-leave: #7C3AED;
-    --purple-light: #F5F3FF;
+      --mint-primary: #0F9F7A;
+      --mint-light: #EBFDF7;
+      --mint-hover: #0D8F6D;
+      --blue-secondary: #2563EB;
+      --blue-light: #EFF6FF;
+      --orange-tertiary: #EA580C;
+      --orange-light: #FFF7ED;
+      --purple-leave: #7C3AED;
+      --purple-light: #F5F3FF;
 
-    --bg-light: var(--wd-bg);
-    --surface-light: var(--wd-surface);
-    --text-primary: var(--wd-text);
-    --text-secondary: #475569;
-    --text-muted: var(--wd-text-muted);
-    --border-light: var(--wd-border);
-    --card-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.04), 0 2px 8px -1px rgba(15, 23, 42, 0.02);
-    --hover-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.08), 0 10px 10px -5px rgba(15, 23, 42, 0.04);
-    --glass-bg: rgba(255, 255, 255, 0.85);
-    --glass-border: rgba(255, 255, 255, 0.6);
-    --phone-w: 300px;
-    --phone-h: 600px;
+      --bg-light: var(--wd-bg);
+      --surface-light: var(--wd-surface);
+      --text-primary: var(--wd-text);
+      --text-secondary: #475569;
+      --text-muted: var(--wd-text-muted);
+      --border-light: var(--wd-border);
+      --card-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.04), 0 2px 8px -1px rgba(15, 23, 42, 0.02);
+      --hover-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.08), 0 10px 10px -5px rgba(15, 23, 42, 0.04);
+      --glass-bg: rgba(255, 255, 255, 0.85);
+      --glass-border: rgba(255, 255, 255, 0.6);
+      --phone-w: 300px;
+      --phone-h: 600px;
+    }
   }
 
   @media (max-width: 360px) {
     :root {
-  --wd-bg: #F8FAFB;
-  --wd-surface: #FFFFFF;
-  --wd-surface-2: #F1F5F9;
-  --wd-text: #0F172A;
-  --wd-text-muted: #64748B;
-  --wd-border: #E2E8F0;
-  --wd-accent: #0F9F7A;
-    --wd-bg: #F8FAFB;
-    --wd-surface: #FFFFFF;
-    --wd-surface-2: #F1F5F9;
-    --wd-text: #0F172A;
-    --wd-text-muted: #64748B;
-    --wd-border: #E2E8F0;
-    --wd-accent: #0F9F7A;
+      --wd-bg: #F8FAFB;
+      --wd-surface: #FFFFFF;
+      --wd-surface-2: #F1F5F9;
+      --wd-text: #0F172A;
+      --wd-text-muted: #64748B;
+      --wd-border: #E2E8F0;
+      --wd-accent: #0F9F7A;
 
-    --mint-primary: #0F9F7A;
-    --mint-light: #EBFDF7;
-    --mint-hover: #0D8F6D;
-    --blue-secondary: #2563EB;
-    --blue-light: #EFF6FF;
-    --orange-tertiary: #EA580C;
-    --orange-light: #FFF7ED;
-    --purple-leave: #7C3AED;
-    --purple-light: #F5F3FF;
+      --mint-primary: #0F9F7A;
+      --mint-light: #EBFDF7;
+      --mint-hover: #0D8F6D;
+      --blue-secondary: #2563EB;
+      --blue-light: #EFF6FF;
+      --orange-tertiary: #EA580C;
+      --orange-light: #FFF7ED;
+      --purple-leave: #7C3AED;
+      --purple-light: #F5F3FF;
 
-    --bg-light: var(--wd-bg);
-    --surface-light: var(--wd-surface);
-    --text-primary: var(--wd-text);
-    --text-secondary: #475569;
-    --text-muted: var(--wd-text-muted);
-    --border-light: var(--wd-border);
-    --card-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.04), 0 2px 8px -1px rgba(15, 23, 42, 0.02);
-    --hover-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.08), 0 10px 10px -5px rgba(15, 23, 42, 0.04);
-    --glass-bg: rgba(255, 255, 255, 0.85);
-    --glass-border: rgba(255, 255, 255, 0.6);
-    --phone-w: 300px;
-    --phone-h: 600px;
+      --bg-light: var(--wd-bg);
+      --surface-light: var(--wd-surface);
+      --text-primary: var(--wd-text);
+      --text-secondary: #475569;
+      --text-muted: var(--wd-text-muted);
+      --border-light: var(--wd-border);
+      --card-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.04), 0 2px 8px -1px rgba(15, 23, 42, 0.02);
+      --hover-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.08), 0 10px 10px -5px rgba(15, 23, 42, 0.04);
+      --glass-bg: rgba(255, 255, 255, 0.85);
+      --glass-border: rgba(255, 255, 255, 0.6);
+      --phone-w: 300px;
+      --phone-h: 600px;
+    }
   }
 
 
@@ -1707,23 +1695,12 @@
     max-width: var(--phone-w, 280px) !important;
     box-sizing: border-box !important;
   }
-    .wd-carousel-slide img {
+  .wd-carousel-slide img {
     width: 100% !important;
     max-width: 100% !important;
     height: 100% !important;
     object-fit: contain !important;
     box-sizing: border-box !important;
-  }
-    height: 100%;
-    scroll-snap-align: center;
-    box-sizing: border-box !important;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden !important;
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-    position: relative;
   }
 
   /* Screenshot Image inside Slide */
