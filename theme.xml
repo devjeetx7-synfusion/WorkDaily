@@ -395,19 +395,19 @@
       font-size: 11px !important;
     }
   }
-
+ /*
   a {
     color: inherit;
     text-decoration: none;
     transition: all 0.2s ease-in-out;
-  }
+  }*/
 
-  /* Container layout */
+  /* Container layout */ /*
   .container {
     width: min(100% - 32px, 1200px);
     margin: 0 auto;
     padding: 0;
-  }
+  }*/
 
   /* Typography Utilities */
   h1, h2, h3, h4, h5, h6 {
@@ -422,11 +422,11 @@
     -webkit-text-fill-color: transparent;
   }
 
-  /* Layout Sections spacing */
+  /* Layout Sections spacing */ /*
   section {
     padding: clamp(40px, 6vw, 100px) 0;
     position: relative;
-  }
+  }*/
 
   .section-tag {
     display: inline-block;
@@ -2654,10 +2654,10 @@
     }
     .wd-carousel {
       max-width: calc(100vw - 32px) !important;
-    }
+    } /*
     .container {
       padding: 0 16px !important;
-    }
+    }*/
     .showcase-container {
       padding: 0 16px !important;
     }
@@ -4295,8 +4295,19 @@
           if (normFeatured && normFirstBody && normFeatured === normFirstBody) {
             var parent = firstBodyImg.parentElement;
             firstBodyImg.remove();
-            if (parent && parent.tagName.toLowerCase() === 'p' && parent.textContent.trim() === '') {
-              parent.remove();
+
+            // Clean up wrapping anchor (often used by Blogger for lightboxes)
+            if (parent && parent.tagName.toLowerCase() === 'a') {
+               var grandParent = parent.parentElement;
+               if (parent.textContent.trim() === '') {
+                 parent.remove();
+                 parent = grandParent; // Re-assign parent to check next wrapper
+               }
+            }
+
+            // Clean up wrapping paragraph or div separator
+            if (parent && (parent.tagName.toLowerCase() === 'p' || parent.tagName.toLowerCase() === 'div') && parent.textContent.trim() === '') {
+               parent.remove();
             }
           }
         } catch(e) {}
@@ -4424,8 +4435,19 @@
           if (normFeatured && normFirstBody && normFeatured === normFirstBody) {
             var parent = firstBodyImg.parentElement;
             firstBodyImg.remove();
-            if (parent && parent.tagName.toLowerCase() === 'p' && parent.textContent.trim() === '') {
-              parent.remove();
+
+            // Clean up wrapping anchor (often used by Blogger for lightboxes)
+            if (parent && parent.tagName.toLowerCase() === 'a') {
+               var grandParent = parent.parentElement;
+               if (parent.textContent.trim() === '') {
+                 parent.remove();
+                 parent = grandParent; // Re-assign parent to check next wrapper
+               }
+            }
+
+            // Clean up wrapping paragraph or div separator
+            if (parent && (parent.tagName.toLowerCase() === 'p' || parent.tagName.toLowerCase() === 'div') && parent.textContent.trim() === '') {
+               parent.remove();
             }
           }
         } catch(e) {}
