@@ -6,12 +6,12 @@ plugins {
 
 android {
     namespace = "com.synfusion.attendance"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.synfusion.attendance"
         minSdk = 24
-        targetSdk = 34
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0.0"
 
@@ -38,7 +38,8 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
