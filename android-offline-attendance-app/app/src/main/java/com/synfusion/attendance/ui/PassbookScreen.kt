@@ -467,7 +467,7 @@ fun PassbookScreen(
                                     }
                                 } else {
                                     items(state.logs) { log ->
-                                        val dateParts = log.date.split("-").reversed()
+                                        val dateParts = log.date.split("-").asReversed()
                                         val displayDate = if (dateParts.size == 3) "${dateParts[0]}/${dateParts[1]}/${dateParts[2]}" else log.date
 
                                         Column(
@@ -767,7 +767,7 @@ fun PassbookScreen(
                                     }
                                 } else {
                                     items(state.logs) { log ->
-                                        val dateParts = log.date.split("-").reversed()
+                                        val dateParts = log.date.split("-").asReversed()
                                         val displayDate = if (dateParts.size == 3) "${dateParts[0]}/${dateParts[1]}/${dateParts[2]}" else log.date
 
                                         Column(

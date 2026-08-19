@@ -88,7 +88,7 @@ class PdfExportManager(
                 } else "-"
 
                 PdfLog(
-                    date = log.date.split("-").reversed().joinToString("/"),
+                    date = log.date.split("-").asReversed().joinToString("/"),
                     status = statusText,
                     workType = workType,
                     dailyWage = "$rsStr ${AmountFormatter.format(cachedDefaultWage)}",
@@ -195,8 +195,8 @@ class PdfExportManager(
             _exportState.value = PdfExportState.GeneratingPdf
 
             val sortedRecords = records.sortedBy { it.date }
-            val firstRecordDateStr = sortedRecords.firstOrNull()?.date?.split("-")?.reversed()?.joinToString("/") ?: "-"
-            val latestRecordDateStr = sortedRecords.lastOrNull()?.date?.split("-")?.reversed()?.joinToString("/") ?: "-"
+            val firstRecordDateStr = sortedRecords.firstOrNull()?.date?.split("-")?.asReversed()?.joinToString("/") ?: "-"
+            val latestRecordDateStr = sortedRecords.lastOrNull()?.date?.split("-")?.asReversed()?.joinToString("/") ?: "-"
 
             val calcResult = withContext(Dispatchers.Default) {
                 AttendanceCalculationEngine.calculatePassbook(records, cachedDefaultWage)
@@ -247,7 +247,7 @@ class PdfExportManager(
                         } else "-"
 
                         AllTimePdfRecord(
-                            dateStr = log.date.split("-").reversed().joinToString("/"),
+                            dateStr = log.date.split("-").asReversed().joinToString("/"),
                             workerName = name,
                             statusStr = statusText,
                             statusRaw = log.status,
