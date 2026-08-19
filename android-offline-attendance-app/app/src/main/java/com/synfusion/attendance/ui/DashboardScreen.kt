@@ -78,7 +78,6 @@ fun DashboardScreen(
     settingsViewModel: OfflineSettingsViewModel,
     onLogout: () -> Unit
 ) {
-    val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
 
     // Lazy instantiate the ViewModels needed for DashboardScreen tabs
@@ -92,10 +91,8 @@ fun DashboardScreen(
     val currentRoute = navBackStackEntry?.destination?.route ?: "main_pager"
     var showAdvanceDialog by remember { mutableStateOf(false) }
     var advanceAmount by remember { mutableStateOf("") }
-    var showPassbookBottomSheet by remember { mutableStateOf(false) }
 
     var selectedTab by remember { mutableStateOf(0) }
-    val coroutineScope = rememberCoroutineScope()
 
     val dashboardScrollState = rememberLazyListState()
     val calendarScrollState = rememberLazyListState()
@@ -257,7 +254,7 @@ fun DashboardScreen(
                                                         item {
                                                             PersonalStatsGrid(
                                                                 state = dashboardState,
-                                                                onNavigatePassbook = { showPassbookBottomSheet = true },
+                                                                onNavigatePassbook = { bottomNavController.navigate("passbook") },
                                                                 onEarningsClick = { dashboardViewModel.openDrillDown(DrillDownType.EARNINGS) }
                                                             )
                                                         }
@@ -297,7 +294,7 @@ fun DashboardScreen(
                                                                 ) {
                                                                     PersonalStatsGrid(
                                                                         state = dashboardState,
-                                                                        onNavigatePassbook = { showPassbookBottomSheet = true },
+                                                                        onNavigatePassbook = { bottomNavController.navigate("passbook") },
                                                                         onEarningsClick = { dashboardViewModel.openDrillDown(DrillDownType.EARNINGS) }
                                                                     )
                                                                     AllTimePassbookButton(onNavigate = { bottomNavController.navigate("all_time_passbook") })
@@ -335,7 +332,7 @@ fun DashboardScreen(
                             StatsScreen(
                                 viewModel = statsViewModel,
                                 onNavigatePassbook = {
-                                    showPassbookBottomSheet = true
+                                    bottomNavController.navigate("passbook")
                                 },
                                 scrollState = statsScrollState
                             )
@@ -453,33 +450,6 @@ fun DashboardScreen(
             )
         }
 
-        if (showPassbookBottomSheet) {
-            val passbookViewModel: OfflinePassbookViewModel = viewModel(factory = factory)
-            val sheetShape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
-            ModalBottomSheet(
-                onDismissRequest = { showPassbookBottomSheet = false },
-                sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-                modifier = Modifier.fillMaxHeight(),
-                containerColor = MaterialTheme.colorScheme.background,
-                shape = sheetShape,
-                dragHandle = { BottomSheetDefaults.DragHandle() }
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(sheetShape)
-                ) {
-                    PassbookScreen(
-                        viewModel = passbookViewModel,
-                        onNavigateBack = { showPassbookBottomSheet = false },
-                        onNavigateToCalendar = {
-                            showPassbookBottomSheet = false
-                            selectedTab = 1
-                        }
-                    )
-                }
-            }
-        }
 
         dashboardState.selectedDrillDownType?.let { type ->
             val titleRes = when(type) {
