@@ -1679,6 +1679,886 @@
       "priority": "normal",
       "action": "home",
       "category": "general_productivity"
+    },
+    {
+      "id": "good_morning_001",
+      "title": "Subah ki chai aur mazdoori! ☕",
+      "message": "Subah ho gayi {userName}! Chai piyo aur aaj ki ₹{wage} ki mazdoori ke liye taiyar ho jao! ☕",
+      "priority": "normal",
+      "action": "home",
+      "category": "good_morning"
+    },
+    {
+      "id": "good_morning_002",
+      "title": "Suraj nikal aaya bhai! 🌅",
+      "message": "Subah ho gayi bhai! Bistar chhodo, aaj ka kaam aur aaj ki dihadi ₹{todayWage} bula rahi hai! 🌅",
+      "priority": "normal",
+      "action": "home",
+      "category": "good_morning"
+    },
+    {
+      "id": "good_morning_003",
+      "title": "Utho mere mehnat-kash bhai! ☀️",
+      "message": "Subah ho gayi {userName}! Utho, aaj ki mehnat se jeb aur passbook dono bharo! 💪",
+      "priority": "normal",
+      "action": "home",
+      "category": "good_morning"
+    },
+    {
+      "id": "good_morning_004",
+      "title": "Chai-sutta time! ☕",
+      "message": "Subah ki pehli chai aur aaj ka naya josh! Dihadi ₹{wage} pakki karne ka time aa gaya! 🚀",
+      "priority": "normal",
+      "action": "home",
+      "category": "good_morning"
+    },
+    {
+      "id": "good_morning_005",
+      "title": "Bistar se dushmani karo! 😄",
+      "message": "Bistar se breakup kar lo {userName}, aaj site pe ₹{todayWage} ki mazdoori wait kar rahi hai! 😂",
+      "priority": "normal",
+      "action": "home",
+      "category": "good_morning"
+    },
+    {
+      "id": "good_morning_006",
+      "title": "Tiffin pack ho gaya? 🧰",
+      "message": "Tiffin ready, joota pehna? Chalo bhai, aaj {date} ki duty shuru karte hain! 💼",
+      "priority": "normal",
+      "action": "home",
+      "category": "good_morning"
+    },
+    {
+      "id": "good_morning_007",
+      "title": "Nayi subah, nayi kamai! 💰",
+      "message": "Good morning {userName}! Aaj ka din naya hai, aaj ₹{wage} ki shuddh kamai karni hai! 💵",
+      "priority": "normal",
+      "action": "home",
+      "category": "good_morning"
+    },
+    {
+      "id": "good_morning_008",
+      "title": "Chalo kaam pe bhai! 🚴‍♂️",
+      "message": "Rasta naapo bhai, subah ki taza hawa me site ki taraf kadam badhao! 👍",
+      "priority": "normal",
+      "action": "home",
+      "category": "good_morning"
+    },
+    {
+      "id": "good_morning_009",
+      "title": "Aalsi mode OFF! 😂",
+      "message": "Aalsi mode OFF karo {userName}! Subah subah mehnat karoge tabhi shaam ko ₹{todayWage} milega! 😄",
+      "priority": "normal",
+      "action": "home",
+      "category": "good_morning"
+    },
+    {
+      "id": "good_morning_010",
+      "title": "Utho sheron! 🦁",
+      "message": "Utho sher {userName}! Aaj haazir rahoge toh hi mahine ke end me full payment milegi! 🔥",
+      "priority": "normal",
+      "action": "home",
+      "category": "good_morning"
+    },
+    {
+      "id": "going_to_work_001",
+      "title": "Site pe pahunch gaye? 🏗️",
+      "message": "Site pe pahunch gaye {userName}? WorkDaily me check-in karke aaj ki ₹{wage} ki dihadi confirm karo! ⏱️",
+      "priority": "normal",
+      "action": "home",
+      "category": "going_to_work"
+    },
+    {
+      "id": "going_to_work_002",
+      "title": "Raste me ho kya? 🚴",
+      "message": "Cycle chalai ya bus pakdi? Kaam pe pahunchte hi attendance thok dena bhai! 😉",
+      "priority": "normal",
+      "action": "home",
+      "category": "going_to_work"
+    },
+    {
+      "id": "going_to_work_003",
+      "title": "Pehla kadam site pe! 👣",
+      "message": "Site par kadam rakhte hi Check-In button dabana mat bhoolna {userName}! 👍",
+      "priority": "normal",
+      "action": "home",
+      "category": "going_to_work"
+    },
+    {
+      "id": "going_to_work_004",
+      "title": "Chai ki tapri se direct site! ☕",
+      "message": "Chai ki tapri se seedhe kaam pe! Aaj ka attendance update kar lo bhai! ☕",
+      "priority": "normal",
+      "action": "home",
+      "category": "going_to_work"
+    },
+    {
+      "id": "going_to_work_005",
+      "title": "Toolbox taiyar! 🧰",
+      "message": "Pana, pechkas, aur WorkDaily ready! Check-in karo aur kaam shuru karo! 🛠️",
+      "priority": "normal",
+      "action": "home",
+      "category": "going_to_work"
+    },
+    {
+      "id": "going_to_work_006",
+      "title": "Pahunch gaye duty pe! 🚦",
+      "message": "Duty pe aate hi {time} baje check-in thok do {userName}, hisaab clean rahega! 📝",
+      "priority": "normal",
+      "action": "home",
+      "category": "going_to_work"
+    },
+    {
+      "id": "going_to_work_007",
+      "title": "Nayi shift, naya josh! ⚡",
+      "message": "Aaj ki shift shuru! Aaj ki ₹{todayWage} ki mazdoori WorkDaily me record hone ko taiyar hai! ⚡",
+      "priority": "normal",
+      "action": "home",
+      "category": "going_to_work"
+    },
+    {
+      "id": "going_to_work_008",
+      "title": "Kaam chalu karne ka time! ⏰",
+      "message": "{time} baj gaye bhai! Ab baatein kam aur kaam chalu! Check-in button dabao! 😄",
+      "priority": "normal",
+      "action": "home",
+      "category": "going_to_work"
+    },
+    {
+      "id": "going_to_work_009",
+      "title": "Mistri aur Helper ready! 👷‍♂️",
+      "message": "Sab bhai log site pe aa gaye! {userName}, aaj ki haziri lock karo! 🔒",
+      "priority": "normal",
+      "action": "home",
+      "category": "going_to_work"
+    },
+    {
+      "id": "going_to_work_010",
+      "title": "Dihadi shuru! 💰",
+      "message": "Dihadi chalu ho chuki hai! Pehla kaam: WorkDaily me check-in lagana! 📱",
+      "priority": "normal",
+      "action": "home",
+      "category": "going_to_work"
+    },
+    {
+      "id": "daily_work_001",
+      "title": "Aaj kitna kaam hua? 🧱",
+      "message": "Aaj kitna kaam nipat gaya {userName}? Haziri aur overtime WorkDaily me record kar lo! 📊",
+      "priority": "normal",
+      "action": "home",
+      "category": "daily_work"
+    },
+    {
+      "id": "daily_work_002",
+      "title": "Pasine ki kamai! 💦",
+      "message": "Pasina bahana zaroori hai bhai! Aaj ki ₹{todayWage} ki mehnat waste nahi jayegi! 💪",
+      "priority": "normal",
+      "action": "home",
+      "category": "daily_work"
+    },
+    {
+      "id": "daily_work_003",
+      "title": "Dihadi pakki ho gayi! 💵",
+      "message": "Aaj ka kaam poora! DailyWork me haziri laga ke ₹{todayWage} pakka kar lo bhai! 👍",
+      "priority": "normal",
+      "action": "home",
+      "category": "daily_work"
+    },
+    {
+      "id": "daily_work_004",
+      "title": "Sath-bhai log ready! 🤝",
+      "message": "Sab sath-bhaiyon ki attendance aur hisaab saaf rakho! Aaj ka log update karo! 🤝",
+      "priority": "normal",
+      "action": "home",
+      "category": "daily_work"
+    },
+    {
+      "id": "daily_work_005",
+      "title": "Kaam me lagan! 🔥",
+      "message": "Imandari se kaam karo {userName}, WorkDaily aapki har ek dihadi ka hisaab rakhta hai! 📱",
+      "priority": "normal",
+      "action": "home",
+      "category": "daily_work"
+    },
+    {
+      "id": "daily_work_006",
+      "title": "Shaam ki chai aur hisaab! ☕",
+      "message": "Shaam ki chai ke saath aaj ki haziri status mark kar lo, relax raho! ☕",
+      "priority": "normal",
+      "action": "home",
+      "category": "daily_work"
+    },
+    {
+      "id": "daily_work_007",
+      "title": "Mehnat rang la rahi hai! 🌟",
+      "message": "Ab tak {attendanceCount} din ka kaam ho gaya bhai! Aise hi mehnat karte raho! 🌟",
+      "priority": "normal",
+      "action": "home",
+      "category": "daily_work"
+    },
+    {
+      "id": "daily_work_008",
+      "title": "Shift poori hone ko hai! ⏱️",
+      "message": "Shift poori ho gayi ho toh check-out maar ke ghar ki raah pakdo {userName}! 🌆",
+      "priority": "normal",
+      "action": "home",
+      "category": "daily_work"
+    },
+    {
+      "id": "daily_work_009",
+      "title": "Mistri ji, hisaab update! 🏗️",
+      "message": "Aaj ki diwal chun li? Ab WorkDaily me haziri aur overtime ki entry chun do! 🧱",
+      "priority": "normal",
+      "action": "home",
+      "category": "daily_work"
+    },
+    {
+      "id": "daily_work_010",
+      "title": "Jeb me hisaab safe! 🔐",
+      "message": "Bina internet, offline storage me aaj ka ₹{todayWage} ka record safe hai! 🔐",
+      "priority": "normal",
+      "action": "home",
+      "category": "daily_work"
+    },
+    {
+      "id": "hard_work_001",
+      "title": "Mehnat ka koi tod nahi! 💪",
+      "message": "Aaj fir kadake ki mehnat ki hai {userName}! Passbook me ₹{totalEarnings} ki kamai chamak rahi hai! 👑",
+      "priority": "normal",
+      "action": "home",
+      "category": "hard_work"
+    },
+    {
+      "id": "hard_work_002",
+      "title": "Khoon pasine ki kamai! 💦",
+      "message": "Mehnat se kamaya ek ek rupaya qimati hai! WorkDaily me aapka hisaab 100% safe hai. 🛡️",
+      "priority": "normal",
+      "action": "home",
+      "category": "hard_work"
+    },
+    {
+      "id": "hard_work_003",
+      "title": "Ghar walo ke liye mehnat! 🏡",
+      "message": "Ghar walo ki muskan ke liye aaj ₹{todayWage} kamaye. Shabash {userName}! ❤️",
+      "priority": "normal",
+      "action": "home",
+      "category": "hard_work"
+    },
+    {
+      "id": "hard_work_004",
+      "title": "Har din ek chunauti! ⛰️",
+      "message": "Har din ek nayi chunauti, aur har din tum winner! Aaj ki attendance mark karo! 🏆",
+      "priority": "normal",
+      "action": "home",
+      "category": "hard_work"
+    },
+    {
+      "id": "hard_work_005",
+      "title": "Asli majdoor, asli hero! 👑",
+      "message": "Desh ki buniyaad rakhne wale majdoor bhai ko salaam! Aaj ki haziri thok do! 🫡",
+      "priority": "normal",
+      "action": "home",
+      "category": "hard_work"
+    },
+    {
+      "id": "hard_work_006",
+      "title": "Mehnat kabhi bekar nahi jaati! ✨",
+      "message": "{workingDays} din ki mehnat ka parinam: ₹{totalEarnings} ki total kamai! Keep it up! ✨",
+      "priority": "normal",
+      "action": "home",
+      "category": "hard_work"
+    },
+    {
+      "id": "hard_work_007",
+      "title": "Maza tab hai jab hisaab saaf ho! 💯",
+      "message": "Kadi mehnat ke baad jab passbook me ₹{netPayable} dikhta hai toh dil khush ho jata hai! 😊",
+      "priority": "normal",
+      "action": "home",
+      "category": "hard_work"
+    },
+    {
+      "id": "hard_work_008",
+      "title": "Khuddari ki mazdoori! 💰",
+      "message": "Kisi ke aage haath nahi phailana, apni mehnat ka ₹{wage} roze kamana! Proud of you {userName}! 💪",
+      "priority": "normal",
+      "action": "home",
+      "category": "hard_work"
+    },
+    {
+      "id": "hard_work_009",
+      "title": "Thak gaye par tike rahe! 🛑",
+      "message": "Thak gaye par tike rahe {userName}! Aaj ki OT hours {hours} hrs record ho chuki hai! 👍",
+      "priority": "normal",
+      "action": "home",
+      "category": "hard_work"
+    },
+    {
+      "id": "hard_work_010",
+      "title": "Sher ki tarah kaam kiya! 🦁",
+      "message": "Aaj site pe sher ki tarah kaam kiya bhai! Ab passbook khol ke shaanti se dekho! 📖",
+      "priority": "normal",
+      "action": "home",
+      "category": "hard_work"
+    },
+    {
+      "id": "good_night_001",
+      "title": "Din khatam, ab aaram karo! 🌙",
+      "message": "Din bhar mehnat ki {userName}, ab phone rakho aur sukoon ki neend so jao! Shubh Ratri! 😴",
+      "priority": "normal",
+      "action": "home",
+      "category": "good_night"
+    },
+    {
+      "id": "good_night_002",
+      "title": "Kal fir subah mazdoori hai! 😂",
+      "message": "Aaj ka hisaab update ho gaya! Kal fir subah ₹{wage} ki mazdoori bula rahi hai, so jao! 😜",
+      "priority": "normal",
+      "action": "home",
+      "category": "good_night"
+    },
+    {
+      "id": "good_night_003",
+      "title": "Chaddar taan ke so jao! 🛌",
+      "message": "Haziri lag gayi, kamai record ho gayi! Ab chaddar taan ke so jao bhai! 🛌",
+      "priority": "normal",
+      "action": "home",
+      "category": "good_night"
+    },
+    {
+      "id": "good_night_004",
+      "title": "Aaram bhi zaroori hai! 😴",
+      "message": "Kadi mehnat ke baad thakawat mitao! Good Night {userName}! 🌙",
+      "priority": "normal",
+      "action": "home",
+      "category": "good_night"
+    },
+    {
+      "id": "good_night_005",
+      "title": "Sapno me bhi dihadi? 😂",
+      "message": "Sapno me bhi dihadi mat gino bhai 😂 So jao, kal ka hisaab kal karenge! 💤",
+      "priority": "normal",
+      "action": "home",
+      "category": "good_night"
+    },
+    {
+      "id": "good_night_006",
+      "title": "Passbook lock, aankhein band! 🔐",
+      "message": "Passbook lock ho chuki hai, ab aankhein band karo aur so jao! Good Night! ⭐",
+      "priority": "normal",
+      "action": "home",
+      "category": "good_night"
+    },
+    {
+      "id": "good_night_007",
+      "title": "Shubh Ratri bhai! 🌃",
+      "message": "Shubh Ratri {userName}! Aaj aapne ₹{todayWage} ki shandar kamai ki. Kal naya din hoga! 🌌",
+      "priority": "normal",
+      "action": "home",
+      "category": "good_night"
+    },
+    {
+      "id": "good_night_008",
+      "title": "Sone ka time ho gaya! ⏰",
+      "message": "Ghadi bol rahi hai so jao! Kal subah fir site pe jana hai! ⏱️",
+      "priority": "normal",
+      "action": "home",
+      "category": "good_night"
+    },
+    {
+      "id": "good_night_009",
+      "title": "Thakawat door karo! 🛀",
+      "message": "Haath-per dhoye, khana khaya? Ab sukoon se so jao mere bhai! 😴",
+      "priority": "normal",
+      "action": "home",
+      "category": "good_night"
+    },
+    {
+      "id": "good_night_010",
+      "title": "Kal fir dhamaal karenge! 🚀",
+      "message": "Today's work completed! Kal subah naye josh ke saath fir milenge! Shubh Ratri! 🌙",
+      "priority": "normal",
+      "action": "home",
+      "category": "good_night"
+    },
+    {
+      "id": "random_funny_001",
+      "title": "Thekedar dhoondh raha hai! 😂",
+      "message": "Thekedar dhoondh raha hai {userName}! Jaldi se WorkDaily me attendance dikha ke bol 'Main Aaya Tha'! 😜",
+      "priority": "normal",
+      "action": "home",
+      "category": "random_funny"
+    },
+    {
+      "id": "random_funny_002",
+      "title": "Chai wale ka hisaab! ☕",
+      "message": "Chai wale ka udhar baad me chukana, pehle aaj ki ₹{todayWage} ki haziri yahan daal lo! 😂",
+      "priority": "normal",
+      "action": "home",
+      "category": "random_funny"
+    },
+    {
+      "id": "random_funny_003",
+      "title": "Kahan chupa hai bhai? 🕵️‍♂️",
+      "message": "Site pe ho ya ghar pe so rahe ho? WorkDaily bol raha hai jaldi haziri laga do! 😆",
+      "priority": "normal",
+      "action": "home",
+      "category": "random_funny"
+    },
+    {
+      "id": "random_funny_004",
+      "title": "Ghar me seth, site pe majdoor! 😂",
+      "message": "Ghar pe seth banne ke liye site pe mazdoori karni padti hai bhai! Haziri laga do! 😜",
+      "priority": "normal",
+      "action": "home",
+      "category": "random_funny"
+    },
+    {
+      "id": "random_funny_005",
+      "title": "Paisa hi paisa bol raha hai! 💸",
+      "message": "Passbook me ₹{netPayable} dekh ke smile aai na? Aise hi roz haziri lagaya karo! 😁",
+      "priority": "normal",
+      "action": "home",
+      "category": "random_funny"
+    },
+    {
+      "id": "random_funny_006",
+      "title": "Bina haziri ke thekedar nahi dega! 🛑",
+      "message": "Thekedar bol raha hai 'Record kahan hai?' Khol WorkDaily aur dikha de! 📲",
+      "priority": "normal",
+      "action": "home",
+      "category": "random_funny"
+    },
+    {
+      "id": "random_funny_007",
+      "title": "Hero entry maro! 🎬",
+      "message": "Site pe late aane ka apna hi maza hai 😂 Par time sahi mark kar dena bhai! 🎬",
+      "priority": "normal",
+      "action": "home",
+      "category": "random_funny"
+    },
+    {
+      "id": "random_funny_008",
+      "title": "Calculator feko, WorkDaily chalao! 🧮",
+      "message": "Calculator se hisaab karte thak gaye? WorkDaily automatic ₹{totalEarnings} ginta hai! 😎",
+      "priority": "normal",
+      "action": "home",
+      "category": "random_funny"
+    },
+    {
+      "id": "random_funny_009",
+      "title": "Dihadi ka magic! 🪄",
+      "message": "Ek click aur haziri pakki! Aisa magic sirf WorkDaily me milta hai bhai! ✨",
+      "priority": "normal",
+      "action": "home",
+      "category": "random_funny"
+    },
+    {
+      "id": "random_funny_010",
+      "title": "Laughter + Dihadi! 😂",
+      "message": "Haso mat bhai, serious hoke attendance mark karo warna shaam ko samosa nahi milega! 🥟",
+      "priority": "normal",
+      "action": "home",
+      "category": "random_funny"
+    },
+    {
+      "id": "adult_humor_001",
+      "title": "Pehle mazdoori, fir personal plan! 😏",
+      "message": "Pehle aaj ki ₹{wage} ki mazdoori kama le {userName}, baaki personal planning raat ke liye chhod de! 😏",
+      "priority": "normal",
+      "action": "home",
+      "category": "adult_humor"
+    },
+    {
+      "id": "adult_humor_002",
+      "title": "Din me mehnat, raat confidential! 😂",
+      "message": "Din bhar ghisai, raat ka plan confidential! 😂 WorkDaily me haziri laga le pehle! 😉",
+      "priority": "normal",
+      "action": "home",
+      "category": "adult_humor"
+    },
+    {
+      "id": "adult_humor_003",
+      "title": "Kamai bhi zaroori, romance bhi! 😏",
+      "message": "Aaj kaam bhi zaroori hai aur personal plans bhi 😏 Pehle dihadi ₹{todayWage} pakki karo! 💵",
+      "priority": "normal",
+      "action": "home",
+      "category": "adult_humor"
+    },
+    {
+      "id": "adult_humor_004",
+      "title": "Energy bacha ke rakho bhai! ⚡",
+      "message": "Overtime me saari energy mat khatam karo {userName}, ghar pe bhi zaroorat padigi! 😂",
+      "priority": "normal",
+      "action": "home",
+      "category": "adult_humor"
+    },
+    {
+      "id": "adult_humor_005",
+      "title": "Raat ki taiyari shuru? 😉",
+      "message": "Shaam ho gayi, raat ki taiyari shuru? Pehle aaj ka check-out mark kar lo bhai! 😏",
+      "priority": "normal",
+      "action": "home",
+      "category": "adult_humor"
+    },
+    {
+      "id": "adult_humor_006",
+      "title": "Shadi shuda ho toh haziri lagao! 😂",
+      "message": "Ghar jaate hi begum hisaab mangegi! WorkDaily me ₹{netPayable} dikha dena, bachat ho jayegi! 😜",
+      "priority": "normal",
+      "action": "home",
+      "category": "adult_humor"
+    },
+    {
+      "id": "adult_humor_007",
+      "title": "Double meaning na samjho! 😆",
+      "message": "'Hard work' ka matlab hard work hi hai bhai 😂 Kuch aur mat samajhna! Haziri mark karo! 🔨",
+      "priority": "normal",
+      "action": "home",
+      "category": "adult_humor"
+    },
+    {
+      "id": "adult_humor_008",
+      "title": "Seth ji khush, Bhabhi ji khush! 😏",
+      "message": "Time pe kaam khatam, time pe ghar! Seth ji bhi khush, aur ghar pe Bhabhi ji bhi! 😁",
+      "priority": "normal",
+      "action": "home",
+      "category": "adult_humor"
+    },
+    {
+      "id": "adult_humor_009",
+      "title": "Bed rest se pehle passbook check! 🛌",
+      "message": "Bistar pe jaane se pehle 1 second me haziri thok do, fir tension free mood manao! 😏",
+      "priority": "normal",
+      "action": "home",
+      "category": "adult_humor"
+    },
+    {
+      "id": "adult_humor_010",
+      "title": "Maza tabhi hai jab jeb me paisa ho! 💰",
+      "message": "Personal life ka maza tabhi hai jab jeb me ₹{netPayable} pada ho! Mark complete! 😉",
+      "priority": "normal",
+      "action": "home",
+      "category": "adult_humor"
+    },
+    {
+      "id": "wage_001",
+      "title": "Dihadi update ho gayi! 💵",
+      "message": "Aapki aaj ki daily wage ₹{wage} record ho gayi hai {userName}! Passbook me check kar lo! 💰",
+      "priority": "normal",
+      "action": "passbook",
+      "category": "wage"
+    },
+    {
+      "id": "wage_002",
+      "title": "Daily wage check! 💵",
+      "message": "Aaj ki dihadi ₹{todayWage} aapke account/passbook ledger me add ho gayi hai. 👍",
+      "priority": "normal",
+      "action": "passbook",
+      "category": "wage"
+    },
+    {
+      "id": "wage_003",
+      "title": "Kamai ka rate set hai! 📈",
+      "message": "Daily wage rate: ₹{wage}/day! Total month earnings now: ₹{totalEarnings}. Superb! 🚀",
+      "priority": "normal",
+      "action": "passbook",
+      "category": "wage"
+    },
+    {
+      "id": "wage_004",
+      "title": "Paisa gino bhai! 💰",
+      "message": "Dihadi rate ₹{wage} x {workingDays} days = ₹{totalEarnings}! Pure precision! 🧮",
+      "priority": "normal",
+      "action": "passbook",
+      "category": "wage"
+    },
+    {
+      "id": "wage_005",
+      "title": "Advance katne ke baad wage! ✂️",
+      "message": "Kul kamai ₹{totalEarnings} me se ₹{advance} advance katke ₹{netPayable} bacha hai. 📊",
+      "priority": "normal",
+      "action": "passbook",
+      "category": "wage"
+    },
+    {
+      "id": "wage_006",
+      "title": "Wage scale matched! ⚖️",
+      "message": "Aapka daily wage ₹{wage} bina kisi error ke update ho gaya hai {userName}! 📱",
+      "priority": "normal",
+      "action": "passbook",
+      "category": "wage"
+    },
+    {
+      "id": "wage_007",
+      "title": "Bacha hua paisa kitna hai? 💰",
+      "message": "Passbook check: Net payable wage is ₹{netPayable}! Safe & offline always. 🛡️",
+      "priority": "normal",
+      "action": "passbook",
+      "category": "wage"
+    },
+    {
+      "id": "wage_008",
+      "title": "Har din ki pakki wage! 💵",
+      "message": "Ghar jane se pehle apni ₹{todayWage} ki daily wage status verify kar lo bhai! 💵",
+      "priority": "normal",
+      "action": "passbook",
+      "category": "wage"
+    },
+    {
+      "id": "wage_009",
+      "title": "No wage loss! 🛡️",
+      "message": "Rozana WorkDaily me entry karoge toh 1 rupaye ka bhi wage loss nahi hoga! ⚡",
+      "priority": "normal",
+      "action": "passbook",
+      "category": "wage"
+    },
+    {
+      "id": "wage_010",
+      "title": "Wage summary updated! 📑",
+      "message": "{userName}, aapka current wage breakdown ready hai: ₹{netPayable} net balance! 💵",
+      "priority": "normal",
+      "action": "passbook",
+      "category": "wage"
+    },
+    {
+      "id": "attendance_reminder_011",
+      "title": "Dihadi ka reminder! ⏰",
+      "message": "{userName}, aaj ki attendance lagana mat bhoolna! Daily wage ₹{wage} waiting! 💵",
+      "priority": "high",
+      "action": "home",
+      "category": "attendance_reminder"
+    },
+    {
+      "id": "attendance_reminder_012",
+      "title": "Shaam 7 baje ka reminder! 🌇",
+      "message": "Shaam ho gayi bhai! Aaj Present the ya Absent? WorkDaily open karke set kar lo! 📱",
+      "priority": "high",
+      "action": "home",
+      "category": "attendance_reminder"
+    },
+    {
+      "id": "attendance_reminder_013",
+      "title": "Ek tap aur kaam khatam! 👈",
+      "message": "Ek tap me haziri lagao aur shaam ka maza lo {userName}! Dihadi ₹{todayWage}! 👍",
+      "priority": "high",
+      "action": "home",
+      "category": "attendance_reminder"
+    },
+    {
+      "id": "attendance_reminder_014",
+      "title": "Register soona hai! 📝",
+      "message": "Aaj ka register soona pada hai bhai! Jaldi se attendance fill kar de! 📝",
+      "priority": "high",
+      "action": "home",
+      "category": "attendance_reminder"
+    },
+    {
+      "id": "attendance_reminder_015",
+      "title": "Haziri mark karo abhi! ⚡",
+      "message": "Aaj kaam kiya tha na? Toh fir haziri lagane me itna alsi kyu? Thok do fast! ⚡",
+      "priority": "high",
+      "action": "home",
+      "category": "attendance_reminder"
+    },
+    {
+      "id": "attendance_reminder_016",
+      "title": "Forgetfulness = Money Loss! 💸",
+      "message": "Haziri bhool jaoge toh payment kat sakti hai! Abhi WorkDaily open karo {userName}! 📲",
+      "priority": "high",
+      "action": "home",
+      "category": "attendance_reminder"
+    },
+    {
+      "id": "attendance_reminder_017",
+      "title": "Full Day ya Half Day? ⚖️",
+      "message": "Aaj poora din ghisai ki ya aadha din? Sahi status select karke save karo! ⚖️",
+      "priority": "high",
+      "action": "home",
+      "category": "attendance_reminder"
+    },
+    {
+      "id": "attendance_reminder_018",
+      "title": "Thekedar ko hisaab dena hai! 📑",
+      "message": "Thekedar kal subah hisaab mange usse pehle aaj ki attendance lock kar do! 🔒",
+      "priority": "high",
+      "action": "home",
+      "category": "attendance_reminder"
+    },
+    {
+      "id": "attendance_reminder_019",
+      "title": "Kamai ka pehla usool! 💡",
+      "message": "Kamai ka pehla usool: Kaam ke baad attendance turant lagao! ₹{todayWage} added. 💡",
+      "priority": "high",
+      "action": "home",
+      "category": "attendance_reminder"
+    },
+    {
+      "id": "attendance_reminder_020",
+      "title": "Quick reminder for you! 🔔",
+      "message": "{userName}, quick reminder: Aaj ki attendance record nahi hui hai. Tap to complete! 🔔",
+      "priority": "high",
+      "action": "home",
+      "category": "attendance_reminder"
+    },
+    {
+      "id": "earnings_011",
+      "title": "Total earnings update! 💵",
+      "message": "Mubarak ho {userName}! Aapki total monthly earnings ₹{totalEarnings} ho gayi hain! 🎉",
+      "priority": "normal",
+      "action": "passbook",
+      "category": "earnings"
+    },
+    {
+      "id": "earnings_012",
+      "title": "Net payable balance! 💰",
+      "message": "Advance ₹{advance} deduct hone ke baad aapka net payable ₹{netPayable} hai! 📊",
+      "priority": "normal",
+      "action": "passbook",
+      "category": "earnings"
+    },
+    {
+      "id": "earnings_013",
+      "title": "Earning graph UPAR! 📈",
+      "message": "Aapki kamai ka graph UPAR ja raha hai! Is cycle me total ₹{totalEarnings} kamaye! 📈",
+      "priority": "normal",
+      "action": "passbook",
+      "category": "earnings"
+    },
+    {
+      "id": "earnings_014",
+      "title": "Har din ₹{wage} ki kamai! 💵",
+      "message": "Daily wage ₹{wage} x {presentDays} days present = ₹{totalEarnings}! Pure math! 🧮",
+      "priority": "normal",
+      "action": "passbook",
+      "category": "earnings"
+    },
+    {
+      "id": "earnings_015",
+      "title": "Paisa hi paisa! 💵",
+      "message": "Passbook khol kar apni ₹{totalEarnings} ki mehnat chamakate dekho {userName}! 💵",
+      "priority": "normal",
+      "action": "passbook",
+      "category": "earnings"
+    },
+    {
+      "id": "earnings_016",
+      "title": "Hard-earned money safe! 🛡️",
+      "message": "Aapka ₹{netPayable} ka net balance local database me 100% encrypted aur safe hai! 🛡️",
+      "priority": "normal",
+      "action": "passbook",
+      "category": "earnings"
+    },
+    {
+      "id": "earnings_017",
+      "title": "Sateek hisaab! 🎯",
+      "message": "1 rupaye ka bhi difference nahi! Sateek net payable: ₹{netPayable}. Check passbook! 📖",
+      "priority": "normal",
+      "action": "passbook",
+      "category": "earnings"
+    },
+    {
+      "id": "earnings_018",
+      "title": "Overtime income added! ⚡",
+      "message": "{hours} ghante overtime se extra income add ho gayi hai! Total now: ₹{totalEarnings}. ⚡",
+      "priority": "normal",
+      "action": "passbook",
+      "category": "earnings"
+    },
+    {
+      "id": "earnings_019",
+      "title": "Kamai ka scorecard! 🏆",
+      "message": "{userName}, aapka monthly income scorecard: ₹{totalEarnings} total, ₹{advance} advance! 🏆",
+      "priority": "normal",
+      "action": "passbook",
+      "category": "earnings"
+    },
+    {
+      "id": "earnings_020",
+      "title": "Mehnat safal hui! 🌟",
+      "message": "Mahine bhar ki mehnat safal hui! Net hand-out payment: ₹{netPayable}! 👍",
+      "priority": "normal",
+      "action": "passbook",
+      "category": "earnings"
+    },
+    {
+      "id": "holiday_011",
+      "title": "Chhutti ka din! 🏖️",
+      "message": "Aaj chhutti hai {userName}! Maza karo, par calendar me leave/absent mark kar lo! 🏖️",
+      "priority": "normal",
+      "action": "home",
+      "category": "holiday"
+    },
+    {
+      "id": "holiday_012",
+      "title": "Rest & Recharge! 🔋",
+      "message": "Aaj battery recharge karo bhai! WorkDaily me chhutti status update kar do! 🔋",
+      "priority": "normal",
+      "action": "home",
+      "category": "holiday"
+    },
+    {
+      "id": "holiday_013",
+      "title": "Ghar walon ke saath time! 👨‍👩‍👧‍👦",
+      "message": "Aaj ka din parivar ke naam! WorkDaily me leave mark karo aur chill karo! ❤️",
+      "priority": "normal",
+      "action": "home",
+      "category": "holiday"
+    },
+    {
+      "id": "holiday_014",
+      "title": "Tyohar ya Sunday Leave! 🎉",
+      "message": "Happy Leave Day! Passbook me chhutti status record rakho taaki confuse na ho! 📅",
+      "priority": "normal",
+      "action": "home",
+      "category": "holiday"
+    },
+    {
+      "id": "holiday_015",
+      "title": "Chhutti me tension mat lo! 😌",
+      "message": "Chhutti manao, WorkDaily aapka ab tak ka ₹{totalEarnings} ka hisaab sambhale hue hai! 🛡️",
+      "priority": "normal",
+      "action": "home",
+      "category": "holiday"
+    },
+    {
+      "id": "holiday_016",
+      "title": "Leave status updated! 📝",
+      "message": "Aapki leave entry passbook me save ho gayi hai {userName}. Rest well! 🛋️",
+      "priority": "normal",
+      "action": "home",
+      "category": "holiday"
+    },
+    {
+      "id": "holiday_017",
+      "title": "No work today! 🛑",
+      "message": "Aaj koi kaam nahi! Apni attendance grid me absent/leave status log kar lo! 🛑",
+      "priority": "normal",
+      "action": "home",
+      "category": "holiday"
+    },
+    {
+      "id": "holiday_018",
+      "title": "Samosa-Chai day! ☕",
+      "message": "Aaj aaram se chai-samosa khao, kaam ki chinta kal karenge! Enjoy holiday! 🥟",
+      "priority": "normal",
+      "action": "home",
+      "category": "holiday"
+    },
+    {
+      "id": "holiday_019",
+      "title": "Weekly rest day! 😴",
+      "message": "Hafte bhar ghisai ke baad aaj rest day! Passbook total stands at ₹{netPayable}. 😴",
+      "priority": "normal",
+      "action": "home",
+      "category": "holiday"
+    },
+    {
+      "id": "holiday_020",
+      "title": "Holiday log verified! ✅",
+      "message": "{userName}, holiday log entry complete. Kal fir naye josh se kaam par milenge! 🚀",
+      "priority": "normal",
+      "action": "home",
+      "category": "holiday"
     }
   ]
 }

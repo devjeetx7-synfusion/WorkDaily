@@ -324,6 +324,11 @@ object NotificationRuleEngine {
         val missedDays = calculateConsecutiveMissedDays(allRecords, todayStr)
         val streak = calculateAttendanceStreak(allRecords)
 
+        val todayRecord = allRecords.find { it.date == todayStr && it.status != "advance" }
+        val todayWageVal = if (todayRecord != null && todayRecord.wage > 0) {
+            if (todayRecord.type == "half") todayRecord.wage / 2.0 else todayRecord.wage
+        } else dailyWage
+
         return mapOf(
             "userName" to userName,
             "date" to todayStr,
@@ -335,7 +340,11 @@ object NotificationRuleEngine {
             "halfDays" to halfDaysCount.toString(),
             "absentDays" to absentCount.toString(),
             "workingDays" to AmountFormatter.format(workingDays),
+            "attendanceCount" to presentCount.toString(),
             "totalEarnings" to AmountFormatter.format(totalEarnings),
+            "totalWage" to AmountFormatter.format(totalEarnings),
+            "wage" to AmountFormatter.format(dailyWage),
+            "todayWage" to AmountFormatter.format(todayWageVal),
             "overtime" to overtimeHours.toString(),
             "advance" to AmountFormatter.format(advanceAmount),
             "netPayable" to AmountFormatter.format(netPayable),

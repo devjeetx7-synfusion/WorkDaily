@@ -112,8 +112,8 @@ object LocalNotificationManager {
 
     fun mapCategoryToChannel(category: String): String {
         return when (category) {
-            "attendance_reminder", "check_in", "check_out", "late_attendance", "missing_attendance" -> CHANNEL_ATTENDANCE
-            "overtime", "overtime_threshold", "earnings" -> CHANNEL_EARNINGS
+            "attendance_reminder", "check_in", "going_to_work", "check_out", "late_attendance", "missing_attendance", "good_morning", "daily_work", "attendance" -> CHANNEL_ATTENDANCE
+            "overtime", "overtime_threshold", "earnings", "wage", "advance", "hard_work" -> CHANNEL_EARNINGS
             "daily_summary", "weekly_summary", "monthly_summary", "yearly_report", "weekly_report", "monthly_report", "passbook", "export" -> CHANNEL_SUMMARY
             "backup" -> CHANNEL_BACKUP
             else -> CHANNEL_REMINDERS

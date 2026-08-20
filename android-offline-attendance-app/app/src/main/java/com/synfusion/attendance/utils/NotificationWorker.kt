@@ -79,9 +79,9 @@ class NotificationWorker(
             val userId = activeUser.id
 
             val friendlyCategory = when {
-                timeInMinutes in 390..570 -> "general_productivity"  // Morning window
-                timeInMinutes in 1050..1200 -> "streak"              // Evening window
-                timeInMinutes in 1260..1350 -> "general_productivity" // Night window
+                timeInMinutes in 390..570 -> listOf("good_morning", "going_to_work", "attendance_reminder", "general_productivity").random()  // Morning window
+                timeInMinutes in 1050..1200 -> listOf("daily_work", "hard_work", "wage", "streak", "random_funny").random()              // Evening window
+                timeInMinutes in 1260..1350 -> listOf("good_night", "weekend", "adult_humor", "random_funny").random()                    // Night window
                 else -> null
             }
 

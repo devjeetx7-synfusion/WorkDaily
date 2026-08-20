@@ -10,7 +10,7 @@ import java.util.*
 class NotificationSystemTest {
 
     @Test
-    fun test200PlusNotificationTemplatesLoaded() {
+    fun test300PlusNotificationTemplatesLoaded() {
         val file = java.io.File("src/main/res/raw/notification_templates.json").takeIf { it.exists() }
             ?: java.io.File("app/src/main/res/raw/notification_templates.json")
         assertTrue("notification_templates.json must exist", file.exists())
@@ -19,7 +19,7 @@ class NotificationSystemTest {
         val rootObj = com.google.gson.JsonParser.parseString(jsonString).asJsonObject
         val array = rootObj.getAsJsonArray("templates")
 
-        assertTrue("Template count must be 200+", array.size() >= 200)
+        assertTrue("Template count must be 300+", array.size() >= 300)
 
         val ids = mutableSetOf<String>()
         for (i in 0 until array.size()) {
@@ -103,7 +103,11 @@ class NotificationSystemTest {
         assertEquals("1", placeholders["halfDays"])
         assertEquals("1", placeholders["absentDays"])
         assertEquals("4.5", placeholders["workingDays"])
+        assertEquals("5", placeholders["attendanceCount"])
         assertEquals("2,700", placeholders["totalEarnings"])
+        assertEquals("2,700", placeholders["totalWage"])
+        assertEquals("600", placeholders["wage"])
+        assertEquals("600", placeholders["todayWage"])
         assertEquals("500", placeholders["advance"])
         assertEquals("2,200", placeholders["netPayable"])
     }
