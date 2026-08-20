@@ -52,6 +52,9 @@ object NotificationMessageSelector {
         val placeholderRegex = "\\{[a-zA-Z0-9_]+\\}".toRegex()
         result = result.replace(placeholderRegex, "")
 
+        // Clean up orphan currency symbols left by empty values
+        result = result.replace("₹\\s*(?=[\\s,!.?]|$)".toRegex(), "")
+
         // Clean double spaces or leading/trailing commas left by missing userName
         result = result.replace("\\s+".toRegex(), " ")
             .replace("\\s+,".toRegex(), ",")

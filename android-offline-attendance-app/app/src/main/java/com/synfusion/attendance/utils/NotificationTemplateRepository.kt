@@ -82,17 +82,22 @@ object NotificationTemplateRepository {
         }
 
         val prefs = context.getSharedPreferences(PREF_HISTORY, Context.MODE_PRIVATE)
-        val lastUsedId = prefs.getString("last_used_$category", null)
+        val historyKey = "history_set_$category"
+        val historySet = prefs.getStringSet(historyKey, emptySet())?.toMutableSet() ?: mutableSetOf()
 
-        val available = if (pool.size > 1 && lastUsedId != null) {
-            pool.filter { it.id != lastUsedId }
-        } else {
-            pool
+        var available = pool.filter { !historySet.contains(it.id) }
+
+        // If history contains most templates or available pool is exhausted, reset history
+        val maxHistorySize = (pool.size * 0.7).toInt().coerceAtLeast(1)
+        if (available.isEmpty() || historySet.size >= maxHistorySize) {
+            historySet.clear()
+            available = pool
         }
 
-        val selected = available.randomOrNull() ?: pool.first()
+        val selected = available.randomOrNull() ?: pool.random()
 
-        prefs.edit().putString("last_used_$category", selected.id).apply()
+        historySet.add(selected.id)
+        prefs.edit().putStringSet(historyKey, historySet).apply()
 
         val formattedMessage = formatMessage(selected.message, placeholders)
         return Pair(selected, formattedMessage)
@@ -109,7 +114,11 @@ object NotificationTemplateRepository {
         // Clean up any remaining unpopulated optional placeholders safely without crashing
         val cleanRegex = Regex("\\{[a-zA-Z0-9_]+\\}")
         result = cleanRegex.replace(result, "")
-            .replace("\\s+".toRegex(), " ")
+
+        // Clean up orphan currency symbols left by empty values
+        result = result.replace("₹\\s*(?=[\\s,!.?]|$)".toRegex(), "")
+
+        result = result.replace("\\s+".toRegex(), " ")
             .replace("\\s+,".toRegex(), ",")
             .replace("^\\s*,\\s*".toRegex(), "")
             .replace("^,\\s*".toRegex(), "")
