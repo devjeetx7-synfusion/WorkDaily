@@ -96,7 +96,7 @@ class NotificationSystemTest {
             AttendanceEntity("adv", null, "$currentMonthPrefix-07", "advance", "full", advanceAmount = 500.0)
         )
 
-        val placeholders = NotificationRuleEngine.buildPlaceholders(user, records, "$currentMonthPrefix-08")
+        val placeholders = NotificationRuleEngine.buildPlaceholders(user, records, "$currentMonthPrefix-08", "monthly_summary")
 
         assertEquals("Ramesh Kumar", placeholders["userName"])
         assertEquals("5", placeholders["presentDays"])
@@ -106,6 +106,48 @@ class NotificationSystemTest {
         assertEquals("2,700", placeholders["totalEarnings"])
         assertEquals("500", placeholders["advance"])
         assertEquals("2,200", placeholders["netPayable"])
+    }
+
+    @Test
+    fun testCustomWageChangePropagationInNotifications() {
+        val wagesToTest = listOf(400.0, 500.0, 850.0, 900.0, 1000.0, 1100.0)
+
+        for (wage in wagesToTest) {
+            val user = UserEntity("u1", "Vikram", "9999999999", "v@test.com", "personal", wage)
+            val todayStr = "2026-05-15"
+            val record = AttendanceEntity("p1", null, todayStr, "present", "full", overtimeHours = 2, wage = wage)
+
+            val placeholders = NotificationRuleEngine.buildPlaceholders(user, listOf(record), todayStr, "overtime")
+
+            val expectedOt = wage / 8.0 * 2.0
+            val expectedTotal = wage + expectedOt
+
+            assertEquals(AmountFormatter.format(expectedTotal), placeholders["amount"])
+            assertEquals("2", placeholders["hours"])
+        }
+    }
+
+    @Test
+    fun testWeeklySummaryCategoryPlaceholders() {
+        val user = UserEntity("u1", "Ankit", "9876543210", "a@test.com", "personal", 800.0)
+        val records = listOf(
+            AttendanceEntity("p1", null, "2026-05-10", "present", "full", wage = 800.0),
+            AttendanceEntity("p2", null, "2026-05-11", "present", "full", wage = 800.0),
+            AttendanceEntity("p3", null, "2026-05-12", "present", "half", wage = 800.0),
+            AttendanceEntity("p4", null, "2026-05-13", "absent", "full", wage = 800.0),
+            AttendanceEntity("adv", null, "2026-05-14", "advance", "full", advanceAmount = 400.0)
+        )
+
+        val placeholders = NotificationRuleEngine.buildPlaceholders(user, records, "2026-05-16", "weekly_summary")
+
+        assertEquals("3", placeholders["presentDays"])
+        assertEquals("1", placeholders["halfDays"])
+        assertEquals("1", placeholders["absentDays"])
+        assertEquals("2.5", placeholders["workingDays"])
+        assertEquals("2,000", placeholders["totalEarnings"])
+        assertEquals("400", placeholders["advance"])
+        assertEquals("1,600", placeholders["netPayable"])
+        assertEquals("2,000", placeholders["amount"])
     }
 
     @Test

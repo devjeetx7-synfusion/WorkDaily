@@ -103,7 +103,8 @@ class NotificationWorker(
                         val placeholders = NotificationRuleEngine.buildPlaceholders(
                             activeUser,
                             repository.getPersonalAttendance(),
-                            todayStr
+                            todayStr,
+                            friendlyCategory
                         )
 
                         val templatePair = NotificationTemplateRepository.selectTemplate(

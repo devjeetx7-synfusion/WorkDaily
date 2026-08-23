@@ -161,6 +161,8 @@ class OfflineCalendarViewModel(
                 val docId = "personal_$date"
 
                 if (status == "present" || status == "absent") {
+                    val user = withContext(Dispatchers.IO) { localAttendanceRepository.getUser() }
+                    val currentWage = user?.dailyWage ?: 500.0
                     val attendance = AttendanceEntity(
                         id = docId,
                         workerId = null,
@@ -169,7 +171,8 @@ class OfflineCalendarViewModel(
                         type = type,
                         reason = reason,
                         overtimeHours = overtimeHours,
-                        note = note
+                        note = note,
+                        wage = currentWage
                     )
                     localAttendanceRepository.saveAttendance(attendance)
                 }

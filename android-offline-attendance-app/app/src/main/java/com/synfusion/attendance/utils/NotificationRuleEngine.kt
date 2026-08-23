@@ -19,7 +19,7 @@ object NotificationRuleEngine {
     private const val KEY_LAST_YEAR_DATE = "last_yearly_report_date"
     private const val KEY_SENT_MILESTONES = "sent_milestone_days"
 
-    fun evaluateAllRules(context: Context, repository: LocalAttendanceRepository, style: String): RuleEvaluationResult {
+    fun evaluateAllRules(context: Context, repository: LocalAttendanceRepository, style: String = "Friendly"): RuleEvaluationResult {
         val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
         val pref = context.getSharedPreferences(PREFS_SPAM, Context.MODE_PRIVATE)
 
@@ -37,9 +37,6 @@ object NotificationRuleEngine {
         val allRecords = kotlinx.coroutines.runBlocking { repository.getPersonalAttendance() }
         val todayRecord = allRecords.find { it.date == todayStr && it.status != "advance" }
 
-        val placeholders = buildPlaceholders(user, allRecords, todayStr)
-
-        // Rule A: Daily Attendance Reminder
         var triggerCategory: String? = null
         var message = ""
         var title = "WorkDaily"
@@ -89,6 +86,7 @@ object NotificationRuleEngine {
                 }
             }
 
+            val placeholders = buildPlaceholders(user, allRecords, todayStr, triggerCategory)
             val templatePair = NotificationTemplateRepository.selectTemplate(context, triggerCategory, placeholders)
             if (templatePair != null) {
                 val (template, formattedMsg) = templatePair
@@ -125,6 +123,7 @@ object NotificationRuleEngine {
 
             if (canSendDailySummary && hour >= 18) {
                 val cat = if (todayRecord.overtimeHours > 0) "overtime" else "daily_summary"
+                val placeholders = buildPlaceholders(user, allRecords, todayStr, cat)
                 val templatePair = NotificationTemplateRepository.selectTemplate(context, cat, placeholders)
                 if (templatePair != null) {
                     val (template, formattedMsg) = templatePair
@@ -160,6 +159,7 @@ object NotificationRuleEngine {
         val currentWeekStr = "${calendar.get(Calendar.YEAR)}-W${calendar.get(Calendar.WEEK_OF_YEAR)}"
         if (isSunday && pref.getString("${KEY_LAST_WEEKLY_DATE}_$userId", "") != currentWeekStr) {
             triggerCategory = "weekly_summary"
+            val placeholders = buildPlaceholders(user, allRecords, todayStr, triggerCategory)
             val templatePair = NotificationTemplateRepository.selectTemplate(context, triggerCategory, placeholders)
             if (templatePair != null) {
                 title = templatePair.first.title
@@ -187,11 +187,14 @@ object NotificationRuleEngine {
             )
         }
 
-        // Rule C: Monthly Report on 1st of Month
+        // Rule C: Monthly Report on 1st of Month (Calculates completed previous month)
         val isFirstOfMonth = calendar.get(Calendar.DAY_OF_MONTH) == 1
         val currentMonthStr = SimpleDateFormat("yyyy-MM", Locale.getDefault()).format(Date())
         if (isFirstOfMonth && pref.getString("${KEY_LAST_MONTH_DATE}_$userId", "") != currentMonthStr) {
             triggerCategory = "monthly_summary"
+            val prevCal = Calendar.getInstance().apply { add(Calendar.MONTH, -1) }
+            val targetMonthStr = SimpleDateFormat("yyyy-MM", Locale.getDefault()).format(prevCal.time)
+            val placeholders = buildPlaceholders(user, allRecords, todayStr, triggerCategory, targetMonthStr)
             val templatePair = NotificationTemplateRepository.selectTemplate(context, triggerCategory, placeholders)
             if (templatePair != null) {
                 title = templatePair.first.title
@@ -204,7 +207,7 @@ object NotificationRuleEngine {
                 )
             }
 
-            Log.i(TAG, "Monthly Report Rule triggered on 1st of Month! Month: $currentMonthStr")
+            Log.i(TAG, "Monthly Report Rule triggered on 1st of Month! Target Month: $targetMonthStr")
 
             return RuleEvaluationResult(
                 triggerNotification = true,
@@ -219,11 +222,13 @@ object NotificationRuleEngine {
             )
         }
 
-        // Rule D: Yearly Report on 1st January
+        // Rule D: Yearly Report on 1st January (Calculates completed previous year)
         val isFirstOfYear = calendar.get(Calendar.DAY_OF_MONTH) == 1 && calendar.get(Calendar.MONTH) == Calendar.JANUARY
         val currentYearStr = calendar.get(Calendar.YEAR).toString()
         if (isFirstOfYear && pref.getString("${KEY_LAST_YEAR_DATE}_$userId", "") != currentYearStr) {
             triggerCategory = "yearly_report"
+            val targetYearStr = (calendar.get(Calendar.YEAR) - 1).toString()
+            val placeholders = buildPlaceholders(user, allRecords, todayStr, triggerCategory, targetYearStr)
             val templatePair = NotificationTemplateRepository.selectTemplate(context, triggerCategory, placeholders)
             if (templatePair != null) {
                 title = templatePair.first.title
@@ -236,7 +241,7 @@ object NotificationRuleEngine {
                 )
             }
 
-            Log.i(TAG, "Yearly Report Rule triggered on 1st January! Year: $currentYearStr")
+            Log.i(TAG, "Yearly Report Rule triggered on 1st January! Target Year: $targetYearStr")
 
             return RuleEvaluationResult(
                 triggerNotification = true,
@@ -273,18 +278,72 @@ object NotificationRuleEngine {
         pref.edit().putStringSet("${KEY_SENT_MILESTONES}_$userId", milestoneSet).apply()
     }
 
-    fun buildPlaceholders(user: UserEntity?, allRecords: List<AttendanceEntity>, todayStr: String): Map<String, String> {
+    fun buildPlaceholders(
+        user: UserEntity?,
+        allRecords: List<AttendanceEntity>,
+        todayStr: String,
+        category: String? = null,
+        targetPeriodStr: String? = null
+    ): Map<String, String> {
         val userName = user?.name ?: ""
         val dailyWage = user?.dailyWage ?: 500.0
 
         val calendar = Calendar.getInstance()
-        val currentMonthPrefix = SimpleDateFormat("yyyy-MM", Locale.getDefault()).format(Date())
+        val sdfDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        try {
+            val parsed = sdfDate.parse(todayStr)
+            if (parsed != null) calendar.time = parsed
+        } catch (e: Exception) {
+            // fallback to current time
+        }
 
         val dayStr = calendar.get(Calendar.DAY_OF_MONTH).toString()
-        val monthStr = SimpleDateFormat("MMM", Locale.getDefault()).format(Date())
+        val monthStr = SimpleDateFormat("MMM", Locale.getDefault()).format(calendar.time)
         val yearStr = calendar.get(Calendar.YEAR).toString()
 
-        val monthRecords = allRecords.filter { it.date.startsWith(currentMonthPrefix) }
+        val periodRecords: List<AttendanceEntity>
+        val totalPeriodDays: Int
+
+        when (category) {
+            "weekly_summary" -> {
+                // Last 7 days ending on todayStr
+                val endCal = calendar.clone() as Calendar
+                val startCal = (calendar.clone() as Calendar).apply { add(Calendar.DAY_OF_YEAR, -6) }
+                val startDateStr = sdfDate.format(startCal.time)
+                val endDateStr = sdfDate.format(endCal.time)
+
+                periodRecords = allRecords.filter { it.date >= startDateStr && it.date <= endDateStr }
+                totalPeriodDays = 7
+            }
+            "monthly_summary" -> {
+                val targetMonthPrefix = targetPeriodStr ?: SimpleDateFormat("yyyy-MM", Locale.getDefault()).format(calendar.time)
+                periodRecords = allRecords.filter { AttendanceCalculationEngine.isDateInMonth(it.date, targetMonthPrefix) }
+
+                val targetCal = Calendar.getInstance()
+                try {
+                    val parts = targetMonthPrefix.split("-")
+                    targetCal.set(Calendar.YEAR, parts[0].toInt())
+                    targetCal.set(Calendar.MONTH, parts[1].toInt() - 1)
+                    targetCal.set(Calendar.DAY_OF_MONTH, 1)
+                } catch (e: Exception) {
+                    // default
+                }
+                totalPeriodDays = targetCal.getActualMaximum(Calendar.DAY_OF_MONTH)
+            }
+            "yearly_report" -> {
+                val targetYear = targetPeriodStr ?: calendar.get(Calendar.YEAR).toString()
+                periodRecords = allRecords.filter { it.date.startsWith(targetYear) }
+                totalPeriodDays = if (targetYear == calendar.get(Calendar.YEAR).toString()) {
+                    calendar.get(Calendar.DAY_OF_YEAR)
+                } else 365
+            }
+            else -> {
+                // Default: current month
+                val targetMonthPrefix = targetPeriodStr ?: SimpleDateFormat("yyyy-MM", Locale.getDefault()).format(calendar.time)
+                periodRecords = allRecords.filter { AttendanceCalculationEngine.isDateInMonth(it.date, targetMonthPrefix) }
+                totalPeriodDays = calendar.get(Calendar.DAY_OF_MONTH)
+            }
+        }
 
         var presentCount = 0
         var absentCount = 0
@@ -292,7 +351,7 @@ object NotificationRuleEngine {
         var overtimeHours = 0
         var advanceAmount = 0.0
 
-        monthRecords.forEach { rec ->
+        periodRecords.forEach { rec ->
             if (rec.status == "present") {
                 presentCount++
                 if (rec.type == "half") {
@@ -306,23 +365,49 @@ object NotificationRuleEngine {
             }
         }
 
-        val totalEarnings = monthRecords.filter { it.status == "present" }.sumOf { rec ->
+        val totalEarnings = periodRecords.filter { it.status == "present" }.sumOf { rec ->
+            val effectiveWage = if (rec.wage > 0) rec.wage else dailyWage
             val isHalf = rec.type == "half"
-            val base = if (isHalf) rec.wage / 2.0 else rec.wage
-            val ot = OvertimeCalculator.calculateOvertimeAmount(rec.wage, rec.overtimeHours, rec.note)
+            val base = if (isHalf) effectiveWage / 2.0 else effectiveWage
+            val ot = OvertimeCalculator.calculateOvertimeAmount(effectiveWage, rec.overtimeHours, rec.note)
             base + ot
         }
 
         val netPayable = totalEarnings - advanceAmount
         val workingDays = (presentCount - halfDaysCount) + (halfDaysCount * 0.5)
 
-        val passedDays = calendar.get(Calendar.DAY_OF_MONTH)
-        val attendancePercentage = if (passedDays > 0) {
-            String.format(Locale.getDefault(), "%.0f", (workingDays / passedDays) * 100.0)
+        val attendancePercentage = if (totalPeriodDays > 0) {
+            String.format(Locale.getDefault(), "%.0f", (workingDays / totalPeriodDays) * 100.0)
         } else "0"
 
         val missedDays = calculateConsecutiveMissedDays(allRecords, todayStr)
         val streak = calculateAttendanceStreak(allRecords)
+
+        // Calculate today specific details for daily/overtime/attendance notifications
+        val todayRecords = allRecords.filter { it.date == todayStr }
+        val todayAttendance = todayRecords.find { it.status != "advance" }
+        val todayEarned = if (todayAttendance != null && todayAttendance.status == "present") {
+            val effectiveWage = if (todayAttendance.wage > 0) todayAttendance.wage else dailyWage
+            val isHalf = todayAttendance.type == "half"
+            val base = if (isHalf) effectiveWage / 2.0 else effectiveWage
+            val ot = OvertimeCalculator.calculateOvertimeAmount(effectiveWage, todayAttendance.overtimeHours, todayAttendance.note)
+            base + ot
+        } else 0.0
+
+        val todayOtHours = todayAttendance?.overtimeHours ?: 0
+
+        // Determination of amount placeholder:
+        // For summary categories (weekly_summary, monthly_summary, yearly_report), use totalEarnings of that period.
+        // For daily/attendance/overtime notifications, use todayEarned if > 0, else dailyWage.
+        val amountVal = when (category) {
+            "weekly_summary", "monthly_summary", "yearly_report" -> totalEarnings
+            else -> if (todayEarned > 0.0) todayEarned else dailyWage
+        }
+
+        val hoursVal = when (category) {
+            "weekly_summary", "monthly_summary", "yearly_report" -> overtimeHours.toString()
+            else -> if (todayOtHours > 0) todayOtHours.toString() else "8"
+        }
 
         return mapOf(
             "userName" to userName,
@@ -341,8 +426,8 @@ object NotificationRuleEngine {
             "netPayable" to AmountFormatter.format(netPayable),
             "attendancePercentage" to attendancePercentage,
             "streak" to streak.toString(),
-            "amount" to AmountFormatter.format(if (totalEarnings > 0) totalEarnings else dailyWage),
-            "hours" to if (overtimeHours > 0) overtimeHours.toString() else "8",
+            "amount" to AmountFormatter.format(amountVal),
+            "hours" to hoursVal,
             "time" to SimpleDateFormat("hh:mm a", Locale.getDefault()).format(Date())
         )
     }
