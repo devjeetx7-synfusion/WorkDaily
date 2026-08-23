@@ -1296,12 +1296,40 @@ fun PrivacyPolicyBottomSheet(onDismiss: () -> Unit) {
                 Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.privacy_policy), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
             }
             HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+
             Text(
-                text = "WorkDaily respects your privacy and is designed to help users manage work attendance, payments, notes, and reports securely.\n\nInformation We May Store:\n• Name, phone number, wage details, attendance records, payment records, advances, notes, and app preferences.\n\nHow We Use Information:\n• To show your attendance, payment details, passbooks, and reports inside the app.\n\nData Safety:\n• User data should not be sold.\n• Sensitive user records should only be used for app functionality.\n• Users are responsible for entering accurate payment/attendance information.\n\nBrand:\nSynFusion",
+                text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.privacy_intro),
                 fontSize = 14.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 lineHeight = 20.sp
             )
+
+            val privacySections = listOf(
+                Pair(com.synfusion.attendance.R.string.privacy_local_data_title, com.synfusion.attendance.R.string.privacy_local_data_desc),
+                Pair(com.synfusion.attendance.R.string.privacy_notifications_title, com.synfusion.attendance.R.string.privacy_notifications_desc),
+                Pair(com.synfusion.attendance.R.string.privacy_exports_title, com.synfusion.attendance.R.string.privacy_exports_desc),
+                Pair(com.synfusion.attendance.R.string.privacy_sharing_title, com.synfusion.attendance.R.string.privacy_sharing_desc),
+                Pair(com.synfusion.attendance.R.string.privacy_deletion_title, com.synfusion.attendance.R.string.privacy_deletion_desc),
+                Pair(com.synfusion.attendance.R.string.privacy_contact_title, com.synfusion.attendance.R.string.privacy_contact_desc)
+            )
+
+            privacySections.forEach { (titleRes, descRes) ->
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        text = androidx.compose.ui.res.stringResource(titleRes),
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = androidx.compose.ui.res.stringResource(descRes),
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = 18.sp
+                    )
+                }
+            }
+
             Spacer(modifier = Modifier.height(16.dp))
             Button(
                 onClick = onDismiss,
@@ -1340,12 +1368,35 @@ fun TermsConditionsBottomSheet(onDismiss: () -> Unit) {
                 Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.terms_conditions), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
             }
             HorizontalDivider(color = MaterialTheme.colorScheme.outline)
-            Text(
-                text = "By using WorkDaily, you agree to use the app responsibly for managing attendance, wages, payments, notes, passbooks, and related work records.\n\nUser Responsibility:\n• Users are responsible for the accuracy of attendance, wage, payment, and due records entered in the app.\n• WorkDaily is a record-management tool and does not verify real-world payments or attendance automatically.\n\nBrand:\nSynFusion",
-                fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                lineHeight = 20.sp
+
+            val termsSections = listOf(
+                Pair(com.synfusion.attendance.R.string.terms_acceptance_title, com.synfusion.attendance.R.string.terms_acceptance_desc),
+                Pair(com.synfusion.attendance.R.string.terms_use_title, com.synfusion.attendance.R.string.terms_use_desc),
+                Pair(com.synfusion.attendance.R.string.terms_responsibilities_title, com.synfusion.attendance.R.string.terms_responsibilities_desc),
+                Pair(com.synfusion.attendance.R.string.terms_financial_title, com.synfusion.attendance.R.string.terms_financial_desc),
+                Pair(com.synfusion.attendance.R.string.terms_notifications_title, com.synfusion.attendance.R.string.terms_notifications_desc),
+                Pair(com.synfusion.attendance.R.string.terms_backup_title, com.synfusion.attendance.R.string.terms_backup_desc),
+                Pair(com.synfusion.attendance.R.string.terms_branding_title, com.synfusion.attendance.R.string.terms_branding_desc),
+                Pair(com.synfusion.attendance.R.string.terms_contact_title, com.synfusion.attendance.R.string.terms_contact_desc)
             )
+
+            termsSections.forEach { (titleRes, descRes) ->
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        text = androidx.compose.ui.res.stringResource(titleRes),
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = androidx.compose.ui.res.stringResource(descRes),
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        lineHeight = 18.sp
+                    )
+                }
+            }
+
             Spacer(modifier = Modifier.height(16.dp))
             Button(
                 onClick = onDismiss,

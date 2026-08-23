@@ -469,16 +469,30 @@ fun PrivacyPolicyScreen(onNavigateBack: () -> Unit) {
             }
             item {
                 LegalSectionCard(
-                    title = stringResource(R.string.privacy_user_sharing_title),
-                    description = stringResource(R.string.privacy_user_sharing_desc),
+                    title = stringResource(R.string.privacy_notifications_title),
+                    description = stringResource(R.string.privacy_notifications_desc),
+                    icon = androidx.compose.material.icons.Icons.Default.Notifications
+                )
+            }
+            item {
+                LegalSectionCard(
+                    title = stringResource(R.string.privacy_exports_title),
+                    description = stringResource(R.string.privacy_exports_desc),
+                    icon = androidx.compose.material.icons.Icons.Default.PictureAsPdf
+                )
+            }
+            item {
+                LegalSectionCard(
+                    title = stringResource(R.string.privacy_sharing_title),
+                    description = stringResource(R.string.privacy_sharing_desc),
                     icon = androidx.compose.material.icons.Icons.Default.Share
                 )
             }
             item {
                 LegalSectionCard(
-                    title = stringResource(R.string.privacy_third_party_title),
-                    description = stringResource(R.string.privacy_third_party_desc),
-                    icon = androidx.compose.material.icons.Icons.Default.Security
+                    title = stringResource(R.string.privacy_deletion_title),
+                    description = stringResource(R.string.privacy_deletion_desc),
+                    icon = androidx.compose.material.icons.Icons.Default.Delete
                 )
             }
             item {
@@ -568,6 +582,13 @@ fun TermsConditionsScreen(onNavigateBack: () -> Unit) {
                     title = stringResource(R.string.terms_financial_title),
                     description = stringResource(R.string.terms_financial_desc),
                     icon = androidx.compose.material.icons.Icons.Default.AttachMoney
+                )
+            }
+            item {
+                LegalSectionCard(
+                    title = stringResource(R.string.terms_notifications_title),
+                    description = stringResource(R.string.terms_notifications_desc),
+                    icon = androidx.compose.material.icons.Icons.Default.Notifications
                 )
             }
             item {
