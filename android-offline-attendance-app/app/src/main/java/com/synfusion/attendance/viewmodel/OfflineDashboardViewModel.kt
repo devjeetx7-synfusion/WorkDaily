@@ -160,6 +160,10 @@ class OfflineDashboardViewModel(
     fun markAttendance(type: String, overtimeHours: Int, note: String) {
         viewModelScope.launch {
             try {
+                val user = withContext(Dispatchers.IO) { localAttendanceRepository.getUser() }
+                if (user != null) {
+                    cachedDefaultWage = user.dailyWage
+                }
                 val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
                 val docId = "personal_$todayStr"
 
@@ -196,6 +200,10 @@ class OfflineDashboardViewModel(
     fun markAbsent(reason: String, note: String) {
         viewModelScope.launch {
             try {
+                val user = withContext(Dispatchers.IO) { localAttendanceRepository.getUser() }
+                if (user != null) {
+                    cachedDefaultWage = user.dailyWage
+                }
                 val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
                 val docId = "personal_$todayStr"
 
