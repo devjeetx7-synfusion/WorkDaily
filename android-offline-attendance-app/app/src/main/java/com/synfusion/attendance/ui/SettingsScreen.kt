@@ -30,8 +30,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 
 import com.synfusion.attendance.ui.components.InstagramIcon
-import com.synfusion.attendance.ui.components.TelegramIcon
-import com.synfusion.attendance.ui.components.YouTubeIcon
 import com.synfusion.attendance.ui.components.CropScreenDialog
 
 import androidx.compose.runtime.*
@@ -1484,22 +1482,6 @@ fun DeveloperContactBottomSheet(onDismiss: () -> Unit) {
                     contentDescription = "Instagram",
                     onClick = {
                         com.synfusion.attendance.ui.components.SafeExternalLinkHandler.openLink(context, "https://www.instagram.com/getsynfusion")
-                    }
-                )
-
-                ContactIconItem(
-                    icon = TelegramIcon,
-                    contentDescription = "Telegram",
-                    onClick = {
-                        com.synfusion.attendance.ui.components.SafeExternalLinkHandler.openLink(context, "https://t.me/getsynfusion")
-                    }
-                )
-
-                ContactIconItem(
-                    icon = YouTubeIcon,
-                    contentDescription = "YouTube",
-                    onClick = {
-                        com.synfusion.attendance.ui.components.SafeExternalLinkHandler.openLink(context, "https://www.youtube.com/@getsynfusion")
                     }
                 )
 

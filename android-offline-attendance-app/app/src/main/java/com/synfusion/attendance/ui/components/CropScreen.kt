@@ -14,10 +14,8 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -26,8 +24,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.BlendMode
@@ -48,7 +44,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
-import java.io.InputStream
 import kotlin.math.min
 
 @Composable
@@ -94,7 +89,7 @@ fun CropScreenContent(
     var scale by remember { mutableStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
 
-    // Load bitmap in background
+    // Load bitmap in background preserving EXIF orientation
     LaunchedEffect(imageUri) {
         withContext(Dispatchers.IO) {
             originalBitmap = loadScaledBitmap(context, imageUri)
@@ -111,7 +106,6 @@ fun CropScreenContent(
         val containerWidthPx = with(LocalDensity.current) { maxWidth.toPx() }
         val containerHeightPx = with(LocalDensity.current) { maxHeight.toPx() }
         val cropSizePx = min(containerWidthPx, containerHeightPx) * 0.8f
-        val cropSizeDp = with(LocalDensity.current) { cropSizePx.toDp() }
 
         if (isLoading) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -121,8 +115,14 @@ fun CropScreenContent(
             val bitmap = originalBitmap
             if (bitmap == null) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.failed_to_load_image), color = Color.White)
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.failed_to_load_image),
+                            color = Color.White
+                        )
                         Button(onClick = onCancel) {
                             Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.go_back))
                         }
@@ -132,59 +132,46 @@ fun CropScreenContent(
                 val W = bitmap.width.toFloat()
                 val H = bitmap.height.toFloat()
 
-                // Calculate baseScale so the image fills the 1:1 box initially
-                val baseScale = maxOf(cropSizePx / W, cropSizePx / H)
+                // Calculate base scale so the photo initially fits in the view container while preserving aspect ratio
+                val fitScale = minOf(containerWidthPx / W, containerHeightPx / H)
+                val totalScale = fitScale * scale
 
-                // Clamp visual translation so the image always covers the 1:1 box perfectly
-                val maxOffsetX = ((W * baseScale * scale) - cropSizePx) / 2f
-                val maxOffsetY = ((H * baseScale * scale) - cropSizePx) / 2f
-
-                val clampedOffsetX = if (maxOffsetX > 0f) offset.x.coerceIn(-maxOffsetX, maxOffsetX) else 0f
-                val clampedOffsetY = if (maxOffsetY > 0f) offset.y.coerceIn(-maxOffsetY, maxOffsetY) else 0f
-
-                // Main cropping area
+                // Main cropping interactive viewport
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .pointerInput(Unit) {
                             detectTransformGestures { _, pan, zoom, _ ->
-                                scale = (scale * zoom).coerceIn(1f, 8f)
-                                offset = offset + pan
+                                scale = (scale * zoom).coerceIn(0.5f, 10f)
+                                offset += pan
                             }
                         }
                 ) {
-                    // Render image centered in the crop box size
-                    Box(
+                    // Full original photo rendered uncropped in natural aspect ratio
+                    Image(
+                        bitmap = bitmap.asImageBitmap(),
+                        contentDescription = null,
                         modifier = Modifier
-                            .align(Alignment.Center)
-                            .size(cropSizeDp)
-                            .clipToBounds()
-                    ) {
-                        Image(
-                            bitmap = bitmap.asImageBitmap(),
-                            contentDescription = null,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .graphicsLayer {
-                                    scaleX = scale
-                                    scaleY = scale
-                                    translationX = clampedOffsetX
-                                    translationY = clampedOffsetY
-                                },
-                            contentScale = androidx.compose.ui.layout.ContentScale.Crop
-                        )
-                    }
+                            .fillMaxSize()
+                            .graphicsLayer {
+                                scaleX = scale
+                                scaleY = scale
+                                translationX = offset.x
+                                translationY = offset.y
+                            },
+                        contentScale = androidx.compose.ui.layout.ContentScale.Fit
+                    )
 
-                    // Clear cutout overlay
+                    // Clear cutout overlay showing 1:1 crop frame over the image
                     Canvas(
                         modifier = Modifier
                             .fillMaxSize()
                             .graphicsLayer(alpha = 0.99f)
                     ) {
-                        // Dim screen
+                        // Dim background around crop frame
                         drawRect(color = Color.Black.copy(alpha = 0.7f))
 
-                        // Clear hole for crop area
+                        // Clear 1:1 square hole for crop area
                         val left = (size.width - cropSizePx) / 2f
                         val top = (size.height - cropSizePx) / 2f
                         drawRect(
@@ -194,7 +181,7 @@ fun CropScreenContent(
                             blendMode = BlendMode.Clear
                         )
 
-                        // Draw subtle white border
+                        // Subtle white border around crop frame
                         drawRect(
                             color = Color.White,
                             topLeft = Offset(left, top),
@@ -220,7 +207,7 @@ fun CropScreenContent(
                         )
                     }
 
-                    // Actions Bar at the bottom
+                    // Actions Bar at bottom
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -249,31 +236,52 @@ fun CropScreenContent(
                                     isProcessing = true
                                     coroutineScope.launch {
                                         try {
-                                            val finalScale = baseScale * scale
-                                            val cropLeft = ((W * finalScale - cropSizePx) / 2f - clampedOffsetX) / finalScale
-                                            val cropTop = ((H * finalScale - cropSizePx) / 2f - clampedOffsetY) / finalScale
-                                            val cropWidth = cropSizePx / finalScale
-                                            val cropHeight = cropSizePx / finalScale
+                                            val bitmapCropLeft = ((W * totalScale - cropSizePx) / 2f - offset.x) / totalScale
+                                            val bitmapCropTop = ((H * totalScale - cropSizePx) / 2f - offset.y) / totalScale
+                                            val bitmapCropSize = cropSizePx / totalScale
 
-                                            val x = cropLeft.toInt().coerceIn(0, bitmap.width - 1)
-                                            val y = cropTop.toInt().coerceIn(0, bitmap.height - 1)
-                                            val w = cropWidth.toInt().coerceAtMost(bitmap.width - x).coerceAtLeast(1)
-                                            val h = cropHeight.toInt().coerceAtMost(bitmap.height - y).coerceAtLeast(1)
-
-                                            val cropped = Bitmap.createBitmap(bitmap, x, y, w, h)
                                             val targetSize = 500
-                                            val scaled = Bitmap.createScaledBitmap(cropped, targetSize, targetSize, true)
+                                            val resultBitmap = Bitmap.createBitmap(targetSize, targetSize, Bitmap.Config.ARGB_8888)
+                                            val canvas = android.graphics.Canvas(resultBitmap)
 
-                                            val tempFile = File(context.cacheDir, "temp_cropped_profile_${System.currentTimeMillis()}.jpg")
+                                            val srcLeft = bitmapCropLeft.toInt().coerceIn(0, bitmap.width)
+                                            val srcTop = bitmapCropTop.toInt().coerceIn(0, bitmap.height)
+                                            val srcRight = (bitmapCropLeft + bitmapCropSize).toInt().coerceIn(0, bitmap.width)
+                                            val srcBottom = (bitmapCropTop + bitmapCropSize).toInt().coerceIn(0, bitmap.height)
+
+                                            val srcRect = android.graphics.Rect(srcLeft, srcTop, srcRight, srcBottom)
+
+                                            if (srcRect.width() > 0 && srcRect.height() > 0) {
+                                                val dstLeft = ((srcLeft - bitmapCropLeft) / bitmapCropSize * targetSize).toFloat()
+                                                val dstTop = ((srcTop - bitmapCropTop) / bitmapCropSize * targetSize).toFloat()
+                                                val dstRight = ((srcRight - bitmapCropLeft) / bitmapCropSize * targetSize).toFloat()
+                                                val dstBottom = ((srcBottom - bitmapCropTop) / bitmapCropSize * targetSize).toFloat()
+
+                                                val dstRect = android.graphics.RectF(dstLeft, dstTop, dstRight, dstBottom)
+                                                val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG or android.graphics.Paint.FILTER_BITMAP_FLAG)
+                                                canvas.drawBitmap(bitmap, srcRect, dstRect, paint)
+                                            }
+
+                                            // Clean up old temp crop files
+                                            val cacheDir = context.cacheDir
+                                            cacheDir.listFiles { _, name -> name.startsWith("temp_cropped_profile_") }?.forEach { oldFile ->
+                                                try { oldFile.delete() } catch (_: Exception) {}
+                                            }
+
+                                            val tempFile = File(cacheDir, "temp_cropped_profile_${System.currentTimeMillis()}.jpg")
                                             withContext(Dispatchers.IO) {
                                                 FileOutputStream(tempFile).use { out ->
-                                                    scaled.compress(Bitmap.CompressFormat.JPEG, 90, out)
+                                                    resultBitmap.compress(Bitmap.CompressFormat.JPEG, 92, out)
                                                 }
                                             }
 
                                             onCropSuccess(Uri.fromFile(tempFile))
                                         } catch (e: Exception) {
-                                            Toast.makeText(context, context.getString(com.synfusion.attendance.R.string.failed_to_crop_image), Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(
+                                                context,
+                                                context.getString(com.synfusion.attendance.R.string.failed_to_crop_image),
+                                                Toast.LENGTH_SHORT
+                                            ).show()
                                             isProcessing = false
                                         }
                                     }
@@ -328,7 +336,7 @@ fun CropScreenContent(
 }
 
 /**
- * Loads a bitmap from the Uri scaling it down to a sensible max dimension (1500px) and maintaining rotation.
+ * Loads a bitmap from the Uri scaling it down to a sensible max dimension (2000px) and preserving EXIF rotation.
  */
 private fun loadScaledBitmap(context: Context, uri: Uri): Bitmap? {
     return try {
@@ -363,7 +371,7 @@ private fun loadScaledBitmap(context: Context, uri: Uri): Bitmap? {
             // Ignore exif issues
         }
 
-        val maxDim = 1500
+        val maxDim = 2000
         var sampleSize = 1
         while (srcWidth / sampleSize > maxDim || srcHeight / sampleSize > maxDim) {
             sampleSize *= 2
