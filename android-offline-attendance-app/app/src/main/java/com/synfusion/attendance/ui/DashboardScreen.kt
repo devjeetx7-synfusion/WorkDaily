@@ -34,9 +34,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import com.synfusion.attendance.utils.OvertimeCalculator
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
-import androidx.compose.ui.input.nestedscroll.nestedScroll
+import com.synfusion.attendance.ui.components.WorkDailyPullToRefreshBox
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.rememberScrollState
@@ -198,23 +196,10 @@ fun DashboardScreen(
                 ) { page ->
                     when (page) {
                         0 -> {
-                            val pullRefreshState = rememberPullToRefreshState()
-                            LaunchedEffect(pullRefreshState.isRefreshing) {
-                                if (pullRefreshState.isRefreshing) {
-                                    dashboardViewModel.refresh()
-                                }
-                            }
-                            LaunchedEffect(dashboardState.isRefreshing) {
-                                if (!dashboardState.isRefreshing) {
-                                    pullRefreshState.endRefresh()
-                                }
-                            }
-
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .nestedScroll(pullRefreshState.nestedScrollConnection)
-                                    .background(MaterialTheme.colorScheme.background)
+                            WorkDailyPullToRefreshBox(
+                                isRefreshing = dashboardState.isRefreshing,
+                                onRefresh = { dashboardViewModel.refresh() },
+                                modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
                             ) {
                                 Crossfade(
                                     targetState = if (dashboardState.isLoading) "shimmer" else if (dashboardState.errorMessage != null) "error" else "content",
@@ -318,12 +303,6 @@ fun DashboardScreen(
                                                     }
                                                 }
                                             }
-
-                                            PullToRefreshContainer(
-                                                state = pullRefreshState,
-                                                modifier = Modifier.align(Alignment.TopCenter),
-                                                contentColor = MaterialTheme.colorScheme.primary
-                                            )
                                         }
                                     }
                                 }
@@ -966,7 +945,7 @@ fun AdaptiveNavigationRail(currentRoute: String, onNavigate: (String) -> Unit = 
             ) {
                 androidx.compose.foundation.Image(
                     painter = androidx.compose.ui.res.painterResource(id = com.synfusion.attendance.R.drawable.logo_transparent),
-                    contentDescription = "WorkDaily App",
+                    contentDescription = "WorkDaily",
                     modifier = Modifier.size(32.dp),
                     contentScale = androidx.compose.ui.layout.ContentScale.Fit
                 )
