@@ -144,15 +144,13 @@ fun DashboardScreen(
                                 }
                             } else {
                                 val pullRefreshState = rememberPullToRefreshState()
-                                if (pullRefreshState.isRefreshing) {
-                                    LaunchedEffect(true) {
+                                LaunchedEffect(pullRefreshState.isRefreshing) {
+                                    if (pullRefreshState.isRefreshing) {
                                         dashboardViewModel.refresh()
                                     }
                                 }
                                 LaunchedEffect(dashboardState.isRefreshing) {
-                                    if (dashboardState.isRefreshing) {
-                                        pullRefreshState.startRefresh()
-                                    } else {
+                                    if (!dashboardState.isRefreshing) {
                                         pullRefreshState.endRefresh()
                                     }
                                 }

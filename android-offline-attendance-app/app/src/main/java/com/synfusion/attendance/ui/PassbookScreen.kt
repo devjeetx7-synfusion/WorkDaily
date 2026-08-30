@@ -196,9 +196,7 @@ fun PassbookScreen(
         }
     }
     LaunchedEffect(state.isRefreshing) {
-        if (state.isRefreshing) {
-            pullRefreshState.startRefresh()
-        } else {
+        if (!state.isRefreshing) {
             pullRefreshState.endRefresh()
         }
     }

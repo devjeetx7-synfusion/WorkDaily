@@ -226,9 +226,7 @@ fun DashboardScreen(
                                             }
                                         }
                                         LaunchedEffect(dashboardState.isRefreshing) {
-                                            if (dashboardState.isRefreshing) {
-                                                pullRefreshState.startRefresh()
-                                            } else {
+                                            if (!dashboardState.isRefreshing) {
                                                 pullRefreshState.endRefresh()
                                             }
                                         }
