@@ -1,68 +1,85 @@
-# WorkDaily — Daily Wage, Attendance & Passbook Ledger
+# WorkDaily User
 
-[![Android CI Build](https://github.com/getsynfusion/workdaily/actions/workflows/offline-attendance-build.yml/badge.svg)](https://github.com/getsynfusion/workdaily/actions/workflows/offline-attendance-build.yml)
-[![Platform](https://img.shields.io/badge/Platform-Android-green.svg)](https://developer.android.com)
-[![Kotlin](https://img.shields.io/badge/Kotlin-1.9.0-blue.svg)](https://kotlinlang.org)
-[![Compose](https://img.shields.io/badge/UI-Jetpack%20Compose%201.5-brightgreen.svg)](https://developer.android.com/jetpack/compose)
-[![Database](https://img.shields.io/badge/Database-Room%20SQLite%202.6-orange.svg)](https://developer.android.com/training/data-storage/room)
-[![License](https://img.shields.io/badge/License-Proprietary-red.svg)](LICENSE)
-
-**WorkDaily** is a 100% offline, privacy-first Android application designed for daily wagers, contract workers, supervisors, and tradespeople across India to track daily wages, overtime credit, advance cash draws, and net financial balances in Indian Rupees (₹).
+> A 100% offline, privacy-first Android application to track daily wages, attendance, overtime credit, advance payments, and financial passbook balances.
 
 ---
 
-## Key Highlights
+## ✨ What is WorkDaily User?
 
-- 🔒 **100% Offline & Private:** Zero cloud sync, zero remote servers, zero ads, zero analytics/tracking SDKs. All data stays strictly on your device.
-- ⚡ **Instant Settlement Engine:** Centralized financial engine (`AttendanceCalculationEngine`) automatically computes daily earnings, overtime pay, advance subtractions, and net balance (`YOU WILL RECEIVE`, `YOU NEED TO PAY BACK`, `SETTLED`).
-- 📄 **A4 PDF Statement Export:** Local generation of styled A4 Passbook statements (monthly and all-time) ready for sharing via the Android system Sharesheet.
-- 📦 **Local ZIP Backup & Restore:** Export and restore full encrypted/checksum-validated ZIP backups containing SQLite databases, manifests, and profile photos.
-- 💬 **Hinglish Sarcastic Notifications:** Over 320 context-aware local notification templates written in casual Indian Hinglish with light roasting and sarcastic humor.
-- 🌐 **Hindi & English Localization:** Full dual-language support with dynamic language switching, custom currency visual formatting, and localized calendar formats.
+**WorkDaily User** is designed for daily wagers, contract workers, tradespeople, supervisors, and independent workers across India. It provides a simple, reliable way to record daily attendance, log advance cash draws, calculate overtime pay, and keep a clean digital passbook ledger—completely offline on your phone.
 
 ---
 
-## Core Capabilities
+## 🚀 Features
 
-1. **Daily Attendance Logging**
-   - Record status as Present, Absent, Half Day, Holiday, or Advance-Only.
-   - Override daily wage per entry or apply global default daily wage.
-   - Add notes to attendance logs for job sites or task notes.
-
-2. **Overtime & Advance Management**
-   - Log overtime hours with standard multiplier options (1.0x, 1.5x, 2.0x, custom).
-   - Track advance payouts and cash draws with clear balance adjustments.
-
-3. **Passbook & Drill-Down Ledger**
-   - Filter transactions by month or inspect all-time history.
-   - Expand daily records in custom drill-down bottom sheets.
-
-4. **Statistics & Interactive Chart**
-   - Responsive multi-ring metrics for earnings, attendance breakdown, and advance total.
-   - Interactive custom canvas `EarningsLineChart` with nearest-point touch detection and edge-aware tooltip cards.
+- 🔒 **100% Offline & Private** — All data stays strictly on your phone. No cloud sync, no servers, no ads, and no tracking.
+- ⚡ **Instant Settlement Engine** — Real-time calculation of daily earnings, overtime, advance deductions, and net pending balances (`YOU WILL RECEIVE`, `YOU NEED TO PAY BACK`, or `SETTLED`).
+- 📄 **A4 Passbook PDF Export** — Generate clean monthly and all-time financial passbook statements ready for printing or sharing via WhatsApp.
+- 📦 **Local ZIP Backup & Restore** — Export and restore full encrypted backups (SQLite database, settings, and profile photo) with SHA-256 checksum protection.
+- 💬 **Hinglish Daily Reminders** — 320+ friendly, sarcastic, and funny local notifications written in everyday Indian Hinglish.
+- 🌐 **Hindi & English Support** — Full dual-language interface with custom currency formatting (₹) and localized calendar views.
 
 ---
 
-## Application Architecture
+## 📱 What You Can Do
 
-WorkDaily is built using **Clean Architecture + MVVM** in Jetpack Compose:
+1. **Log Attendance Easily** — Mark Full Day, Half Day, Absent, Holiday, or Advance-Only with optional custom wage overrides and notes.
+2. **Track Overtime & Advance Cash** — Log overtime hours and record advance payouts with instant balance updates.
+3. **Inspect Monthly & All-Time Passbooks** — Review transaction histories with drill-down views for earnings, attendance, and advances.
+4. **View Interactive Earnings Charts** — Track daily income trends over time with touch-interactive chart tooltips.
+
+---
+
+## 🔒 Offline & Privacy First
+
+WorkDaily User operates without an account or backend cloud server. All your data—profile info, daily wages, attendance records, and notes—is saved locally on your device inside Room SQLite database and DataStore preferences. Uninstalling the application deletes internal local database records, so creating periodic backup ZIP files is recommended.
+
+---
+
+## 🧩 Built With
+
+- **Language:** Kotlin 100%
+- **UI Framework:** Jetpack Compose (Material 3)
+- **Database:** Room SQLite (Schema v2)
+- **Key-Value Storage:** DataStore Preferences
+- **Async Processing:** Kotlin Coroutines & Flow
+- **Background Tasks:** WorkManager & AlarmManager
+- **PDF Engine:** Native Android `PdfDocument` API
+
+---
+
+## 📂 Project Structure
 
 ```
-UI (Compose) ──> ViewModel (StateFlow) ──> Calculation Engine / Repositories ──> Room SQLite / DataStore
+workdaily/
+├── BRAIN.md                            # Architectural Master Knowledge Base for AI & Developers
+├── README.md                           # Project Overview
+└── android-offline-attendance-app/     # Primary Android Application Module
+    ├── build.gradle.kts
+    └── app/src/main/java/com/synfusion/attendance/
+        ├── backup/                     # Modular ZIP backup & restore engine
+        ├── data/                       # Room database entities, DAOs, repositories
+        ├── ui/                         # Jetpack Compose UI screens, components, responsive layouts
+        ├── utils/                      # AttendanceCalculationEngine, PDF generator, notifications
+        └── viewmodel/                  # MVVM ViewModels and state management
 ```
-
-For complete technical documentation, architecture details, and data relationship maps, consult [BRAIN.md](./BRAIN.md).
 
 ---
 
-## Getting Started
+## 📖 Documentation
+
+For detailed technical documentation, calculation engine rules, database schemas, backup flows, and architecture details, refer to [BRAIN.md](./BRAIN.md).
+
+---
+
+## 🛠️ Development Setup
 
 ### Prerequisites
-- **Android Studio:** Hedgehog (2023.1.1) or newer
-- **JDK:** Java 17
-- **Android SDK:** minSdk 24 (Android 7.0), targetSdk 36
+- Android Studio Hedgehog (2023.1.1) or newer
+- JDK 17
+- Android SDK (minSdk 24, targetSdk 36)
 
-### Building from Source
+### Build Commands
 
 1. Clone the repository:
    ```bash
@@ -79,7 +96,6 @@ For complete technical documentation, architecture details, and data relationshi
    ```bash
    ./gradlew assembleDebug
    ```
-   The generated APK will be located at `app/build/outputs/apk/debug/app-debug.apk`.
 
 4. Build Release APK:
    ```bash
@@ -88,13 +104,7 @@ For complete technical documentation, architecture details, and data relationshi
 
 ---
 
-## Technical Documentation
+## 📌 Project Status
 
-- 🧠 **[BRAIN.md](./BRAIN.md):** Architectural Master Knowledge Base for AI Coding Agents and Software Engineers.
-
----
-
-## Developer Contact & Support
-
-Built with ❤️ by **SynFusion**.
-Official Support: `workdaily.synfusion@gmail.com`
+Active production app. Built and maintained by **SynFusion**.
+Support Email: `workdaily.synfusion@gmail.com`

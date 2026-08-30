@@ -198,45 +198,51 @@ fun DashboardScreen(
                 ) { page ->
                     when (page) {
                         0 -> {
-                            Crossfade(
-                                targetState = if (dashboardState.isLoading) "shimmer" else if (dashboardState.errorMessage != null) "error" else "content",
-                                animationSpec = tween(350),
-                                label = "dashboard_crossfade"
-                            ) { state ->
-                                when (state) {
-                                    "shimmer" -> {
-                                        DashboardShimmer()
-                                    }
-                                    "error" -> {
-                                        Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
-                                            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                                                Icon(Icons.Default.ErrorOutline, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(64.dp))
-                                                Text(dashboardState.errorMessage ?: "An error occurred", color = MaterialTheme.colorScheme.error, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-                                                Button(onClick = { dashboardViewModel.refresh() }) {
+                            val pullRefreshState = rememberPullToRefreshState()
+                            LaunchedEffect(pullRefreshState.isRefreshing) {
+                                if (pullRefreshState.isRefreshing) {
+                                    dashboardViewModel.refresh()
+                                }
+                            }
+                            LaunchedEffect(dashboardState.isRefreshing) {
+                                if (!dashboardState.isRefreshing) {
+                                    pullRefreshState.endRefresh()
+                                }
+                            }
+
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .nestedScroll(pullRefreshState.nestedScrollConnection)
+                                    .background(MaterialTheme.colorScheme.background)
+                            ) {
+                                Crossfade(
+                                    targetState = if (dashboardState.isLoading) "shimmer" else if (dashboardState.errorMessage != null) "error" else "content",
+                                    animationSpec = tween(350),
+                                    label = "dashboard_crossfade"
+                                ) { state ->
+                                    when (state) {
+                                        "shimmer" -> {
+                                            DashboardShimmer()
+                                        }
+                                        "error" -> {
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxSize()
+                                                    .verticalScroll(rememberScrollState())
+                                                    .padding(24.dp),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                                                    Icon(Icons.Default.ErrorOutline, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(64.dp))
+                                                    Text(dashboardState.errorMessage ?: "An error occurred", color = MaterialTheme.colorScheme.error, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                                                    Button(onClick = { dashboardViewModel.refresh() }) {
                                                         Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.try_again))
+                                                    }
                                                 }
                                             }
                                         }
-                                    }
-                                    "content" -> {
-                                        val pullRefreshState = rememberPullToRefreshState()
-                                        LaunchedEffect(pullRefreshState.isRefreshing) {
-                                            if (pullRefreshState.isRefreshing) {
-                                                dashboardViewModel.refresh()
-                                            }
-                                        }
-                                        LaunchedEffect(dashboardState.isRefreshing) {
-                                            if (!dashboardState.isRefreshing) {
-                                                pullRefreshState.endRefresh()
-                                            }
-                                        }
-
-                                        Box(
-                                            modifier = Modifier
-                                                .fillMaxSize()
-                                                .nestedScroll(pullRefreshState.nestedScrollConnection)
-                                                .background(MaterialTheme.colorScheme.background)
-                                        ) {
+                                        "content" -> {
                                             ResponsiveContainer {
                                                 if (isCompactPortrait) {
                                                     LazyColumn(
@@ -960,7 +966,7 @@ fun AdaptiveNavigationRail(currentRoute: String, onNavigate: (String) -> Unit = 
             ) {
                 androidx.compose.foundation.Image(
                     painter = androidx.compose.ui.res.painterResource(id = com.synfusion.attendance.R.drawable.logo_transparent),
-                    contentDescription = "WorkDaily",
+                    contentDescription = "WorkDaily User",
                     modifier = Modifier.size(32.dp),
                     contentScale = androidx.compose.ui.layout.ContentScale.Fit
                 )

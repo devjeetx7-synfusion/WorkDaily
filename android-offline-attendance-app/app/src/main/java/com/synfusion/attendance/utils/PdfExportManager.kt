@@ -123,7 +123,7 @@ class PdfExportManager(
             val generatedAtStr = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(Date())
 
             val pdfData = PdfData(
-                title = "WorkDaily",
+                title = "WorkDaily User",
                 subtitle = context.getString(com.synfusion.attendance.R.string.pdf_subtitle_passbook),
                 name = name,
                 userId = "personal",

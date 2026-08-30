@@ -185,7 +185,6 @@ class OfflineAllTimePassbookViewModel(
 
                 _state.update { current ->
                     current.copy(
-                        isLoading = false,
                         employmentSince = joinedDate,
                         totalWorkingDays = calcResult.totalWorks,
                         totalPresent = calcResult.present,
@@ -203,7 +202,9 @@ class OfflineAllTimePassbookViewModel(
             } catch (e: Exception) {
                 if (e is kotlinx.coroutines.CancellationException) throw e
                 android.util.Log.e("OfflineAllTimeVM", "Error loading all time passbook", e)
-                _state.update { it.copy(isLoading = false, errorMessage = e.localizedMessage) }
+                _state.update { it.copy(errorMessage = e.localizedMessage) }
+            } finally {
+                _state.update { it.copy(isLoading = false) }
             }
         }
     }

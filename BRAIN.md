@@ -1,4 +1,4 @@
-# WorkDaily Brain — Architectural Master Knowledge Base
+# WorkDaily User Brain — Architectural Master Knowledge Base
 
 > **Primary Source of Truth for AI Agents and Senior Developers**
 > *Last Codebase Synchronization Audit: August 2026*
@@ -8,9 +8,9 @@
 
 ## 1. Project Identity
 
-- **Application Name:** WorkDaily (Package ID: `com.synfusion.attendance`)
+- **Application Name:** WorkDaily User (Package ID: `com.synfusion.attendance`)
 - **Developer / Organization:** SynFusion
-- **Primary Domain:** Offline Daily Wage, Attendance, Advance, Overtime, and Settlement Ledger Application
+- **Primary Domain:** Offline Daily Wage, Attendance, Advance, Overtime, and Settlement Ledger Application for Individual Users
 - **Core Philosophy:** 100% Offline, Privacy-First, Zero Backend / Zero Cloud Dependency, Zero Ads / Trackers, Instant Local Calculation.
 - **Target Platform:** Android (minSdk: 24 / Android 7.0 Nougat, targetSdk: 36 / Android 14/15/16).
 - **Primary Target Audience:** Daily wagers, contract workers, tradespeople, shop staff, site workers, supervisors, and independent contractors in India tracking daily wages, advance payouts, overtime hours, and net balances in Indian Rupees (₹).
@@ -19,9 +19,9 @@
 
 ## 2. Current Project Scope
 
-WorkDaily is a completely standalone, offline Android application written entirely in Kotlin using Jetpack Compose and Room SQLite database.
+WorkDaily User is a completely standalone, offline Android application written entirely in Kotlin using Jetpack Compose and Room SQLite database.
 
-### What WorkDaily Does:
+### What WorkDaily User Does:
 - **Daily Attendance Logging:** Track status as Present, Absent, Half Day, Holiday, or Advance-Only with custom daily wage overrides.
 - **Overtime & Advance Management:** Log overtime hours with standard multiplier calculations (1.0x, 1.5x, 2.0x, custom) and advance cash draws.
 - **Financial Reconciliation:** Centralized settlement engine calculating real-time net balances (`RECEIVE`, `PAY_BACK`, `SETTLED`).
@@ -32,7 +32,7 @@ WorkDaily is a completely standalone, offline Android application written entire
 - **Multi-Language Support:** Dynamic switching between English (`en`) and Hindi (`hi`) with localized UI strings, currency transformations, and date formatting.
 - **Edge-to-Edge Adaptive UI:** Native Material 3 UI supporting phones, tablets, foldables, dark/light themes, and edge-to-edge display cutouts.
 
-### What WorkDaily Does NOT Do:
+### What WorkDaily User Does NOT Do:
 - **No Remote Backend / APIs:** No REST endpoints, Firebase, WebSockets, or Cloud Sync.
 - **No Ads / Analytics SDKs:** Zero tracking, no AdMob, no Firebase Analytics, no Crashlytics.
 - **No Third-Party Cloud Backups:** Backup files are generated locally into user storage and handled via Android Sharesheet.
@@ -62,7 +62,7 @@ WorkDaily is a completely standalone, offline Android application written entire
 
 ## 4. Application Architecture
 
-WorkDaily strictly implements a **Clean Layered MVVM (Model-View-ViewModel)** architecture paired with the **Repository Pattern** and single-source-of-truth reactive state streams (`StateFlow` / `Flow`).
+WorkDaily User strictly implements a **Clean Layered MVVM (Model-View-ViewModel)** architecture paired with the **Repository Pattern** and single-source-of-truth reactive state streams (`StateFlow` / `Flow`).
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
@@ -94,7 +94,8 @@ WorkDaily strictly implements a **Clean Layered MVVM (Model-View-ViewModel)** ar
 ### Key Architectural Guarantees:
 1. **Unidirectional Data Flow (UDF):** User actions invoke ViewModel methods, which mutate repositories/database and emit updated `StateFlow` states back to UI.
 2. **Synchronous Calculation Engine:** All financial calculations (`AttendanceCalculationEngine`) are centralized, deterministic, and isolated from UI or database state side-effects.
-3. **Decoupled Backup Manager:** Backup/restore logic (`android-offline-attendance-app/app/src/main/java/com/synfusion/attendance/backup/`) operates independently through isolated coordinator, manifest, checksum, and transaction classes.
+3. **Guaranteed Swipe-to-Refresh Lifecycle:** ViewModels implement `RefreshableViewModel`. Background refresh tasks (`refresh()`, `loadLocalData()`) use strict `try-catch-finally` state updates to guarantee `isRefreshing = false` is always emitted upon completion, error, or job cancellation, preventing stuck refresh indicators.
+4. **Decoupled Backup Manager:** Backup/restore logic (`android-offline-attendance-app/app/src/main/java/com/synfusion/attendance/backup/`) operates independently through isolated coordinator, manifest, checksum, and transaction classes.
 
 ---
 
@@ -235,190 +236,76 @@ WorkDaily strictly implements a **Clean Layered MVVM (Model-View-ViewModel)** ar
 
 ---
 
-## 6. Application Entry Point & Initialization Sequence
+## 6. Code-Level Detail for Key Components
 
-1. **`DailyWorkApplication.kt` (`onCreate`)**:
-   - Configures global `Thread.setDefaultUncaughtExceptionHandler` redirecting fatal crashes to `CrashActivity.kt`.
-   - Eagerly initializes `AttendanceDatabase.getInstance(this)` to run SQLite database creation or migration (e.g. v1 -> v2).
-   - Loads notification templates via `NotificationTemplateRepository.loadTemplates(this)`.
-   - Registers notification channels in `LocalNotificationManager.initChannels(this)`.
-   - Schedules background notifications via `NotificationScheduler.scheduleAllSchedules(this)`.
+To help future AI agents navigate and modify the codebase without full blind repository scans, this section details key classes, engines, models, and UI components.
 
-2. **`MainActivity.kt` (`onCreate`)**:
-   - Enables edge-to-edge rendering with cutout mode `LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES`.
-   - Reads user preference language synchronously from `OfflinePreferencesRepository` to set `AppCompatDelegate.setApplicationLocales` (preventing locale flash).
-   - Checks `RestoreResultStore` for post-restore report metadata to display the `RestoreSuccessDetailDialog` if data was restored recently.
-   - Evaluates system/user dark theme preference and wraps UI in `DailyWorkTheme` and `ProvideWindowSizeInfo`.
+### 6.1 Calculation & Domain Engines
 
-3. **Routing Evaluation (`OfflineDailyWorkApp`)**:
-   - Observes `authTokenFlow`, `languageFlow`, and `splashEnabledFlow`.
-   - Directs to `splash` -> `language_selection` (if first launch) -> `login` (if onboarding required) -> `dashboard`.
+#### `AttendanceCalculationEngine.kt`
+- **What it does:** Master math engine performing all financial calculations across Home, Passbook, All-Time Passbook, Statistics, and PDF statements. Uses `BigDecimal` arithmetic with `RoundingMode.HALF_UP` scaled to 2 decimal places.
+- **Why it exists:** Guarantees uniform calculation rules, eliminating rounding discrepancies or divergent math across screens.
+- **Where it is used:** `OfflineDashboardViewModel`, `OfflineCalendarViewModel`, `OfflinePassbookViewModel`, `OfflineStatsViewModel`, `OfflineAllTimePassbookViewModel`, `PassbookPdfGenerator`.
+- **Data read/written:** Accepts lists of `AttendanceEntity` and daily wage defaults; produces `FinancialSettlementResult`, passbook log summaries, and daily chart series.
+- **Potential Impact of Modifying:** Modifying formulas or rounding modes here directly alters all displayed financial figures and PDF statement totals across the entire application.
 
----
+#### `OvertimeCalculator.kt`
+- **What it does:** Parses overtime note markers (e.g. `[OT_WAGE_500]`) and calculates custom overtime amounts.
+- **Why it exists:** Supports both hourly multiplier overtime and explicit lump-sum overtime entries.
+- **Where it is used:** `DashboardScreen`, `CalendarScreen`, `AttendanceCalculationEngine`.
 
-## 7. Feature Map
-
-| Feature | Primary UI File | Primary Logic / Engine | Data / Persistence |
-| :--- | :--- | :--- | :--- |
-| **Attendance Logging** | `DashboardScreen.kt`, `CalendarScreen.kt` | `OfflineDashboardViewModel`, `OfflineCalendarViewModel` | `AttendanceEntity` via `AttendanceDao` |
-| **Overtime Calculation** | `DashboardScreen.kt`, `CalendarScreen.kt` | `OvertimeCalculator.kt` | `AttendanceEntity.overtimeHours`, `overtimePay` |
-| **Advance Draw Management** | `DashboardScreen.kt`, `CalendarScreen.kt` | `AttendanceCalculationEngine.kt` | `AttendanceEntity.advanceAmount` |
-| **Passbook Ledger** | `PassbookScreen.kt`, `AllTimePassbookScreen.kt` | `OfflinePassbookViewModel`, `OfflineAllTimePassbookViewModel` | `AttendanceDao`, `SummaryDao` |
-| **Settlement Calculation** | Passbook / Stats / PDF screens | `AttendanceCalculationEngine.calculateSettlement` | Evaluates Present, Half Day, Overtime vs Advance |
-| **PDF Statement Export** | `PassbookScreen.kt`, `AllTimePassbookScreen.kt` | `PassbookPdfGenerator.kt`, `PdfExportManager.kt` | Generates system PDF file shared via FileProvider |
-| **ZIP Backup & Restore** | `SettingsScreen.kt`, `BackupRestoreBottomSheet.kt` | `BackupManager.kt`, `RestoreManager.kt` | Exports/Imports SQLite DB, manifests, avatars |
-| **Hinglish Notifications**| `LocalNotificationManager.kt` | `NotificationRuleEngine.kt`, `NotificationScheduler.kt` | Local AlarmManager & WorkManager |
-| **Stats & Interactive Chart**| `StatsScreen.kt` | `AttendanceCalculationEngine.calculateStats` | `EarningsLineChart` custom canvas rendering |
-| **Profile & Wage Settings**| `SettingsScreen.kt` | `OfflineSettingsViewModel.kt` | `UserEntity` in Room DB & DataStore |
+#### `AmountFormatter.kt`
+- **What it does:** Formats monetary values for display in Indian Rupees (e.g. `₹1,250.00` or `1,250`).
+- **Why it exists:** Enforces clean, standard currency formatting throughout the app.
 
 ---
 
-## 8. Screen Map & Navigation Graph
+### 6.2 Data Layer & Persistence
 
-```
-[MainActivity]
-  └── NavHost (Start: splash / language_selection / login / dashboard)
-        ├── "splash" -> SplashScreen.kt
-        ├── "language_selection" -> LanguageSelectionScreen.kt
-        ├── "login" -> LoginScreen.kt (User setup / Daily wage input)
-        └── "dashboard" -> DashboardScreen.kt
-              └── BottomNavigationBar / AdaptiveNavigationRail (Nested Navigation)
-                    ├── "home" -> Home Tab (Quick attendance, Today summary)
-                    ├── "calendar" -> CalendarScreen.kt (Month calendar grid, daily logs)
-                    ├── "passbook" -> PassbookScreen.kt (Monthly Passbook, PDF export)
-                    ├── "stats" -> StatsScreen.kt (Earnings breakdown & interactive line chart)
-                    └── "settings" -> SettingsScreen.kt (Profile, Wage, Backup/Restore, Theme, Legal)
-                          ├── All-Time Passbook -> AllTimePassbookScreen.kt
-                          ├── Crop Photo -> CropScreen.kt
-                          └── Legal & Help -> LegalAndHelpScreens.kt
-```
+#### `AttendanceDatabase.kt`
+- **What it does:** Room database singleton (v2 schema) providing access to `UserDao`, `AttendanceDao`, and `SummaryDao`.
+- **Why it exists:** Primary local ORM persistence layer.
+- **Where it is used:** Repositories, backup coordinators, application initialization.
+- **Potential Impact:** Schema modifications require adding migration scripts and updating exported schema files in `schemas/`.
+
+#### `LocalAttendanceRepository.kt`
+- **What it does:** High-level data accessor bridging DAOs with ViewModels. Reads and writes `UserEntity` and `AttendanceEntity`.
+- **Where it is used:** `OfflineDashboardViewModel`, `OfflineCalendarViewModel`, `OfflinePassbookViewModel`, `OfflineStatsViewModel`, `PdfExportManager`.
+
+#### `OfflinePreferencesRepository.kt`
+- **What it does:** Wraps DataStore Preferences to manage auth tokens, theme preferences, language selections, and profile photo paths.
 
 ---
 
-## 9. State Management Architecture
+### 6.3 Swipe-to-Refresh Architecture
 
-WorkDaily uses `ViewModel` instances combined with Kotlin `StateFlow` and Compose `collectAsStateWithLifecycle` for state observation.
+All main tab screens support user pull-to-refresh gestures. The architecture operates as follows:
 
-- **`OfflineDashboardViewModel`**: Exposes `uiState: StateFlow<DashboardUiState>` containing current user, today's attendance record, current month summary, and loading states.
-- **`OfflineCalendarViewModel`**: Exposes selected month/year, calendar days grid state, and daily attendance map (`Map<String, AttendanceEntity>`).
-- **`OfflinePassbookViewModel`**: Exposes monthly calculation results (`FinancialSettlementResult`), daily line items, and PDF generation state (`PdfExportState`).
-- **`OfflineStatsViewModel`**: Exposes `StatsUiState` including monthly vs all-time metrics, earnings list for line chart rendering, and category breakdowns.
-- **`OfflineSettingsViewModel`**: Manages profile edits, daily wage adjustments, backup/restore progress states, and WhatsApp follow link actions.
-
----
-
-## 10. Data Models & Database Schema (Room v2)
-
-### Database: `AttendanceDatabase` (Schema Version 2)
-
-#### 1. `users` Table (`UserEntity.kt`)
-- `id`: `Int` (Primary Key, default 1)
-- `name`: `String`
-- `dailyWage`: `Double`
-- `workType`: `String` (e.g. `DAILY`, `MONTHLY`, `PIECE_RATE`)
-- `profileImageUri`: `String?`
-- `createdAt`: `Long`
-- `updatedAt`: `Long`
-
-#### 2. `attendance` Table (`AttendanceEntity.kt`)
-- `id`: `Long` (Auto-generate Primary Key)
-- `userId`: `Int` (Foreign Key to `users.id`)
-- `date`: `String` (ISO format `YYYY-MM-DD`, Indexed)
-- `status`: `String` (`present`, `absent`, `half_day`, `holiday`, `advance_only`)
-- `wageAmount`: `Double`
-- `overtimeHours`: `Double`
-- `overtimePay`: `Double`
-- `advanceAmount`: `Double`
-- `note`: `String?`
-- `createdAt`: `Long`
-- `updatedAt`: `Long`
-
-#### 3. `summary` Table (`SummaryEntity.kt`)
-- `id`: `Long` (Auto-generate Primary Key)
-- `userId`: `Int`
-- `month`: `String` (ISO format `YYYY-MM`)
-- `totalEarnings`: `Double`
-- `totalAdvance`: `Double`
-- `netPayable`: `Double`
-- `updatedAt`: `Long`
+1. **State Flow:** ViewModels expose `isRefreshing: Boolean` as part of their main `StateFlow` state data class.
+2. **ViewModel Implementation:**
+   - ViewModel methods (`refresh()`, `loadLocalData()`) set `isRefreshing = true` on start.
+   - All background coroutine operations execute within `try-catch-finally` blocks where `isRefreshing = false` is guaranteed in `finally`.
+   - Minimum execution delays (~400ms) prevent visual indicator flicker during fast local database reads.
+3. **UI Integration (`PullToRefreshContainer`):**
+   - Screens (`DashboardScreen`, `CalendarScreen`, `StatsScreen`, `PassbookScreen`) create `rememberPullToRefreshState()`.
+   - `LaunchedEffect(pullRefreshState.isRefreshing)` invokes `viewModel.refresh()`.
+   - `LaunchedEffect(state.isRefreshing)` calls `pullRefreshState.endRefresh()` whenever `!state.isRefreshing`.
+   - Root layout `Box` elements attach `.nestedScroll(pullRefreshState.nestedScrollConnection)` around the entire content hierarchy (including error and shimmer states) to ensure swipe gestures trigger reliably regardless of page state.
 
 ---
 
-## 11. Centralized Financial Engine (`AttendanceCalculationEngine.kt`)
+### 6.4 PDF & Backup Engines
 
-All monetary calculations in WorkDaily strictly execute through `AttendanceCalculationEngine` using exact `BigDecimal` arithmetic with `RoundingMode.HALF_UP` scaled to 2 decimal places.
+#### `PassbookPdfGenerator.kt` & `PdfExportManager.kt`
+- **What it does:** `PassbookPdfGenerator` renders A4 PDF pages using native `android.graphics.pdf.PdfDocument`. `PdfExportManager` validates record presence (`records.isEmpty()`), handles background generation, and shares files via `FileProvider`.
+- **Where it is used:** `PassbookScreen`, `AllTimePassbookScreen`.
 
-### Core Calculation Rules:
-1. **Daily Earnings**:
-   $$\text{Daily Wage Earned} = \begin{cases} \text{dailyWage} & \text{if Present} \\ 0.5 \times \text{dailyWage} & \text{if Half Day} \\ 0 & \text{if Absent / Holiday / Advance-Only} \end{cases}$$
-2. **Total Daily Credit**:
-   $$\text{Total Credit} = \text{Daily Wage Earned} + \text{overtimePay}$$
-3. **Financial Settlement Calculation**:
-   $$\text{Net Balance} = \text{Total Credits} - \text{Total Advance Cash Drawn}$$
-   - If $\text{Net Balance} > 0$: State = `RECEIVE` (User is owed money by employer).
-   - If $\text{Net Balance} < 0$: State = `PAY_BACK` (User owes excess advance back).
-   - If $\text{Net Balance} = 0$: State = `SETTLED`.
+#### `BackupManager.kt` & `RestoreManager.kt`
+- **What it does:** `BackupManager` packages SQLite database files, profile images, and JSON manifests into SHA-256 validated ZIP archives. `RestoreManager` validates checksums, closes active DB instances (`DatabaseLifecycleCoordinator`), replaces local database files, and triggers UI refresh.
 
 ---
 
-## 12. Backup & Restore Architecture (Modular ZIP Engine)
-
-WorkDaily features a version-aware 100% local ZIP backup and restore engine located in `com.synfusion.attendance.backup`.
-
-### Backup Flow (`BackupManager.kt`):
-1. **Manifest Generation (`ManifestManager.kt`)**: Writes `manifest.json` with app version, schema version, record counts, and timestamp.
-2. **Database Export (`JsonExporter.kt` / `TempDatabaseManager.kt`)**: Copies Room SQLite DB file safely after checkpointing WAL logs.
-3. **Media Export (`MediaExporter.kt`)**: Copies profile avatar images from app internal storage.
-4. **Checksum Calculation (`ChecksumManager.kt`)**: Computes SHA-256 signatures for every file in the payload.
-5. **ZIP Compression (`BackupProvider.kt`)**: Bundles files into a compressed `.zip` archive and triggers standard Android Sharesheet via `FileProvider`.
-
-### Restore Flow (`RestoreManager.kt`):
-1. **Archive Inspection (`BackupValidator.kt`)**: Unpacks archive in temporary directory and checks SHA-256 checksums.
-2. **Version Migration (`VersionMigrator.kt`)**: Evaluates database schema compatibility and migrates legacy structures if necessary.
-3. **Lifecycle Coordination (`DatabaseLifecycleCoordinator.kt`)**: Closes active Room database connection, replaces DB file, re-opens Room instance, and clears cached singletons.
-
----
-
-## 13. Hinglish Local Notification Subsystem
-
-Notifications are handled locally via `AlarmManager` exact alarms and `WorkManager` fallback jobs.
-
-- **Templates Repository (`NotificationTemplateRepository.kt`)**: Loads 320+ sarcastic, funny, light-roasting Hinglish templates from `res/raw/notification_templates.json`.
-- **Rule Engine (`NotificationRuleEngine.kt`)**: Evaluates trigger criteria (daily reminder at 8:00 PM, weekly summary on Sunday, monthly report on 1st of month) and replaces dynamic placeholders (`{userName}`, `{todayWage}`, `{totalEarnings}`, `{netPayable}`, `{streak}`).
-- **Cooldown History**: Prevents immediate repetition of notification templates using SharedPreferences category cooldown tracking.
-
----
-
-## 14. PDF Generation Subsystem (`PassbookPdfGenerator.kt`)
-
-WorkDaily creates styled A4 PDF documents directly on-device using Android's native `android.graphics.pdf.PdfDocument`.
-
-- **Layout & Rendering**: Draws header branding, user profile box, financial summary cards, multi-column transaction tables, and disclaimer footers.
-- **Multi-page Support**: Automatically calculates table row heights and paginates transactions clean across page boundaries.
-- **Empty State Protection**: `PdfExportManager.kt` checks `records.isEmpty()` before rendering to avoid creating blank PDFs and returns a localized error if no records exist.
-
----
-
-## 15. Testing Suite
-
-The repository includes unit tests located in `android-offline-attendance-app/app/src/test/java/com/synfusion/attendance/`:
-
-- **`AttendanceCalculationEngineTest.kt`**: Validates wage, overtime, advance, and settlement calculation precision.
-- **`FinancialReconciliationTest.kt`**: Tests edge cases for negative balances, zero days, and mixed status calculations.
-- **`BackupRestoreManagerTest.kt`**: Tests backup manifest generation, SHA-256 checksum validation, and archive integrity.
-- **`PdfExportTest.kt`**: Tests PDF model mapping and string formatting logic.
-- **`ChartMathTest.kt`**: Validates line chart Y-axis scale generation (`calculateNiceScale`).
-- **`NotificationSystemTest.kt`**: Verifies placeholder substitution and template selection.
-
-Run all tests via:
-```bash
-cd android-offline-attendance-app
-./gradlew test
-```
-
----
-
-## 16. High-Risk Code Areas & Safety Constraints
+## 7. High-Risk Code Areas & Safety Constraints
 
 | Area | Location | Why High Risk | Safety Rule |
 | :--- | :--- | :--- | :--- |
@@ -429,16 +316,17 @@ cd android-offline-attendance-app
 
 ---
 
-## 17. Safe Modification Rules for AI Agents
+## 8. Safe Modification Rules for AI Agents
 
 1. **Always Read First:** Inspect existing implementation in source files before introducing new models or methods.
 2. **Preserve Offline Architecture:** Never introduce external HTTP libraries, remote APIs, or cloud sync dependencies.
 3. **Keep Math Centralized:** Never calculate earnings or net balances inside Composable UI functions; always call `AttendanceCalculationEngine`.
-4. **Enforce Test Verification:** Execute `./gradlew test` inside `android-offline-attendance-app` after any modifications to ensure zero regression.
-5. **Maintain Localized Hinglish Wording:** Keep user-facing notification text in casual Indian Hinglish with warm, light-hearted tone.
+4. **Maintain Refresh State Safety:** Ensure every background refresh job in ViewModels uses `finally` to set `isRefreshing = false`.
+5. **Enforce Test Verification:** Execute `./gradlew test` inside `android-offline-attendance-app` after any modifications to ensure zero regression.
+6. **Maintain Localized Hinglish Wording:** Keep user-facing notification text in casual Indian Hinglish with warm, light-hearted tone.
 
 ---
 
-## 18. Document Maintenance Rule
+## 9. Document Maintenance Rule
 
 When core features, database schemas, or utility architectures in `android-offline-attendance-app` are modified, update `BRAIN.md` immediately to ensure continuous AI-agent alignment with the codebase.

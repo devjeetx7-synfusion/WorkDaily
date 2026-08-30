@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">WorkDaily</string>
+    <string name="app_name">WorkDaily User</string>
     <string name="select_language">भाषा चुनें / Select Language</string>
     <string name="choose_your_preferred_language_to_continue">आगे बढ़ने के लिए अपनी पसंदीदा भाषा चुनें।</string>
     <string name="continue_btn">आगे बढ़ें</string>
@@ -25,7 +25,7 @@
     <string name="no_data">कोई रिकॉर्ड नहीं है।</string>
     <string name="all_time_stats">ऑल टाइम स्टैटिस्टिक्स</string>
     <string name="total_earnings">कुल कमाई</string>
-    <string name="dailywork">WorkDaily</string>
+    <string name="dailywork">WorkDaily User</string>
     <string name="manage_your_daily_labor_earnings">अपनी रोज की हाजिरी और कमाई मैनेज करें</string>
     <string name="copy_error">एरर कॉपी करें</string>
     <string name="close_app">ऐप बंद करें</string>
@@ -67,7 +67,7 @@
     <string name="enable_splash_screen">स्प्लैश स्क्रीन चालू करें</string>
     <string name="language_2">भाषा</string>
     <string name="role_management">रोल सेटिंग</string>
-    <string name="dailywork_premium">WorkDaily प्रीमियम</string>
+    <string name="dailywork_premium">WorkDaily User प्रीमियम</string>
     <string name="thank_you_for_your_purchase">प्रीमियम लेने के लिए धन्यवाद ❤️</string>
     <string name="unlock_all_features">सारे फीचर्स अनलॉक करें</string>
     <string name="data_export">डेटा और एक्सपोर्ट</string>
@@ -77,7 +77,7 @@
     <string name="share_via_whatsapp">व्हाट्सएप पर शेयर करें</string>
     <string name="send_digital_passbook">डिजिटल पासबुक शेयर करें</string>
     <string name="data_support">डेटा और सपोर्ट</string>
-    <string name="how_to_use_dailywork">WorkDaily इस्तेमाल कैसे करें</string>
+    <string name="how_to_use_dailywork">WorkDaily User इस्तेमाल कैसे करें</string>
     <string name="quick_guide_tutorials">आसान गाइड और ट्यूटोरियल</string>
     <string name="data_privacy_policy">प्राइवेसी पॉलिसी</string>
     <string name="stored_securely_in_cloud">आपके फोन में 100% सेफ</string>
@@ -188,7 +188,7 @@
     <string name="premium_plan_label">प्लान: %1$s</string>
     <string name="premium_go_premium">प्रीमियम लें</string>
     <string name="premium_you_are_pro">आप प्रो यूजर हैं</string>
-    <string name="premium_unlock_potential">WorkDaily के सारे फीचर्स अनलॉक करें</string>
+    <string name="premium_unlock_potential">WorkDaily User के सारे फीचर्स अनलॉक करें</string>
     <string name="premium_enjoy_features">अनलिमिटेड फीचर्स का इस्तेमाल करें</string>
     <string name="premium_secure_payment">100% सेफ पेमेंट</string>
     <string name="premium_cancel_anytime">कभी भी कैंसल करें</string>
@@ -310,7 +310,7 @@
     <string name="pdf_col_notes">नोट</string>
     <string name="pdf_summary_title">कमाई और हिसाब का समरी</string>
     <string name="pdf_ledger_title">हाजिरी और पैसों का पूरा बहीखाता</string>
-    <string name="pdf_generated_by">WorkDaily द्वारा जनरेट किया गया | डिजिटल पासबुक</string>
+    <string name="pdf_generated_by">WorkDaily User द्वारा जनरेट किया गया | डिजिटल पासबुक</string>
     <string name="pdf_month_label">महीना: %1$s</string>
     <string name="pdf_subtitle_passbook">डिजिटल पासबुक</string>
     <string name="pdf_rs">₹</string>
@@ -342,7 +342,7 @@
     <string name="pdf_export_success">PDF तैयार है!</string>
     <string name="pdf_export_error">दिक्कत आई: %1$s</string>
     <string name="pdf_digital_attendance_passbook">डिजिटल हाजिरी और पासबुक</string>
-    <string name="pdf_generated_from_offline">WorkDaily ऐप से जनरेट किया गया</string>
+    <string name="pdf_generated_from_offline">WorkDaily User ऐप से जनरेट किया गया</string>
 <string name="htu_getting_started_title">1. शुरुआत कैसे करें</string>
     <string name="htu_getting_started_desc">ऐप खोलें, अपनी प्रोफाइल बनाएं और रोज की दिहाड़ी व काम के घंटे सेट करें।</string>
     <string name="htu_attendance_title">2. हाजिरी (Attendance)</string>
@@ -365,34 +365,34 @@
     <string name="htu_language_desc">हिंदी और इंग्लिश में से अपनी पसंद की भाषा चुनें।</string>
     <string name="htu_settings_title">11. सेटिंग्स</string>
     <string name="htu_settings_desc">अपनी प्रोफाइल, दिहाड़ी, रिमाइंडर और ऐप सेटिंग्स चेंज करें।</string>
-    <string name="privacy_intro">WorkDaily आपकी प्राइवेसी का पूरा ध्यान रखता है। यह प्राइवेसी पॉलिसी बताती है कि आपका लोकल डेटा, नोटिफिकेशन, PDF एक्सपोर्ट और बैकअप कैसे काम करते हैं।</string>
+    <string name="privacy_intro">WorkDaily User आपकी प्राइवेसी का पूरा ध्यान रखता है। यह प्राइवेसी पॉलिसी बताती है कि आपका लोकल डेटा, नोटिफिकेशन, PDF एक्सपोर्ट और बैकअप कैसे काम करते हैं।</string>
     <string name="privacy_local_data_title">1. फोन में सेफ डेटा स्टोरेज</string>
-    <string name="privacy_local_data_desc">WorkDaily 100% ऑफलाइन ऐप है। आपकी प्रोफाइल (नाम, फोटो), सेट की गई दिहाड़ी, हाजिरी, ओवरटाइम, एडवांस, नोट्स और सेटिंग्स केवल आपके फोन के इंटरनल डेटाबेस (Room SQLite, DataStore) में सेफ रहते हैं। वर्कडेली में कोई ऑनलाइन सर्वर, यूजर अकाउंट या ऑटोमैटिक डेटा ट्रांसफर नहीं है।</string>
+    <string name="privacy_local_data_desc">WorkDaily User 100% ऑफलाइन ऐप है। आपकी प्रोफाइल (नाम, फोटो), सेट की गई दिहाड़ी, हाजिरी, ओवरटाइम, एडवांस, नोट्स और सेटिंग्स केवल आपके फोन के इंटरनल डेटाबेस (Room SQLite, DataStore) में सेफ रहते हैं। वर्कडेली में कोई ऑनलाइन सर्वर, यूजर अकाउंट या ऑटोमैटिक डेटा ट्रांसफर नहीं है।</string>
     <string name="privacy_notifications_title">2. लोकल नोटिफिकेशन और परमिशन</string>
-    <string name="privacy_notifications_desc">WorkDaily आपके फोन के अलार्म मैनेजर और वर्क मैनेजर से लोकल रिमाइंडर और हाजिरी/कमाई की समरी भेजता है। नोटिफिकेशन में आपकी सेट की गई दिहाड़ी या कुल कमाई के आंकड़े दिख सकते हैं। ये सभी नोटिफिकेशन 100% आपके फोन के अंदर बनते हैं। आप जब चाहें एंड्रॉइड सेटिंग्स से नोटिफिकेशन बंद कर सकते हैं। लॉक स्क्रीन पर नोटिफिकेशन दिखना आपके फोन की लॉक-स्क्रीन सेटिंग्स पर निर्भर करता है।</string>
+    <string name="privacy_notifications_desc">WorkDaily User आपके फोन के अलार्म मैनेजर और वर्क मैनेजर से लोकल रिमाइंडर और हाजिरी/कमाई की समरी भेजता है। नोटिफिकेशन में आपकी सेट की गई दिहाड़ी या कुल कमाई के आंकड़े दिख सकते हैं। ये सभी नोटिफिकेशन 100% आपके फोन के अंदर बनते हैं। आप जब चाहें एंड्रॉइड सेटिंग्स से नोटिफिकेशन बंद कर सकते हैं। लॉक स्क्रीन पर नोटिफिकेशन दिखना आपके फोन की लॉक-स्क्रीन सेटिंग्स पर निर्भर करता है।</string>
     <string name="privacy_exports_title">3. PDF एक्सपोर्ट और बैकअप फाइल्स</string>
-    <string name="privacy_exports_desc">पासबुक PDF रिपोर्ट और बैकअप ZIP फाइल आपके फोन में ही बनती हैं। जब आप कोई PDF या बैकअप फाइल व्हाट्सएप आदि पर शेयर करते हैं, तो शेयरिंग का पूरा कंट्रोल आपके पास होता है। WorkDaily खुद से किसी सर्वर पर फाइल अपलोड नहीं करता।</string>
+    <string name="privacy_exports_desc">पासबुक PDF रिपोर्ट और बैकअप ZIP फाइल आपके फोन में ही बनती हैं। जब आप कोई PDF या बैकअप फाइल व्हाट्सएप आदि पर शेयर करते हैं, तो शेयरिंग का पूरा कंट्रोल आपके पास होता है। WorkDaily User खुद से किसी सर्वर पर फाइल अपलोड नहीं करता।</string>
     <string name="privacy_sharing_title">4. दूसरी ऐप्स और लिंक्स</string>
-    <string name="privacy_sharing_desc">WorkDaily में कोई थर्ड-पार्टी एनालिटिक्स, विज्ञापन (Ads) या ट्रैकिंग SDK मौजूद नहीं है। ऐप में दिए गए सोशल लिंक्स (व्हाट्सएप चैनल, टेलीग्राम, इंस्टाग्राम, यूट्यूब या सपोर्ट ईमेल) खोलने पर उन प्लेटफॉर्म्स की अपनी प्राइवेसी पॉलिसी लागू होती है।</string>
+    <string name="privacy_sharing_desc">WorkDaily User में कोई थर्ड-पार्टी एनालिटिक्स, विज्ञापन (Ads) या ट्रैकिंग SDK मौजूद नहीं है। ऐप में दिए गए सोशल लिंक्स (व्हाट्सएप चैनल, टेलीग्राम, इंस्टाग्राम, यूट्यूब या सपोर्ट ईमेल) खोलने पर उन प्लेटफॉर्म्स की अपनी प्राइवेसी पॉलिसी लागू होती है।</string>
     <string name="privacy_deletion_title">5. डेटा डिलीट और रिटेंशन</string>
     <string name="privacy_deletion_desc">आपका डेटा तब तक फोन में रहता है जब तक आप खुद रिकॉर्ड डिलीट नहीं करते या ऐप अनइन्स्टॉल नहीं करते। ऐप अनइन्स्टॉल करने पर सारा लोकल डेटाबेस डिलीट हो जाता है। आपके द्वारा फोन में सेव की गई बैकअप ZIP फाइलें आपको खुद मैनेज या डिलीट करनी होती हैं।</string>
     <string name="privacy_contact_title">6. सपोर्ट और संपर्क करें</string>
     <string name="privacy_contact_desc">प्राइवेसी से जुड़ा कोई सवाल या सुझाव हो तो वर्कडेली टीम (SynFusion) से workdaily.synfusion@gmail.com पर ईमेल करें।</string>
 
     <string name="terms_acceptance_title">1. नियमों की मंजूरी</string>
-    <string name="terms_acceptance_desc">WorkDaily ऐप को इन्स्टॉल या इस्तेमाल करने पर आप इन सेवा शर्तों (Terms of Service) को स्वीकार करते हैं।</string>
+    <string name="terms_acceptance_desc">WorkDaily User ऐप को इन्स्टॉल या इस्तेमाल करने पर आप इन सेवा शर्तों (Terms of Service) को स्वीकार करते हैं।</string>
     <string name="terms_use_title">2. ऐप का उद्देश्य</string>
-    <string name="terms_use_desc">WorkDaily आपकी रोज की हाजिरी, दिहाड़ी, ओवरटाइम, एडवांस और पासबुक रिपोर्ट का हिसाब रखने के लिए एक पर्सनल, 100% ऑफलाइन टूल है।</string>
+    <string name="terms_use_desc">WorkDaily User आपकी रोज की हाजिरी, दिहाड़ी, ओवरटाइम, एडवांस और पासबुक रिपोर्ट का हिसाब रखने के लिए एक पर्सनल, 100% ऑफलाइन टूल है।</string>
     <string name="terms_responsibilities_title">3. आपकी जिम्मेदारी और सही रिकॉर्ड</string>
     <string name="terms_responsibilities_desc">ऐप में दर्ज की गई दिहाड़ी, हाजिरी, ओवरटाइम और एडवांस की जानकारी सही दर्ज करने की पूरी जिम्मेदारी आपकी है। इसके अलावा अपने फोन और बैकअप फाइल्स को सुरक्षित रखना भी आपकी जिम्मेदारी है।</string>
     <string name="terms_financial_title">4. हिसाब-किताब की जानकारी (Disclaimer)</string>
-    <string name="terms_financial_desc">WorkDaily में दिया गया हिसाब आपके द्वारा डाले गए आंकड़ों पर आधारित होता है। WorkDaily कोई बैंक, टैक्स एडवाइजर या लीगल पेरोल सर्विस नहीं है। किसी भी व्यक्ति या ठेकेदार से लेन-देन करने से पहले हिसाब खुद चेक कर लें।</string>
+    <string name="terms_financial_desc">WorkDaily User में दिया गया हिसाब आपके द्वारा डाले गए आंकड़ों पर आधारित होता है। WorkDaily User कोई बैंक, टैक्स एडवाइजर या लीगल पेरोल सर्विस नहीं है। किसी भी व्यक्ति या ठेकेदार से लेन-देन करने से पहले हिसाब खुद चेक कर लें।</string>
     <string name="terms_notifications_title">5. लोकल नोटिफिकेशन की शर्तें</string>
     <string name="terms_notifications_desc">लोकल नोटिफिकेशन आपकी सुविधा के लिए फोन द्वारा भेजे जाते हैं। एंड्रॉइड की बैटरी सेवर सेटिंग्स या बैकग्राउंड लिमिट के कारण नोटिफिकेशन मिलने में देरी हो सकती है।</string>
     <string name="terms_backup_title">6. बैकअप और डेटा लॉस जिम्मेदारी</string>
     <string name="terms_backup_desc">सब डेटा केवल आपके फोन में सेफ रहता है। फोन खोने, खराब होने या ऐप डिलीट होने पर SynFusion के पास कोई क्लाउड बैकअप नहीं होता। इसलिए समय-समय पर ZIP बैकअप फाइल बनाकर रखना यूजर की जिम्मेदारी है।</string>
     <string name="terms_branding_title">7. ब्रांडिंग और राइट्स</string>
-    <string name="terms_branding_desc">WorkDaily और उससे जुड़े सभी अधिकार, कोड, डिजाइन और ब्रांड एसेट्स SynFusion के पास सुरक्षित हैं।</string>
+    <string name="terms_branding_desc">WorkDaily User और उससे जुड़े सभी अधिकार, कोड, डिजाइन और ब्रांड एसेट्स SynFusion के पास सुरक्षित हैं।</string>
     <string name="terms_contact_title">8. संपर्क करें</string>
     <string name="terms_contact_desc">इन सेवा शर्तों से जुड़े किसी भी सवाल या सहायता के लिए workdaily.synfusion@gmail.com पर SynFusion से संपर्क करें।</string>
 <string name="how_to_use">इस्तेमाल कैसे करें</string>
@@ -405,7 +405,7 @@
     <string name="notification_settings">नोटिफिकेशन सेटिंग</string>
 
     <string name="notif_permission_required">नोटिफिकेशन की परमिशन चाहिए</string>
-    <string name="notif_permission_desc">WorkDaily को रिमाइंडर भेजने के लिए नोटिफिकेशन परमिशन दें।</string>
+    <string name="notif_permission_desc">WorkDaily User को रिमाइंडर भेजने के लिए नोटिफिकेशन परमिशन दें।</string>
     <string name="allow_notifications">परमिशन दें</string>
     <string name="notif_disabled">नोटिफिकेशन बंद हैं</string>
     <string name="notif_disabled_desc">नोटिफिकेशन चालू करने के लिए फोन की सेटिंग में जाएं।</string>
@@ -428,7 +428,7 @@
 
     <string name="stay_connected">जुड़े रहें</string>
     <string name="whatsapp_channel">व्हाट्सएप चैनल</string>
-    <string name="follow_workdaily_desc">नये अपडेट के लिए WorkDaily फॉलो करें</string>
+    <string name="follow_workdaily_desc">नये अपडेट के लिए WorkDaily User फॉलो करें</string>
     <string name="follow_channel">फॉलो करें</string>
 
     <!-- Settlement Strings -->

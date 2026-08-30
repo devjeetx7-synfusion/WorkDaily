@@ -141,17 +141,18 @@ class OfflineDashboardViewModel(
                     overtimeHours = calcResult.currentOvertime,
                     todayNote = calcResult.currentNote,
                     todayAdvanceAmount = if (calcResult.advanceToday > 0.0) calcResult.advanceToday else null,
-                    isLoading = false,
-                    isRefreshing = false,
                     errorMessage = null
                 ) }
             } catch (e: Exception) {
                 if (e is kotlinx.coroutines.CancellationException) throw e
                 android.util.Log.e("OfflineDashboardVM", "Error loading local data", e)
                 _dashboardState.update { it.copy(
-                    isLoading = false,
-                    isRefreshing = false,
                     errorMessage = "Failed to load records: ${e.localizedMessage}"
+                ) }
+            } finally {
+                _dashboardState.update { it.copy(
+                    isLoading = false,
+                    isRefreshing = false
                 ) }
             }
         }
