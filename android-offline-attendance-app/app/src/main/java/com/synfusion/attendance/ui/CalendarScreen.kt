@@ -45,9 +45,7 @@ import com.synfusion.attendance.ui.responsive.ResponsiveContainer
 import java.text.SimpleDateFormat
 import java.util.*
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
-import androidx.compose.ui.input.nestedscroll.nestedScroll
+import com.synfusion.attendance.ui.components.WorkDailyPullToRefreshBox
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -57,22 +55,10 @@ fun CalendarScreen(
 ) {
     val state by viewModel.calendarState.collectAsStateWithLifecycle(initialValue = com.synfusion.attendance.viewmodel.OfflineCalendarState(isLoading = true))
 
-    val pullRefreshState = rememberPullToRefreshState()
-    LaunchedEffect(pullRefreshState.isRefreshing) {
-        if (pullRefreshState.isRefreshing) {
-            viewModel.refresh()
-        }
-    }
-    LaunchedEffect(state.isRefreshing) {
-        if (!state.isRefreshing) {
-            pullRefreshState.endRefresh()
-        }
-    }
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .nestedScroll(pullRefreshState.nestedScrollConnection)
+    WorkDailyPullToRefreshBox(
+        isRefreshing = state.isRefreshing,
+        onRefresh = { viewModel.refresh() },
+        modifier = Modifier.fillMaxSize()
     ) {
         Crossfade(
             targetState = if (state.isLoading) "shimmer" else if (state.errorMessage != null) "error" else "content",
@@ -105,11 +91,6 @@ fun CalendarScreen(
                 }
             }
         }
-        PullToRefreshContainer(
-            state = pullRefreshState,
-            modifier = Modifier.align(Alignment.TopCenter),
-            contentColor = MaterialTheme.colorScheme.primary
-        )
     }
 }
 

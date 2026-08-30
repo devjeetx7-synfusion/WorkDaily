@@ -63,9 +63,7 @@ import kotlin.math.pow
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
-import androidx.compose.ui.input.nestedscroll.nestedScroll
+import com.synfusion.attendance.ui.components.WorkDailyPullToRefreshBox
 
 @Composable
 fun AnimatedCounter(
@@ -117,18 +115,6 @@ fun StatsScreen(
     val tabAllTime = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.tab_all_time)
     val tabs = listOf(tabMonthly, tabAllTime)
 
-    val pullRefreshState = rememberPullToRefreshState()
-    LaunchedEffect(pullRefreshState.isRefreshing) {
-        if (pullRefreshState.isRefreshing) {
-            viewModel.refresh()
-        }
-    }
-    LaunchedEffect(state.isRefreshing) {
-        if (!state.isRefreshing) {
-            pullRefreshState.endRefresh()
-        }
-    }
-
     Scaffold(
         contentWindowInsets = WindowInsets(0.dp),
         topBar = {
@@ -143,11 +129,12 @@ fun StatsScreen(
             )
         }
     ) { padding ->
-        Box(
+        WorkDailyPullToRefreshBox(
+            isRefreshing = state.isRefreshing,
+            onRefresh = { viewModel.refresh() },
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .nestedScroll(pullRefreshState.nestedScrollConnection)
         ) {
             Crossfade(
                 targetState = if (state.isLoading) "shimmer" else if (state.errorMessage != null) "error" else "content",
@@ -188,12 +175,6 @@ fun StatsScreen(
                     }
                 }
             }
-
-            PullToRefreshContainer(
-                state = pullRefreshState,
-                modifier = Modifier.align(Alignment.TopCenter),
-                contentColor = MaterialTheme.colorScheme.primary
-            )
         }
 
         state.selectedDrillDownType?.let { type ->
