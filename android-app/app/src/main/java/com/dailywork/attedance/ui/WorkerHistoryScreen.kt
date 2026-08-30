@@ -63,15 +63,13 @@ fun WorkerHistoryScreen(
     }
 
     val pullRefreshState = rememberPullToRefreshState()
-    if (pullRefreshState.isRefreshing) {
-        LaunchedEffect(true) {
+    LaunchedEffect(pullRefreshState.isRefreshing) {
+        if (pullRefreshState.isRefreshing) {
             viewModel.refresh()
         }
     }
     LaunchedEffect(state.isRefreshing) {
-        if (state.isRefreshing) {
-            pullRefreshState.startRefresh()
-        } else {
+        if (!state.isRefreshing) {
             pullRefreshState.endRefresh()
         }
     }

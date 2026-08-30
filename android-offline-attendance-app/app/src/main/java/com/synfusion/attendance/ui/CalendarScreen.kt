@@ -64,9 +64,7 @@ fun CalendarScreen(
         }
     }
     LaunchedEffect(state.isRefreshing) {
-        if (state.isRefreshing) {
-            pullRefreshState.startRefresh()
-        } else {
+        if (!state.isRefreshing) {
             pullRefreshState.endRefresh()
         }
     }
@@ -86,7 +84,13 @@ fun CalendarScreen(
                     CalendarShimmer()
                 }
                 "error" -> {
-                    Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                            .padding(24.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(16.dp)) {
                             Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(64.dp))
                             Text(state.errorMessage ?: "An error occurred", color = MaterialTheme.colorScheme.error, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
