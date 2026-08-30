@@ -121,17 +121,18 @@ class OfflineCalendarViewModel(
 
                 _calendarState.update { it.copy(
                     personalAttendance = mappedRecords,
-                    isLoading = false,
-                    isRefreshing = false,
                     errorMessage = null
                 ) }
             } catch (e: Exception) {
                 if (e is kotlinx.coroutines.CancellationException) throw e
                 android.util.Log.e("OfflineCalendarVM", "Error loading data", e)
                 _calendarState.update { it.copy(
-                    isLoading = false,
-                    isRefreshing = false,
                     errorMessage = "Failed to load calendar records: ${e.localizedMessage}"
+                ) }
+            } finally {
+                _calendarState.update { it.copy(
+                    isLoading = false,
+                    isRefreshing = false
                 ) }
             }
         }

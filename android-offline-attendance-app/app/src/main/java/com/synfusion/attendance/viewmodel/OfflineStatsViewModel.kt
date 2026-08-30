@@ -168,8 +168,6 @@ class OfflineStatsViewModel(
 
                 _statsState.update { current ->
                     current.copy(
-                        isLoading = false,
-                        isRefreshing = false,
                         errorMessage = null,
                         personalStats = statsData
                     )
@@ -179,9 +177,14 @@ class OfflineStatsViewModel(
                 android.util.Log.e("OfflineStatsVM", "Error loading stats", e)
                 _statsState.update { current ->
                     current.copy(
-                        isLoading = false,
-                        isRefreshing = false,
                         errorMessage = "Failed to load stats: ${e.localizedMessage}"
+                    )
+                }
+            } finally {
+                _statsState.update { current ->
+                    current.copy(
+                        isLoading = false,
+                        isRefreshing = false
                     )
                 }
             }

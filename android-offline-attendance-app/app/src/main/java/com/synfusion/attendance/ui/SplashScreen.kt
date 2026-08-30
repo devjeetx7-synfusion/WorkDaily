@@ -168,7 +168,7 @@ fun SplashScreen(
                     verticalArrangement = Arrangement.Center
                 ) {
                     Text(
-                        "WorkDaily",
+                        "WorkDaily User",
                         style = MaterialTheme.typography.headlineMedium,
                         color = MaterialTheme.colorScheme.onBackground,
                         fontWeight = FontWeight.Bold
