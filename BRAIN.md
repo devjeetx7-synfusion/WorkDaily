@@ -1,4 +1,4 @@
-# WorkDaily User Brain — Architectural Master Knowledge Base
+# WorkDaily App Brain — Architectural Master Knowledge Base
 
 > **Primary Source of Truth for AI Agents and Senior Developers**
 > *Last Codebase Synchronization Audit: August 2026*
@@ -8,7 +8,7 @@
 
 ## 1. Project Identity
 
-- **Application Name:** WorkDaily User (Package ID: `com.synfusion.attendance`)
+- **Application Name:** WorkDaily App (Package ID: `com.synfusion.attendance`)
 - **Developer / Organization:** SynFusion
 - **Primary Domain:** Offline Daily Wage, Attendance, Advance, Overtime, and Settlement Ledger Application for Individual Users
 - **Core Philosophy:** 100% Offline, Privacy-First, Zero Backend / Zero Cloud Dependency, Zero Ads / Trackers, Instant Local Calculation.
@@ -19,9 +19,9 @@
 
 ## 2. Current Project Scope
 
-WorkDaily User is a completely standalone, offline Android application written entirely in Kotlin using Jetpack Compose and Room SQLite database.
+WorkDaily App is a completely standalone, offline Android application written entirely in Kotlin using Jetpack Compose and Room SQLite database.
 
-### What WorkDaily User Does:
+### What WorkDaily App Does:
 - **Daily Attendance Logging:** Track status as Present, Absent, Half Day, Holiday, or Advance-Only with custom daily wage overrides.
 - **Overtime & Advance Management:** Log overtime hours with standard multiplier calculations (1.0x, 1.5x, 2.0x, custom) and advance cash draws.
 - **Financial Reconciliation:** Centralized settlement engine calculating real-time net balances (`RECEIVE`, `PAY_BACK`, `SETTLED`).
@@ -32,7 +32,7 @@ WorkDaily User is a completely standalone, offline Android application written e
 - **Multi-Language Support:** Dynamic switching between English (`en`) and Hindi (`hi`) with localized UI strings, currency transformations, and date formatting.
 - **Edge-to-Edge Adaptive UI:** Native Material 3 UI supporting phones, tablets, foldables, dark/light themes, and edge-to-edge display cutouts.
 
-### What WorkDaily User Does NOT Do:
+### What WorkDaily App Does NOT Do:
 - **No Remote Backend / APIs:** No REST endpoints, Firebase, WebSockets, or Cloud Sync.
 - **No Ads / Analytics SDKs:** Zero tracking, no AdMob, no Firebase Analytics, no Crashlytics.
 - **No Third-Party Cloud Backups:** Backup files are generated locally into user storage and handled via Android Sharesheet.
@@ -62,7 +62,7 @@ WorkDaily User is a completely standalone, offline Android application written e
 
 ## 4. Application Architecture
 
-WorkDaily User strictly implements a **Clean Layered MVVM (Model-View-ViewModel)** architecture paired with the **Repository Pattern** and single-source-of-truth reactive state streams (`StateFlow` / `Flow`).
+WorkDaily App strictly implements a **Clean Layered MVVM (Model-View-ViewModel)** architecture paired with the **Repository Pattern** and single-source-of-truth reactive state streams (`StateFlow` / `Flow`).
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
