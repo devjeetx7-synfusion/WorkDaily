@@ -106,8 +106,8 @@ class OfflinePassbookViewModel(
     private fun setupListeners(showLoadingIndicator: Boolean = true) {
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
-            val isRefreshing = _state.value.isRefreshing
             val startTime = System.currentTimeMillis()
+            val wasRefreshing = _state.value.isRefreshing
             try {
                 if (showLoadingIndicator) {
                     _state.update { it.copy(isLoading = true) }
@@ -138,26 +138,23 @@ class OfflinePassbookViewModel(
                     val filtered = personal.filter { AttendanceCalculationEngine.isDateInMonth(it.date, yearMonth) }
                     calculatePassbook(filtered)
 
-                    if (isRefreshing) {
+                    if (wasRefreshing) {
                         val elapsed = System.currentTimeMillis() - startTime
                         if (elapsed < 400) {
                             delay(400 - elapsed)
                         }
                     }
-                    _state.update { it.copy(isRefreshing = false) }
-                } else {
-                    _state.update { it.copy(
-                        isLoading = false,
-                        isRefreshing = false
-                    ) }
                 }
             } catch (e: Exception) {
                 if (e is kotlinx.coroutines.CancellationException) throw e
                 android.util.Log.e("OfflinePassbookVM", "Error setting up listeners", e)
                 _state.update { it.copy(
-                    isLoading = false,
-                    isRefreshing = false,
                     errorMessage = "Failed to load passbook summary: ${e.localizedMessage}"
+                ) }
+            } finally {
+                _state.update { it.copy(
+                    isLoading = false,
+                    isRefreshing = false
                 ) }
             }
         }
@@ -180,6 +177,7 @@ class OfflinePassbookViewModel(
             _state.update { current ->
                 current.copy(
                     isLoading = false,
+                    isRefreshing = false,
                     presentDays = calcResult.present,
                     absentDays = calcResult.absent,
                     halfDays = calcResult.half,
@@ -191,7 +189,6 @@ class OfflinePassbookViewModel(
                     finalBalance = calcResult.netBalance,
                     settlement = calcResult.settlement,
                     logs = calcResult.logs,
-                    isRefreshing = false,
                     errorMessage = null
                 )
             }
