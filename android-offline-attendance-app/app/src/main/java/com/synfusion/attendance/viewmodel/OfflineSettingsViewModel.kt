@@ -40,7 +40,14 @@ data class OfflineSettingsState(
     val isRoleUiEnabled: Boolean = false,
     val lastBackupTime: Long? = null,
     val lastBackupSize: Long? = null,
-    val lastBackupLoc: String? = null
+    val lastBackupLoc: String? = null,
+    val navLeft1: String = "dashboard",
+    val navLeft2: String = "passbook",
+    val navRight: String = "settings",
+    val startupScreen: String = "dashboard",
+    val rememberLastScreen: Boolean = false,
+    val lastActiveScreen: String = "dashboard",
+    val isLoaded: Boolean = false
 )
 
 class OfflineSettingsViewModel(
@@ -95,6 +102,36 @@ class OfflineSettingsViewModel(
         viewModelScope.launch {
             repository.lastBackupLocFlow.collect { loc ->
                 _state.update { it.copy(lastBackupLoc = loc) }
+            }
+        }
+        viewModelScope.launch {
+            repository.navLeft1Flow.collect { item ->
+                _state.update { it.copy(navLeft1 = item) }
+            }
+        }
+        viewModelScope.launch {
+            repository.navLeft2Flow.collect { item ->
+                _state.update { it.copy(navLeft2 = item) }
+            }
+        }
+        viewModelScope.launch {
+            repository.navRightFlow.collect { item ->
+                _state.update { it.copy(navRight = item) }
+            }
+        }
+        viewModelScope.launch {
+            repository.startupScreenFlow.collect { screen ->
+                _state.update { it.copy(startupScreen = screen) }
+            }
+        }
+        viewModelScope.launch {
+            repository.rememberLastScreenFlow.collect { remember ->
+                _state.update { it.copy(rememberLastScreen = remember) }
+            }
+        }
+        viewModelScope.launch {
+            repository.lastActiveScreenFlow.collect { screen ->
+                _state.update { it.copy(lastActiveScreen = screen, isLoaded = true) }
             }
         }
     }
@@ -287,6 +324,30 @@ class OfflineSettingsViewModel(
     fun saveWorkType(newWorkType: String) {
         viewModelScope.launch {
             _state.update { it.copy(savedMessage = "Work type saved successfully!") }
+        }
+    }
+
+    fun updateNavigationConfig(left1: String, left2: String, right: String) {
+        viewModelScope.launch {
+            repository.saveNavigationConfig(left1, left2, right)
+        }
+    }
+
+    fun updateStartupScreen(screen: String) {
+        viewModelScope.launch {
+            repository.saveStartupScreen(screen)
+        }
+    }
+
+    fun updateRememberLastScreen(remember: Boolean) {
+        viewModelScope.launch {
+            repository.saveRememberLastScreen(remember)
+        }
+    }
+
+    fun updateLastActiveScreen(screen: String) {
+        viewModelScope.launch {
+            repository.saveLastActiveScreen(screen)
         }
     }
 

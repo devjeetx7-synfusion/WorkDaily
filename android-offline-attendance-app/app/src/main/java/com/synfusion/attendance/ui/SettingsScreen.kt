@@ -270,6 +270,7 @@ fun SettingsScreen(
                     ProfileCardSection(state = state, viewModel = viewModel, hasChanges = hasChanges, onEditPhoto = { showProfileEditSheet = true })
                     StayConnectedCardSection(context = context)
                     AppPreferencesCardSection(state = state, viewModel = viewModel, supportedLanguages = supportedLanguages, context = context)
+                    NavigationCustomizationCardSection(state = state, viewModel = viewModel)
                     NotificationSettingsCardSection(
                         state = state,
                         viewModel = viewModel,
@@ -418,6 +419,8 @@ fun SettingsScreen(
                                 }
                                 SettingsCategory.PREFERENCES -> {
                                     AppPreferencesCardSection(state = state, viewModel = viewModel, supportedLanguages = supportedLanguages, context = context)
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    NavigationCustomizationCardSection(state = state, viewModel = viewModel)
                                 }
                                 SettingsCategory.NOTIFICATIONS -> {
                                     NotificationSettingsCardSection(
@@ -922,6 +925,171 @@ fun AppPreferencesCardSection(
                         Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun NavigationCustomizationCardSection(
+    state: OfflineSettingsState,
+    viewModel: OfflineSettingsViewModel
+) {
+    val options = remember {
+        listOf(
+            "dashboard" to "Home",
+            "calendar" to "Calendar",
+            "stats" to "Statistics",
+            "passbook" to "Passbook",
+            "settings" to "Settings"
+        )
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text("Customize Navigation", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 4.dp))
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+        ) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text("Left Capsule (2 Items)", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+
+                // Left Item 1 Selector
+                NavPositionDropdown(
+                    label = "Left Item 1",
+                    selectedRoute = state.navLeft1,
+                    options = options,
+                    onSelect = { newRoute ->
+                        if (newRoute != state.navLeft2 && newRoute != state.navRight) {
+                            viewModel.updateNavigationConfig(newRoute, state.navLeft2, state.navRight)
+                        } else {
+                            val oldRoute = state.navLeft1
+                            if (newRoute == state.navLeft2) {
+                                viewModel.updateNavigationConfig(newRoute, oldRoute, state.navRight)
+                            } else if (newRoute == state.navRight) {
+                                viewModel.updateNavigationConfig(newRoute, state.navLeft2, oldRoute)
+                            }
+                        }
+                    }
+                )
+
+                // Left Item 2 Selector
+                NavPositionDropdown(
+                    label = "Left Item 2",
+                    selectedRoute = state.navLeft2,
+                    options = options,
+                    onSelect = { newRoute ->
+                        if (newRoute != state.navLeft1 && newRoute != state.navRight) {
+                            viewModel.updateNavigationConfig(state.navLeft1, newRoute, state.navRight)
+                        } else {
+                            val oldRoute = state.navLeft2
+                            if (newRoute == state.navLeft1) {
+                                viewModel.updateNavigationConfig(oldRoute, newRoute, state.navRight)
+                            } else if (newRoute == state.navRight) {
+                                viewModel.updateNavigationConfig(state.navLeft1, newRoute, oldRoute)
+                            }
+                        }
+                    }
+                )
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+                Text("Right Circle (1 Item)", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+
+                // Right Item Selector
+                NavPositionDropdown(
+                    label = "Right Circle Item",
+                    selectedRoute = state.navRight,
+                    options = options,
+                    onSelect = { newRoute ->
+                        if (newRoute != state.navLeft1 && newRoute != state.navLeft2) {
+                            viewModel.updateNavigationConfig(state.navLeft1, state.navLeft2, newRoute)
+                        } else {
+                            val oldRoute = state.navRight
+                            if (newRoute == state.navLeft1) {
+                                viewModel.updateNavigationConfig(oldRoute, state.navLeft2, newRoute)
+                            } else if (newRoute == state.navLeft2) {
+                                viewModel.updateNavigationConfig(state.navLeft1, oldRoute, newRoute)
+                            }
+                        }
+                    }
+                )
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+                Text("Startup & Persistence", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+
+                NavPositionDropdown(
+                    label = "Startup Screen",
+                    selectedRoute = state.startupScreen,
+                    options = options,
+                    onSelect = { newRoute ->
+                        viewModel.updateStartupScreen(newRoute)
+                    }
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Remember Last Screen", fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                        Text("Open the last viewed screen on launch", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Switch(
+                        checked = state.rememberLastScreen,
+                        onCheckedChange = { viewModel.updateRememberLastScreen(it) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun NavPositionDropdown(
+    label: String,
+    selectedRoute: String,
+    options: List<Pair<String, String>>,
+    onSelect: (String) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val currentTitle = options.firstOrNull { it.first == selectedRoute }?.second ?: "Home"
+
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = !expanded },
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        OutlinedTextField(
+            value = currentTitle,
+            onValueChange = {},
+            readOnly = true,
+            label = { Text(label) },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            modifier = Modifier
+                .menuAnchor()
+                .fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp)
+        )
+
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            options.forEach { (route, title) ->
+                DropdownMenuItem(
+                    text = { Text(title) },
+                    onClick = {
+                        onSelect(route)
+                        expanded = false
+                    }
+                )
             }
         }
     }

@@ -54,10 +54,12 @@ import com.synfusion.attendance.viewmodel.OfflineCalendarViewModel
 import com.synfusion.attendance.viewmodel.OfflineStatsViewModel
 import com.synfusion.attendance.viewmodel.OfflinePassbookViewModel
 import com.synfusion.attendance.viewmodel.OfflineSettingsViewModel
+import com.synfusion.attendance.viewmodel.OfflineSettingsState
 import com.synfusion.attendance.viewmodel.OfflineDashboardViewModel
 import com.synfusion.attendance.viewmodel.OfflineDashboardState
 import com.synfusion.attendance.data.DrillDownType
 import com.synfusion.attendance.ui.components.DrillDownBottomSheet
+import com.synfusion.attendance.ui.components.FloatingBottomNavigation
 import com.synfusion.attendance.utils.AmountFormatter
 import com.synfusion.attendance.utils.IndianCurrencyVisualTransformation
 import com.synfusion.attendance.viewmodel.OfflineViewModelFactory
@@ -97,6 +99,44 @@ fun DashboardScreen(
     val statsScrollState = rememberLazyListState()
     val settingsScrollState = rememberScrollState()
 
+    val settingsState by settingsViewModel.state.collectAsStateWithLifecycle(initialValue = OfflineSettingsState())
+    var initialRouteHandled by remember { mutableStateOf(false) }
+
+    val windowSizeInfo = LocalWindowSizeInfo.current
+    val isCompactPortrait = windowSizeInfo.isCompact && !windowSizeInfo.isLandscape
+
+    val currentNavRoute = if (currentRoute == "passbook") {
+        "passbook"
+    } else {
+        when (selectedTab) {
+            0 -> "dashboard"
+            1 -> "calendar"
+            2 -> "stats"
+            3 -> "settings"
+            else -> "dashboard"
+        }
+    }
+
+    LaunchedEffect(settingsState.isLoaded) {
+        if (settingsState.isLoaded && !initialRouteHandled) {
+            val initialRoute = if (settingsState.rememberLastScreen) {
+                settingsState.lastActiveScreen
+            } else {
+                settingsState.startupScreen
+            }
+            when (initialRoute) {
+                "dashboard" -> selectedTab = 0
+                "calendar" -> selectedTab = 1
+                "stats" -> selectedTab = 2
+                "settings" -> selectedTab = 3
+                "passbook" -> {
+                    bottomNavController.navigate("passbook")
+                }
+            }
+            initialRouteHandled = true
+        }
+    }
+
     // Lazy tab-refresh based on active page selection
     LaunchedEffect(selectedTab) {
         when (selectedTab) {
@@ -106,22 +146,38 @@ fun DashboardScreen(
         }
     }
 
-    val windowSizeInfo = LocalWindowSizeInfo.current
-    val isCompactPortrait = windowSizeInfo.isCompact && !windowSizeInfo.isLandscape
-    val currentNavRoute = when (selectedTab) {
-        0 -> "dashboard"
-        1 -> "calendar"
-        2 -> "stats"
-        3 -> "settings"
-        else -> "dashboard"
-    }
     val onNavSelected: (String) -> Unit = { route ->
-        selectedTab = when (route) {
-            "dashboard" -> 0
-            "calendar" -> 1
-            "stats" -> 2
-            "settings" -> 3
-            else -> 0
+        settingsViewModel.updateLastActiveScreen(route)
+        when (route) {
+            "dashboard" -> {
+                if (currentRoute != "main_pager") {
+                    bottomNavController.navigate("main_pager") { popUpTo("main_pager") { inclusive = true } }
+                }
+                selectedTab = 0
+            }
+            "calendar" -> {
+                if (currentRoute != "main_pager") {
+                    bottomNavController.navigate("main_pager") { popUpTo("main_pager") { inclusive = true } }
+                }
+                selectedTab = 1
+            }
+            "stats" -> {
+                if (currentRoute != "main_pager") {
+                    bottomNavController.navigate("main_pager") { popUpTo("main_pager") { inclusive = true } }
+                }
+                selectedTab = 2
+            }
+            "settings" -> {
+                if (currentRoute != "main_pager") {
+                    bottomNavController.navigate("main_pager") { popUpTo("main_pager") { inclusive = true } }
+                }
+                selectedTab = 3
+            }
+            "passbook" -> {
+                if (currentRoute != "passbook") {
+                    bottomNavController.navigate("passbook")
+                }
+            }
         }
     }
 
@@ -129,9 +185,12 @@ fun DashboardScreen(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         contentWindowInsets = WindowInsets.statusBars,
         bottomBar = {
-            if (currentRoute == "main_pager" && isCompactPortrait) {
-                BottomNavigationBar(
+            if (isCompactPortrait) {
+                FloatingBottomNavigation(
                     currentRoute = currentNavRoute,
+                    leftRoute1 = settingsState.navLeft1,
+                    leftRoute2 = settingsState.navLeft2,
+                    rightRoute = settingsState.navRight,
                     onNavigate = onNavSelected
                 )
             }

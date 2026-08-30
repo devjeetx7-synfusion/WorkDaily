@@ -24,6 +24,13 @@ class OfflinePreferencesRepository(val context: Context) {
         val LAST_BACKUP_TIME_KEY = longPreferencesKey("last_backup_time")
         val LAST_BACKUP_SIZE_KEY = longPreferencesKey("last_backup_size")
         val LAST_BACKUP_LOC_KEY = stringPreferencesKey("last_backup_loc")
+
+        val NAV_LEFT_1_KEY = stringPreferencesKey("nav_left_1")
+        val NAV_LEFT_2_KEY = stringPreferencesKey("nav_left_2")
+        val NAV_RIGHT_KEY = stringPreferencesKey("nav_right")
+        val STARTUP_SCREEN_KEY = stringPreferencesKey("startup_screen")
+        val REMEMBER_LAST_SCREEN_KEY = booleanPreferencesKey("remember_last_screen")
+        val LAST_ACTIVE_SCREEN_KEY = stringPreferencesKey("last_active_screen")
     }
 
     val userRoleFlow: Flow<String?> = context.offlineDataStore.data.map { preferences ->
@@ -68,6 +75,30 @@ class OfflinePreferencesRepository(val context: Context) {
 
     val splashEnabledFlow: Flow<Boolean> = context.offlineDataStore.data.map { preferences ->
         preferences[SPLASH_ENABLED_KEY] ?: true
+    }
+
+    val navLeft1Flow: Flow<String> = context.offlineDataStore.data.map { preferences ->
+        preferences[NAV_LEFT_1_KEY] ?: "dashboard"
+    }
+
+    val navLeft2Flow: Flow<String> = context.offlineDataStore.data.map { preferences ->
+        preferences[NAV_LEFT_2_KEY] ?: "passbook"
+    }
+
+    val navRightFlow: Flow<String> = context.offlineDataStore.data.map { preferences ->
+        preferences[NAV_RIGHT_KEY] ?: "settings"
+    }
+
+    val startupScreenFlow: Flow<String> = context.offlineDataStore.data.map { preferences ->
+        preferences[STARTUP_SCREEN_KEY] ?: "dashboard"
+    }
+
+    val rememberLastScreenFlow: Flow<Boolean> = context.offlineDataStore.data.map { preferences ->
+        preferences[REMEMBER_LAST_SCREEN_KEY] ?: false
+    }
+
+    val lastActiveScreenFlow: Flow<String> = context.offlineDataStore.data.map { preferences ->
+        preferences[LAST_ACTIVE_SCREEN_KEY] ?: "dashboard"
     }
 
     suspend fun saveUserRole(role: String) {
@@ -127,6 +158,32 @@ class OfflinePreferencesRepository(val context: Context) {
             preferences[LAST_BACKUP_TIME_KEY] = timestamp
             preferences[LAST_BACKUP_SIZE_KEY] = size
             preferences[LAST_BACKUP_LOC_KEY] = location
+        }
+    }
+
+    suspend fun saveNavigationConfig(left1: String, left2: String, right: String) {
+        context.offlineDataStore.edit { preferences ->
+            preferences[NAV_LEFT_1_KEY] = left1
+            preferences[NAV_LEFT_2_KEY] = left2
+            preferences[NAV_RIGHT_KEY] = right
+        }
+    }
+
+    suspend fun saveStartupScreen(screen: String) {
+        context.offlineDataStore.edit { preferences ->
+            preferences[STARTUP_SCREEN_KEY] = screen
+        }
+    }
+
+    suspend fun saveRememberLastScreen(remember: Boolean) {
+        context.offlineDataStore.edit { preferences ->
+            preferences[REMEMBER_LAST_SCREEN_KEY] = remember
+        }
+    }
+
+    suspend fun saveLastActiveScreen(screen: String) {
+        context.offlineDataStore.edit { preferences ->
+            preferences[LAST_ACTIVE_SCREEN_KEY] = screen
         }
     }
 
