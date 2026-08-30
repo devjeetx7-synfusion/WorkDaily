@@ -1474,7 +1474,7 @@ fun DeveloperContactBottomSheet(onDismiss: () -> Unit) {
 
             Row(
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly,
+                horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterHorizontally),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 ContactIconItem(
