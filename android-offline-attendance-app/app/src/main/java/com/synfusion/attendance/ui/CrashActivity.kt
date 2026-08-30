@@ -101,7 +101,7 @@ fun CrashScreen(
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "An unexpected error occurred in WorkDaily User. We apologize for the inconvenience.",
+            text = "An unexpected error occurred in WorkDaily App. We apologize for the inconvenience.",
             color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(bottom = 16.dp)

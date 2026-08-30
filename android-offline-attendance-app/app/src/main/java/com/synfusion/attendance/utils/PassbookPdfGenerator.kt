@@ -158,11 +158,11 @@ object PassbookPdfGenerator {
                 MARGIN
             }
 
-            // Line 1: WorkDaily User
+            // Line 1: WorkDaily App
             paintTextBold.color = colorPrimary
             paintTextBold.textSize = FONT_TITLE_SIZE
             paintTextBold.textAlign = Paint.Align.LEFT
-            canvas.drawText("WorkDaily User", textStartX, yPos + 18f, paintTextBold)
+            canvas.drawText("WorkDaily App", textStartX, yPos + 18f, paintTextBold)
 
             // Line 2: User Name
             paintTextNormal.color = colorTextPrimary
@@ -190,7 +190,7 @@ object PassbookPdfGenerator {
             paintTextNormal.color = colorTextPrimary
             paintTextNormal.textSize = 10f
             paintTextNormal.textAlign = Paint.Align.LEFT
-            canvas.drawText("WorkDaily User - " + subtitle, MARGIN, yPos + 10f, paintTextNormal)
+            canvas.drawText("WorkDaily App - " + subtitle, MARGIN, yPos + 10f, paintTextNormal)
 
             paintTextNormal.textAlign = Paint.Align.RIGHT
             canvas.drawText(title, PAGE_WIDTH - MARGIN, yPos + 10f, paintTextNormal)
@@ -296,7 +296,7 @@ object PassbookPdfGenerator {
         renderContext.paintTextBold.color = colorPrimary
         renderContext.paintTextBold.textSize = 12f
         renderContext.paintTextBold.textAlign = Paint.Align.CENTER
-        canvas.drawText("WorkDaily User", PAGE_WIDTH / 2f, renderContext.yPos, renderContext.paintTextBold)
+        canvas.drawText("WorkDaily App", PAGE_WIDTH / 2f, renderContext.yPos, renderContext.paintTextBold)
         renderContext.yPos += 14f
     }
 

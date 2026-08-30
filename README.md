@@ -1,12 +1,12 @@
-# WorkDaily User
+# WorkDaily App
 
 > A 100% offline, privacy-first Android application to track daily wages, attendance, overtime credit, advance payments, and financial passbook balances.
 
 ---
 
-## ✨ What is WorkDaily User?
+## ✨ What is WorkDaily App?
 
-**WorkDaily User** is designed for daily wagers, contract workers, tradespeople, supervisors, and independent workers across India. It provides a simple, reliable way to record daily attendance, log advance cash draws, calculate overtime pay, and keep a clean digital passbook ledger—completely offline on your phone.
+**WorkDaily App** is designed for daily wagers, contract workers, tradespeople, supervisors, and independent workers across India. It provides a simple, reliable way to record daily attendance, log advance cash draws, calculate overtime pay, and keep a clean digital passbook ledger—completely offline on your phone.
 
 ---
 
@@ -32,7 +32,7 @@
 
 ## 🔒 Offline & Privacy First
 
-WorkDaily User operates without an account or backend cloud server. All your data—profile info, daily wages, attendance records, and notes—is saved locally on your device inside Room SQLite database and DataStore preferences. Uninstalling the application deletes internal local database records, so creating periodic backup ZIP files is recommended.
+WorkDaily App operates without an account or backend cloud server. All your data—profile info, daily wages, attendance records, and notes—is saved locally on your device inside Room SQLite database and DataStore preferences. Uninstalling the application deletes internal local database records, so creating periodic backup ZIP files is recommended.
 
 ---
 

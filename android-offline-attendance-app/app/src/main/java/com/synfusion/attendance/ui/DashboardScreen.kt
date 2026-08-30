@@ -966,7 +966,7 @@ fun AdaptiveNavigationRail(currentRoute: String, onNavigate: (String) -> Unit = 
             ) {
                 androidx.compose.foundation.Image(
                     painter = androidx.compose.ui.res.painterResource(id = com.synfusion.attendance.R.drawable.logo_transparent),
-                    contentDescription = "WorkDaily User",
+                    contentDescription = "WorkDaily App",
                     modifier = Modifier.size(32.dp),
                     contentScale = androidx.compose.ui.layout.ContentScale.Fit
                 )
