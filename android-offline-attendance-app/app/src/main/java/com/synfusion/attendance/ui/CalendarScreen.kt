@@ -165,9 +165,8 @@ fun PersonalCalendarView(
         if (windowSizeInfo.isCompact) {
             LazyColumn(
                 state = scrollState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp)
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 96.dp)
             ) {
                 item {
                     Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.calendar), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)

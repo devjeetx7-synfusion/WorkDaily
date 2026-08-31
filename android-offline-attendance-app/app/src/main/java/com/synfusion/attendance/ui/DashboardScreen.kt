@@ -184,23 +184,16 @@ fun DashboardScreen(
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         contentWindowInsets = WindowInsets.statusBars,
-        bottomBar = {
-            if (isCompactPortrait) {
-                FloatingBottomNavigation(
-                    currentRoute = currentNavRoute,
-                    leftRoute1 = settingsState.navLeft1,
-                    leftRoute2 = settingsState.navLeft2,
-                    rightRoute = settingsState.navRight,
-                    onNavigate = onNavSelected
-                )
-            }
-        }
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
+        Box(
+            modifier = Modifier.fillMaxSize()
         ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+            ) {
             if (currentRoute == "main_pager" && !isCompactPortrait) {
                 AdaptiveNavigationRail(
                     currentRoute = currentNavRoute,
@@ -292,8 +285,8 @@ fun DashboardScreen(
                                                     LazyColumn(
                                                         state = dashboardScrollState,
                                                         modifier = Modifier
-                                                            .fillMaxSize()
-                                                            .padding(16.dp),
+                                                            .fillMaxSize(),
+                                                        contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 96.dp),
                                                         verticalArrangement = Arrangement.spacedBy(16.dp)
                                                     ) {
                                                         item {
@@ -422,6 +415,22 @@ fun DashboardScreen(
             }
         }
 
+        if (isCompactPortrait) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+            ) {
+                FloatingBottomNavigation(
+                    currentRoute = currentNavRoute,
+                    leftRoute1 = settingsState.navLeft1,
+                    leftRoute2 = settingsState.navLeft2,
+                    rightRoute = settingsState.navRight,
+                    onNavigate = onNavSelected
+                )
+            }
+        }
+
         if (showAdvanceDialog) {
             val existingAmount = dashboardState.todayAdvanceAmount
             LaunchedEffect(showAdvanceDialog) {
@@ -520,6 +529,7 @@ fun DashboardScreen(
             )
         }
     }
+}
 }
 
 @Composable
