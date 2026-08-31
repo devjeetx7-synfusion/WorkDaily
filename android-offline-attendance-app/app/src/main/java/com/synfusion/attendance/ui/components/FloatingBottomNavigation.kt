@@ -7,9 +7,10 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -67,8 +68,18 @@ fun FloatingBottomNavigation(
     onNavigate: (String) -> Unit
 ) {
     val leftItem1 = remember(leftRoute1) { WorkDailyNavItem.fromRoute(leftRoute1) }
-    val leftItem2 = remember(leftRoute2) { WorkDailyNavItem.fromRoute(leftRoute2) }
-    val rightItem = remember(rightRoute) { WorkDailyNavItem.fromRoute(rightRoute) }
+
+    // Requirement 4 & 11: Settings is ALWAYS fixed as the right circular button.
+    val rightItem = remember { WorkDailyNavItem.SETTINGS }
+
+    // Dynamic second slot in left capsule to display the active screen if it's not leftItem1 and not Settings
+    val leftItem2 = remember(leftRoute2, currentRoute, leftItem1.route) {
+        if (currentRoute != leftItem1.route && currentRoute != rightItem.route) {
+            WorkDailyNavItem.fromRoute(currentRoute)
+        } else {
+            WorkDailyNavItem.fromRoute(leftRoute2)
+        }
+    }
 
     var showSelector by remember { mutableStateOf(false) }
     var hoveredItem by remember { mutableStateOf<WorkDailyNavItem?>(null) }
@@ -94,9 +105,8 @@ fun FloatingBottomNavigation(
             val minTop = optionBoundsMap.values.minOf { it.top }
             val maxBottom = optionBoundsMap.values.maxOf { it.bottom }
 
-            // Vertical cancellation bounds check (-120dp above, +100dp below)
-            val topThreshold = minTop - with(density) { 120.dp.toPx() }
-            val bottomThreshold = maxBottom + with(density) { 100.dp.toPx() }
+            val topThreshold = minTop - with(density) { 150.dp.toPx() }
+            val bottomThreshold = maxBottom + with(density) { 120.dp.toPx() }
 
             if (touchWindowPos.y < topThreshold || touchWindowPos.y > bottomThreshold) {
                 if (hoveredItem != null) {
@@ -157,25 +167,23 @@ fun FloatingBottomNavigation(
             .windowInsetsPadding(WindowInsets.navigationBars),
         contentAlignment = Alignment.BottomCenter
     ) {
-        // Floating Compact Drag-to-Select Overlay for Home Long-Press
+        // Floating Curved Arc Drag-to-Select Overlay for Home Long-Press
         if (showSelector) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 68.dp),
-                contentAlignment = Alignment.BottomStart
+                    .padding(bottom = 76.dp),
+                contentAlignment = Alignment.BottomCenter
             ) {
                 Row(
-                    modifier = Modifier
-                        .wrapContentSize()
-                        .padding(horizontal = 4.dp, vertical = 4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.wrapContentSize(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    selectorItems.forEach { option ->
+                    selectorItems.forEachIndexed { index, option ->
                         val isHovered = (hoveredItem == option)
                         val scale by animateFloatAsState(
-                            targetValue = if (isHovered) 1.25f else 0.85f,
+                            targetValue = if (isHovered) 1.35f else 0.88f,
                             animationSpec = spring(
                                 dampingRatio = Spring.DampingRatioLowBouncy,
                                 stiffness = Spring.StiffnessMedium
@@ -183,19 +191,31 @@ fun FloatingBottomNavigation(
                             label = "optionScale"
                         )
 
+                        // Shallow arc curve Y offset (outer items slightly higher, inner items slightly lower)
+                        val arcYOffset = when (index) {
+                            0 -> (-6).dp
+                            1 -> 2.dp
+                            2 -> 2.dp
+                            3 -> (-6).dp
+                            else -> 0.dp
+                        }
+
                         Box(
                             modifier = Modifier
+                                .offset(y = arcYOffset)
                                 .onGloballyPositioned { coords ->
                                     optionBoundsMap[option] = coords.boundsInWindow()
                                 }
                                 .scale(scale)
-                                .size(44.dp)
+                                .size(48.dp)
                                 .then(
                                     if (isHovered) {
-                                        Modifier.background(
-                                            color = MaterialTheme.colorScheme.primary,
-                                            shape = CircleShape
-                                        )
+                                        Modifier
+                                            .shadow(8.dp, CircleShape, spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f))
+                                            .background(
+                                                color = MaterialTheme.colorScheme.primary,
+                                                shape = CircleShape
+                                            )
                                     } else {
                                         Modifier
                                     }
@@ -205,7 +225,7 @@ fun FloatingBottomNavigation(
                             Icon(
                                 imageVector = option.icon,
                                 contentDescription = option.title,
-                                tint = if (isHovered) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                                tint = if (isHovered) Color.White else MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier.size(24.dp)
                             )
                         }
@@ -223,7 +243,12 @@ fun FloatingBottomNavigation(
             // LEFT CAPSULE (2 Items)
             Surface(
                 modifier = Modifier
-                    .shadow(elevation = 12.dp, shape = RoundedCornerShape(32.dp), spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.25f))
+                    .shadow(
+                        elevation = 10.dp,
+                        shape = RoundedCornerShape(32.dp),
+                        ambientColor = Color.Black.copy(alpha = 0.12f),
+                        spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.22f)
+                    )
                     .clip(RoundedCornerShape(32.dp))
                     .background(MaterialTheme.colorScheme.surface)
                     .border(1.5.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f), RoundedCornerShape(32.dp)),
@@ -267,11 +292,16 @@ fun FloatingBottomNavigation(
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            // RIGHT CIRCLE (1 Item)
+            // RIGHT CIRCLE (1 Item - Permanently Settings)
             Surface(
                 modifier = Modifier
                     .size(60.dp)
-                    .shadow(elevation = 12.dp, shape = CircleShape, spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.25f))
+                    .shadow(
+                        elevation = 10.dp,
+                        shape = CircleShape,
+                        ambientColor = Color.Black.copy(alpha = 0.12f),
+                        spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.22f)
+                    )
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.surface)
                     .border(1.5.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f), CircleShape),
@@ -329,32 +359,40 @@ private fun FloatingNavItemButton(
         label = "navContentColor"
     )
 
-    Box(
-        modifier = Modifier
-            .onGloballyPositioned { coords ->
-                itemBounds = coords.boundsInWindow()
-            }
-            .pointerInput(item, isHomeItem) {
-                awaitEachGesture {
-                    val down = awaitFirstDown(requireUnconsumed = false)
-                    if (isHomeItem) {
+    val modifier = Modifier
+        .onGloballyPositioned { coords ->
+            itemBounds = coords.boundsInWindow()
+        }
+        .then(
+            if (isHomeItem) {
+                Modifier.pointerInput(item.route) {
+                    awaitEachGesture {
+                        val down = awaitFirstDown(requireUnconsumed = false)
                         var isLongPressTriggered = false
                         val longPressJob = coroutineScope.launch {
-                            delay(350)
+                            delay(300)
                             isLongPressTriggered = true
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             onHomeLongPress(itemBounds)
                         }
 
+                        var pointerUp = false
                         do {
                             val event = awaitPointerEvent(PointerEventPass.Main)
-                            val pointerChange = event.changes.firstOrNull() ?: break
-                            if (isLongPressTriggered) {
-                                pointerChange.consume()
-                                val fingerWindowPos = itemBounds.topLeft + pointerChange.position
-                                onDrag(fingerWindowPos)
+                            val change = event.changes.firstOrNull { it.id == down.id } ?: event.changes.firstOrNull()
+                            if (change != null) {
+                                if (isLongPressTriggered) {
+                                    change.consume()
+                                    val fingerWindowPos = itemBounds.topLeft + change.position
+                                    onDrag(fingerWindowPos)
+                                }
+                                if (!change.pressed) {
+                                    pointerUp = true
+                                }
+                            } else {
+                                pointerUp = true
                             }
-                        } while (event.changes.any { it.pressed })
+                        } while (!pointerUp)
 
                         longPressJob.cancel()
                         if (isLongPressTriggered) {
@@ -362,20 +400,26 @@ private fun FloatingNavItemButton(
                         } else {
                             onNavigate(item.route)
                         }
-                    } else {
-                        val up = waitForUpOrCancellation()
-                        if (up != null) {
-                            onNavigate(item.route)
-                        }
                     }
                 }
+            } else {
+                Modifier.clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null
+                ) {
+                    onNavigate(item.route)
+                }
             }
-            .clip(if (isSingleCircle) CircleShape else RoundedCornerShape(24.dp))
-            .background(backgroundColor)
-            .padding(
-                horizontal = if (isSingleCircle) 14.dp else if (isSelected) 18.dp else 14.dp,
-                vertical = 10.dp
-            ),
+        )
+        .clip(if (isSingleCircle) CircleShape else RoundedCornerShape(24.dp))
+        .background(backgroundColor)
+        .padding(
+            horizontal = if (isSingleCircle) 14.dp else if (isSelected) 18.dp else 14.dp,
+            vertical = 10.dp
+        )
+
+    Box(
+        modifier = modifier,
         contentAlignment = Alignment.Center
     ) {
         Row(

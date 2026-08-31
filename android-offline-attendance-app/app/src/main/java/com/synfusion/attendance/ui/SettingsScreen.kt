@@ -936,7 +936,16 @@ fun NavigationCustomizationCardSection(
     state: OfflineSettingsState,
     viewModel: OfflineSettingsViewModel
 ) {
-    val options = remember {
+    val capsuleOptions = remember {
+        listOf(
+            "dashboard" to "Home",
+            "calendar" to "Calendar",
+            "stats" to "Statistics",
+            "passbook" to "Passbook"
+        )
+    }
+
+    val startupOptions = remember {
         listOf(
             "dashboard" to "Home",
             "calendar" to "Calendar",
@@ -961,17 +970,13 @@ fun NavigationCustomizationCardSection(
                 NavPositionDropdown(
                     label = "Left Item 1",
                     selectedRoute = state.navLeft1,
-                    options = options,
+                    options = capsuleOptions,
                     onSelect = { newRoute ->
-                        if (newRoute != state.navLeft2 && newRoute != state.navRight) {
-                            viewModel.updateNavigationConfig(newRoute, state.navLeft2, state.navRight)
+                        if (newRoute != state.navLeft2) {
+                            viewModel.updateNavigationConfig(newRoute, state.navLeft2, "settings")
                         } else {
                             val oldRoute = state.navLeft1
-                            if (newRoute == state.navLeft2) {
-                                viewModel.updateNavigationConfig(newRoute, oldRoute, state.navRight)
-                            } else if (newRoute == state.navRight) {
-                                viewModel.updateNavigationConfig(newRoute, state.navLeft2, oldRoute)
-                            }
+                            viewModel.updateNavigationConfig(newRoute, oldRoute, "settings")
                         }
                     }
                 )
@@ -980,43 +985,41 @@ fun NavigationCustomizationCardSection(
                 NavPositionDropdown(
                     label = "Left Item 2",
                     selectedRoute = state.navLeft2,
-                    options = options,
+                    options = capsuleOptions,
                     onSelect = { newRoute ->
-                        if (newRoute != state.navLeft1 && newRoute != state.navRight) {
-                            viewModel.updateNavigationConfig(state.navLeft1, newRoute, state.navRight)
+                        if (newRoute != state.navLeft1) {
+                            viewModel.updateNavigationConfig(state.navLeft1, newRoute, "settings")
                         } else {
                             val oldRoute = state.navLeft2
-                            if (newRoute == state.navLeft1) {
-                                viewModel.updateNavigationConfig(oldRoute, newRoute, state.navRight)
-                            } else if (newRoute == state.navRight) {
-                                viewModel.updateNavigationConfig(state.navLeft1, newRoute, oldRoute)
-                            }
+                            viewModel.updateNavigationConfig(oldRoute, newRoute, "settings")
                         }
                     }
                 )
 
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
 
-                Text("Right Circle (1 Item)", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-
-                // Right Item Selector
-                NavPositionDropdown(
-                    label = "Right Circle Item",
-                    selectedRoute = state.navRight,
-                    options = options,
-                    onSelect = { newRoute ->
-                        if (newRoute != state.navLeft1 && newRoute != state.navLeft2) {
-                            viewModel.updateNavigationConfig(state.navLeft1, state.navLeft2, newRoute)
-                        } else {
-                            val oldRoute = state.navRight
-                            if (newRoute == state.navLeft1) {
-                                viewModel.updateNavigationConfig(oldRoute, state.navLeft2, newRoute)
-                            } else if (newRoute == state.navLeft2) {
-                                viewModel.updateNavigationConfig(state.navLeft1, oldRoute, newRoute)
-                            }
-                        }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Right Button (Fixed)", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                        Text("Settings is permanently assigned to the right circular button", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-                )
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                    ) {
+                        Text(
+                            text = "Settings",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                        )
+                    }
+                }
 
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
 
@@ -1025,7 +1028,7 @@ fun NavigationCustomizationCardSection(
                 NavPositionDropdown(
                     label = "Startup Screen",
                     selectedRoute = state.startupScreen,
-                    options = options,
+                    options = startupOptions,
                     onSelect = { newRoute ->
                         viewModel.updateStartupScreen(newRoute)
                     }
