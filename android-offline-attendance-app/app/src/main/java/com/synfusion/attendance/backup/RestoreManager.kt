@@ -191,6 +191,10 @@ class RestoreManager(private val context: Context) {
 
                     // 6. Ensure final record counts in the restored prod database
                     val finalProdDb = AttendanceDatabase.getInstance(context)
+
+                    // 7. Refresh ViewModels so screens reload seamlessly without forcing a restart
+                    DatabaseLifecycleCoordinator.refreshViewModels()
+
                     val finalUser = finalProdDb.userDao().getUser()
                     val finalAttendance = finalProdDb.attendanceDao().getPersonalAttendance()
 

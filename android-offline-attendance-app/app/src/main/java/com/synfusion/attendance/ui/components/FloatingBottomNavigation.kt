@@ -169,19 +169,6 @@ fun FloatingBottomNavigation(
             .windowInsetsPadding(WindowInsets.navigationBars),
         contentAlignment = Alignment.BottomCenter
     ) {
-        // Subdued background scrim when long-press arc selector is expanded
-        AnimatedVisibility(
-            visible = showSelector,
-            enter = fadeIn(animationSpec = tween(180)),
-            exit = fadeOut(animationSpec = tween(180))
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.22f))
-            )
-        }
-
         // Floating Curved Arc Drag-to-Select Overlay for Long-Press
         if (showSelector) {
             Box(
