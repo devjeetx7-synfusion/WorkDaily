@@ -7,6 +7,9 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -25,21 +28,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.PointerEventPass
-import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Popup
-import androidx.compose.ui.window.PopupProperties
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.math.abs
 
 enum class WorkDailyNavItem(
     val route: String,
@@ -73,13 +72,12 @@ fun FloatingBottomNavigation(
 
     var showSelector by remember { mutableStateOf(false) }
     var hoveredItem by remember { mutableStateOf<WorkDailyNavItem?>(null) }
-    var selectorAnchorBounds by remember { mutableStateOf(Rect.Zero) }
+    var homeAnchorBounds by remember { mutableStateOf(Rect.Zero) }
 
     val haptic = LocalHapticFeedback.current
     val density = LocalDensity.current
-    val configuration = LocalConfiguration.current
 
-    // Selector options to display on long press (Home, Calendar, Statistics, Passbook)
+    // Selector options to display on Home long press (Home, Calendar, Statistics, Passbook)
     val selectorItems = remember {
         listOf(
             WorkDailyNavItem.HOME,
@@ -96,21 +94,38 @@ fun FloatingBottomNavigation(
             val minTop = optionBoundsMap.values.minOf { it.top }
             val maxBottom = optionBoundsMap.values.maxOf { it.bottom }
 
-            // Vertical cancellation threshold
-            if (touchWindowPos.y < minTop - 150f || touchWindowPos.y > maxBottom + 120f) {
-                hoveredItem = null
+            // Vertical cancellation bounds check (-120dp above, +100dp below)
+            val topThreshold = minTop - with(density) { 120.dp.toPx() }
+            val bottomThreshold = maxBottom + with(density) { 100.dp.toPx() }
+
+            if (touchWindowPos.y < topThreshold || touchWindowPos.y > bottomThreshold) {
+                if (hoveredItem != null) {
+                    hoveredItem = null
+                }
             } else {
                 var closestOption: WorkDailyNavItem? = null
                 var minDistance = Float.MAX_VALUE
 
-                selectorItems.forEach { option ->
-                    val bounds = optionBoundsMap[option]
-                    if (bounds != null) {
-                        val centerX = bounds.center.x
-                        val dist = kotlin.math.abs(touchWindowPos.x - centerX)
-                        if (dist < minDistance) {
-                            minDistance = dist
-                            closestOption = option
+                val sortedOptions = selectorItems.mapNotNull { option ->
+                    optionBoundsMap[option]?.let { bounds -> option to bounds }
+                }.sortedBy { it.second.center.x }
+
+                if (sortedOptions.isNotEmpty()) {
+                    val minX = sortedOptions.first().second.center.x
+                    val maxX = sortedOptions.last().second.center.x
+
+                    // Continuous horizontal tracking with edge clamping
+                    if (touchWindowPos.x <= minX) {
+                        closestOption = sortedOptions.first().first
+                    } else if (touchWindowPos.x >= maxX) {
+                        closestOption = sortedOptions.last().first
+                    } else {
+                        sortedOptions.forEach { (option, bounds) ->
+                            val dist = abs(touchWindowPos.x - bounds.center.x)
+                            if (dist < minDistance) {
+                                minDistance = dist
+                                closestOption = option
+                            }
                         }
                     }
                 }
@@ -126,11 +141,12 @@ fun FloatingBottomNavigation(
 
     val onReleaseHandler: () -> Unit = {
         if (showSelector) {
-            hoveredItem?.let { target ->
-                onNavigate(target.route)
-            }
+            val target = hoveredItem
             showSelector = false
             hoveredItem = null
+            if (target != null) {
+                onNavigate(target.route)
+            }
         }
     }
 
@@ -141,113 +157,18 @@ fun FloatingBottomNavigation(
             .windowInsetsPadding(WindowInsets.navigationBars),
         contentAlignment = Alignment.BottomCenter
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // LEFT CAPSULE (2 Items)
-            Surface(
-                modifier = Modifier
-                    .shadow(elevation = 12.dp, shape = RoundedCornerShape(32.dp), spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.25f))
-                    .clip(RoundedCornerShape(32.dp))
-                    .background(MaterialTheme.colorScheme.surface)
-                    .border(1.5.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f), RoundedCornerShape(32.dp)),
-                color = MaterialTheme.colorScheme.surface,
-                tonalElevation = 6.dp
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    FloatingNavItemButton(
-                        item = leftItem1,
-                        isSelected = currentRoute == leftItem1.route,
-                        onNavigate = onNavigate,
-                        onLongPress = { bounds ->
-                            selectorAnchorBounds = bounds
-                            optionBoundsMap.clear()
-                            hoveredItem = leftItem1
-                            showSelector = true
-                        },
-                        onDrag = onDragHandler,
-                        onRelease = onReleaseHandler
-                    )
-
-                    FloatingNavItemButton(
-                        item = leftItem2,
-                        isSelected = currentRoute == leftItem2.route,
-                        onNavigate = onNavigate,
-                        onLongPress = { bounds ->
-                            selectorAnchorBounds = bounds
-                            optionBoundsMap.clear()
-                            hoveredItem = leftItem2
-                            showSelector = true
-                        },
-                        onDrag = onDragHandler,
-                        onRelease = onReleaseHandler
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            // RIGHT CIRCLE (1 Item)
-            Surface(
-                modifier = Modifier
-                    .size(60.dp)
-                    .shadow(elevation = 12.dp, shape = CircleShape, spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.25f))
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surface)
-                    .border(1.5.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f), CircleShape),
-                color = MaterialTheme.colorScheme.surface,
-                tonalElevation = 6.dp
-            ) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    FloatingNavItemButton(
-                        item = rightItem,
-                        isSelected = currentRoute == rightItem.route,
-                        isSingleCircle = true,
-                        onNavigate = onNavigate,
-                        onLongPress = { bounds ->
-                            selectorAnchorBounds = bounds
-                            optionBoundsMap.clear()
-                            hoveredItem = rightItem
-                            showSelector = true
-                        },
-                        onDrag = onDragHandler,
-                        onRelease = onReleaseHandler
-                    )
-                }
-            }
-        }
-
-        // Long-Press Floating Compact Horizontal Selector Overlay
+        // Floating Compact Drag-to-Select Overlay for Home Long-Press
         if (showSelector) {
-            val screenWidthPx = with(density) { configuration.screenWidthDp.dp.toPx() }
-            val selectorWidthPx = with(density) { (4 * 44 + 3 * 8 + 16).dp.toPx() }
-            val calculatedX = (selectorAnchorBounds.left - with(density) { 8.dp.toPx() })
-                .coerceIn(with(density) { 16.dp.toPx() }, screenWidthPx - selectorWidthPx)
-                .toInt()
-            val calculatedY = (selectorAnchorBounds.top - with(density) { 56.dp.toPx() }).toInt()
-
-            Popup(
-                alignment = Alignment.TopStart,
-                offset = IntOffset(calculatedX, calculatedY),
-                onDismissRequest = {
-                    showSelector = false
-                    hoveredItem = null
-                },
-                properties = PopupProperties(focusable = false)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 68.dp),
+                contentAlignment = Alignment.BottomStart
             ) {
                 Row(
                     modifier = Modifier
                         .wrapContentSize()
-                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                        .padding(horizontal = 4.dp, vertical = 4.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -292,6 +213,92 @@ fun FloatingBottomNavigation(
                 }
             }
         }
+
+        // Standard Floating Bottom Navigation Bar
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // LEFT CAPSULE (2 Items)
+            Surface(
+                modifier = Modifier
+                    .shadow(elevation = 12.dp, shape = RoundedCornerShape(32.dp), spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.25f))
+                    .clip(RoundedCornerShape(32.dp))
+                    .background(MaterialTheme.colorScheme.surface)
+                    .border(1.5.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f), RoundedCornerShape(32.dp)),
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 6.dp
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    FloatingNavItemButton(
+                        item = leftItem1,
+                        isSelected = currentRoute == leftItem1.route,
+                        onNavigate = onNavigate,
+                        onHomeLongPress = { bounds ->
+                            homeAnchorBounds = bounds
+                            optionBoundsMap.clear()
+                            hoveredItem = leftItem1
+                            showSelector = true
+                        },
+                        onDrag = onDragHandler,
+                        onRelease = onReleaseHandler
+                    )
+
+                    FloatingNavItemButton(
+                        item = leftItem2,
+                        isSelected = currentRoute == leftItem2.route,
+                        onNavigate = onNavigate,
+                        onHomeLongPress = { bounds ->
+                            homeAnchorBounds = bounds
+                            optionBoundsMap.clear()
+                            hoveredItem = leftItem2
+                            showSelector = true
+                        },
+                        onDrag = onDragHandler,
+                        onRelease = onReleaseHandler
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            // RIGHT CIRCLE (1 Item)
+            Surface(
+                modifier = Modifier
+                    .size(60.dp)
+                    .shadow(elevation = 12.dp, shape = CircleShape, spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.25f))
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surface)
+                    .border(1.5.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f), CircleShape),
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 6.dp
+            ) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    FloatingNavItemButton(
+                        item = rightItem,
+                        isSelected = currentRoute == rightItem.route,
+                        isSingleCircle = true,
+                        onNavigate = onNavigate,
+                        onHomeLongPress = { bounds ->
+                            homeAnchorBounds = bounds
+                            optionBoundsMap.clear()
+                            hoveredItem = rightItem
+                            showSelector = true
+                        },
+                        onDrag = onDragHandler,
+                        onRelease = onReleaseHandler
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -301,13 +308,14 @@ private fun FloatingNavItemButton(
     isSelected: Boolean,
     isSingleCircle: Boolean = false,
     onNavigate: (String) -> Unit,
-    onLongPress: (Rect) -> Unit,
+    onHomeLongPress: (Rect) -> Unit,
     onDrag: (Offset) -> Unit,
     onRelease: () -> Unit
 ) {
     var itemBounds by remember { mutableStateOf(Rect.Zero) }
     val coroutineScope = rememberCoroutineScope()
     val haptic = LocalHapticFeedback.current
+    val isHomeItem = (item == WorkDailyNavItem.HOME)
 
     val backgroundColor by animateColorAsState(
         targetValue = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
@@ -326,39 +334,38 @@ private fun FloatingNavItemButton(
             .onGloballyPositioned { coords ->
                 itemBounds = coords.boundsInWindow()
             }
-            .pointerInput(item) {
-                awaitPointerEventScope {
-                    while (true) {
-                        val down = awaitPointerEvent(PointerEventPass.Main)
-                        if (down.type == PointerEventType.Press) {
-                            var isLongPressTriggered = false
-                            val longPressJob = coroutineScope.launch {
-                                delay(350)
-                                isLongPressTriggered = true
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                onLongPress(itemBounds)
+            .pointerInput(item, isHomeItem) {
+                awaitEachGesture {
+                    val down = awaitFirstDown(requireUnconsumed = false)
+                    if (isHomeItem) {
+                        var isLongPressTriggered = false
+                        val longPressJob = coroutineScope.launch {
+                            delay(350)
+                            isLongPressTriggered = true
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            onHomeLongPress(itemBounds)
+                        }
+
+                        do {
+                            val event = awaitPointerEvent(PointerEventPass.Main)
+                            val pointerChange = event.changes.firstOrNull() ?: break
+                            if (isLongPressTriggered) {
+                                pointerChange.consume()
+                                val fingerWindowPos = itemBounds.topLeft + pointerChange.position
+                                onDrag(fingerWindowPos)
                             }
+                        } while (event.changes.any { it.pressed })
 
-                            while (true) {
-                                val event = awaitPointerEvent(PointerEventPass.Main)
-                                val currentPointer = event.changes.firstOrNull() ?: break
-
-                                if (isLongPressTriggered) {
-                                    val fingerWindowPos = Offset(itemBounds.left, itemBounds.top) + currentPointer.position
-                                    onDrag(fingerWindowPos)
-                                }
-
-                                if (event.type == PointerEventType.Release) {
-                                    longPressJob.cancel()
-                                    if (isLongPressTriggered) {
-                                        onRelease()
-                                    } else {
-                                        // Short tap
-                                        onNavigate(item.route)
-                                    }
-                                    break
-                                }
-                            }
+                        longPressJob.cancel()
+                        if (isLongPressTriggered) {
+                            onRelease()
+                        } else {
+                            onNavigate(item.route)
+                        }
+                    } else {
+                        val up = waitForUpOrCancellation()
+                        if (up != null) {
+                            onNavigate(item.route)
                         }
                     }
                 }
