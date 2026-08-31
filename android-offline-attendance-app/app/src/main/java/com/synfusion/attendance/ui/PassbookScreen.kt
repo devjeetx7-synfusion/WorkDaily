@@ -225,9 +225,8 @@ fun PassbookScreen(
                     ResponsiveContainer {
                         if (windowSizeInfo.isCompact) {
                             LazyColumn(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(16.dp),
+                                modifier = Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 96.dp),
                                 verticalArrangement = Arrangement.spacedBy(16.dp)
                             ) {
                                 item {
@@ -519,9 +518,8 @@ fun PassbookScreen(
                             }
                         } else {
                             LazyColumn(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(24.dp),
+                                modifier = Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(start = 24.dp, top = 24.dp, end = 24.dp, bottom = 96.dp),
                                 verticalArrangement = Arrangement.spacedBy(20.dp)
                             ) {
                                 item {
