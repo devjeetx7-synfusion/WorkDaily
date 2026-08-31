@@ -200,7 +200,7 @@ fun FloatingBottomNavigation(
                             else -> 0.dp
                         }
 
-                        Box(
+                        Surface(
                             modifier = Modifier
                                 .offset(y = arcYOffset)
                                 .onGloballyPositioned { coords ->
@@ -208,26 +208,27 @@ fun FloatingBottomNavigation(
                                 }
                                 .scale(scale)
                                 .size(48.dp)
-                                .then(
-                                    if (isHovered) {
-                                        Modifier
-                                            .shadow(8.dp, CircleShape, spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f))
-                                            .background(
-                                                color = MaterialTheme.colorScheme.primary,
-                                                shape = CircleShape
-                                            )
-                                    } else {
-                                        Modifier
-                                    }
+                                .shadow(
+                                    elevation = if (isHovered) 10.dp else 6.dp,
+                                    shape = CircleShape,
+                                    ambientColor = Color.Black.copy(alpha = 0.10f),
+                                    spotColor = MaterialTheme.colorScheme.primary.copy(alpha = if (isHovered) 0.35f else 0.15f)
                                 ),
-                            contentAlignment = Alignment.Center
+                            shape = CircleShape,
+                            color = if (isHovered) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
+                            border = if (!isHovered) androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.15f)) else null
                         ) {
-                            Icon(
-                                imageVector = option.icon,
-                                contentDescription = option.title,
-                                tint = if (isHovered) Color.White else MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.size(24.dp)
-                            )
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = option.icon,
+                                    contentDescription = option.title,
+                                    tint = if (isHovered) Color.White else MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
                         }
                     }
                 }
@@ -244,10 +245,10 @@ fun FloatingBottomNavigation(
             Surface(
                 modifier = Modifier
                     .shadow(
-                        elevation = 10.dp,
+                        elevation = 12.dp,
                         shape = RoundedCornerShape(32.dp),
                         ambientColor = Color.Black.copy(alpha = 0.12f),
-                        spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.22f)
+                        spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.20f)
                     )
                     .clip(RoundedCornerShape(32.dp))
                     .background(MaterialTheme.colorScheme.surface)
@@ -297,10 +298,10 @@ fun FloatingBottomNavigation(
                 modifier = Modifier
                     .size(60.dp)
                     .shadow(
-                        elevation = 10.dp,
+                        elevation = 12.dp,
                         shape = CircleShape,
                         ambientColor = Color.Black.copy(alpha = 0.12f),
-                        spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.22f)
+                        spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.20f)
                     )
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.surface)

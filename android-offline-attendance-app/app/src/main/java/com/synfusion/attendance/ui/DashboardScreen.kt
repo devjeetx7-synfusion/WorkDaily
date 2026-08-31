@@ -151,25 +151,25 @@ fun DashboardScreen(
         when (route) {
             "dashboard" -> {
                 if (currentRoute != "main_pager") {
-                    bottomNavController.navigate("main_pager") { popUpTo("main_pager") { inclusive = true } }
+                    bottomNavController.popBackStack("main_pager", false)
                 }
                 selectedTab = 0
             }
             "calendar" -> {
                 if (currentRoute != "main_pager") {
-                    bottomNavController.navigate("main_pager") { popUpTo("main_pager") { inclusive = true } }
+                    bottomNavController.popBackStack("main_pager", false)
                 }
                 selectedTab = 1
             }
             "stats" -> {
                 if (currentRoute != "main_pager") {
-                    bottomNavController.navigate("main_pager") { popUpTo("main_pager") { inclusive = true } }
+                    bottomNavController.popBackStack("main_pager", false)
                 }
                 selectedTab = 2
             }
             "settings" -> {
                 if (currentRoute != "main_pager") {
-                    bottomNavController.navigate("main_pager") { popUpTo("main_pager") { inclusive = true } }
+                    bottomNavController.popBackStack("main_pager", false)
                 }
                 selectedTab = 3
             }
