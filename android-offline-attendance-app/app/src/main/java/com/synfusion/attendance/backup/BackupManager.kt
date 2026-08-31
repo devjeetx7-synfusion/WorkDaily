@@ -55,13 +55,15 @@ class BackupManager(private val context: Context) {
 
                 val duration = System.currentTimeMillis() - startTime
 
+                val uncompressedSize = calculateDirSize(tempDir)
+
                 // Generate Manifest with modular record counts
                 val manifestFile = File(tempDir, "manifest.json")
                 val manifestObj = ManifestManager.generateManifest(
                     backupUuid = backupUuid,
                     creationTimestamp = startTime,
                     totalBackupDurationMs = duration,
-                    compressionRatio = 1.0, // initial estimate
+                    compressionRatio = 1.0,
                     appBuildNumber = 1L,
                     backupFormatVersion = 1,
                     backupVersion = 1,
@@ -72,7 +74,7 @@ class BackupManager(private val context: Context) {
                     packageName = context.packageName,
                     recordCounts = combinedCounts,
                     totalFiles = totalFiles,
-                    backupSize = 0L, // will calculate on zip
+                    backupSize = uncompressedSize, // Use actual uncompressed size for accurate validation during restore
                     featureList = modules.map { it.name }
                 )
                 ManifestManager.writeManifest(manifestFile, manifestObj)
@@ -81,18 +83,8 @@ class BackupManager(private val context: Context) {
                 if (outputZipFile.exists()) outputZipFile.delete()
                 BackupProvider.compressFolder(tempDir, outputZipFile, logger)
 
-                val finalSize = outputZipFile.length()
-                val uncompressedSize = calculateDirSize(tempDir)
-                val ratio = if (uncompressedSize > 0) finalSize.toDouble() / uncompressedSize.toDouble() else 1.0
-
-                val updatedManifest = manifestObj.copy(
-                    backupSize = finalSize,
-                    compressionRatio = ratio
-                )
-                ManifestManager.writeManifest(manifestFile, updatedManifest) // Updated locally
-
                 progressTracker.updateProgress(100f, "Backup completed successfully!")
-                logger.info("Backup generated: ${outputZipFile.name} size: $finalSize bytes, duration: $duration ms.")
+                logger.info("Backup generated: ${outputZipFile.name} duration: $duration ms.")
 
             } catch (e: Exception) {
                 logger.error("Backup operation aborted due to failure: ${e.message}", e)

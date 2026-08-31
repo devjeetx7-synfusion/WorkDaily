@@ -70,6 +70,9 @@ fun BackupRestoreBottomSheet(
     var restoreSummaryReport by remember { mutableStateOf<RestoreSummaryReport?>(null) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
+    var showBackupNameDialog by remember { mutableStateOf(false) }
+    var customBackupName by remember { mutableStateOf("") }
+
     // File Create Launcher for SAF Backup
     val createBackupLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/zip"),
@@ -153,6 +156,42 @@ fun BackupRestoreBottomSheet(
 
     BackHandler(enabled = isOperating) {
         // Blocks physical back button during restore
+    }
+
+    if (showBackupNameDialog) {
+        AlertDialog(
+            onDismissRequest = { showBackupNameDialog = false },
+            title = { Text(stringResource(R.string.create_new_backup), fontWeight = FontWeight.Bold) },
+            text = {
+                OutlinedTextField(
+                    value = customBackupName,
+                    onValueChange = { customBackupName = it },
+                    label = { Text("Backup Name") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                Button(onClick = {
+                    var sanitized = customBackupName.trim().replace(Regex("[\\\\/:*?\"<>|]"), "_")
+                    if (sanitized.isEmpty()) {
+                        sanitized = "My WorkDaily Backup"
+                    }
+                    if (!sanitized.endsWith(".zip", ignoreCase = true)) {
+                        sanitized += ".zip"
+                    }
+                    showBackupNameDialog = false
+                    createBackupLauncher.launch(sanitized)
+                }) {
+                    Text("Create Backup", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showBackupNameDialog = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
     }
 
     ModalBottomSheet(
@@ -311,18 +350,12 @@ fun BackupRestoreBottomSheet(
                     Button(
                         onClick = {
                             operationSuccess = null
-                            if (isSuccess && operationType == "RESTORE") {
-                                // Trigger app restart on successful restore
-                                val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
-                                intent?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-                                context.startActivity(intent)
-                                (context as? android.app.Activity)?.finish()
-                            }
+                            onDismiss()
                         },
                         modifier = Modifier.fillMaxWidth().height(50.dp),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                            Text(if (isSuccess && operationType == "RESTORE") stringResource(R.string.restart_app) else stringResource(R.string.done), fontWeight = FontWeight.Bold)
+                            Text(stringResource(R.string.done), fontWeight = FontWeight.Bold)
                     }
                 }
             } else if (restorePreview != null) {
@@ -434,10 +467,8 @@ fun BackupRestoreBottomSheet(
                                         operationSuccess = report != null
                                         if (report == null) {
                                             errorMessage = context.getString(R.string.restore_failed_msg)
-                                            isOperating = false
-                                        } else {
-                                            restoreManager.triggerCleanRestart()
                                         }
+                                        isOperating = false
                                         file.delete()
                                     } else {
                                         errorMessage = context.getString(R.string.internal_file_error)
@@ -465,7 +496,8 @@ fun BackupRestoreBottomSheet(
                         subtitle = stringResource(R.string.create_new_backup_subtitle),
                         icon = Icons.Default.CloudUpload,
                         onClick = {
-                            createBackupLauncher.launch("AttendanceBackup_${SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())}.zip")
+                            customBackupName = "My WorkDaily Backup"
+                            showBackupNameDialog = true
                         }
                     )
 
