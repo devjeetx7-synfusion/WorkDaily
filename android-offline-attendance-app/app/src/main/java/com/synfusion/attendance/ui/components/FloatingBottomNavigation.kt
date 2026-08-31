@@ -207,7 +207,7 @@ fun FloatingBottomNavigation(
                         )
 
                         val elevation by animateDpAsState(
-                            targetValue = if (isHovered) 14.dp else 6.dp,
+                            targetValue = if (isHovered) 8.dp else 4.dp,
                             animationSpec = spring(
                                 dampingRatio = Spring.DampingRatioLowBouncy,
                                 stiffness = Spring.StiffnessMedium
@@ -235,8 +235,8 @@ fun FloatingBottomNavigation(
                                 .shadow(
                                     elevation = elevation,
                                     shape = CircleShape,
-                                    ambientColor = Color.Black.copy(alpha = 0.12f),
-                                    spotColor = if (isHovered) MaterialTheme.colorScheme.primary.copy(alpha = 0.40f) else Color.Black.copy(alpha = 0.15f)
+                                    ambientColor = Color.Black.copy(alpha = 0.06f),
+                                    spotColor = Color.Black.copy(alpha = 0.10f)
                                 ),
                             shape = CircleShape,
                             color = if (isHovered) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
@@ -269,16 +269,16 @@ fun FloatingBottomNavigation(
             Surface(
                 modifier = Modifier
                     .shadow(
-                        elevation = 16.dp,
+                        elevation = 6.dp,
                         shape = RoundedCornerShape(32.dp),
-                        ambientColor = Color.Black.copy(alpha = 0.10f),
-                        spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.22f)
+                        ambientColor = Color.Black.copy(alpha = 0.06f),
+                        spotColor = Color.Black.copy(alpha = 0.08f)
                     )
                     .clip(RoundedCornerShape(32.dp))
                     .background(MaterialTheme.colorScheme.surface)
                     .border(1.5.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f), RoundedCornerShape(32.dp)),
                 color = MaterialTheme.colorScheme.surface,
-                tonalElevation = 6.dp
+                tonalElevation = 0.dp
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
@@ -322,16 +322,16 @@ fun FloatingBottomNavigation(
                 modifier = Modifier
                     .size(60.dp)
                     .shadow(
-                        elevation = 16.dp,
+                        elevation = 6.dp,
                         shape = CircleShape,
-                        ambientColor = Color.Black.copy(alpha = 0.10f),
-                        spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.22f)
+                        ambientColor = Color.Black.copy(alpha = 0.06f),
+                        spotColor = Color.Black.copy(alpha = 0.08f)
                     )
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.surface)
                     .border(1.5.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f), CircleShape),
                 color = MaterialTheme.colorScheme.surface,
-                tonalElevation = 6.dp
+                tonalElevation = 0.dp
             ) {
                 Box(
                     modifier = Modifier.fillMaxSize(),

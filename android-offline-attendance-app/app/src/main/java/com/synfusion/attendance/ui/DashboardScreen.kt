@@ -1,5 +1,6 @@
 package com.synfusion.attendance.ui
 
+import com.synfusion.attendance.ui.screens.CustomizeNavigationScreen
 import com.synfusion.attendance.ui.screens.HowToUseScreen
 import com.synfusion.attendance.ui.screens.PrivacyPolicyScreen
 import com.synfusion.attendance.ui.screens.TermsConditionsScreen
@@ -409,6 +410,12 @@ fun DashboardScreen(
             }
             composable("terms_conditions") {
                 TermsConditionsScreen(onNavigateBack = { bottomNavController.navigateUp() })
+            }
+            composable("customize_navigation") {
+                CustomizeNavigationScreen(
+                    viewModel = settingsViewModel,
+                    onNavigateBack = { bottomNavController.navigateUp() }
+                )
             }
 
         }
