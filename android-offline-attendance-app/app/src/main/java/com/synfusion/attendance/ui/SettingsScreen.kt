@@ -269,8 +269,7 @@ fun SettingsScreen(
 
                     ProfileCardSection(state = state, viewModel = viewModel, hasChanges = hasChanges, onEditPhoto = { showProfileEditSheet = true })
                     StayConnectedCardSection(context = context)
-                    AppPreferencesCardSection(state = state, viewModel = viewModel, supportedLanguages = supportedLanguages, context = context)
-                    NavigationCustomizationCardSection(state = state, viewModel = viewModel)
+                    AppPreferencesCardSection(state = state, viewModel = viewModel, supportedLanguages = supportedLanguages, context = context, onNavigate = onNavigate)
                     NotificationSettingsCardSection(
                         state = state,
                         viewModel = viewModel,
@@ -418,9 +417,7 @@ fun SettingsScreen(
                                     StayConnectedCardSection(context = context)
                                 }
                                 SettingsCategory.PREFERENCES -> {
-                                    AppPreferencesCardSection(state = state, viewModel = viewModel, supportedLanguages = supportedLanguages, context = context)
-                                    Spacer(modifier = Modifier.height(16.dp))
-                                    NavigationCustomizationCardSection(state = state, viewModel = viewModel)
+                                    AppPreferencesCardSection(state = state, viewModel = viewModel, supportedLanguages = supportedLanguages, context = context, onNavigate = onNavigate)
                                 }
                                 SettingsCategory.NOTIFICATIONS -> {
                                     NotificationSettingsCardSection(
@@ -870,7 +867,8 @@ fun AppPreferencesCardSection(
     state: OfflineSettingsState,
     viewModel: OfflineSettingsViewModel,
     supportedLanguages: Map<String, String>,
-    context: Context
+    context: Context,
+    onNavigate: (String) -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.app_preferences), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 4.dp))
@@ -881,6 +879,33 @@ fun AppPreferencesCardSection(
             border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onNavigate("customize_navigation") }
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(androidx.compose.foundation.shape.CircleShape)
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Default.Tune, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text("Customize Navigation", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                            Text("Customize your bottom navigation", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                    Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
                 Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
@@ -930,250 +955,6 @@ fun AppPreferencesCardSection(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun NavigationCustomizationCardSection(
-    state: OfflineSettingsState,
-    viewModel: OfflineSettingsViewModel
-) {
-    val capsuleOptions = remember {
-        listOf(
-            "dashboard" to "Home",
-            "calendar" to "Calendar",
-            "stats" to "Statistics",
-            "passbook" to "Passbook"
-        )
-    }
-
-    val startupOptions = remember {
-        listOf(
-            "dashboard" to "Home",
-            "calendar" to "Calendar",
-            "stats" to "Statistics",
-            "passbook" to "Passbook",
-            "settings" to "Settings"
-        )
-    }
-
-    val selectedItem = remember(state.navLeft1) {
-        com.synfusion.attendance.ui.components.WorkDailyNavItem.fromRoute(state.navLeft1)
-    }
-
-    val secondaryItem = remember(state.navLeft2) {
-        com.synfusion.attendance.ui.components.WorkDailyNavItem.fromRoute(state.navLeft2)
-    }
-
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("Customize Navigation", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 4.dp))
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
-        ) {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("Left Capsule (2 Items)", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-
-                // Compact 2-Item Customization Preview Section
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-                        .padding(12.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        // 1. Currently Selected Item (Strong Visual Focus & Primary Active Highlight)
-                        Surface(
-                            shape = RoundedCornerShape(20.dp),
-                            color = MaterialTheme.colorScheme.primary,
-                            shadowElevation = 6.dp,
-                            modifier = Modifier.clip(RoundedCornerShape(20.dp))
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Icon(
-                                    imageVector = selectedItem.icon,
-                                    contentDescription = selectedItem.title,
-                                    tint = Color.White,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Text(
-                                    text = selectedItem.title,
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
-                                )
-                            }
-                        }
-
-                        // 2. Secondary Contextual Item (Visible but Subdued)
-                        Surface(
-                            shape = RoundedCornerShape(20.dp),
-                            color = MaterialTheme.colorScheme.surface,
-                            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
-                            modifier = Modifier.clip(RoundedCornerShape(20.dp))
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                Icon(
-                                    imageVector = secondaryItem.icon,
-                                    contentDescription = secondaryItem.title,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Text(
-                                    text = secondaryItem.title,
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                                )
-                            }
-                        }
-                    }
-                }
-
-                // Left Item 1 Selector
-                NavPositionDropdown(
-                    label = "Left Item 1",
-                    selectedRoute = state.navLeft1,
-                    options = capsuleOptions,
-                    onSelect = { newRoute ->
-                        if (newRoute != state.navLeft2) {
-                            viewModel.updateNavigationConfig(newRoute, state.navLeft2, "settings")
-                        } else {
-                            val oldRoute = state.navLeft1
-                            viewModel.updateNavigationConfig(newRoute, oldRoute, "settings")
-                        }
-                    }
-                )
-
-                // Left Item 2 Selector
-                NavPositionDropdown(
-                    label = "Left Item 2",
-                    selectedRoute = state.navLeft2,
-                    options = capsuleOptions,
-                    onSelect = { newRoute ->
-                        if (newRoute != state.navLeft1) {
-                            viewModel.updateNavigationConfig(state.navLeft1, newRoute, "settings")
-                        } else {
-                            val oldRoute = state.navLeft2
-                            viewModel.updateNavigationConfig(oldRoute, newRoute, "settings")
-                        }
-                    }
-                )
-
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("Right Button (Fixed)", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                        Text("Settings is permanently assigned to the right circular button", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-                    ) {
-                        Text(
-                            text = "Settings",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                        )
-                    }
-                }
-
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-
-                Text("Startup & Persistence", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-
-                NavPositionDropdown(
-                    label = "Startup Screen",
-                    selectedRoute = state.startupScreen,
-                    options = startupOptions,
-                    onSelect = { newRoute ->
-                        viewModel.updateStartupScreen(newRoute)
-                    }
-                )
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("Remember Last Screen", fontSize = 14.sp, fontWeight = FontWeight.Medium)
-                        Text("Open the last viewed screen on launch", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    Switch(
-                        checked = state.rememberLastScreen,
-                        onCheckedChange = { viewModel.updateRememberLastScreen(it) }
-                    )
-                }
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun NavPositionDropdown(
-    label: String,
-    selectedRoute: String,
-    options: List<Pair<String, String>>,
-    onSelect: (String) -> Unit
-) {
-    var expanded by remember { mutableStateOf(false) }
-    val currentTitle = options.firstOrNull { it.first == selectedRoute }?.second ?: "Home"
-
-    ExposedDropdownMenuBox(
-        expanded = expanded,
-        onExpandedChange = { expanded = !expanded },
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        OutlinedTextField(
-            value = currentTitle,
-            onValueChange = {},
-            readOnly = true,
-            label = { Text(label) },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            modifier = Modifier
-                .menuAnchor()
-                .fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp)
-        )
-
-        ExposedDropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
-        ) {
-            options.forEach { (route, title) ->
-                DropdownMenuItem(
-                    text = { Text(title) },
-                    onClick = {
-                        onSelect(route)
-                        expanded = false
-                    }
-                )
-            }
-        }
-    }
-}
 
 @Composable
 fun NotificationSettingsCardSection(
