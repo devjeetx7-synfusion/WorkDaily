@@ -1,10 +1,12 @@
 package com.synfusion.attendance.ui.components
 
-import androidx.compose.animation.*
-import androidx.compose.animation.core.*
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -21,13 +23,17 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Popup
@@ -69,6 +75,10 @@ fun FloatingBottomNavigation(
     var hoveredItem by remember { mutableStateOf<WorkDailyNavItem?>(null) }
     var selectorAnchorBounds by remember { mutableStateOf(Rect.Zero) }
 
+    val haptic = LocalHapticFeedback.current
+    val density = LocalDensity.current
+    val configuration = LocalConfiguration.current
+
     // Selector options to display on long press (Home, Calendar, Statistics, Passbook)
     val selectorItems = remember {
         listOf(
@@ -80,6 +90,49 @@ fun FloatingBottomNavigation(
     }
 
     val optionBoundsMap = remember { mutableStateMapOf<WorkDailyNavItem, Rect>() }
+
+    val onDragHandler: (Offset) -> Unit = { touchWindowPos ->
+        if (optionBoundsMap.isNotEmpty()) {
+            val minTop = optionBoundsMap.values.minOf { it.top }
+            val maxBottom = optionBoundsMap.values.maxOf { it.bottom }
+
+            // Vertical cancellation threshold
+            if (touchWindowPos.y < minTop - 150f || touchWindowPos.y > maxBottom + 120f) {
+                hoveredItem = null
+            } else {
+                var closestOption: WorkDailyNavItem? = null
+                var minDistance = Float.MAX_VALUE
+
+                selectorItems.forEach { option ->
+                    val bounds = optionBoundsMap[option]
+                    if (bounds != null) {
+                        val centerX = bounds.center.x
+                        val dist = kotlin.math.abs(touchWindowPos.x - centerX)
+                        if (dist < minDistance) {
+                            minDistance = dist
+                            closestOption = option
+                        }
+                    }
+                }
+
+                val newHovered = closestOption ?: WorkDailyNavItem.HOME
+                if (newHovered != hoveredItem) {
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    hoveredItem = newHovered
+                }
+            }
+        }
+    }
+
+    val onReleaseHandler: () -> Unit = {
+        if (showSelector) {
+            hoveredItem?.let { target ->
+                onNavigate(target.route)
+            }
+            showSelector = false
+            hoveredItem = null
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -118,24 +171,8 @@ fun FloatingBottomNavigation(
                             hoveredItem = leftItem1
                             showSelector = true
                         },
-                        onDrag = { touchWindowPos ->
-                            var found: WorkDailyNavItem? = null
-                            optionBoundsMap.forEach { (navItem, rect) ->
-                                if (rect.contains(touchWindowPos)) {
-                                    found = navItem
-                                }
-                            }
-                            hoveredItem = found
-                        },
-                        onRelease = {
-                            if (showSelector) {
-                                hoveredItem?.let { target ->
-                                    onNavigate(target.route)
-                                }
-                                showSelector = false
-                                hoveredItem = null
-                            }
-                        }
+                        onDrag = onDragHandler,
+                        onRelease = onReleaseHandler
                     )
 
                     FloatingNavItemButton(
@@ -148,24 +185,8 @@ fun FloatingBottomNavigation(
                             hoveredItem = leftItem2
                             showSelector = true
                         },
-                        onDrag = { touchWindowPos ->
-                            var found: WorkDailyNavItem? = null
-                            optionBoundsMap.forEach { (navItem, rect) ->
-                                if (rect.contains(touchWindowPos)) {
-                                    found = navItem
-                                }
-                            }
-                            hoveredItem = found
-                        },
-                        onRelease = {
-                            if (showSelector) {
-                                hoveredItem?.let { target ->
-                                    onNavigate(target.route)
-                                }
-                                showSelector = false
-                                hoveredItem = null
-                            }
-                        }
+                        onDrag = onDragHandler,
+                        onRelease = onReleaseHandler
                     )
                 }
             }
@@ -198,101 +219,74 @@ fun FloatingBottomNavigation(
                             hoveredItem = rightItem
                             showSelector = true
                         },
-                        onDrag = { touchWindowPos ->
-                            var found: WorkDailyNavItem? = null
-                            optionBoundsMap.forEach { (navItem, rect) ->
-                                if (rect.contains(touchWindowPos)) {
-                                    found = navItem
-                                }
-                            }
-                            hoveredItem = found
-                        },
-                        onRelease = {
-                            if (showSelector) {
-                                hoveredItem?.let { target ->
-                                    onNavigate(target.route)
-                                }
-                                showSelector = false
-                                hoveredItem = null
-                            }
-                        }
+                        onDrag = onDragHandler,
+                        onRelease = onReleaseHandler
                     )
                 }
             }
         }
 
-        // Long-Press Floating Activity Selector Overlay Card
+        // Long-Press Floating Compact Horizontal Selector Overlay
         if (showSelector) {
+            val screenWidthPx = with(density) { configuration.screenWidthDp.dp.toPx() }
+            val selectorWidthPx = with(density) { (4 * 44 + 3 * 8 + 16).dp.toPx() }
+            val calculatedX = (selectorAnchorBounds.left - with(density) { 8.dp.toPx() })
+                .coerceIn(with(density) { 16.dp.toPx() }, screenWidthPx - selectorWidthPx)
+                .toInt()
+            val calculatedY = (selectorAnchorBounds.top - with(density) { 56.dp.toPx() }).toInt()
+
             Popup(
-                alignment = Alignment.BottomCenter,
-                offset = androidx.compose.ui.unit.IntOffset(0, -180),
+                alignment = Alignment.TopStart,
+                offset = IntOffset(calculatedX, calculatedY),
                 onDismissRequest = {
                     showSelector = false
                     hoveredItem = null
                 },
                 properties = PopupProperties(focusable = false)
             ) {
-                Card(
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 16.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)),
+                Row(
                     modifier = Modifier
-                        .padding(bottom = 16.dp)
-                        .shadow(20.dp, RoundedCornerShape(24.dp))
+                        .wrapContentSize()
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Text(
-                            text = "Quick Jump",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
+                    selectorItems.forEach { option ->
+                        val isHovered = (hoveredItem == option)
+                        val scale by animateFloatAsState(
+                            targetValue = if (isHovered) 1.25f else 0.85f,
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioLowBouncy,
+                                stiffness = Spring.StiffnessMedium
+                            ),
+                            label = "optionScale"
                         )
 
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            selectorItems.forEach { option ->
-                                val isHovered = hoveredItem == option
-                                val scale by animateFloatAsState(
-                                    targetValue = if (isHovered) 1.25f else 1.0f,
-                                    animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
-                                    label = "optionScale"
-                                )
-
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    modifier = Modifier
-                                        .onGloballyPositioned { coords ->
-                                            optionBoundsMap[option] = coords.boundsInWindow()
-                                        }
-                                        .scale(scale)
-                                        .clip(RoundedCornerShape(16.dp))
-                                        .background(
-                                            if (isHovered) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                                        )
-                                        .padding(horizontal = 12.dp, vertical = 10.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = option.icon,
-                                        contentDescription = option.title,
-                                        tint = if (isHovered) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.size(26.dp)
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = option.title,
-                                        fontSize = 10.sp,
-                                        fontWeight = if (isHovered) FontWeight.Bold else FontWeight.Medium,
-                                        color = if (isHovered) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
+                        Box(
+                            modifier = Modifier
+                                .onGloballyPositioned { coords ->
+                                    optionBoundsMap[option] = coords.boundsInWindow()
                                 }
-                            }
+                                .scale(scale)
+                                .size(44.dp)
+                                .then(
+                                    if (isHovered) {
+                                        Modifier.background(
+                                            color = MaterialTheme.colorScheme.primary,
+                                            shape = CircleShape
+                                        )
+                                    } else {
+                                        Modifier
+                                    }
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = option.icon,
+                                contentDescription = option.title,
+                                tint = if (isHovered) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(24.dp)
+                            )
                         }
                     }
                 }
@@ -313,6 +307,7 @@ private fun FloatingNavItemButton(
 ) {
     var itemBounds by remember { mutableStateOf(Rect.Zero) }
     val coroutineScope = rememberCoroutineScope()
+    val haptic = LocalHapticFeedback.current
 
     val backgroundColor by animateColorAsState(
         targetValue = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
@@ -340,6 +335,7 @@ private fun FloatingNavItemButton(
                             val longPressJob = coroutineScope.launch {
                                 delay(350)
                                 isLongPressTriggered = true
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                 onLongPress(itemBounds)
                             }
 
@@ -348,7 +344,8 @@ private fun FloatingNavItemButton(
                                 val currentPointer = event.changes.firstOrNull() ?: break
 
                                 if (isLongPressTriggered) {
-                                    onDrag(currentPointer.position + itemBounds.topLeft)
+                                    val fingerWindowPos = Offset(itemBounds.left, itemBounds.top) + currentPointer.position
+                                    onDrag(fingerWindowPos)
                                 }
 
                                 if (event.type == PointerEventType.Release) {
