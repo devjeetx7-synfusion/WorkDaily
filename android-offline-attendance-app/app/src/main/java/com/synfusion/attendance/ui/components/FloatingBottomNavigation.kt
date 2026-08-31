@@ -235,8 +235,8 @@ fun FloatingBottomNavigation(
                                 .shadow(
                                     elevation = elevation,
                                     shape = CircleShape,
-                                    ambientColor = Color.Black.copy(alpha = 0.06f),
-                                    spotColor = Color.Black.copy(alpha = 0.10f)
+                                    ambientColor = Color.Black.copy(alpha = 0.04f),
+                                    spotColor = Color.Black.copy(alpha = 0.04f)
                                 ),
                             shape = CircleShape,
                             color = if (isHovered) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
@@ -269,10 +269,10 @@ fun FloatingBottomNavigation(
             Surface(
                 modifier = Modifier
                     .shadow(
-                        elevation = 6.dp,
+                        elevation = 8.dp,
                         shape = RoundedCornerShape(32.dp),
-                        ambientColor = Color.Black.copy(alpha = 0.06f),
-                        spotColor = Color.Black.copy(alpha = 0.08f)
+                        ambientColor = Color.Black.copy(alpha = 0.04f),
+                        spotColor = Color.Black.copy(alpha = 0.02f)
                     )
                     .clip(RoundedCornerShape(32.dp))
                     .background(MaterialTheme.colorScheme.surface)
@@ -322,10 +322,10 @@ fun FloatingBottomNavigation(
                 modifier = Modifier
                     .size(60.dp)
                     .shadow(
-                        elevation = 6.dp,
+                        elevation = 8.dp,
                         shape = CircleShape,
-                        ambientColor = Color.Black.copy(alpha = 0.06f),
-                        spotColor = Color.Black.copy(alpha = 0.08f)
+                        ambientColor = Color.Black.copy(alpha = 0.04f),
+                        spotColor = Color.Black.copy(alpha = 0.02f)
                     )
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.surface)
