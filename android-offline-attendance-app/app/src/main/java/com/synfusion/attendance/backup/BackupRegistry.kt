@@ -1,7 +1,6 @@
 package com.synfusion.attendance.backup
 
 import android.content.Context
-import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import com.synfusion.attendance.data.AttendanceDatabase
 import com.synfusion.attendance.data.offlineDataStore
@@ -19,13 +18,10 @@ object BackupRegistry {
     private val modules = mutableListOf<BackupModule>()
 
     init {
-        // Register core & extensible modules
+        // Register core offline modules only
         registerModule(DatabaseBackupModule())
         registerModule(PreferencesBackupModule())
         registerModule(MediaBackupModule())
-        registerModule(LeaveBackupModule())
-        registerModule(CalendarBackupModule())
-        registerModule(NotificationBackupModule())
     }
 
     fun registerModule(module: BackupModule) {
@@ -82,9 +78,8 @@ class PreferencesBackupModule : BackupModule {
     override val keyName: String = "preferences"
 
     override suspend fun exportModule(context: Context, backupWorkingDir: File, logger: BackupLogger): Map<String, Int> {
-        val prefDir = File(backupWorkingDir, "preferences")
         val dataStoreMap = readDataStoreValues(context)
-        JsonExporter.exportPreferences(prefDir, dataStoreMap, emptyMap(), logger)
+        JsonExporter.exportPreferences(backupWorkingDir, dataStoreMap, emptyMap(), logger)
         return mapOf("datastore" to dataStoreMap.size)
     }
 
@@ -155,25 +150,4 @@ class MediaBackupModule : BackupModule {
         val count = MediaImporter.importMedia(mediaDir, context.filesDir, logger)
         return mapOf("media" to count)
     }
-}
-
-class LeaveBackupModule : BackupModule {
-    override val name: String = "Leave"
-    override val keyName: String = "leave"
-    override suspend fun exportModule(context: Context, backupWorkingDir: File, logger: BackupLogger): Map<String, Int> = mapOf("leave" to 0)
-    override suspend fun importModule(context: Context, backupWorkingDir: File, merge: Boolean, logger: BackupLogger): Map<String, Int> = mapOf("leave" to 0)
-}
-
-class CalendarBackupModule : BackupModule {
-    override val name: String = "Calendar"
-    override val keyName: String = "calendar"
-    override suspend fun exportModule(context: Context, backupWorkingDir: File, logger: BackupLogger): Map<String, Int> = mapOf("calendar" to 0)
-    override suspend fun importModule(context: Context, backupWorkingDir: File, merge: Boolean, logger: BackupLogger): Map<String, Int> = mapOf("calendar" to 0)
-}
-
-class NotificationBackupModule : BackupModule {
-    override val name: String = "Notification"
-    override val keyName: String = "notification"
-    override suspend fun exportModule(context: Context, backupWorkingDir: File, logger: BackupLogger): Map<String, Int> = mapOf("notification" to 0)
-    override suspend fun importModule(context: Context, backupWorkingDir: File, merge: Boolean, logger: BackupLogger): Map<String, Int> = mapOf("notification" to 0)
 }

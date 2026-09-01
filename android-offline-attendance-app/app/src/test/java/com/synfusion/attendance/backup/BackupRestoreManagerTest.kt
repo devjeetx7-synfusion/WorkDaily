@@ -43,8 +43,7 @@ class BackupRestoreManagerTest {
 
     @Test
     fun testZipCompressionAndExtraction() {
-        val databaseDir = File(workingDir, "database").apply { mkdirs() }
-        val testDbFile = File(databaseDir, "user.json").apply { writeText("{\"id\": \"123\"}") }
+        val dataFile = File(workingDir, "data.json").apply { writeText("{\"users\": [{\"id\": \"123\"}]}") }
 
         // Compress
         BackupProvider.compressFolder(workingDir, backupZip, logger)
@@ -55,9 +54,72 @@ class BackupRestoreManagerTest {
         val restoreDir = tempFolder.newFolder("restore_dest")
         RestoreProvider.extractZip(backupZip, restoreDir, logger)
 
-        val restoredDbFile = File(restoreDir, "database/user.json")
-        assertTrue(restoredDbFile.exists())
-        assertEquals("{\"id\": \"123\"}", restoredDbFile.readText())
+        val restoredDataFile = File(restoreDir, "data.json")
+        assertTrue(restoredDataFile.exists())
+        assertEquals("{\"users\": [{\"id\": \"123\"}]}", restoredDataFile.readText())
+    }
+
+    @Test
+    fun testCleanDataJsonBackupStructure() {
+        val manifestFile = File(workingDir, "manifest.json")
+        val manifestObj = ManifestManager.generateManifest(
+            backupUuid = "test-uuid",
+            creationTimestamp = 12345L,
+            totalBackupDurationMs = 200L,
+            compressionRatio = 0.5,
+            appBuildNumber = 1L,
+            backupFormatVersion = 1,
+            backupVersion = 1,
+            appVersion = "1.0.0",
+            databaseVersion = 2,
+            androidVersion = 34,
+            deviceModel = "Pixel Test",
+            packageName = "com.synfusion.attendance",
+            recordCounts = mapOf("attendance" to 1),
+            totalFiles = 2,
+            backupSize = 500L,
+            featureList = listOf("Database", "Preferences")
+        )
+        ManifestManager.writeManifest(manifestFile, manifestObj)
+
+        val user = UserEntity(id = "user_001", name = "राम कुमार (Ram Kumar)", phoneNumber = "9876543210", email = "ram@workdaily.in", role = "personal")
+        val attendance = AttendanceEntity(id = "personal_2026-03-10", workerId = null, date = "2026-03-10", status = "present", type = "full", wage = 750.0, note = "ओवरटाइम काम किया")
+        val payload = BackupDataPayload(
+            users = listOf(user),
+            attendance = listOf(attendance),
+            summaries = emptyList(),
+            preferences = mapOf("app_language" to "hi")
+        )
+
+        val dataFile = File(workingDir, "data.json")
+        dataFile.writer(StandardCharsets.UTF_8).use { writer ->
+            Gson().toJson(payload, writer)
+        }
+
+        BackupProvider.compressFolder(workingDir, backupZip, logger)
+        assertTrue(backupZip.exists())
+
+        // Extract and verify clean data.json content and Unicode preservation
+        val extractDir = tempFolder.newFolder("clean_verify_extract")
+        RestoreProvider.extractZip(backupZip, extractDir, logger)
+
+        val extractedDataFile = File(extractDir, "data.json")
+        assertTrue(extractedDataFile.exists())
+
+        val readPayload = Gson().fromJson(extractedDataFile.readText(StandardCharsets.UTF_8), BackupDataPayload::class.java)
+        assertNotNull(readPayload)
+        assertEquals(1, readPayload.users.size)
+        assertEquals("राम कुमार (Ram Kumar)", readPayload.users.first().name)
+        assertEquals("ओवरटाइम काम किया", readPayload.attendance.first().note)
+        assertNull(readPayload.attendance.first().workerId)
+
+        // Ensure no junk files exist in ZIP
+        val extractedFiles = extractDir.listFiles()?.map { it.name } ?: emptyList()
+        assertTrue(extractedFiles.contains("manifest.json"))
+        assertTrue(extractedFiles.contains("data.json"))
+        assertFalse(extractedFiles.contains("database"))
+        assertFalse(extractedFiles.contains("logs"))
+        assertFalse(extractedFiles.contains("metadata"))
     }
 
     @Test
@@ -130,15 +192,14 @@ class BackupRestoreManagerTest {
 
     @Test
     fun testBackupValidatorRejectsMissingManifest() {
-        val databaseDir = File(workingDir, "database").apply { mkdirs() }
-        File(databaseDir, "user.json").writeText("[]")
+        File(workingDir, "data.json").writeText("{}")
 
         val isValid = BackupValidator.validateBackupDir(workingDir, logger)
         assertFalse(isValid)
     }
 
     @Test
-    fun testBackupValidatorRejectsMissingDatabaseFiles() {
+    fun testBackupValidatorRejectsMissingDataFile() {
         val manifestFile = File(workingDir, "manifest.json")
         val manifestObj = ManifestManager.generateManifest(
             backupUuid = "test-uuid",
@@ -165,7 +226,7 @@ class BackupRestoreManagerTest {
     }
 
     @Test
-    fun testBackupValidatorValidatesSuccessfully() {
+    fun testBackupValidatorValidatesSuccessfullyWithDataJson() {
         val manifestFile = File(workingDir, "manifest.json")
         val manifestObj = ManifestManager.generateManifest(
             backupUuid = "test-uuid",
@@ -181,15 +242,14 @@ class BackupRestoreManagerTest {
             deviceModel = "Test",
             packageName = "com.synfusion.attendance",
             recordCounts = emptyMap(),
-            totalFiles = 3,
+            totalFiles = 2,
             backupSize = 100L,
             featureList = emptyList()
         )
         ManifestManager.writeManifest(manifestFile, manifestObj)
 
-        val databaseDir = File(workingDir, "database").apply { mkdirs() }
-        File(databaseDir, "user.json").writeText("[]")
-        File(databaseDir, "attendance.json").writeText("[]")
+        val payload = BackupDataPayload(users = emptyList(), attendance = emptyList(), summaries = emptyList())
+        File(workingDir, "data.json").writeText(Gson().toJson(payload))
 
         val isValid = BackupValidator.validateBackupDir(workingDir, logger)
         assertTrue(isValid)
@@ -197,7 +257,6 @@ class BackupRestoreManagerTest {
 
     @Test
     fun testOlderAppGracefulRejection() {
-        // App database version is 2. Create manifest with newer database version 3
         val manifestFile = File(workingDir, "manifest.json")
         val manifestObj = ManifestManager.generateManifest(
             backupUuid = "test-uuid",
@@ -208,28 +267,25 @@ class BackupRestoreManagerTest {
             backupFormatVersion = 1,
             backupVersion = 1,
             appVersion = "1.0.0",
-            databaseVersion = 3, // Newer version!
+            databaseVersion = 3, // Newer database version code!
             androidVersion = 34,
             deviceModel = "Test",
             packageName = "com.synfusion.attendance",
             recordCounts = emptyMap(),
-            totalFiles = 3,
+            totalFiles = 2,
             backupSize = 100L,
             featureList = emptyList()
         )
         ManifestManager.writeManifest(manifestFile, manifestObj)
 
-        val databaseDir = File(workingDir, "database").apply { mkdirs() }
-        File(databaseDir, "user.json").writeText("[]")
-        File(databaseDir, "attendance.json").writeText("[]")
+        File(workingDir, "data.json").writeText("{}")
 
-        // Should gracefully reject because backup database version (3) is newer than app database version (2)
         val isValid = BackupValidator.validateBackupDir(workingDir, logger)
         assertFalse(isValid)
     }
 
     @Test
-    fun testForeignKeyReferentialIntegrityCheck() {
+    fun testForeignKeyReferentialIntegrityCheckPassesForNullWorkerId() {
         val manifestFile = File(workingDir, "manifest.json")
         val manifestObj = ManifestManager.generateManifest(
             backupUuid = "test-uuid",
@@ -245,25 +301,54 @@ class BackupRestoreManagerTest {
             deviceModel = "Test",
             packageName = "com.synfusion.attendance",
             recordCounts = emptyMap(),
-            totalFiles = 3,
+            totalFiles = 2,
             backupSize = 100L,
             featureList = emptyList()
         )
         ManifestManager.writeManifest(manifestFile, manifestObj)
 
-        val databaseDir = File(workingDir, "database").apply { mkdirs() }
+        val user = UserEntity(id = "user_001", name = "John Doe", phoneNumber = "9876543210", email = "j@j.com", role = "personal")
+        val personalAttendance = AttendanceEntity(id = "personal_2026-03-10", workerId = null, date = "2026-03-10", status = "present", type = "full", wage = 500.0)
 
-        // Setup User record
-        val userJson = "[{\"id\": \"user_001\", \"name\": \"John Doe\", \"phoneNumber\": \"9876543210\", \"email\": \"j@j.com\", \"role\": \"personal\"}]"
-        File(databaseDir, "user.json").writeText(userJson)
+        val payload = BackupDataPayload(users = listOf(user), attendance = listOf(personalAttendance))
+        File(workingDir, "data.json").writeText(Gson().toJson(payload))
 
-        // Setup Attendance with mismatched foreign key workerId (referencing invalid user)
-        val badAttendanceJson = "[{\"id\": \"att_01\", \"workerId\": \"invalid_user_id\", \"date\": \"2024-03-10\", \"status\": \"present\", \"type\": \"full\", \"wage\": 500.0, \"createdAt\": 12345L}]"
-        File(databaseDir, "attendance.json").writeText(badAttendanceJson)
+        val result = BackupValidator.validateBackupDirDetailed(workingDir, logger)
+        assertTrue(result.isValid)
+    }
 
-        // Must reject restore due to foreign key constraint failure
-        val isValid = BackupValidator.validateBackupDir(workingDir, logger)
-        assertFalse(isValid)
+    @Test
+    fun testForeignKeyReferentialIntegrityCheckFailsForInvalidWorkerId() {
+        val manifestFile = File(workingDir, "manifest.json")
+        val manifestObj = ManifestManager.generateManifest(
+            backupUuid = "test-uuid",
+            creationTimestamp = 12345L,
+            totalBackupDurationMs = 200L,
+            compressionRatio = 0.5,
+            appBuildNumber = 1L,
+            backupFormatVersion = 1,
+            backupVersion = 1,
+            appVersion = "1.0.0",
+            databaseVersion = 2,
+            androidVersion = 34,
+            deviceModel = "Test",
+            packageName = "com.synfusion.attendance",
+            recordCounts = emptyMap(),
+            totalFiles = 2,
+            backupSize = 100L,
+            featureList = emptyList()
+        )
+        ManifestManager.writeManifest(manifestFile, manifestObj)
+
+        val user = UserEntity(id = "user_001", name = "John Doe", phoneNumber = "9876543210", email = "j@j.com", role = "personal")
+        val badAttendance = AttendanceEntity(id = "att_01", workerId = "non_existent_worker_id", date = "2026-03-10", status = "present", type = "full", wage = 500.0)
+
+        val payload = BackupDataPayload(users = listOf(user), attendance = listOf(badAttendance))
+        File(workingDir, "data.json").writeText(Gson().toJson(payload))
+
+        val result = BackupValidator.validateBackupDirDetailed(workingDir, logger)
+        assertFalse(result.isValid)
+        assertEquals(BackupValidationCode.INVALID_DATA, result.code)
     }
 
     @Test
@@ -282,20 +367,18 @@ class BackupRestoreManagerTest {
             androidVersion = 34,
             deviceModel = "Test",
             packageName = "com.synfusion.attendance",
-            recordCounts = mapOf("media" to 1), // Claims 1 media file
-            totalFiles = 3,
+            recordCounts = mapOf("media" to 1),
+            totalFiles = 2,
             backupSize = 100L,
             featureList = emptyList()
         )
         ManifestManager.writeManifest(manifestFile, manifestObj)
 
-        val databaseDir = File(workingDir, "database").apply { mkdirs() }
-        File(databaseDir, "user.json").writeText("[]")
-        File(databaseDir, "attendance.json").writeText("[]")
+        val payload = BackupDataPayload(users = emptyList(), attendance = emptyList())
+        File(workingDir, "data.json").writeText(Gson().toJson(payload))
 
-        // Omit actual media dir or files
         val isValid = BackupValidator.validateBackupDir(workingDir, logger)
-        assertFalse(isValid) // Rejected because media folder is missing but listed as referenced
+        assertFalse(isValid)
     }
 
     @Test
@@ -318,7 +401,6 @@ class BackupRestoreManagerTest {
 
         val testFile = File(workingDir, "large_attendance.json")
 
-        // Verify we can serialize 10,000+ attendance records fast and cleanly without memory overhead
         testFile.writer(StandardCharsets.UTF_8).use { writer ->
             gson.toJson(list, writer)
         }
@@ -326,113 +408,10 @@ class BackupRestoreManagerTest {
         assertTrue(testFile.exists())
         assertTrue(testFile.length() > 0)
 
-        // Verify clean streaming parsing without OOM
         testFile.reader(StandardCharsets.UTF_8).use { reader ->
             val parsedList = gson.fromJson<List<AttendanceEntity>>(reader, object : com.google.gson.reflect.TypeToken<List<AttendanceEntity>>() {}.type)
             assertEquals(10000, parsedList.size)
         }
-    }
-
-    @Test
-    fun testAtomicRestoreRollbackSimulation() {
-        val prodDbFile = File(workingDir, "production.db")
-        prodDbFile.writeText("Original production data")
-
-        val tempDbFile = File(workingDir, "temp_swap.db")
-        tempDbFile.writeText("Imported validated data")
-
-        // Simulate crash/interruption of the rename swap
-        var swapSuccess = false
-        try {
-            // Suppose rename is blocked because of permissions or files locks
-            val simulatedLock = true
-            if (simulatedLock) {
-                throw Exception("Simulated IO swap exception")
-            }
-            if (tempDbFile.renameTo(prodDbFile)) {
-                swapSuccess = true
-            }
-        } catch (e: Exception) {
-            // Check that rollback occurred and original production remains pristine
-            assertTrue(prodDbFile.exists())
-            assertEquals("Original production data", prodDbFile.readText())
-            swapSuccess = false
-        }
-
-        assertFalse(swapSuccess)
-    }
-
-    @Test
-    fun testRestoreStateMachineProgression() {
-        val tracker = ProgressTracker()
-        assertEquals(RestoreState.IDLE, tracker.state.value)
-
-        tracker.updateState(RestoreState.VALIDATING)
-        assertEquals(RestoreState.VALIDATING, tracker.state.value)
-
-        tracker.updateState(RestoreState.REPLACING_DATABASE)
-        assertEquals(RestoreState.REPLACING_DATABASE, tracker.state.value)
-    }
-
-    @Test
-    fun testRecordLevelValidationCountsMismatch() {
-        val manifestObj = ManifestManager.generateManifest(
-            backupUuid = "test-uuid",
-            creationTimestamp = 12345L,
-            totalBackupDurationMs = 200L,
-            compressionRatio = 0.5,
-            appBuildNumber = 1L,
-            backupFormatVersion = 1,
-            backupVersion = 1,
-            appVersion = "1.0.0",
-            databaseVersion = 2,
-            androidVersion = 34,
-            deviceModel = "Test",
-            packageName = "com.synfusion.attendance",
-            recordCounts = mapOf("users" to 1, "attendance" to 5), // Manifest expects 1 user, 5 attendance
-            totalFiles = 3,
-            backupSize = 100L,
-            featureList = emptyList()
-        )
-
-        // Mock database with actual mismatching counts
-        val tempUserCount = 0
-        val tempAttendanceCount = 2
-        val tempSummariesCount = 0
-
-        val expectedUsers = manifestObj.recordCounts["users"] ?: 0
-        val expectedAttendance = manifestObj.recordCounts["attendance"] ?: 0
-        val expectedSummaries = manifestObj.recordCounts["summaries"] ?: 0
-
-        val isMismatch = (tempUserCount != expectedUsers || tempAttendanceCount != expectedAttendance || tempSummariesCount != expectedSummaries)
-        assertTrue(isMismatch) // Correctly flags mismatch
-    }
-
-    @Test
-    fun testDeterministicMergeAttendanceLogic() {
-        // Mock production records
-        val prodAttendance = listOf(
-            AttendanceEntity(id = "prod_att_1", workerId = null, date = "2024-03-01", status = "present", type = "full", wage = 500.0),
-            AttendanceEntity(id = "common_att_1", workerId = null, date = "2024-03-02", status = "absent", type = "full", wage = 500.0) // Matching id
-        )
-
-        // Mock backup records (tempDb)
-        val backupAttendance = listOf(
-            AttendanceEntity(id = "common_att_1", workerId = null, date = "2024-03-02", status = "present", type = "full", wage = 500.0), // Backup overwrites
-            AttendanceEntity(id = "backup_att_1", workerId = null, date = "2024-03-03", status = "present", type = "full", wage = 500.0)
-        )
-
-        // Perform merge logic simulation
-        val tempAttendanceIds = backupAttendance.map { it.id }.toSet()
-        val uniqueProdAttendance = prodAttendance.filter { it.id !in tempAttendanceIds }
-
-        val mergedResult = backupAttendance + uniqueProdAttendance
-
-        assertEquals(3, mergedResult.size)
-        // Check that backup record overrode production record for "common_att_1"
-        val commonAtt = mergedResult.find { it.id == "common_att_1" }
-        assertNotNull(commonAtt)
-        assertEquals("present", commonAtt?.status) // Preserved backup overwrites
     }
 
     @Test

@@ -56,7 +56,7 @@ sealed class RestoreResult {
 class RestoreManager(private val context: Context) {
 
     private val tempExtractDir = File(context.cacheDir, "restore_working_dir")
-    private val logFile = File(tempExtractDir, "logs/restore.log")
+    private val logFile = File(context.cacheDir, "restore_op.log")
     private val logger = BackupLogger(logFile)
 
     suspend fun performRestore(zipFile: File, merge: Boolean, progressTracker: ProgressTracker): RestoreSummaryReport? {
@@ -105,10 +105,10 @@ class RestoreManager(private val context: Context) {
                     progressTracker.updateState(RestoreState.RESTORE_FAILED)
                     val userMsg = when (validationRes.code) {
                         BackupValidationCode.UNSUPPORTED_VERSION -> context.getString(com.synfusion.attendance.R.string.restore_unsupported_version_msg)
-                        BackupValidationCode.MISSING_REQUIRED_DB_FILES -> context.getString(com.synfusion.attendance.R.string.restore_missing_data_msg)
+                        BackupValidationCode.MISSING_REQUIRED_DATA_FILE -> context.getString(com.synfusion.attendance.R.string.restore_missing_data_msg)
                         BackupValidationCode.CHECKSUM_MISMATCH -> context.getString(com.synfusion.attendance.R.string.restore_checksum_mismatch_msg)
                         BackupValidationCode.INVALID_DATA -> context.getString(com.synfusion.attendance.R.string.restore_invalid_data_msg)
-                        BackupValidationCode.MISSING_MANIFEST, BackupValidationCode.INVALID_MANIFEST, BackupValidationCode.MISSING_DATABASE_DIR -> context.getString(com.synfusion.attendance.R.string.restore_invalid_format_msg)
+                        BackupValidationCode.MISSING_MANIFEST, BackupValidationCode.INVALID_MANIFEST -> context.getString(com.synfusion.attendance.R.string.restore_invalid_format_msg)
                         else -> context.getString(com.synfusion.attendance.R.string.restore_corrupt_msg)
                     }
                     return@withContext RestoreResult.Error(userMsg, validationRes.details)
@@ -266,6 +266,8 @@ class RestoreManager(private val context: Context) {
                     e.localizedMessage ?: context.getString(com.synfusion.attendance.R.string.unexpected_error_occurred),
                     e.stackTraceToString()
                 )
+            } finally {
+                tempExtractDir.deleteRecursively()
             }
         }
     }
@@ -277,7 +279,6 @@ class RestoreManager(private val context: Context) {
                 previewDir.deleteRecursively()
                 previewDir.mkdirs()
 
-                // Just extract manifest.json to preview fast
                 RestoreProvider.extractZip(zipFile, previewDir, logger)
                 val manifestFile = File(previewDir, "manifest.json")
                 val manifest = ManifestManager.readManifest(manifestFile)
@@ -295,7 +296,6 @@ class RestoreManager(private val context: Context) {
             val restartIntent = Intent.makeRestartActivityTask(intent.component)
             context.startActivity(restartIntent)
         }
-        // Safely exit current process to guarantee complete Room singleton and ViewModel recreation
         android.os.Process.killProcess(android.os.Process.myPid())
         System.exit(0)
     }

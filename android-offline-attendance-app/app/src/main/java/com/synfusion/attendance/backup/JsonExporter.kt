@@ -1,77 +1,93 @@
 package com.synfusion.attendance.backup
 
 import com.google.gson.Gson
-import com.google.gson.stream.JsonWriter
+import com.google.gson.reflect.TypeToken
 import com.synfusion.attendance.data.AttendanceDatabase
 import com.synfusion.attendance.data.entities.AttendanceEntity
 import com.synfusion.attendance.data.entities.SummaryEntity
 import com.synfusion.attendance.data.entities.UserEntity
 import java.io.File
-import java.io.FileOutputStream
-import java.io.OutputStreamWriter
 import java.nio.charset.StandardCharsets
 
 object JsonExporter {
 
     suspend fun exportDatabase(db: AttendanceDatabase, outputDir: File, logger: BackupLogger): Map<String, Int> {
-        val dbDir = File(outputDir, "database")
-        dbDir.mkdirs()
-
         val gson = Gson()
         val recordCounts = mutableMapOf<String, Int>()
 
-        // 1. Export User profile
-        val userFile = File(dbDir, "user.json")
         val users = db.userDao().getUser()?.let { listOf(it) } ?: emptyList()
-        userFile.writer(StandardCharsets.UTF_8).use { writer ->
-            gson.toJson(users, writer)
-        }
-        recordCounts["users"] = users.size
-        logger.info("Exported ${users.size} user records.")
-
-        // 2. Export Attendance
-        val attendanceFile = File(dbDir, "attendance.json")
         val attendances = db.attendanceDao().getPersonalAttendance()
-        attendanceFile.writer(StandardCharsets.UTF_8).use { writer ->
-            gson.toJson(attendances, writer)
-        }
-        recordCounts["attendance"] = attendances.size
-        logger.info("Exported ${attendances.size} attendance records.")
-
-        // 3. Export Summary
-        val summaryFile = File(dbDir, "summary.json")
         val summaries = db.summaryDao().getAllSummaries()
-        summaryFile.writer(StandardCharsets.UTF_8).use { writer ->
-            gson.toJson(summaries, writer)
-        }
+
+        recordCounts["users"] = users.size
+        recordCounts["attendance"] = attendances.size
         recordCounts["summaries"] = summaries.size
-        logger.info("Exported ${summaries.size} summary records.")
 
-        // Custom features check: leave, calendar, notifications, settings
-        // Since we are offline personal app, these tables aren't present.
-        // Let's write empty json arrays for compliance with format.
-        File(dbDir, "leave.json").writer().use { gson.toJson(emptyList<Any>(), it) }
-        File(dbDir, "calendar.json").writer().use { gson.toJson(emptyList<Any>(), it) }
-        File(dbDir, "notifications.json").writer().use { gson.toJson(emptyList<Any>(), it) }
-        File(dbDir, "settings.json").writer().use { gson.toJson(emptyList<Any>(), it) }
+        // Merge existing preferences if already exported into data.json
+        val dataFile = File(outputDir, "data.json")
+        var existingPrefs: Map<String, Any> = emptyMap()
+        if (dataFile.exists()) {
+            try {
+                dataFile.reader(StandardCharsets.UTF_8).use { reader ->
+                    val payload = gson.fromJson(reader, BackupDataPayload::class.java)
+                    if (payload?.preferences != null) {
+                        existingPrefs = payload.preferences
+                    }
+                }
+            } catch (e: Exception) {
+                logger.warn("Could not read existing preferences for data.json: ${e.message}")
+            }
+        }
 
+        val payload = BackupDataPayload(
+            users = users,
+            attendance = attendances,
+            summaries = summaries,
+            preferences = existingPrefs
+        )
+
+        dataFile.writer(StandardCharsets.UTF_8).use { writer ->
+            gson.toJson(payload, writer)
+        }
+
+        logger.info("Exported database records to data.json (users: ${users.size}, attendance: ${attendances.size}, summaries: ${summaries.size}).")
         return recordCounts
     }
 
-    fun exportPreferences(preferencesDir: File, dataStoreValues: Map<String, Any>, sharedPreferencesValues: Map<String, Any>, logger: BackupLogger) {
-        preferencesDir.mkdirs()
+    fun exportPreferences(outputDir: File, dataStoreValues: Map<String, Any>, sharedPreferencesValues: Map<String, Any>, logger: BackupLogger) {
         val gson = Gson()
+        val dataFile = File(outputDir, "data.json")
 
-        val dsFile = File(preferencesDir, "datastore.json")
-        dsFile.writer(StandardCharsets.UTF_8).use { writer ->
-            gson.toJson(dataStoreValues, writer)
+        var existingUsers = emptyList<UserEntity>()
+        var existingAttendance = emptyList<AttendanceEntity>()
+        var existingSummaries = emptyList<SummaryEntity>()
+
+        if (dataFile.exists()) {
+            try {
+                dataFile.reader(StandardCharsets.UTF_8).use { reader ->
+                    val payload = gson.fromJson(reader, BackupDataPayload::class.java)
+                    if (payload != null) {
+                        existingUsers = payload.users
+                        existingAttendance = payload.attendance
+                        existingSummaries = payload.summaries
+                    }
+                }
+            } catch (e: Exception) {
+                logger.warn("Could not read existing DB records for data.json: ${e.message}")
+            }
         }
 
-        val spFile = File(preferencesDir, "sharedpreferences.json")
-        spFile.writer(StandardCharsets.UTF_8).use { writer ->
-            gson.toJson(sharedPreferencesValues, writer)
+        val payload = BackupDataPayload(
+            users = existingUsers,
+            attendance = existingAttendance,
+            summaries = existingSummaries,
+            preferences = dataStoreValues
+        )
+
+        dataFile.writer(StandardCharsets.UTF_8).use { writer ->
+            gson.toJson(payload, writer)
         }
 
-        logger.info("Preferences successfully exported.")
+        logger.info("Exported preferences to data.json.")
     }
 }

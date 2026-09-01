@@ -12,56 +12,84 @@ import java.nio.charset.StandardCharsets
 object JsonImporter {
 
     suspend fun importDatabase(db: AttendanceDatabase, backupDir: File, merge: Boolean, logger: BackupLogger): Map<String, Int> {
-        val dbDir = File(backupDir, "database")
         val gson = Gson()
         val counts = mutableMapOf<String, Int>()
 
-        // 1. Import User Profile
-        val userFile = File(dbDir, "user.json")
-        if (userFile.exists()) {
-            userFile.reader(StandardCharsets.UTF_8).use { reader ->
-                val type = object : TypeToken<List<UserEntity>>() {}.type
-                val users = gson.fromJson<List<UserEntity>>(reader, type) ?: emptyList()
-                if (users.isNotEmpty()) {
-                    if (!merge) {
-                        db.userDao().clearAll()
-                    }
-                    db.userDao().insertUser(users.first())
-                    counts["users"] = 1
+        var users: List<UserEntity> = emptyList()
+        var attendances: List<AttendanceEntity> = emptyList()
+        var summaries: List<SummaryEntity> = emptyList()
+
+        val dataFile = File(backupDir, "data.json")
+        if (dataFile.exists()) {
+            dataFile.reader(StandardCharsets.UTF_8).use { reader ->
+                val payload = gson.fromJson(reader, BackupDataPayload::class.java)
+                if (payload != null) {
+                    users = payload.users
+                    attendances = payload.attendance
+                    summaries = payload.summaries
+                }
+            }
+        } else {
+            // Legacy backup format fallback (database/ directory)
+            val dbDir = File(backupDir, "database")
+            val userFile = File(dbDir, "user.json")
+            if (userFile.exists()) {
+                userFile.reader(StandardCharsets.UTF_8).use { reader ->
+                    val type = object : TypeToken<List<UserEntity>>() {}.type
+                    users = gson.fromJson(reader, type) ?: emptyList()
+                }
+            }
+
+            val attendanceFile = File(dbDir, "attendance.json")
+            if (attendanceFile.exists()) {
+                attendanceFile.reader(StandardCharsets.UTF_8).use { reader ->
+                    val type = object : TypeToken<List<AttendanceEntity>>() {}.type
+                    attendances = gson.fromJson(reader, type) ?: emptyList()
+                }
+            }
+
+            val summaryFile = File(dbDir, "summary.json")
+            if (summaryFile.exists()) {
+                summaryFile.reader(StandardCharsets.UTF_8).use { reader ->
+                    val type = object : TypeToken<List<SummaryEntity>>() {}.type
+                    summaries = gson.fromJson(reader, type) ?: emptyList()
                 }
             }
         }
 
-        // 2. Import Attendance Records
-        val attendanceFile = File(dbDir, "attendance.json")
-        if (attendanceFile.exists()) {
-            attendanceFile.reader(StandardCharsets.UTF_8).use { reader ->
-                val type = object : TypeToken<List<AttendanceEntity>>() {}.type
-                val attendances = gson.fromJson<List<AttendanceEntity>>(reader, type) ?: emptyList()
-                if (!merge) {
-                    db.attendanceDao().clearAll()
-                }
-                var imported = 0
-                attendances.forEach { att ->
-                    db.attendanceDao().insertAttendance(att)
-                    imported++
-                }
-                counts["attendance"] = imported
+        // Import User Profile
+        if (users.isNotEmpty()) {
+            if (!merge) {
+                db.userDao().clearAll()
             }
+            db.userDao().insertUser(users.first())
+            counts["users"] = 1
+        } else {
+            counts["users"] = 0
         }
 
-        // 3. Import Summary Records
-        val summaryFile = File(dbDir, "summary.json")
-        if (summaryFile.exists()) {
-            summaryFile.reader(StandardCharsets.UTF_8).use { reader ->
-                val type = object : TypeToken<List<SummaryEntity>>() {}.type
-                val summaries = gson.fromJson<List<SummaryEntity>>(reader, type) ?: emptyList()
-                if (!merge) {
-                    db.summaryDao().clearAll()
-                }
-                db.summaryDao().insertSummaries(summaries)
-                counts["summaries"] = summaries.size
+        // Import Attendance Records
+        if (attendances.isNotEmpty()) {
+            if (!merge) {
+                db.attendanceDao().clearAll()
             }
+            var imported = 0
+            attendances.forEach { att ->
+                db.attendanceDao().insertAttendance(att)
+                imported++
+            }
+            counts["attendance"] = imported
+        } else {
+            counts["attendance"] = 0
+        }
+
+        // Import Summary Records
+        if (summaries.isNotEmpty()) {
+            if (!merge) {
+                db.summaryDao().clearAll()
+            }
+            db.summaryDao().insertSummaries(summaries)
+            counts["summaries"] = summaries.size
         } else {
             counts["summaries"] = 0
         }
@@ -70,9 +98,23 @@ object JsonImporter {
     }
 
     fun importPreferences(backupDir: File, logger: BackupLogger): Pair<Map<String, Any>, Map<String, Any>> {
-        val prefDir = File(backupDir, "preferences")
         val gson = Gson()
+        val dataFile = File(backupDir, "data.json")
 
+        if (dataFile.exists()) {
+            val dsMap = try {
+                dataFile.reader(StandardCharsets.UTF_8).use { reader ->
+                    val payload = gson.fromJson(reader, BackupDataPayload::class.java)
+                    payload?.preferences ?: emptyMap()
+                }
+            } catch (e: Exception) {
+                emptyMap()
+            }
+            return Pair(dsMap, emptyMap())
+        }
+
+        // Legacy backup format fallback (preferences/ directory)
+        val prefDir = File(backupDir, "preferences")
         val dsFile = File(prefDir, "datastore.json")
         val dataStoreMap = if (dsFile.exists()) {
             dsFile.reader(StandardCharsets.UTF_8).use { reader ->
