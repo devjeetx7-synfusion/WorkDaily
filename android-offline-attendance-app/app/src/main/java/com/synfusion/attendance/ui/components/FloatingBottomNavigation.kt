@@ -76,8 +76,9 @@ fun FloatingBottomNavigation(
 
     // Dynamic second slot in left capsule to display the active screen if it's not leftItem1 and not Settings
     val leftItem2 = remember(leftRoute2, currentRoute, leftItem1.route) {
-        if (currentRoute != leftItem1.route && currentRoute != rightItem.route) {
-            WorkDailyNavItem.fromRoute(currentRoute)
+        val activeNavItem = WorkDailyNavItem.values().firstOrNull { it.route == currentRoute }
+        if (activeNavItem != null && activeNavItem.route != leftItem1.route && activeNavItem.route != rightItem.route) {
+            activeNavItem
         } else {
             WorkDailyNavItem.fromRoute(leftRoute2)
         }
@@ -377,6 +378,7 @@ private fun FloatingNavItemButton(
         .pointerInput(item.route) {
             awaitEachGesture {
                 val down = awaitFirstDown(requireUnconsumed = false)
+                down.consume()
                 var isLongPressTriggered = false
                 var pointerUp = false
                 var isCancelled = false
@@ -397,10 +399,7 @@ private fun FloatingNavItemButton(
                         if (change == null) {
                             pointerUp = true
                         } else {
-                            if (change.isConsumed) {
-                                isCancelled = true
-                                pointerUp = true
-                            } else if (isLongPressTriggered) {
+                            if (isLongPressTriggered) {
                                 change.consume()
                                 val fingerWindowPos = itemBounds.topLeft + change.position
                                 onDrag(fingerWindowPos)
