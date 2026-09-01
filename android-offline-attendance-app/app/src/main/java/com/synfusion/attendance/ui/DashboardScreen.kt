@@ -148,36 +148,57 @@ fun DashboardScreen(
         }
     }
 
+    val coroutineScope = rememberCoroutineScope()
+
     val onNavSelected: (String) -> Unit = { route ->
         settingsViewModel.updateLastActiveScreen(route)
         when (route) {
             "dashboard" -> {
                 if (currentRoute != "main_pager") {
                     bottomNavController.popBackStack("main_pager", false)
+                } else if (selectedTab == 0) {
+                    coroutineScope.launch {
+                        dashboardScrollState.animateScrollToItem(0)
+                    }
                 }
                 selectedTab = 0
             }
             "calendar" -> {
                 if (currentRoute != "main_pager") {
                     bottomNavController.popBackStack("main_pager", false)
+                } else if (selectedTab == 1) {
+                    coroutineScope.launch {
+                        calendarScrollState.animateScrollToItem(0)
+                    }
                 }
                 selectedTab = 1
             }
             "stats" -> {
                 if (currentRoute != "main_pager") {
                     bottomNavController.popBackStack("main_pager", false)
+                } else if (selectedTab == 2) {
+                    coroutineScope.launch {
+                        statsScrollState.animateScrollToItem(0)
+                    }
                 }
                 selectedTab = 2
             }
             "settings" -> {
                 if (currentRoute != "main_pager") {
                     bottomNavController.popBackStack("main_pager", false)
+                } else if (selectedTab == 3) {
+                    coroutineScope.launch {
+                        settingsScrollState.animateScrollTo(0)
+                    }
                 }
                 selectedTab = 3
             }
             "passbook" -> {
                 if (currentRoute != "passbook") {
-                    bottomNavController.navigate("passbook")
+                    bottomNavController.navigate("passbook") {
+                        launchSingleTop = true
+                        restoreState = true
+                    }
                 }
             }
         }

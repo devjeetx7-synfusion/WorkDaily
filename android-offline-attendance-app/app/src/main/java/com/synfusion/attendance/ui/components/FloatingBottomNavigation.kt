@@ -378,35 +378,43 @@ private fun FloatingNavItemButton(
             awaitEachGesture {
                 val down = awaitFirstDown(requireUnconsumed = false)
                 var isLongPressTriggered = false
+                var pointerUp = false
+                var isCancelled = false
+
                 val longPressJob = coroutineScope.launch {
                     delay(280)
-                    isLongPressTriggered = true
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    onItemLongPress(item, itemBounds)
+                    if (!pointerUp && !isCancelled) {
+                        isLongPressTriggered = true
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onItemLongPress(item, itemBounds)
+                    }
                 }
 
-                var pointerUp = false
                 do {
                     val event = awaitPointerEvent(PointerEventPass.Main)
                     val change = event.changes.firstOrNull { it.id == down.id } ?: event.changes.firstOrNull()
-                    if (change != null) {
-                        if (isLongPressTriggered) {
+                    if (change == null) {
+                        pointerUp = true
+                    } else {
+                        if (change.isConsumed) {
+                            isCancelled = true
+                            pointerUp = true
+                        } else if (isLongPressTriggered) {
                             change.consume()
                             val fingerWindowPos = itemBounds.topLeft + change.position
                             onDrag(fingerWindowPos)
                         }
+
                         if (!change.pressed) {
                             pointerUp = true
                         }
-                    } else {
-                        pointerUp = true
                     }
                 } while (!pointerUp)
 
                 longPressJob.cancel()
                 if (isLongPressTriggered) {
                     onRelease()
-                } else {
+                } else if (!isCancelled) {
                     onNavigate(item.route)
                 }
             }
