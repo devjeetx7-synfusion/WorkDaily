@@ -1,6 +1,9 @@
 package com.synfusion.attendance.backup
 
 import com.google.gson.annotations.SerializedName
+import com.synfusion.attendance.data.entities.AttendanceEntity
+import com.synfusion.attendance.data.entities.SummaryEntity
+import com.synfusion.attendance.data.entities.UserEntity
 
 data class BackupManifest(
     @SerializedName("backupUuid") val backupUuid: String,
@@ -21,6 +24,13 @@ data class BackupManifest(
     @SerializedName("totalFiles") val totalFiles: Int,
     @SerializedName("backupSize") val backupSize: Long,
     @SerializedName("featureList") val featureList: List<String>
+)
+
+data class BackupDataPayload(
+    @SerializedName("users") val users: List<UserEntity> = emptyList(),
+    @SerializedName("attendance") val attendance: List<AttendanceEntity> = emptyList(),
+    @SerializedName("summaries") val summaries: List<SummaryEntity> = emptyList(),
+    @SerializedName("preferences") val preferences: Map<String, Any> = emptyMap()
 )
 
 data class DeviceInfo(

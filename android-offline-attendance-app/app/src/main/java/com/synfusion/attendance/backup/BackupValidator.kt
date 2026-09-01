@@ -33,8 +33,7 @@ enum class BackupValidationCode {
     MISSING_MANIFEST,
     INVALID_MANIFEST,
     UNSUPPORTED_VERSION,
-    MISSING_DATABASE_DIR,
-    MISSING_REQUIRED_DB_FILES,
+    MISSING_REQUIRED_DATA_FILE,
     CHECKSUM_MISMATCH,
     INVALID_DATA,
     MISSING_MEDIA_DIR
@@ -73,61 +72,48 @@ object BackupValidator {
             return BackupValidationResult(false, BackupValidationCode.UNSUPPORTED_VERSION, "Backup database version v${manifest.databaseVersion} is newer than current app database version v$currentDatabaseVersion.")
         }
 
-        // 3. Validate JSON files in database sub-directory
+        // 3. Locate data source (data.json OR legacy database/ directory)
+        val dataFile = File(extractedDir, "data.json")
         val dbDir = File(extractedDir, "database")
-        if (!dbDir.exists() || !dbDir.isDirectory) {
-            logger.error("Validation Failed: database directory is missing.")
-            return BackupValidationResult(false, BackupValidationCode.MISSING_DATABASE_DIR, "database directory is missing.")
+
+        if (!dataFile.exists() && (!dbDir.exists() || !dbDir.isDirectory)) {
+            logger.error("Validation Failed: Neither data.json nor database directory exists.")
+            return BackupValidationResult(false, BackupValidationCode.MISSING_REQUIRED_DATA_FILE, "Backup data file (data.json) is missing.")
         }
 
-        val requiredJsonFiles = listOf("user.json", "attendance.json")
-        for (fileName in requiredJsonFiles) {
-            val file = File(dbDir, fileName)
-            if (!file.exists()) {
-                logger.error("Validation Failed: database/$fileName is missing.")
-                return BackupValidationResult(false, BackupValidationCode.MISSING_REQUIRED_DB_FILES, "database/$fileName is missing.")
-            }
-        }
-
-        // 4. Validate SHA-256 Checksums
-        val checksumsFile = File(extractedDir, "metadata/checksums.json")
-        if (checksumsFile.exists()) {
-            val gson = Gson()
-            try {
-                val checksumMap: Map<String, String> = checksumsFile.reader(StandardCharsets.UTF_8).use { reader ->
-                    @Suppress("UNCHECKED_CAST")
-                    gson.fromJson(reader, Map::class.java) as? Map<String, String> ?: emptyMap()
-                }
-                for ((relPath, expectedHash) in checksumMap) {
-                    val actualFile = File(extractedDir, relPath)
-                    if (!ChecksumManager.verifyChecksum(actualFile, expectedHash)) {
-                        logger.error("Validation Failed: File $relPath is corrupt (Checksum mismatch).")
-                        return BackupValidationResult(false, BackupValidationCode.CHECKSUM_MISMATCH, "File $relPath checksum mismatch.")
-                    }
-                }
-            } catch (e: Exception) {
-                logger.error("Validation Failed: Failed to verify SHA-256 checksums", e)
-                return BackupValidationResult(false, BackupValidationCode.CHECKSUM_MISMATCH, "Failed to verify SHA-256 checksums: ${e.message}")
-            }
-        }
-
-        // 5. Referential Integrity & Data Validation
+        // 4. Read & Validate Data Schema + Records
         val gson = Gson()
         try {
-            val userFile = File(dbDir, "user.json")
-            val users: List<UserEntity> = userFile.reader(StandardCharsets.UTF_8).use { reader ->
-                val type = object : TypeToken<List<UserEntity>>() {}.type
-                gson.fromJson(reader, type) ?: emptyList()
+            var users: List<UserEntity> = emptyList()
+            var attendances: List<AttendanceEntity> = emptyList()
+
+            if (dataFile.exists()) {
+                dataFile.reader(StandardCharsets.UTF_8).use { reader ->
+                    val payload = gson.fromJson(reader, BackupDataPayload::class.java)
+                        ?: return BackupValidationResult(false, BackupValidationCode.INVALID_DATA, "data.json is empty or malformed.")
+                    users = payload.users
+                    attendances = payload.attendance
+                }
+            } else {
+                val userFile = File(dbDir, "user.json")
+                val attendanceFile = File(dbDir, "attendance.json")
+                if (!userFile.exists() || !attendanceFile.exists()) {
+                    logger.error("Validation Failed: Required legacy database files missing.")
+                    return BackupValidationResult(false, BackupValidationCode.MISSING_REQUIRED_DATA_FILE, "Legacy database files missing.")
+                }
+                users = userFile.reader(StandardCharsets.UTF_8).use { reader ->
+                    val type = object : TypeToken<List<UserEntity>>() {}.type
+                    gson.fromJson(reader, type) ?: emptyList()
+                }
+                attendances = attendanceFile.reader(StandardCharsets.UTF_8).use { reader ->
+                    val type = object : TypeToken<List<AttendanceEntity>>() {}.type
+                    gson.fromJson(reader, type) ?: emptyList()
+                }
             }
 
-            val attendanceFile = File(dbDir, "attendance.json")
-            val attendances: List<AttendanceEntity> = attendanceFile.reader(StandardCharsets.UTF_8).use { reader ->
-                val type = object : TypeToken<List<AttendanceEntity>>() {}.type
-                gson.fromJson(reader, type) ?: emptyList()
-            }
-
-            // Referential Integrity: attendance must not reference non-existing users
-            // Since this is single-user personal app, workerId must be null or match the logged in user ID if set
+            // Referential Integrity:
+            // Since WorkDaily is an offline personal app, workerId in attendance is null for personal records.
+            // If workerId is set (non-null), it must match a user's ID if user list is non-empty.
             if (users.isNotEmpty()) {
                 val primaryUser = users.first()
                 for (att in attendances) {
@@ -135,7 +121,7 @@ object BackupValidator {
                         logger.error("Validation Failed: Foreign key integrity violation. Attendance record ${att.id} references invalid user ${att.workerId}.")
                         return BackupValidationResult(false, BackupValidationCode.INVALID_DATA, "Foreign key integrity violation in record ${att.id}.")
                     }
-                    // Validate basic attendance attributes
+                    // Validate basic attendance date format (YYYY-MM-DD)
                     if (att.date.isBlank() || !att.date.matches(Regex("\\d{4}-\\d{2}-\\d{2}"))) {
                         logger.error("Validation Failed: Invalid date format in record ${att.id}.")
                         return BackupValidationResult(false, BackupValidationCode.INVALID_DATA, "Invalid date format in record ${att.id}.")
@@ -143,8 +129,7 @@ object BackupValidator {
                 }
             }
 
-            // 6. Media Reference Validation
-            // If any file has profile or signature reference, we verify that the corresponding media file is present in media folder
+            // 5. Media Reference Validation
             val mediaDir = File(extractedDir, "media")
             val profileMediaCount = manifest.recordCounts["media"] ?: 0
             if (profileMediaCount > 0) {
