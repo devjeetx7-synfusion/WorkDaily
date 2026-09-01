@@ -48,6 +48,11 @@ object RestoreResultStore {
     }
 }
 
+sealed class RestoreResult {
+    data class Success(val report: RestoreSummaryReport) : RestoreResult()
+    data class Error(val userMessage: String, val technicalDetails: String? = null) : RestoreResult()
+}
+
 class RestoreManager(private val context: Context) {
 
     private val tempExtractDir = File(context.cacheDir, "restore_working_dir")
@@ -55,6 +60,13 @@ class RestoreManager(private val context: Context) {
     private val logger = BackupLogger(logFile)
 
     suspend fun performRestore(zipFile: File, merge: Boolean, progressTracker: ProgressTracker): RestoreSummaryReport? {
+        return when (val res = performRestoreDetailed(zipFile, merge, progressTracker)) {
+            is RestoreResult.Success -> res.report
+            is RestoreResult.Error -> null
+        }
+    }
+
+    suspend fun performRestoreDetailed(zipFile: File, merge: Boolean, progressTracker: ProgressTracker): RestoreResult {
         return withContext(Dispatchers.IO) {
             try {
                 progressTracker.updateState(RestoreState.READING_BACKUP)
@@ -62,33 +74,56 @@ class RestoreManager(private val context: Context) {
                 tempExtractDir.deleteRecursively()
                 tempExtractDir.mkdirs()
 
-                RestoreProvider.extractZip(zipFile, tempExtractDir, logger)
+                try {
+                    RestoreProvider.extractZip(zipFile, tempExtractDir, logger)
+                } catch (e: Exception) {
+                    logger.error("Failed to extract backup ZIP file: ${e.message}", e)
+                    progressTracker.updateState(RestoreState.RESTORE_FAILED)
+                    return@withContext RestoreResult.Error(
+                        context.getString(com.synfusion.attendance.R.string.restore_corrupt_msg),
+                        e.stackTraceToString()
+                    )
+                }
 
                 // Read manifest
                 val manifestFile = File(tempExtractDir, "manifest.json")
                 val manifest = ManifestManager.readManifest(manifestFile)
                 if (manifest == null) {
-                    logger.error("Restore failed: Manifest not found.")
+                    logger.error("Restore failed: Manifest not found or unparseable.")
                     progressTracker.updateState(RestoreState.RESTORE_FAILED)
-                    return@withContext null
+                    return@withContext RestoreResult.Error(
+                        context.getString(com.synfusion.attendance.R.string.restore_invalid_format_msg),
+                        "manifest.json missing or unparseable"
+                    )
                 }
 
                 progressTracker.updateState(RestoreState.VALIDATING)
                 progressTracker.updateProgress(30f, "Verifying backup integrity...")
-                val isValid = BackupValidator.validateBackupDir(tempExtractDir, logger)
-                if (!isValid) {
-                    logger.error("Integrity check failed. Aborting restore.")
+                val validationRes = BackupValidator.validateBackupDirDetailed(tempExtractDir, logger)
+                if (!validationRes.isValid) {
+                    logger.error("Integrity check failed: ${validationRes.code} (${validationRes.details})")
                     progressTracker.updateState(RestoreState.RESTORE_FAILED)
-                    return@withContext null
+                    val userMsg = when (validationRes.code) {
+                        BackupValidationCode.UNSUPPORTED_VERSION -> context.getString(com.synfusion.attendance.R.string.restore_unsupported_version_msg)
+                        BackupValidationCode.MISSING_REQUIRED_DB_FILES -> context.getString(com.synfusion.attendance.R.string.restore_missing_data_msg)
+                        BackupValidationCode.CHECKSUM_MISMATCH -> context.getString(com.synfusion.attendance.R.string.restore_checksum_mismatch_msg)
+                        BackupValidationCode.INVALID_DATA -> context.getString(com.synfusion.attendance.R.string.restore_invalid_data_msg)
+                        BackupValidationCode.MISSING_MANIFEST, BackupValidationCode.INVALID_MANIFEST, BackupValidationCode.MISSING_DATABASE_DIR -> context.getString(com.synfusion.attendance.R.string.restore_invalid_format_msg)
+                        else -> context.getString(com.synfusion.attendance.R.string.restore_corrupt_msg)
+                    }
+                    return@withContext RestoreResult.Error(userMsg, validationRes.details)
                 }
 
-                // Check free space on device to handle low storage scenarios
+                // Check free space on device
                 val freeSpace = context.filesDir.usableSpace
                 val backupSize = manifest.backupSize
                 if (freeSpace < backupSize * 2) {
                     logger.error("Restore failed: Insufficient device storage space (Required: ${backupSize * 2} bytes, Available: $freeSpace bytes).")
                     progressTracker.updateState(RestoreState.RESTORE_FAILED)
-                    throw Exception("Insufficient storage space to perform restore.")
+                    return@withContext RestoreResult.Error(
+                        context.getString(com.synfusion.attendance.R.string.restore_storage_insufficient_msg),
+                        "Free space $freeSpace < required ${backupSize * 2}"
+                    )
                 }
 
                 progressTracker.updateState(RestoreState.IMPORTING)
@@ -102,7 +137,6 @@ class RestoreManager(private val context: Context) {
                     progressTracker.updateState(RestoreState.VERIFYING)
                     progressTracker.updateProgress(55f, "Verifying record-level consistency...")
 
-                    // 100% record-level validation against manifest counts
                     val expectedUsers = manifest.recordCounts["users"] ?: 0
                     val expectedAttendance = manifest.recordCounts["attendance"] ?: 0
                     val expectedSummaries = manifest.recordCounts["summaries"] ?: 0
@@ -112,34 +146,34 @@ class RestoreManager(private val context: Context) {
                     val tempSummariesCount = tempDb.summaryDao().getAllSummaries().size
 
                     if (tempUserCount != expectedUsers || tempAttendanceCount != expectedAttendance || tempSummariesCount != expectedSummaries) {
-                        logger.error("Validation Failed: Record count mismatch. Expected: {users=$expectedUsers, attendance=$expectedAttendance, summaries=$expectedSummaries}, Actual: {users=$tempUserCount, attendance=$tempAttendanceCount, summaries=$tempSummariesCount}")
+                        val msg = "Validation Failed: Record count mismatch. Expected: {users=$expectedUsers, attendance=$expectedAttendance, summaries=$expectedSummaries}, Actual: {users=$tempUserCount, attendance=$tempAttendanceCount, summaries=$tempSummariesCount}"
+                        logger.error(msg)
                         tempDb.close()
                         progressTracker.updateState(RestoreState.RESTORE_FAILED)
-                        return@withContext null
+                        return@withContext RestoreResult.Error(
+                            context.getString(com.synfusion.attendance.R.string.restore_invalid_data_msg),
+                            msg
+                        )
                     }
 
                     if (merge) {
                         progressTracker.updateProgress(58f, "Merging records deterministically...")
-                        // Load existing production database records safely
                         val prodDb = AttendanceDatabase.getInstance(context)
                         val prodUser = prodDb.userDao().getUser()
                         val prodAttendance = prodDb.attendanceDao().getPersonalAttendance()
                         val prodSummaries = prodDb.summaryDao().getAllSummaries()
 
-                        // Merge user details: prefer backup user details if they exist, else keep production user details
                         val tempUser = tempDb.userDao().getUser()
                         if (tempUser == null && prodUser != null) {
                             tempDb.userDao().insertUser(prodUser)
                         }
 
-                        // Merge attendance: insert unique production attendance records that are not in tempDb
                         val tempAttendanceIds = tempDb.attendanceDao().getPersonalAttendance().map { it.id }.toSet()
                         val uniqueProdAttendance = prodAttendance.filter { it.id !in tempAttendanceIds }
                         for (att in uniqueProdAttendance) {
                             tempDb.attendanceDao().insertAttendance(att)
                         }
 
-                        // Merge summaries: insert unique production summary records that are not in tempDb
                         val tempSummaryIds = tempDb.summaryDao().getAllSummaries().map { it.id }.toSet()
                         val uniqueProdSummaries = prodSummaries.filter { it.id !in tempSummaryIds }
                         tempDb.summaryDao().insertSummaries(uniqueProdSummaries)
@@ -150,16 +184,10 @@ class RestoreManager(private val context: Context) {
                     progressTracker.updateState(RestoreState.PREPARING_REPLACEMENT)
                     progressTracker.updateProgress(65f, "Preparing database replacement...")
 
-                    // 1. Stop active collectors & cancel restore-sensitive jobs
                     DatabaseLifecycleCoordinator.stopAndCancelEverything()
-
-                    // 2. Lock and close production database completely to prevent any queries from racing
                     AttendanceDatabase.beginSwap()
-
-                    // 3. Close the temporary database safely before swapping
                     tempDb.close()
 
-                    // 4. Swap data to production database securely
                     progressTracker.updateState(RestoreState.REPLACING_DATABASE)
                     progressTracker.updateProgress(75f, "Applying atomic database swap...")
                     TempDatabaseManager.swapToProduction(context, tempDb)
@@ -171,7 +199,6 @@ class RestoreManager(private val context: Context) {
                     var mediaRestoredCount = 0
                     var mediaExpectedCount = 0
 
-                    // Execute other registry modules dynamically (preferences, media, notifications, calendar, leave)
                     val modules = BackupRegistry.getModules()
                     modules.forEach { module ->
                         if (module.name != "Database") {
@@ -186,13 +213,9 @@ class RestoreManager(private val context: Context) {
                         }
                     }
 
-                    // 5. Unlock database swap state
                     AttendanceDatabase.endSwap()
 
-                    // 6. Ensure final record counts in the restored prod database
                     val finalProdDb = AttendanceDatabase.getInstance(context)
-
-                    // 7. Refresh ViewModels so screens reload seamlessly without forcing a restart
                     DatabaseLifecycleCoordinator.refreshViewModels()
 
                     val finalUser = finalProdDb.userDao().getUser()
@@ -210,7 +233,6 @@ class RestoreManager(private val context: Context) {
                         settingsRestored = dsPrefsRestoredCount > 0
                     )
 
-                    // Persist report to SharedPreferences synchronously for safe load upon startup
                     RestoreResultStore.saveReport(
                         context = context,
                         report = report,
@@ -223,21 +245,27 @@ class RestoreManager(private val context: Context) {
                     progressTracker.updateState(RestoreState.RESTARTING_APP)
                     progressTracker.updateProgress(100f, "Restarting application...")
 
-                    return@withContext report
+                    return@withContext RestoreResult.Success(report)
 
                 } catch (e: Exception) {
                     logger.error("Restore failed during DB operations: ${e.message}", e)
                     tempDb.close()
                     AttendanceDatabase.endSwap()
                     progressTracker.updateState(RestoreState.RESTORE_FAILED)
-                    return@withContext null
+                    return@withContext RestoreResult.Error(
+                        context.getString(com.synfusion.attendance.R.string.restore_db_swap_failed_msg),
+                        e.stackTraceToString()
+                    )
                 }
 
             } catch (e: Exception) {
                 logger.error("Critical error during restore: ${e.message}", e)
                 AttendanceDatabase.endSwap()
                 progressTracker.updateState(RestoreState.RESTORE_FAILED)
-                return@withContext null
+                return@withContext RestoreResult.Error(
+                    e.localizedMessage ?: context.getString(com.synfusion.attendance.R.string.unexpected_error_occurred),
+                    e.stackTraceToString()
+                )
             }
         }
     }

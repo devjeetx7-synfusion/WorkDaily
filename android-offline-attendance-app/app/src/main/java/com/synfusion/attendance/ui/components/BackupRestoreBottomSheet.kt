@@ -88,13 +88,16 @@ fun BackupRestoreBottomSheet(
                         val tempFile = File(context.cacheDir, "AttendanceBackup_temp.zip")
                         backupManager.performBackup(tempFile, progressTracker)
 
-                        // Stream temp zip bytes to output URI via SAF
-                        withContext(Dispatchers.IO) {
+                        val bytesCopied = withContext(Dispatchers.IO) {
                             context.contentResolver.openOutputStream(uri)?.use { outputStream ->
                                 tempFile.inputStream().use { inputStream ->
                                     inputStream.copyTo(outputStream)
                                 }
-                            }
+                            } ?: -1L
+                        }
+
+                        if (bytesCopied < 0) {
+                            throw java.io.IOException(context.getString(R.string.backup_write_failed_msg))
                         }
 
                         // Determine the actual backup size and save persistent metadata
@@ -108,14 +111,14 @@ fun BackupRestoreBottomSheet(
                         tempFile.delete()
                         operationSuccess = true
                     } catch (e: Exception) {
-                        errorMessage = e.localizedMessage ?: "Backup was interrupted or failed due to low storage."
+                        errorMessage = e.localizedMessage ?: context.getString(R.string.backup_write_failed_msg)
                         operationSuccess = false
                     } finally {
                         isOperating = false
                     }
                 }
             } else {
-                Toast.makeText(context, context.getString(R.string.cancel), Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.backup_cancelled_msg), Toast.LENGTH_SHORT).show()
             }
         }
     )
@@ -128,12 +131,17 @@ fun BackupRestoreBottomSheet(
                 coroutineScope.launch {
                     try {
                         val tempFile = File(context.cacheDir, "RestoreTemp.zip")
-                        withContext(Dispatchers.IO) {
+                        val bytesCopied = withContext(Dispatchers.IO) {
                             context.contentResolver.openInputStream(uri)?.use { inputStream ->
                                 FileOutputStream(tempFile).use { fos ->
                                     inputStream.copyTo(fos)
                                 }
-                            }
+                            } ?: -1L
+                        }
+
+                        if (bytesCopied < 0) {
+                            Toast.makeText(context, context.getString(R.string.restore_read_failed_msg), Toast.LENGTH_LONG).show()
+                            return@launch
                         }
 
                         val manifest = restoreManager.getBackupPreview(tempFile)
@@ -142,14 +150,14 @@ fun BackupRestoreBottomSheet(
                             restoreFileToApply = tempFile
                         } else {
                             tempFile.delete()
-                            Toast.makeText(context, context.getString(R.string.invalid_corrupt_backup), Toast.LENGTH_LONG).show()
+                            Toast.makeText(context, context.getString(R.string.restore_invalid_format_msg), Toast.LENGTH_LONG).show()
                         }
                     } catch (e: Exception) {
-                        Toast.makeText(context, context.getString(R.string.failed_to_load_backup, e.localizedMessage ?: ""), Toast.LENGTH_LONG).show()
+                        Toast.makeText(context, context.getString(R.string.restore_read_failed_msg), Toast.LENGTH_LONG).show()
                     }
                 }
             } else {
-                Toast.makeText(context, context.getString(R.string.restore_selection_cancelled), Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.restore_cancelled_msg), Toast.LENGTH_SHORT).show()
             }
         }
     )
@@ -166,24 +174,18 @@ fun BackupRestoreBottomSheet(
                 OutlinedTextField(
                     value = customBackupName,
                     onValueChange = { customBackupName = it },
-                    label = { Text("Backup Name") },
+                    label = { Text(stringResource(R.string.backup_name_label)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
             },
             confirmButton = {
                 Button(onClick = {
-                    var sanitized = customBackupName.trim().replace(Regex("[\\\\/:*?\"<>|]"), "_")
-                    if (sanitized.isEmpty()) {
-                        sanitized = "My WorkDaily Backup"
-                    }
-                    if (!sanitized.endsWith(".zip", ignoreCase = true)) {
-                        sanitized += ".zip"
-                    }
+                    val sanitized = sanitizeBackupFileName(customBackupName)
                     showBackupNameDialog = false
                     createBackupLauncher.launch(sanitized)
                 }) {
-                    Text("Create Backup", fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.create_backup_action), fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
@@ -462,11 +464,15 @@ fun BackupRestoreBottomSheet(
                                 coroutineScope.launch {
                                     val file = restoreFileToApply
                                     if (file != null) {
-                                        val report = restoreManager.performRestore(file, mergeMode, progressTracker)
-                                        restoreSummaryReport = report
-                                        operationSuccess = report != null
-                                        if (report == null) {
-                                            errorMessage = context.getString(R.string.restore_failed_msg)
+                                        when (val result = restoreManager.performRestoreDetailed(file, mergeMode, progressTracker)) {
+                                            is com.synfusion.attendance.backup.RestoreResult.Success -> {
+                                                restoreSummaryReport = result.report
+                                                operationSuccess = true
+                                            }
+                                            is com.synfusion.attendance.backup.RestoreResult.Error -> {
+                                                errorMessage = result.userMessage
+                                                operationSuccess = false
+                                            }
                                         }
                                         isOperating = false
                                         file.delete()
@@ -605,4 +611,24 @@ fun PreviewItem(label: String, value: String) {
         Text(text = label, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(text = value, fontSize = 12.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface)
     }
+}
+
+fun sanitizeBackupFileName(input: String): String {
+    var name = input.trim()
+    name = name.replace(Regex("[\\\\/:*?\"<>|\\r\\n\\t]"), "_")
+
+    while (name.endsWith(".zip", ignoreCase = true) || name.endsWith(".backup", ignoreCase = true)) {
+        if (name.endsWith(".zip", ignoreCase = true)) {
+            name = name.substring(0, name.length - 4).trim()
+        } else if (name.endsWith(".backup", ignoreCase = true)) {
+            name = name.substring(0, name.length - 7).trim()
+        }
+    }
+
+    if (name.isBlank()) {
+        val dateStr = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+        name = "WorkDaily_Backup_$dateStr"
+    }
+
+    return "$name.zip"
 }

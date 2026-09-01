@@ -172,14 +172,14 @@ fun LoginScreen(
                             restoreFileToApply = tempFile
                         } else {
                             tempFile.delete()
-                            Toast.makeText(context, "Invalid or corrupt backup package", Toast.LENGTH_LONG).show()
+                            Toast.makeText(context, context.getString(com.synfusion.attendance.R.string.restore_invalid_format_msg), Toast.LENGTH_LONG).show()
                         }
                     } catch (e: Exception) {
-                        Toast.makeText(context, "Failed to load backup: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                        Toast.makeText(context, context.getString(com.synfusion.attendance.R.string.restore_read_failed_msg), Toast.LENGTH_LONG).show()
                     }
                 }
             } else {
-                Toast.makeText(context, "Restore selection cancelled", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(com.synfusion.attendance.R.string.restore_cancelled_msg), Toast.LENGTH_SHORT).show()
             }
         }
     )
@@ -212,14 +212,16 @@ fun LoginScreen(
                         scope.launch {
                             try {
                                 if (file != null) {
-                                    val report = restoreManager.performRestore(file, false, progressTracker)
-                                    if (report != null) {
-                                        operationSuccess = true
-                                        restoreManager.triggerCleanRestart()
-                                    } else {
-                                        errorMessage = context.getString(com.synfusion.attendance.R.string.restore_failed_msg)
-                                        operationSuccess = false
-                                        isOperating = false
+                                    when (val result = restoreManager.performRestoreDetailed(file, false, progressTracker)) {
+                                        is com.synfusion.attendance.backup.RestoreResult.Success -> {
+                                            operationSuccess = true
+                                            restoreManager.triggerCleanRestart()
+                                        }
+                                        is com.synfusion.attendance.backup.RestoreResult.Error -> {
+                                            errorMessage = result.userMessage
+                                            operationSuccess = false
+                                            isOperating = false
+                                        }
                                     }
                                     file.delete()
                                 } else {
@@ -266,17 +268,19 @@ fun LoginScreen(
                             isOperating = true
                             scope.launch {
                                 try {
-                                    val report = restoreManager.performRestore(file, false, progressTracker)
-                                    if (report != null) {
-                                        operationSuccess = true
-                                        restoreManager.triggerCleanRestart()
-                                    } else {
-                                        errorMessage = "Failed to restore backup database."
-                                        operationSuccess = false
-                                        isOperating = false
+                                    when (val result = restoreManager.performRestoreDetailed(file, false, progressTracker)) {
+                                        is com.synfusion.attendance.backup.RestoreResult.Success -> {
+                                            operationSuccess = true
+                                            restoreManager.triggerCleanRestart()
+                                        }
+                                        is com.synfusion.attendance.backup.RestoreResult.Error -> {
+                                            errorMessage = result.userMessage
+                                            operationSuccess = false
+                                            isOperating = false
+                                        }
                                     }
                                 } catch (e: Exception) {
-                                    errorMessage = e.localizedMessage ?: "Restore process failed."
+                                    errorMessage = e.localizedMessage ?: context.getString(com.synfusion.attendance.R.string.restore_failed_msg)
                                     operationSuccess = false
                                     isOperating = false
                                 }

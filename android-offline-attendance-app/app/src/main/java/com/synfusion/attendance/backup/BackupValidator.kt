@@ -28,34 +28,56 @@ object SchemaValidator {
     }
 }
 
+enum class BackupValidationCode {
+    VALID,
+    MISSING_MANIFEST,
+    INVALID_MANIFEST,
+    UNSUPPORTED_VERSION,
+    MISSING_DATABASE_DIR,
+    MISSING_REQUIRED_DB_FILES,
+    CHECKSUM_MISMATCH,
+    INVALID_DATA,
+    MISSING_MEDIA_DIR
+}
+
+data class BackupValidationResult(
+    val isValid: Boolean,
+    val code: BackupValidationCode,
+    val details: String? = null
+)
+
 object BackupValidator {
 
     fun validateBackupDir(extractedDir: File, logger: BackupLogger): Boolean {
+        return validateBackupDirDetailed(extractedDir, logger).isValid
+    }
+
+    fun validateBackupDirDetailed(extractedDir: File, logger: BackupLogger): BackupValidationResult {
         // 1. Validate manifest exists
         val manifestFile = File(extractedDir, "manifest.json")
         if (!manifestFile.exists()) {
             logger.error("Validation Failed: manifest.json is missing.")
-            return false
+            return BackupValidationResult(false, BackupValidationCode.MISSING_MANIFEST, "manifest.json is missing.")
         }
 
         val manifest = ManifestManager.readManifest(manifestFile)
         if (manifest == null) {
             logger.error("Validation Failed: manifest.json is invalid or corrupt.")
-            return false
+            return BackupValidationResult(false, BackupValidationCode.INVALID_MANIFEST, "manifest.json is invalid or corrupt.")
         }
 
         // 2. Older App Graceful Rejection (database version comparison)
         val currentDatabaseVersion = 2 // Current app database version code
         if (manifest.databaseVersion > currentDatabaseVersion) {
             logger.error("Validation Failed: Backup database version (v${manifest.databaseVersion}) is newer than current app database version (v$currentDatabaseVersion). Rejection enforced.")
-            return false
+            return BackupValidationResult(false, BackupValidationCode.UNSUPPORTED_VERSION, "Backup database version v${manifest.databaseVersion} is newer than current app database version v$currentDatabaseVersion.")
         }
 
         // 3. Validate JSON files in database sub-directory
         val dbDir = File(extractedDir, "database")
         if (!dbDir.exists() || !dbDir.isDirectory) {
             logger.error("Validation Failed: database directory is missing.")
-            return false
+            return BackupValidationResult(false, BackupValidationCode.MISSING_DATABASE_DIR, "database directory is missing.")
         }
 
         val requiredJsonFiles = listOf("user.json", "attendance.json")
@@ -63,7 +85,7 @@ object BackupValidator {
             val file = File(dbDir, fileName)
             if (!file.exists()) {
                 logger.error("Validation Failed: database/$fileName is missing.")
-                return false
+                return BackupValidationResult(false, BackupValidationCode.MISSING_REQUIRED_DB_FILES, "database/$fileName is missing.")
             }
         }
 
@@ -80,12 +102,12 @@ object BackupValidator {
                     val actualFile = File(extractedDir, relPath)
                     if (!ChecksumManager.verifyChecksum(actualFile, expectedHash)) {
                         logger.error("Validation Failed: File $relPath is corrupt (Checksum mismatch).")
-                        return false
+                        return BackupValidationResult(false, BackupValidationCode.CHECKSUM_MISMATCH, "File $relPath checksum mismatch.")
                     }
                 }
             } catch (e: Exception) {
                 logger.error("Validation Failed: Failed to verify SHA-256 checksums", e)
-                return false
+                return BackupValidationResult(false, BackupValidationCode.CHECKSUM_MISMATCH, "Failed to verify SHA-256 checksums: ${e.message}")
             }
         }
 
@@ -111,12 +133,12 @@ object BackupValidator {
                 for (att in attendances) {
                     if (att.workerId != null && att.workerId != primaryUser.id) {
                         logger.error("Validation Failed: Foreign key integrity violation. Attendance record ${att.id} references invalid user ${att.workerId}.")
-                        return false
+                        return BackupValidationResult(false, BackupValidationCode.INVALID_DATA, "Foreign key integrity violation in record ${att.id}.")
                     }
                     // Validate basic attendance attributes
                     if (att.date.isBlank() || !att.date.matches(Regex("\\d{4}-\\d{2}-\\d{2}"))) {
                         logger.error("Validation Failed: Invalid date format in record ${att.id}.")
-                        return false
+                        return BackupValidationResult(false, BackupValidationCode.INVALID_DATA, "Invalid date format in record ${att.id}.")
                     }
                 }
             }
@@ -128,16 +150,16 @@ object BackupValidator {
             if (profileMediaCount > 0) {
                 if (!mediaDir.exists() || !mediaDir.isDirectory) {
                     logger.error("Validation Failed: Media files listed in manifest but media directory does not exist.")
-                    return false
+                    return BackupValidationResult(false, BackupValidationCode.MISSING_MEDIA_DIR, "Media directory missing.")
                 }
             }
 
         } catch (e: Exception) {
             logger.error("Validation Failed: Syntax error or corrupt database JSON files.", e)
-            return false
+            return BackupValidationResult(false, BackupValidationCode.INVALID_DATA, "Syntax error or corrupt database JSON files: ${e.message}")
         }
 
         logger.info("Backup directory integrity and schema validation succeeded.")
-        return true
+        return BackupValidationResult(true, BackupValidationCode.VALID)
     }
 }

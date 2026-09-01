@@ -562,4 +562,21 @@
     <string name="restore_failed_msg">रिस्टोर वेरिफिकेशन या प्रोसेस फेल हो गया।</string>
     <string name="internal_file_error">इंटरनल फाइल एरर आई।</string>
     <string name="unable_to_open_settings">सेटिंग्स नहीं खुल पाई</string>
+
+    <!-- Backup & Restore Specific Error & Dialog Strings -->
+    <string name="backup_name_label">बैकअप फाइल का नाम</string>
+    <string name="create_backup_action">बैकअप बनाएं</string>
+    <string name="backup_cancelled_msg">बैकअप कैंसिल कर दिया गया। कोई लोकेशन नहीं चुनी गई।</string>
+    <string name="restore_cancelled_msg">रिस्टोर कैंसिल कर दिया गया। कोई बैकअप फाइल नहीं चुनी गई।</string>
+    <string name="backup_write_failed_msg">बैकअप फेल हो गया क्योंकि फाइल स्टोरेज में सेव नहीं हो पाई।</string>
+    <string name="backup_storage_full_msg">बैकअप फेल हो गया क्योंकि फोन में पर्याप्त जगह नहीं है।</string>
+    <string name="restore_read_failed_msg">रिस्टोर फेल हो गया क्योंकि बैकअप फाइल पढ़ी नहीं जा सकी।</string>
+    <string name="restore_corrupt_msg">रिस्टोर फेल हो गया क्योंकि बैकअप फाइल खराब या अधूरी है।</string>
+    <string name="restore_invalid_format_msg">रिस्टोर फेल हो गया क्योंकि यह फाइल मान्य वर्कडेली बैकअप नहीं है।</string>
+    <string name="restore_unsupported_version_msg">रिस्टोर फेल हो गया क्योंकि यह बैकअप नए ऐप वर्ज़न का है। कृपया वर्कडेली ऐप अपडेट करें।</string>
+    <string name="restore_missing_data_msg">रिस्टोर फेल हो गया क्योंकि बैकअप में जरूरी डेटा या प्रोफाइल गायब है।</string>
+    <string name="restore_invalid_data_msg">रिस्टोर फेल हो गया क्योंकि बैकअप डेटा में खराबी या अमान्य रिकॉर्ड्स हैं।</string>
+    <string name="restore_storage_insufficient_msg">रिस्टोर फेल हो गया क्योंकि आपके फोन में पर्याप्त स्टोरेज स्पेस नहीं है।</string>
+    <string name="restore_checksum_mismatch_msg">रिस्टोर फेल हो गया क्योंकि फाइल की सत्यता (SHA-256) मैच नहीं हुई।</string>
+    <string name="restore_db_swap_failed_msg">रिस्टोर फेल हो गया क्योंकि डेटाबेस फाइल सेफ तरीके से बदली नहीं जा सकी।</string>
 </resources>
