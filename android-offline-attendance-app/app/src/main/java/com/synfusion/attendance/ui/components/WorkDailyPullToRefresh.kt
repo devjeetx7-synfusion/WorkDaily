@@ -29,6 +29,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -98,10 +99,12 @@ fun WorkDailyPullToRefreshBox(
         }
     }
 
-    val nestedScrollConnection = remember(enabled, isRefreshing) {
+    val updatedIsRefreshing by rememberUpdatedState(isRefreshing)
+
+    val nestedScrollConnection = remember(enabled) {
         object : NestedScrollConnection {
             override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                if (!enabled || isRefreshing) return Offset.Zero
+                if (!enabled || updatedIsRefreshing) return Offset.Zero
 
                 // If user scrolls up while pullOffsetPx > 0, consume scroll to decrease offset
                 if (pullOffsetPx > 0f && available.y < 0f) {
@@ -117,7 +120,7 @@ fun WorkDailyPullToRefreshBox(
                 available: Offset,
                 source: NestedScrollSource
             ): Offset {
-                if (!enabled || isRefreshing) return Offset.Zero
+                if (!enabled || updatedIsRefreshing) return Offset.Zero
 
                 // If user pulls down and scrollable content cannot scroll further up (available.y > 0)
                 if (available.y > 0f) {
@@ -129,7 +132,7 @@ fun WorkDailyPullToRefreshBox(
             }
 
             override suspend fun onPreFling(available: Velocity): Velocity {
-                if (!enabled || isRefreshing) return Velocity.Zero
+                if (!enabled || updatedIsRefreshing) return Velocity.Zero
 
                 if (pullOffsetPx >= thresholdPx) {
                     onRefresh()
