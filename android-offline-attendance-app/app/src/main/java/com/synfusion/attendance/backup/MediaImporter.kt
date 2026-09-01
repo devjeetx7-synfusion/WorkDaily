@@ -12,7 +12,7 @@ object MediaImporter {
             return 0
         }
 
-        val subDirs = listOf("profile", "attachments", "reports")
+        val subDirs = listOf("profile", "profile_photos", "attachments", "reports")
         subDirs.forEach { dirName ->
             val srcSubDir = File(backupMediaDir, dirName)
             if (srcSubDir.exists() && srcSubDir.isDirectory) {

@@ -563,4 +563,21 @@
     <string name="restore_failed_msg">Restore verification or execution failed.</string>
     <string name="internal_file_error">Internal file resolution error.</string>
     <string name="unable_to_open_settings">Unable to open settings</string>
+
+    <!-- Backup & Restore Specific Error & Dialog Strings -->
+    <string name="backup_name_label">Backup File Name</string>
+    <string name="create_backup_action">Create Backup</string>
+    <string name="backup_cancelled_msg">Backup cancelled. No storage location was selected.</string>
+    <string name="restore_cancelled_msg">Restore cancelled. No backup file was selected.</string>
+    <string name="backup_write_failed_msg">Backup failed because the file could not be written to storage.</string>
+    <string name="backup_storage_full_msg">Backup failed due to insufficient storage space on your device.</string>
+    <string name="restore_read_failed_msg">Restore failed because the backup file could not be read.</string>
+    <string name="restore_corrupt_msg">Restore failed because the backup file appears to be corrupted or incomplete.</string>
+    <string name="restore_invalid_format_msg">Restore failed because this file is not a valid WorkDaily backup package.</string>
+    <string name="restore_unsupported_version_msg">Restore failed because this backup was created with a newer app version. Please update WorkDaily.</string>
+    <string name="restore_missing_data_msg">Restore failed because required database or profile records are missing in the backup.</string>
+    <string name="restore_invalid_data_msg">Restore failed because the backup contains invalid data structure or corrupted records.</string>
+    <string name="restore_storage_insufficient_msg">Restore failed because there is not enough free storage space on your device.</string>
+    <string name="restore_checksum_mismatch_msg">Restore failed because file integrity validation failed (SHA-256 checksum mismatch).</string>
+    <string name="restore_db_swap_failed_msg">Restore failed because database file replacement could not be completed safely.</string>
 </resources>

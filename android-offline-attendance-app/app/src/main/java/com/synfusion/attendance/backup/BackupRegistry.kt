@@ -98,7 +98,9 @@ class PreferencesBackupModule : BackupModule {
         val prefs = context.offlineDataStore.data.first()
         val map = mutableMapOf<String, Any>()
         prefs.asMap().forEach { (key, value) ->
-            map[key.name] = value
+            if (key.name != "auth_token") {
+                map[key.name] = value
+            }
         }
         return map
     }
@@ -106,9 +108,32 @@ class PreferencesBackupModule : BackupModule {
     private suspend fun applyDataStorePreferences(context: Context, dsMap: Map<String, Any>) {
         context.offlineDataStore.edit { preferences ->
             dsMap.forEach { (key, value) ->
-                when (value) {
-                    is Boolean -> preferences[androidx.datastore.preferences.core.booleanPreferencesKey(key)] = value
-                    is String -> preferences[androidx.datastore.preferences.core.stringPreferencesKey(key)] = value
+                if (key == "auth_token") return@forEach
+                when (key) {
+                    "last_backup_time" -> {
+                        val num = (value as? Number)?.toLong() ?: return@forEach
+                        preferences[androidx.datastore.preferences.core.longPreferencesKey(key)] = num
+                    }
+                    "last_backup_size" -> {
+                        val num = (value as? Number)?.toLong() ?: return@forEach
+                        preferences[androidx.datastore.preferences.core.longPreferencesKey(key)] = num
+                    }
+                    "dark_mode", "reminders_enabled", "onboarding_completed", "splash_enabled", "remember_last_screen" -> {
+                        val bool = value as? Boolean ?: return@forEach
+                        preferences[androidx.datastore.preferences.core.booleanPreferencesKey(key)] = bool
+                    }
+                    "user_role", "app_language", "profile_photo_path", "last_backup_loc",
+                    "nav_left_1", "nav_left_2", "nav_right", "startup_screen", "last_active_screen" -> {
+                        val str = value.toString()
+                        preferences[androidx.datastore.preferences.core.stringPreferencesKey(key)] = str
+                    }
+                    else -> {
+                        when (value) {
+                            is Boolean -> preferences[androidx.datastore.preferences.core.booleanPreferencesKey(key)] = value
+                            is String -> preferences[androidx.datastore.preferences.core.stringPreferencesKey(key)] = value
+                            is Number -> preferences[androidx.datastore.preferences.core.longPreferencesKey(key)] = value.toLong()
+                        }
+                    }
                 }
             }
         }

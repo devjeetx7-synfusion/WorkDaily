@@ -10,7 +10,7 @@ object MediaExporter {
         destDir.mkdirs()
         var copiedFilesCount = 0
 
-        val mediaDirs = listOf("profile", "attachments", "reports")
+        val mediaDirs = listOf("profile", "profile_photos", "attachments", "reports")
         mediaDirs.forEach { dirName ->
             val targetFolder = File(destDir, dirName)
             // Look for any media files on target path.

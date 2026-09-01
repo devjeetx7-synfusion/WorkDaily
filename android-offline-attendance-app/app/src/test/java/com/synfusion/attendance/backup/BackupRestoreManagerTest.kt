@@ -434,4 +434,15 @@ class BackupRestoreManagerTest {
         assertNotNull(commonAtt)
         assertEquals("present", commonAtt?.status) // Preserved backup overwrites
     }
+
+    @Test
+    fun testSanitizeBackupFileName() {
+        assertEquals("My_Backup.zip", com.synfusion.attendance.ui.components.sanitizeBackupFileName("My_Backup"))
+        assertEquals("हाजिरी_बैकअप.zip", com.synfusion.attendance.ui.components.sanitizeBackupFileName("हाजिरी_बैकअप"))
+        assertEquals("WorkDaily_Backup_2026.zip", com.synfusion.attendance.ui.components.sanitizeBackupFileName("WorkDaily/Backup:2026"))
+        assertEquals("my_file.zip", com.synfusion.attendance.ui.components.sanitizeBackupFileName("my_file.zip.zip"))
+        assertEquals("my_file.zip", com.synfusion.attendance.ui.components.sanitizeBackupFileName("my_file.backup"))
+        assertTrue(com.synfusion.attendance.ui.components.sanitizeBackupFileName("  ").startsWith("WorkDaily_Backup_"))
+        assertTrue(com.synfusion.attendance.ui.components.sanitizeBackupFileName("  ").endsWith(".zip"))
+    }
 }
