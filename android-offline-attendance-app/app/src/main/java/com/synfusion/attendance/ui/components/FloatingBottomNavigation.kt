@@ -390,32 +390,39 @@ private fun FloatingNavItemButton(
                     }
                 }
 
-                do {
-                    val event = awaitPointerEvent(PointerEventPass.Main)
-                    val change = event.changes.firstOrNull { it.id == down.id } ?: event.changes.firstOrNull()
-                    if (change == null) {
-                        pointerUp = true
-                    } else {
-                        if (change.isConsumed) {
-                            isCancelled = true
+                try {
+                    do {
+                        val event = awaitPointerEvent(PointerEventPass.Main)
+                        val change = event.changes.firstOrNull { it.id == down.id } ?: event.changes.firstOrNull()
+                        if (change == null) {
                             pointerUp = true
-                        } else if (isLongPressTriggered) {
-                            change.consume()
-                            val fingerWindowPos = itemBounds.topLeft + change.position
-                            onDrag(fingerWindowPos)
-                        }
+                        } else {
+                            if (change.isConsumed) {
+                                isCancelled = true
+                                pointerUp = true
+                            } else if (isLongPressTriggered) {
+                                change.consume()
+                                val fingerWindowPos = itemBounds.topLeft + change.position
+                                onDrag(fingerWindowPos)
+                            }
 
-                        if (!change.pressed) {
-                            pointerUp = true
+                            if (!change.pressed) {
+                                pointerUp = true
+                            }
                         }
+                    } while (!pointerUp)
+
+                    if (isLongPressTriggered) {
+                        onRelease()
+                    } else if (!isCancelled) {
+                        onNavigate(item.route)
                     }
-                } while (!pointerUp)
-
-                longPressJob.cancel()
-                if (isLongPressTriggered) {
-                    onRelease()
-                } else if (!isCancelled) {
-                    onNavigate(item.route)
+                } catch (e: kotlinx.coroutines.CancellationException) {
+                    isCancelled = true
+                    pointerUp = true
+                    throw e
+                } finally {
+                    longPressJob.cancel()
                 }
             }
         }
