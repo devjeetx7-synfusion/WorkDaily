@@ -42,6 +42,8 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.Velocity
@@ -66,6 +68,7 @@ fun WorkDailyPullToRefreshBox(
     content: @Composable BoxScope.() -> Unit
 ) {
     val density = LocalDensity.current
+    val haptic = LocalHapticFeedback.current
     val scope = rememberCoroutineScope()
 
     val thresholdPx = with(density) { refreshThreshold.toPx() }
@@ -74,6 +77,7 @@ fun WorkDailyPullToRefreshBox(
 
     var pullOffsetPx by remember { mutableFloatStateOf(0f) }
     val animatedIndicatorOffset = remember { Animatable(0f) }
+    var hasCrossedThreshold by remember { androidx.compose.runtime.mutableStateOf(false) }
 
     // Synchronize animatedIndicatorOffset with pullOffsetPx when dragging
     LaunchedEffect(pullOffsetPx) {
@@ -87,15 +91,16 @@ fun WorkDailyPullToRefreshBox(
         if (isRefreshing) {
             animatedIndicatorOffset.animateTo(
                 targetValue = refreshingOffsetPx,
-                animationSpec = spring(stiffness = 300f, dampingRatio = 0.75f)
+                animationSpec = spring(stiffness = 300f, dampingRatio = 0.55f)
             )
         } else {
             // Smoothly animate out and reset offset completely
             animatedIndicatorOffset.animateTo(
                 targetValue = 0f,
-                animationSpec = tween(durationMillis = 300)
+                animationSpec = spring(stiffness = 300f, dampingRatio = 0.7f)
             )
             pullOffsetPx = 0f
+            hasCrossedThreshold = false
         }
     }
 
@@ -124,8 +129,21 @@ fun WorkDailyPullToRefreshBox(
 
                 // If user pulls down and scrollable content cannot scroll further up (available.y > 0)
                 if (available.y > 0f) {
-                    val newOffset = pullOffsetPx + available.y * 0.45f // Damping factor
+                    // Non-linear resistance curve: damping gets stronger as you pull more
+                    val progress = (pullOffsetPx / maxPullPx).coerceIn(0f, 1f)
+                    // High responsive initially (0.5), drops to very stiff (0.05) near max
+                    val dynamicDamping = 0.5f - (0.45f * progress)
+
+                    val newOffset = pullOffsetPx + available.y * dynamicDamping
                     pullOffsetPx = newOffset.coerceIn(0f, maxPullPx)
+
+                    if (pullOffsetPx >= thresholdPx && !hasCrossedThreshold) {
+                        hasCrossedThreshold = true
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                    } else if (pullOffsetPx < thresholdPx && hasCrossedThreshold) {
+                        hasCrossedThreshold = false
+                    }
+
                     return Offset(0f, available.y)
                 }
                 return Offset.Zero
@@ -138,8 +156,12 @@ fun WorkDailyPullToRefreshBox(
                     onRefresh()
                 } else if (pullOffsetPx > 0f) {
                     scope.launch {
-                        animatedIndicatorOffset.animateTo(0f, tween(200))
+                        animatedIndicatorOffset.animateTo(
+                            0f,
+                            spring(stiffness = 300f, dampingRatio = 0.7f)
+                        )
                         pullOffsetPx = 0f
+                        hasCrossedThreshold = false
                     }
                 }
                 return Velocity.Zero
@@ -158,10 +180,16 @@ fun WorkDailyPullToRefreshBox(
             .fillMaxSize()
             .nestedScroll(nestedScrollConnection)
     ) {
-        content()
+        val currentOffsetPx = animatedIndicatorOffset.value
+
+        // Elastic Translation: Move content down with the drag
+        Box(modifier = Modifier.graphicsLayer {
+            translationY = currentOffsetPx
+        }) {
+            content()
+        }
 
         // Render WorkDaily Custom Refresh Indicator at top center
-        val currentOffsetPx = animatedIndicatorOffset.value
         val isVisible = currentOffsetPx > 0.5f || isRefreshing
 
         if (isVisible) {
@@ -182,8 +210,11 @@ fun WorkDailyPullToRefreshBox(
                 pullProgress = pullProgress,
                 modifier = Modifier
                     .align(Alignment.TopCenter)
+                    // Start hidden above the screen
+                    .offset(y = (-56).dp)
                     .graphicsLayer {
-                        translationY = currentOffsetPx
+                        // Parallax effect: moves faster than content
+                        translationY = currentOffsetPx * 1.3f
                         this.alpha = alpha
                         scaleX = indicatorScale
                         scaleY = indicatorScale
@@ -230,7 +261,7 @@ fun WorkDailyRefreshIndicator(
             .scale(currentPulse),
         shape = CircleShape,
         color = MaterialTheme.colorScheme.surface,
-        shadowElevation = 6.dp,
+        shadowElevation = 3.dp,
         border = BorderStroke(
             width = 1.dp,
             color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
@@ -238,15 +269,15 @@ fun WorkDailyRefreshIndicator(
     ) {
         Box(
             modifier = Modifier
-                .padding(10.dp)
-                .size(36.dp),
+                .padding(8.dp)
+                .size(34.dp),
             contentAlignment = Alignment.Center
         ) {
             if (isRefreshing) {
                 CircularProgressIndicator(
                     modifier = Modifier.fillMaxSize(),
                     color = MintPrimary,
-                    strokeWidth = 3.dp,
+                    strokeWidth = 2.5.dp,
                     trackColor = MintPrimary.copy(alpha = 0.15f)
                 )
             } else {
@@ -254,7 +285,7 @@ fun WorkDailyRefreshIndicator(
                     progress = { pullProgress },
                     modifier = Modifier.fillMaxSize(),
                     color = MintPrimary,
-                    strokeWidth = 3.dp,
+                    strokeWidth = 2.5.dp,
                     trackColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f)
                 )
             }
