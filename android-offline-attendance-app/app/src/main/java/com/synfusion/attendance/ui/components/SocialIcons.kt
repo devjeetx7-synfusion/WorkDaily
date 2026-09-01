@@ -146,3 +146,46 @@ val WhatsAppIcon: ImageVector
             close()
         }
     }.build()
+
+val WavingHandIcon: ImageVector
+    get() = ImageVector.Builder(
+        name = "WavingHand",
+        defaultWidth = 24.dp,
+        defaultHeight = 24.dp,
+        viewportWidth = 24f,
+        viewportHeight = 24f
+    ).apply {
+        path(
+            fill = SolidColor(Color.Black),
+            fillAlpha = 1.0f,
+            stroke = null,
+            strokeAlpha = 1.0f,
+            strokeLineWidth = 1.0f,
+            strokeLineCap = StrokeCap.Butt,
+            strokeLineJoin = StrokeJoin.Miter,
+            strokeLineMiter = 1.0f,
+            pathFillType = PathFillType.NonZero
+        ) {
+            moveTo(23.6f, 13.51f)
+            curveTo(22.84f, 16.4f, 20.35f, 18.67f, 17.38f, 19.34f)
+            curveTo(16.59f, 19.52f, 15.78f, 19.5f, 15.0f, 19.5f)
+            horizontalLineTo(10.5f)
+            curveTo(6.36f, 19.5f, 3.0f, 16.14f, 3.0f, 12.0f)
+            curveTo(3.0f, 11.5f, 3.04f, 11.0f, 3.12f, 10.5f)
+            curveTo(3.52f, 8.0f, 5.75f, 6.0f, 8.44f, 6.0f)
+            curveTo(8.75f, 6.0f, 9.05f, 6.03f, 9.35f, 6.09f)
+            lineTo(10.22f, 6.27f)
+            curveTo(10.82f, 6.4f, 11.5f, 6.13f, 11.83f, 5.61f)
+            lineTo(13.68f, 2.76f)
+            curveTo(14.07f, 2.16f, 14.8f, 1.9f, 15.48f, 2.11f)
+            curveTo(16.32f, 2.37f, 16.85f, 3.23f, 16.71f, 4.12f)
+            lineTo(16.45f, 5.75f)
+            curveTo(16.29f, 6.74f, 16.96f, 7.68f, 17.97f, 7.82f)
+            curveTo(18.96f, 7.96f, 19.86f, 7.23f, 19.98f, 6.23f)
+            lineTo(20.36f, 3.16f)
+            curveTo(20.48f, 2.16f, 21.43f, 1.48f, 22.41f, 1.63f)
+            curveTo(23.39f, 1.77f, 24.12f, 2.68f, 24.0f, 3.68f)
+            lineTo(23.6f, 13.51f)
+            close()
+        }
+    }.build()

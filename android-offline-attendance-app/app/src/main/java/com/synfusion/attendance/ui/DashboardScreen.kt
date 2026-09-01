@@ -36,6 +36,7 @@ import com.synfusion.attendance.utils.OvertimeCalculator
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.material3.ExperimentalMaterial3Api
 import com.synfusion.attendance.ui.components.WorkDailyPullToRefreshBox
+import com.synfusion.attendance.ui.components.WavingHandIcon
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.rememberScrollState
@@ -665,10 +666,17 @@ fun HeaderSection(state: OfflineDashboardState) {
                         color = MaterialTheme.colorScheme.onBackground
                     )
                     Text(
-                        text = "$firstName 👋",
+                        text = firstName,
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Icon(
+                        imageVector = WavingHandIcon,
+                        contentDescription = "Greeting",
+                        tint = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier.size(20.dp)
                     )
                 }
                 Text(
