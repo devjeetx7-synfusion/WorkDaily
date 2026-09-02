@@ -51,11 +51,14 @@ enum class WorkDailyNavItem(
     HOME("dashboard", "Home", Icons.Default.Home),
     CALENDAR("calendar", "Calendar", Icons.Default.CalendarMonth),
     STATISTICS("stats", "Statistics", Icons.Default.BarChart),
-    PASSBOOK("passbook", "Passbook", Icons.Default.Description),
+    PASSBOOK("all_time_passbook", "Passbook", Icons.Default.Description),
     SETTINGS("settings", "Settings", Icons.Default.Settings);
 
     companion object {
         fun fromRoute(route: String): WorkDailyNavItem {
+            if (route == "passbook" || route == "all_time_passbook") {
+                return PASSBOOK
+            }
             return values().firstOrNull { it.route == route } ?: HOME
         }
     }
@@ -65,7 +68,7 @@ enum class WorkDailyNavItem(
 fun FloatingBottomNavigation(
     currentRoute: String,
     leftRoute1: String = "dashboard",
-    leftRoute2: String = "passbook",
+    leftRoute2: String = "all_time_passbook",
     rightRoute: String = "settings",
     onNavigate: (String) -> Unit
 ) {

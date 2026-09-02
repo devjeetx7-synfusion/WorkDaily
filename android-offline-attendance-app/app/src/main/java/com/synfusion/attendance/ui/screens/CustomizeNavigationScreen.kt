@@ -71,7 +71,7 @@ fun NavigationCustomizationContent(
             "dashboard" to "Home",
             "calendar" to "Calendar",
             "stats" to "Statistics",
-            "passbook" to "Passbook"
+            "all_time_passbook" to "Passbook"
         )
     }
 
@@ -80,7 +80,7 @@ fun NavigationCustomizationContent(
             "dashboard" to "Home",
             "calendar" to "Calendar",
             "stats" to "Statistics",
-            "passbook" to "Passbook",
+            "all_time_passbook" to "Passbook",
             "settings" to "Settings"
         )
     }

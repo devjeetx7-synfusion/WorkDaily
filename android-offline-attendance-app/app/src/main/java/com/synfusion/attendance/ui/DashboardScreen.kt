@@ -107,7 +107,9 @@ fun DashboardScreen(
     val windowSizeInfo = LocalWindowSizeInfo.current
     val isCompactPortrait = windowSizeInfo.isCompact && !windowSizeInfo.isLandscape
 
-    val currentNavRoute = if (currentRoute == "passbook") {
+    val currentNavRoute = if (currentRoute == "all_time_passbook") {
+        "all_time_passbook"
+    } else if (currentRoute == "passbook") {
         "passbook"
     } else {
         when (selectedTab) {
@@ -194,8 +196,22 @@ fun DashboardScreen(
                 selectedTab = 3
             }
             "passbook" -> {
-                if (currentRoute != "passbook") {
-                    bottomNavController.navigate("passbook") {
+                if (currentRoute != "all_time_passbook") {
+                    if (currentRoute != "main_pager") {
+                        bottomNavController.popBackStack("main_pager", false)
+                    }
+                    bottomNavController.navigate("all_time_passbook") {
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                }
+            }
+            "all_time_passbook" -> {
+                if (currentRoute != "all_time_passbook") {
+                    if (currentRoute != "main_pager") {
+                        bottomNavController.popBackStack("main_pager", false)
+                    }
+                    bottomNavController.navigate("all_time_passbook") {
                         launchSingleTop = true
                         restoreState = true
                     }
