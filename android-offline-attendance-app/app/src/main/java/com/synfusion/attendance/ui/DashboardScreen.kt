@@ -329,7 +329,10 @@ fun DashboardScreen(
                                                         verticalArrangement = Arrangement.spacedBy(16.dp)
                                                     ) {
                                                         item {
-                                                            HeaderSection(state = dashboardState)
+                                                            HeaderSection(
+                                                                state = dashboardState,
+                                                                onProfileClick = { bottomNavController.navigate("profile") }
+                                                            )
                                                         }
                                                         item {
                                                             PersonalStatsGrid(
@@ -437,6 +440,12 @@ fun DashboardScreen(
                 val allTimeViewModel: com.synfusion.attendance.viewmodel.OfflineAllTimePassbookViewModel = viewModel(factory = factory)
                 AllTimePassbookScreen(
                     viewModel = allTimeViewModel,
+                    onNavigateBack = { bottomNavController.navigateUp() }
+                )
+            }
+            composable("profile") {
+                ProfileScreen(
+                    viewModel = settingsViewModel,
                     onNavigateBack = { bottomNavController.navigateUp() }
                 )
             }
@@ -627,7 +636,7 @@ fun DashboardShimmer() {
 }
 
 @Composable
-fun HeaderSection(state: OfflineDashboardState) {
+fun HeaderSection(state: OfflineDashboardState, onProfileClick: () -> Unit = {}) {
     val context = LocalContext.current
     val todayFullDate = remember {
         SimpleDateFormat("EEEE, dd MMMM yyyy", Locale.getDefault()).format(Date())
@@ -660,7 +669,13 @@ fun HeaderSection(state: OfflineDashboardState) {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .weight(1f)
+                .clip(RoundedCornerShape(12.dp))
+                .clickable { onProfileClick() }
+        ) {
             Box(
                 modifier = Modifier
                     .size(48.dp)

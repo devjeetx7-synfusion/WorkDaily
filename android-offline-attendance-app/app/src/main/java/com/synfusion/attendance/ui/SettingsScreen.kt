@@ -267,7 +267,7 @@ fun SettingsScreen(
                         }
                     }
 
-                    ProfileCardSection(state = state, viewModel = viewModel, hasChanges = hasChanges, onEditPhoto = { showProfileEditSheet = true })
+                    ProfileCardSection(state = state, viewModel = viewModel, hasChanges = hasChanges, onEditPhoto = { onNavigate("profile") })
                     StayConnectedCardSection(context = context)
                     AppPreferencesCardSection(state = state, viewModel = viewModel, supportedLanguages = supportedLanguages, context = context, onNavigate = onNavigate)
                     NotificationSettingsCardSection(
@@ -411,7 +411,7 @@ fun SettingsScreen(
 
                             when (selectedCategory) {
                                 SettingsCategory.PROFILE -> {
-                                    ProfileCardSection(state = state, viewModel = viewModel, hasChanges = hasChanges, onEditPhoto = { showProfileEditSheet = true })
+                                    ProfileCardSection(state = state, viewModel = viewModel, hasChanges = hasChanges, onEditPhoto = { onNavigate("profile") })
                                 }
                                 SettingsCategory.STAY_CONNECTED -> {
                                     StayConnectedCardSection(context = context)
@@ -634,7 +634,9 @@ fun ProfileCardSection(
 ) {
     val context = LocalContext.current
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onEditPhoto() },
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
