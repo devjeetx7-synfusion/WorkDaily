@@ -380,7 +380,7 @@ private fun FloatingNavItemButton(
         }
         .pointerInput(item.route) {
             awaitEachGesture {
-                val down = awaitFirstDown(requireUnconsumed = false)
+                val down = awaitFirstDown(pass = PointerEventPass.Initial, requireUnconsumed = false)
                 down.consume()
                 var isLongPressTriggered = false
                 var pointerUp = false
@@ -397,13 +397,13 @@ private fun FloatingNavItemButton(
 
                 try {
                     do {
-                        val event = awaitPointerEvent(PointerEventPass.Main)
+                        val event = awaitPointerEvent(PointerEventPass.Initial)
                         val change = event.changes.firstOrNull { it.id == down.id } ?: event.changes.firstOrNull()
                         if (change == null) {
                             pointerUp = true
                         } else {
+                            change.consume()
                             if (isLongPressTriggered) {
-                                change.consume()
                                 val fingerWindowPos = itemBounds.topLeft + change.position
                                 onDrag(fingerWindowPos)
                             }
