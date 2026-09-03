@@ -68,7 +68,7 @@ enum class WorkDailyNavItem(
 fun FloatingBottomNavigation(
     currentRoute: String,
     leftRoute1: String = "dashboard",
-    leftRoute2: String = "all_time_passbook",
+    leftRoute2: String = "calendar",
     rightRoute: String = "settings",
     onNavigate: (String) -> Unit
 ) {
@@ -94,13 +94,12 @@ fun FloatingBottomNavigation(
     val haptic = LocalHapticFeedback.current
     val density = LocalDensity.current
 
-    // Selector options to display on Home long press (Home, Calendar, Statistics, Passbook)
+    // Selector options to display on Home long press (Home, Calendar, Statistics)
     val selectorItems = remember {
         listOf(
             WorkDailyNavItem.HOME,
             WorkDailyNavItem.CALENDAR,
-            WorkDailyNavItem.STATISTICS,
-            WorkDailyNavItem.PASSBOOK
+            WorkDailyNavItem.STATISTICS
         )
     }
 
@@ -206,12 +205,11 @@ fun FloatingBottomNavigation(
                             label = "optionElevation"
                         )
 
-                        // Shallow arc curve Y offset (outer items slightly higher, inner items slightly lower)
+                        // Shallow arc curve Y offset (outer items slightly higher, inner item centered)
                         val arcYOffset = when (index) {
                             0 -> (-6).dp
                             1 -> 2.dp
-                            2 -> 2.dp
-                            3 -> (-6).dp
+                            2 -> (-6).dp
                             else -> 0.dp
                         }
 

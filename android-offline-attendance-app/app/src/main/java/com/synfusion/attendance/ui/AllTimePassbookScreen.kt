@@ -1,8 +1,16 @@
 package com.synfusion.attendance.ui
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -102,68 +110,82 @@ fun AllTimePassbookScreen(
     Scaffold(
         contentWindowInsets = WindowInsets(0.dp),
         topBar = {
-            if (isSearchActive) {
-                TopAppBar(
-                    title = {
-                        OutlinedTextField(
-                            value = state.searchQuery,
-                            onValueChange = { viewModel.updateSearchQuery(it) },
-                            placeholder = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.search_records), fontSize = 14.sp) },
-                            singleLine = true,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(50.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                            ),
-                            trailingIcon = {
-                                if (state.searchQuery.isNotEmpty()) {
-                                    IconButton(onClick = { viewModel.updateSearchQuery("") }) {
-                                        Icon(Icons.Default.Close, contentDescription = "Clear search", modifier = Modifier.size(20.dp))
+            AnimatedContent(
+                targetState = isSearchActive,
+                transitionSpec = {
+                    if (targetState) {
+                        (slideInHorizontally(animationSpec = tween(280), initialOffsetX = { it / 3 }) + fadeIn(animationSpec = tween(280)) + scaleIn(animationSpec = tween(280), initialScale = 0.95f))
+                            .togetherWith(slideOutHorizontally(animationSpec = tween(220), targetOffsetX = { -it / 3 }) + fadeOut(animationSpec = tween(220)))
+                    } else {
+                        (slideInHorizontally(animationSpec = tween(280), initialOffsetX = { -it / 3 }) + fadeIn(animationSpec = tween(280)))
+                            .togetherWith(slideOutHorizontally(animationSpec = tween(220), targetOffsetX = { it / 3 }) + fadeOut(animationSpec = tween(220)) + scaleOut(animationSpec = tween(220), targetScale = 0.95f))
+                    }
+                },
+                label = "topAppBarSearchTransition"
+            ) { searchActive ->
+                if (searchActive) {
+                    TopAppBar(
+                        title = {
+                            OutlinedTextField(
+                                value = state.searchQuery,
+                                onValueChange = { viewModel.updateSearchQuery(it) },
+                                placeholder = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.search_records), fontSize = 14.sp) },
+                                singleLine = true,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(50.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                                ),
+                                trailingIcon = {
+                                    if (state.searchQuery.isNotEmpty()) {
+                                        IconButton(onClick = { viewModel.updateSearchQuery("") }) {
+                                            Icon(Icons.Default.Close, contentDescription = "Clear search", modifier = Modifier.size(20.dp))
+                                        }
                                     }
                                 }
+                            )
+                        },
+                        navigationIcon = {
+                            IconButton(onClick = {
+                                isSearchActive = false
+                                viewModel.updateSearchQuery("")
+                            }) {
+                                Icon(Icons.Default.ArrowBack, contentDescription = "Close search")
                             }
+                        },
+                        windowInsets = WindowInsets(0.dp),
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            containerColor = MaterialTheme.colorScheme.background
                         )
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = {
-                            isSearchActive = false
-                            viewModel.updateSearchQuery("")
-                        }) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = "Close search")
-                        }
-                    },
-                    windowInsets = WindowInsets(0.dp),
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.background
                     )
-                )
-            } else {
-                TopAppBar(
-                    title = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.all_time_passbook_title), fontWeight = FontWeight.Bold) },
-                    navigationIcon = {
-                        IconButton(onClick = onNavigateBack) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                        }
-                    },
-                    actions = {
-                        IconButton(onClick = { isSearchActive = true }) {
-                            Icon(Icons.Default.Search, contentDescription = "Search")
-                        }
-                        IconButton(
-                            onClick = { exportAllTimePDF() },
-                            enabled = !isExporting
-                        ) {
-                            Icon(Icons.Default.PictureAsPdf, contentDescription = "Export All Time PDF")
-                        }
-                    },
-                    windowInsets = WindowInsets(0.dp),
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.background
+                } else {
+                    TopAppBar(
+                        title = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.all_time_passbook_title), fontWeight = FontWeight.Bold) },
+                        navigationIcon = {
+                            IconButton(onClick = onNavigateBack) {
+                                Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                            }
+                        },
+                        actions = {
+                            IconButton(onClick = { isSearchActive = true }) {
+                                Icon(Icons.Default.Search, contentDescription = "Search")
+                            }
+                            IconButton(
+                                onClick = { exportAllTimePDF() },
+                                enabled = !isExporting
+                            ) {
+                                Icon(Icons.Default.PictureAsPdf, contentDescription = "Export All Time PDF")
+                            }
+                        },
+                        windowInsets = WindowInsets(0.dp),
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            containerColor = MaterialTheme.colorScheme.background
+                        )
                     )
-                )
+                }
             }
         }
     ) { padding ->

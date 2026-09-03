@@ -82,7 +82,7 @@ class OfflinePreferencesRepository(val context: Context) {
     }
 
     val navLeft2Flow: Flow<String> = context.offlineDataStore.data.map { preferences ->
-        preferences[NAV_LEFT_2_KEY] ?: "all_time_passbook"
+        preferences[NAV_LEFT_2_KEY] ?: "calendar"
     }
 
     val navRightFlow: Flow<String> = context.offlineDataStore.data.map { preferences ->

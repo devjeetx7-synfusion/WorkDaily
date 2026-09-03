@@ -42,7 +42,7 @@ data class OfflineSettingsState(
     val lastBackupSize: Long? = null,
     val lastBackupLoc: String? = null,
     val navLeft1: String = "dashboard",
-    val navLeft2: String = "all_time_passbook",
+    val navLeft2: String = "calendar",
     val navRight: String = "settings",
     val startupScreen: String = "dashboard",
     val rememberLastScreen: Boolean = false,
