@@ -31,9 +31,13 @@ import com.synfusion.attendance.data.FestivalCategory
 import com.synfusion.attendance.data.FestivalEvent
 import com.synfusion.attendance.data.FestivalPreviewManager
 import com.synfusion.attendance.data.FestivalRepository
+import com.synfusion.attendance.ui.components.FestivalHeroEnvironment
 import com.synfusion.attendance.ui.responsive.LocalWindowSizeInfo
 import com.synfusion.attendance.ui.responsive.ResponsiveContainer
 import com.synfusion.attendance.utils.collectAsStateWithLifecycle
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,6 +47,11 @@ fun FestivalPreviewScreen(
     val context = LocalContext.current
     val activePreviewEvent by FestivalPreviewManager.activePreviewEvent.collectAsStateWithLifecycle(initialValue = null)
     val specialFestivals = remember { FestivalRepository.getSpecialHomeEventsForPreview() }
+
+    val todayCal = remember { Calendar.getInstance() }
+    val todayFullDate = remember {
+        SimpleDateFormat("EEEE, dd MMMM yyyy", Locale.getDefault()).format(todayCal.time)
+    }
 
     Scaffold(
         topBar = {
@@ -138,69 +147,34 @@ fun FestivalPreviewScreen(
                     }
                 }
 
-                // Active Preview Status Indicator Banner
+                // Active Preview Status Indicator & Live Shared Hero Renderer Preview
                 if (activePreviewEvent != null) {
                     item {
                         val activeEvent = activePreviewEvent!!
                         val activePrimaryColor = remember(activeEvent.primaryColorHex) { Color(activeEvent.primaryColorHex) }
-                        val activeAccentColor = remember(activeEvent.accentColorHex) { Color(activeEvent.accentColorHex) }
 
-                        Surface(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(20.dp))
-                                .border(
-                                    1.5.dp,
-                                    Brush.horizontalGradient(listOf(activePrimaryColor, activeAccentColor)),
-                                    RoundedCornerShape(20.dp)
-                                ),
-                            shape = RoundedCornerShape(20.dp),
-                            color = activePrimaryColor.copy(alpha = 0.12f)
-                        ) {
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                    modifier = Modifier.weight(1f)
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(44.dp)
-                                            .clip(CircleShape)
-                                            .background(activePrimaryColor.copy(alpha = 0.25f)),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(text = activeEvent.emoji, fontSize = 22.sp)
-                                    }
-
-                                    Column {
-                                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                            Icon(
-                                                imageVector = Icons.Default.AutoAwesome,
-                                                contentDescription = null,
-                                                tint = activePrimaryColor,
-                                                modifier = Modifier.size(16.dp)
-                                            )
-                                            Text(
-                                                text = "Festival Preview Active",
-                                                fontSize = 12.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = activePrimaryColor
-                                            )
-                                        }
-                                        Text(
-                                            text = activeEvent.name,
-                                            fontSize = 16.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.onSurface
-                                        )
-                                    }
+                                    Icon(
+                                        imageVector = Icons.Default.AutoAwesome,
+                                        contentDescription = null,
+                                        tint = activePrimaryColor,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Text(
+                                        text = "Live Home Hero Preview",
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = activePrimaryColor
+                                    )
                                 }
 
                                 Button(
@@ -213,11 +187,18 @@ fun FestivalPreviewScreen(
                                         contentColor = Color.White
                                     ),
                                     shape = RoundedCornerShape(12.dp),
-                                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
                                 ) {
                                     Text(text = "Exit Preview", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                                 }
                             }
+
+                            // Shared FestivalHeroEnvironment Renderer
+                            FestivalHeroEnvironment(
+                                event = activeEvent,
+                                displayName = "User",
+                                formattedDate = todayFullDate
+                            )
                         }
                     }
                 }
