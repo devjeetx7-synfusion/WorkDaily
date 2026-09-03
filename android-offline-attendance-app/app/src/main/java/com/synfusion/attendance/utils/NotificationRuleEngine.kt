@@ -2,6 +2,8 @@ package com.synfusion.attendance.utils
 
 import android.content.Context
 import android.util.Log
+import com.synfusion.attendance.data.FestivalCategory
+import com.synfusion.attendance.data.FestivalRepository
 import com.synfusion.attendance.data.LocalAttendanceRepository
 import com.synfusion.attendance.data.entities.AttendanceEntity
 import com.synfusion.attendance.data.entities.UserEntity
@@ -18,6 +20,8 @@ object NotificationRuleEngine {
     private const val KEY_LAST_MONTH_DATE = "last_monthly_report_date"
     private const val KEY_LAST_YEAR_DATE = "last_yearly_report_date"
     private const val KEY_SENT_MILESTONES = "sent_milestone_days"
+    private const val KEY_FESTIVAL_SENT_DATE = "last_festival_sent_date"
+    private const val KEY_FESTIVAL_UPCOMING_SENT_DATE = "last_festival_upcoming_sent_date"
 
     fun evaluateAllRules(context: Context, repository: LocalAttendanceRepository, style: String = "Friendly"): RuleEvaluationResult {
         val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
@@ -35,6 +39,14 @@ object NotificationRuleEngine {
 
         // 2. Fetch Attendance Records
         val allRecords = kotlinx.coroutines.runBlocking { repository.getPersonalAttendance() }
+
+        // 3. Evaluate Festival Notifications (Top Priority on Festival Days / Upcoming Festival Days)
+        val festivalResult = evaluateFestivalRules(context, user, allRecords, todayStr)
+        if (festivalResult.triggerNotification) {
+            Log.i(TAG, "Festival Rule triggered! Title: ${festivalResult.title}, Reason: ${festivalResult.reason}")
+            return festivalResult
+        }
+
         val todayRecord = allRecords.find { it.date == todayStr && it.status != "advance" }
 
         var triggerCategory: String? = null
@@ -257,6 +269,108 @@ object NotificationRuleEngine {
         }
 
         return RuleEvaluationResult(false, LocalNotificationManager.CHANNEL_ATTENDANCE, "", "", "", reason)
+    }
+
+    private fun evaluateFestivalRules(
+        context: Context,
+        user: UserEntity,
+        allRecords: List<AttendanceEntity>,
+        todayStr: String
+    ): RuleEvaluationResult {
+        val pref = context.getSharedPreferences(PREFS_SPAM, Context.MODE_PRIVATE)
+        val userId = user.id
+
+        val sdfDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        val todayCal = Calendar.getInstance()
+        try {
+            val parsed = sdfDate.parse(todayStr)
+            if (parsed != null) todayCal.time = parsed
+        } catch (e: Exception) {
+            // fallback
+        }
+
+        val todayDay = todayCal.get(Calendar.DAY_OF_MONTH)
+        val todayMonth = todayCal.get(Calendar.MONTH) + 1 // 1-12
+        val todayYear = todayCal.get(Calendar.YEAR)
+
+        val tomorrowCal = (todayCal.clone() as Calendar).apply { add(Calendar.DAY_OF_YEAR, 1) }
+        val tomorrowStr = sdfDate.format(tomorrowCal.time)
+        val tomorrowDay = tomorrowCal.get(Calendar.DAY_OF_MONTH)
+        val tomorrowMonth = tomorrowCal.get(Calendar.MONTH) + 1
+        val tomorrowYear = tomorrowCal.get(Calendar.YEAR)
+
+        // 1. Check Today's Festival
+        val todayEvent = FestivalRepository.getTodaySpecialHomeEvent(todayDay, todayMonth, todayYear)
+            ?: FestivalRepository.getEventsForDate(todayDay, todayMonth, todayYear)
+                .firstOrNull { it.category == FestivalCategory.SPECIAL_HOME_EVENT || it.priority >= 80 }
+
+        if (todayEvent != null) {
+            val normId = FestivalNotificationRepository.normalizeFestivalId(todayEvent.id)
+            val stateKey = "${KEY_FESTIVAL_SENT_DATE}_${normId}_$userId"
+            val lastSentDate = pref.getString(stateKey, "")
+
+            if (lastSentDate != todayStr) {
+                val placeholders = buildPlaceholders(user, allRecords, todayStr, "festival")
+                val templatePair = FestivalNotificationRepository.selectTemplateForFestival(
+                    context = context,
+                    festivalId = normId,
+                    isUpcoming = false,
+                    placeholders = placeholders
+                )
+
+                if (templatePair != null) {
+                    val (template, formattedMsg) = templatePair
+                    return RuleEvaluationResult(
+                        triggerNotification = true,
+                        channelId = LocalNotificationManager.mapCategoryToChannel("festival"),
+                        title = template.title,
+                        message = formattedMsg,
+                        category = "festival",
+                        reason = "Festival day notification for ${todayEvent.name}",
+                        stateKeyToPersist = stateKey,
+                        stateValueToPersist = todayStr,
+                        userId = userId
+                    )
+                }
+            }
+        }
+
+        // 2. Check Tomorrow's Festival (Upcoming Festival Reminder)
+        val tomorrowEvent = FestivalRepository.getEventsForDate(tomorrowDay, tomorrowMonth, tomorrowYear)
+            .firstOrNull { it.category == FestivalCategory.SPECIAL_HOME_EVENT || it.priority >= 80 }
+
+        if (tomorrowEvent != null) {
+            val normId = FestivalNotificationRepository.normalizeFestivalId(tomorrowEvent.id)
+            val upcomingStateKey = "${KEY_FESTIVAL_UPCOMING_SENT_DATE}_${normId}_$userId"
+            val lastUpcomingSentDate = pref.getString(upcomingStateKey, "")
+
+            if (lastUpcomingSentDate != tomorrowStr) {
+                val placeholders = buildPlaceholders(user, allRecords, todayStr, "festival")
+                val templatePair = FestivalNotificationRepository.selectTemplateForFestival(
+                    context = context,
+                    festivalId = normId,
+                    isUpcoming = true,
+                    placeholders = placeholders
+                )
+
+                if (templatePair != null) {
+                    val (template, formattedMsg) = templatePair
+                    return RuleEvaluationResult(
+                        triggerNotification = true,
+                        channelId = LocalNotificationManager.mapCategoryToChannel("festival"),
+                        title = template.title,
+                        message = formattedMsg,
+                        category = "festival",
+                        reason = "Upcoming festival notification for ${tomorrowEvent.name}",
+                        stateKeyToPersist = upcomingStateKey,
+                        stateValueToPersist = tomorrowStr,
+                        userId = userId
+                    )
+                }
+            }
+        }
+
+        return RuleEvaluationResult(false, LocalNotificationManager.CHANNEL_REMINDERS, "", "", "", "No festival active today or tomorrow")
     }
 
     fun markRuleStatePersisted(context: Context, evalResult: RuleEvaluationResult) {
