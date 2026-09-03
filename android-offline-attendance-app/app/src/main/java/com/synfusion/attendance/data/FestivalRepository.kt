@@ -271,4 +271,20 @@ object FestivalRepository {
      * Get master list of all configured festivals.
      */
     fun getAllEvents(): List<FestivalEvent> = festivalList
+
+    /**
+     * Get distinct SPECIAL_HOME_EVENT items for preview listing.
+     * Groups by festival name and picks the current year's instance (or fixed annual instance),
+     * sorted chronologically by month and day.
+     */
+    fun getSpecialHomeEventsForPreview(currentYear: Int = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)): List<FestivalEvent> {
+        val specialEvents = festivalList.filter { it.category == FestivalCategory.SPECIAL_HOME_EVENT }
+        val groupedByName = specialEvents.groupBy { it.name }
+        val distinctEvents = groupedByName.values.map { list ->
+            list.firstOrNull { it.year == currentYear }
+                ?: list.firstOrNull { it.year == null }
+                ?: list.first()
+        }
+        return distinctEvents.sortedWith(compareBy({ it.month }, { it.day }))
+    }
 }
