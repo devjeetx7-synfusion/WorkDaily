@@ -469,7 +469,7 @@ fun DashboardScreen(
             }
         }
 
-        if (isCompactPortrait) {
+        if (isCompactPortrait && currentRoute == "main_pager") {
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)

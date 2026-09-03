@@ -258,19 +258,15 @@ fun SettingsScreen(
                         .padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 96.dp),
                     verticalArrangement = Arrangement.spacedBy(20.dp)
                 ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.app_preferences), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 4.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                            Icon(Icons.Default.Settings, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.settings), fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-                        }
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                        Icon(Icons.Default.Settings, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.settings), fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                     }
 
                     ProfileCardSection(state = state, viewModel = viewModel, hasChanges = hasChanges, onEditPhoto = { onNavigate("profile") })
                     StayConnectedCardSection(context = context)
-                    AppPreferencesCardSection(state = state, viewModel = viewModel, supportedLanguages = supportedLanguages, context = context, onNavigate = onNavigate)
-                    NotificationSettingsCardSection(
+                    AppPreferencesCardSection(
                         state = state,
                         viewModel = viewModel,
                         actualNotificationState = actualNotificationState,
@@ -278,7 +274,9 @@ fun SettingsScreen(
                         isPostPermissionsGranted = isPostPermissionsGranted,
                         isChannelEnabled = isChannelEnabled,
                         permissionLauncher = permissionLauncher,
-                        context = context
+                        supportedLanguages = supportedLanguages,
+                        context = context,
+                        onNavigate = onNavigate
                     )
                     BackupRestoreCardSection(state = state, lastBackupFile = lastBackupFile, context = context, onManageBackup = { showBackupSheet = true })
                     InfoSupportCardSection(onNavigate = onNavigate, onDeveloperContact = { showDeveloperSheet = true })
@@ -417,10 +415,7 @@ fun SettingsScreen(
                                     StayConnectedCardSection(context = context)
                                 }
                                 SettingsCategory.PREFERENCES -> {
-                                    AppPreferencesCardSection(state = state, viewModel = viewModel, supportedLanguages = supportedLanguages, context = context, onNavigate = onNavigate)
-                                }
-                                SettingsCategory.NOTIFICATIONS -> {
-                                    NotificationSettingsCardSection(
+                                    AppPreferencesCardSection(
                                         state = state,
                                         viewModel = viewModel,
                                         actualNotificationState = actualNotificationState,
@@ -428,8 +423,13 @@ fun SettingsScreen(
                                         isPostPermissionsGranted = isPostPermissionsGranted,
                                         isChannelEnabled = isChannelEnabled,
                                         permissionLauncher = permissionLauncher,
-                                        context = context
+                                        supportedLanguages = supportedLanguages,
+                                        context = context,
+                                        onNavigate = onNavigate
                                     )
+                                }
+                                SettingsCategory.NOTIFICATIONS -> {
+                                    // Merged into PREFERENCES card section
                                 }
                                 SettingsCategory.BACKUP -> {
                                     BackupRestoreCardSection(state = state, lastBackupFile = lastBackupFile, context = context, onManageBackup = { showBackupSheet = true })
@@ -868,23 +868,203 @@ fun StayConnectedCardSection(context: Context) {
 fun AppPreferencesCardSection(
     state: OfflineSettingsState,
     viewModel: OfflineSettingsViewModel,
+    actualNotificationState: Boolean,
+    isAppNotificationsEnabled: Boolean,
+    isPostPermissionsGranted: Boolean,
+    isChannelEnabled: Boolean,
+    permissionLauncher: androidx.activity.result.ActivityResultLauncher<String>,
     supportedLanguages: Map<String, String>,
     context: Context,
     onNavigate: (String) -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.app_preferences), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 4.dp))
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
-        ) {
-            Column(modifier = Modifier.fillMaxWidth()) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            // 1. Theme — Toggle
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(androidx.compose.foundation.shape.CircleShape)
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            if (state.isDarkMode) Icons.Default.DarkMode else Icons.Default.LightMode,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.theme),
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+                Switch(
+                    checked = state.isDarkMode,
+                    onCheckedChange = { viewModel.toggleTheme(it) }
+                )
+            }
+
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+
+            // 2. Enable Splash Screen — Toggle
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(androidx.compose.foundation.shape.CircleShape)
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.RocketLaunch,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.enable_splash_screen),
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+                Switch(
+                    checked = state.isSplashEnabled,
+                    onCheckedChange = { viewModel.toggleSplash(it) }
+                )
+            }
+
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+
+            // 3. Reminders — Toggle
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(androidx.compose.foundation.shape.CircleShape)
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.Notifications,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.reminders),
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        val statusText = if (actualNotificationState) {
+                            androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.notif_status_enabled)
+                        } else {
+                            androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.notif_status_disabled)
+                        }
+                        Text(statusText, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+                Switch(
+                    checked = actualNotificationState,
+                    onCheckedChange = { checked ->
+                        if (checked) {
+                            if (!isAppNotificationsEnabled) {
+                                try {
+                                    val intent = Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                                        putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
+                                    }
+                                    context.getActivity()?.startActivity(intent)
+                                } catch (e: Exception) {
+                                    try {
+                                        val fallbackIntent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                            data = android.net.Uri.fromParts("package", context.packageName, null)
+                                        }
+                                        context.getActivity()?.startActivity(fallbackIntent)
+                                    } catch (ex: Exception) {
+                                        Toast.makeText(context, context.getString(com.synfusion.attendance.R.string.unable_to_open_settings), Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            } else if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU && !isPostPermissionsGranted) {
+                                permissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                            } else if (!isChannelEnabled) {
+                                try {
+                                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                                        val intent = Intent(android.provider.Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS).apply {
+                                            putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
+                                            putExtra(android.provider.Settings.EXTRA_CHANNEL_ID, com.synfusion.attendance.utils.LocalNotificationManager.CHANNEL_OFFLINE_ATTENDANCE)
+                                        }
+                                        context.getActivity()?.startActivity(intent)
+                                    }
+                                } catch (e: Exception) {
+                                    try {
+                                        val intent = Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                                            putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
+                                        }
+                                        context.getActivity()?.startActivity(intent)
+                                    } catch (ex: Exception) {
+                                        Toast.makeText(context, "Unable to open settings", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            } else {
+                                viewModel.toggleReminders(true)
+                                com.synfusion.attendance.utils.NotificationScheduler.schedulePeriodicWork(context)
+                            }
+                        } else {
+                            viewModel.toggleReminders(false)
+                            com.synfusion.attendance.utils.NotificationScheduler.cancelAllScheduledWork(context)
+                        }
+                    }
+                )
+            }
+
+            // 4. Language — Selection
+            if (state.isLanguageEnabled && state.isLanguageActivityEnabled) {
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { onNavigate("customize_navigation") }
+                        .clickable {
+                            val intent = android.content.Intent(context, LanguageSelectorActivity::class.java)
+                            context.getActivity()?.startActivity(intent)
+                        }
                         .padding(16.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
@@ -897,155 +1077,70 @@ fun AppPreferencesCardSection(
                                 .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(Icons.Default.Tune, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            Icon(
+                                Icons.Default.Language,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary
+                            )
                         }
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
-                            Text("Customize Navigation", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                            Text("Customize your bottom navigation", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(
+                                androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.language_2),
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                supportedLanguages[state.language] ?: "English",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
                     }
-                    Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
-                Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
-                            Icon(if (state.isDarkMode) Icons.Default.DarkMode else Icons.Default.LightMode, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                        }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column {
-                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.theme), fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                        }
-                    }
-                    Switch(checked = state.isDarkMode, onCheckedChange = { viewModel.toggleTheme(it) })
-                }
-                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
-                Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
-                            Icon(Icons.Default.RocketLaunch, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                        }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column {
-                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.enable_splash_screen), fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                        }
-                    }
-                    Switch(checked = state.isSplashEnabled, onCheckedChange = { viewModel.toggleSplash(it) })
-                }
-                if (state.isLanguageEnabled && state.isLanguageActivityEnabled) {
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
-                    Row(modifier = Modifier.fillMaxWidth().clickable {
-                        val intent = android.content.Intent(context, LanguageSelectorActivity::class.java)
-                        context.getActivity()?.startActivity(intent)
-                    }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
-                                Icon(Icons.Default.Language, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                            }
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column {
-                                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.language_2), fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                Text(supportedLanguages[state.language] ?: "English", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                        }
-                        Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
-            }
-        }
-    }
-}
-
-
-@Composable
-fun NotificationSettingsCardSection(
-    state: OfflineSettingsState,
-    viewModel: OfflineSettingsViewModel,
-    actualNotificationState: Boolean,
-    isAppNotificationsEnabled: Boolean,
-    isPostPermissionsGranted: Boolean,
-    isChannelEnabled: Boolean,
-    permissionLauncher: androidx.activity.result.ActivityResultLauncher<String>,
-    context: Context
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.notification_settings), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 4.dp))
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
-        ) {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                        Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
-                            Icon(Icons.Default.Notifications, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                        }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column {
-                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.reminders), fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                            val statusText = if (actualNotificationState) {
-                                androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.notif_status_enabled)
-                            } else {
-                                androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.notif_status_disabled)
-                            }
-                            Text(statusText, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                    }
-                    Switch(
-                        checked = actualNotificationState,
-                        onCheckedChange = { checked ->
-                            if (checked) {
-                                if (!isAppNotificationsEnabled) {
-                                    try {
-                                        val intent = Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-                                            putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
-                                        }
-                                        context.getActivity()?.startActivity(intent)
-                                    } catch (e: Exception) {
-                                        try {
-                                            val fallbackIntent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                                                data = android.net.Uri.fromParts("package", context.packageName, null)
-                                            }
-                                            context.getActivity()?.startActivity(fallbackIntent)
-                                        } catch (ex: Exception) {
-                                            Toast.makeText(context, context.getString(com.synfusion.attendance.R.string.unable_to_open_settings), Toast.LENGTH_SHORT).show()
-                                        }
-                                    }
-                                } else if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU && !isPostPermissionsGranted) {
-                                    permissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
-                                } else if (!isChannelEnabled) {
-                                    try {
-                                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                                            val intent = Intent(android.provider.Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS).apply {
-                                                putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
-                                                putExtra(android.provider.Settings.EXTRA_CHANNEL_ID, com.synfusion.attendance.utils.LocalNotificationManager.CHANNEL_OFFLINE_ATTENDANCE)
-                                            }
-                                            context.getActivity()?.startActivity(intent)
-                                        }
-                                    } catch (e: Exception) {
-                                        try {
-                                            val intent = Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-                                                putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
-                                            }
-                                            context.getActivity()?.startActivity(intent)
-                                        } catch (ex: Exception) {
-                                            Toast.makeText(context, "Unable to open settings", Toast.LENGTH_SHORT).show()
-                                        }
-                                    }
-                                } else {
-                                    viewModel.toggleReminders(true)
-                                    com.synfusion.attendance.utils.NotificationScheduler.schedulePeriodicWork(context)
-                                }
-                            } else {
-                                viewModel.toggleReminders(false)
-                                com.synfusion.attendance.utils.NotificationScheduler.cancelAllScheduledWork(context)
-                            }
-                        }
+                    Icon(
+                        Icons.Default.ChevronRight,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+            }
+
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+
+            // 5. Customize Navigation — Navigation item
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onNavigate("customize_navigation") }
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(androidx.compose.foundation.shape.CircleShape)
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.Tune,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text("Customize Navigation", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        Text("Customize your bottom navigation", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+                Icon(
+                    Icons.Default.ChevronRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }
@@ -1230,6 +1325,7 @@ fun LogoutBottomSheet(
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = MaterialTheme.colorScheme.background,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        windowInsets = WindowInsets(0.dp),
         dragHandle = { BottomSheetDefaults.DragHandle() }
     ) {
         Column(
@@ -1308,6 +1404,7 @@ fun PrivacyPolicyBottomSheet(onDismiss: () -> Unit) {
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        windowInsets = WindowInsets(0.dp),
         dragHandle = { BottomSheetDefaults.DragHandle() }
     ) {
         Column(
@@ -1449,6 +1546,7 @@ fun DeveloperContactBottomSheet(onDismiss: () -> Unit) {
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false),
         containerColor = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        windowInsets = WindowInsets(0.dp),
         dragHandle = { BottomSheetDefaults.DragHandle() }
     ) {
         Column(

@@ -51,14 +51,10 @@ enum class WorkDailyNavItem(
     HOME("dashboard", "Home", Icons.Default.Home),
     CALENDAR("calendar", "Calendar", Icons.Default.CalendarMonth),
     STATISTICS("stats", "Statistics", Icons.Default.BarChart),
-    PASSBOOK("all_time_passbook", "Passbook", Icons.Default.Description),
     SETTINGS("settings", "Settings", Icons.Default.Settings);
 
     companion object {
         fun fromRoute(route: String): WorkDailyNavItem {
-            if (route == "passbook" || route == "all_time_passbook") {
-                return PASSBOOK
-            }
             return values().firstOrNull { it.route == route } ?: HOME
         }
     }

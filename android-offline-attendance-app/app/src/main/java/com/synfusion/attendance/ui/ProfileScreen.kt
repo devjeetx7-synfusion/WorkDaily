@@ -92,7 +92,7 @@ fun ProfileScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.user_profile),
+                        text = "Profile",
                         fontWeight = FontWeight.Bold
                     )
                 },
@@ -404,6 +404,7 @@ fun ProfileScreen(
                     sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
                     containerColor = MaterialTheme.colorScheme.surface,
                     shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                    windowInsets = WindowInsets(0.dp),
                     dragHandle = { BottomSheetDefaults.DragHandle() }
                 ) {
                     Column(

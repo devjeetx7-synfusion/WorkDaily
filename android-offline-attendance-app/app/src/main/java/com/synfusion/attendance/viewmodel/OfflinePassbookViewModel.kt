@@ -101,6 +101,13 @@ class OfflinePassbookViewModel(
         setupListeners(showLoadingIndicator = true)
     }
 
+    fun setMonth(date: Date) {
+        _state.update { it.copy(
+            selectedMonthDate = date
+        ) }
+        setupListeners(showLoadingIndicator = true)
+    }
+
     private var loadJob: Job? = null
 
     private fun setupListeners(showLoadingIndicator: Boolean = true) {
