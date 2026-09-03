@@ -1,6 +1,7 @@
 package com.synfusion.attendance.ui
 
 import com.synfusion.attendance.ui.screens.CustomizeNavigationScreen
+import com.synfusion.attendance.ui.screens.FestivalPreviewScreen
 import com.synfusion.attendance.ui.screens.HowToUseScreen
 import com.synfusion.attendance.ui.screens.PrivacyPolicyScreen
 import com.synfusion.attendance.ui.screens.TermsConditionsScreen
@@ -56,6 +57,7 @@ import com.synfusion.attendance.viewmodel.OfflineCalendarViewModel
 import com.synfusion.attendance.viewmodel.OfflineStatsViewModel
 import com.synfusion.attendance.viewmodel.OfflinePassbookViewModel
 import com.synfusion.attendance.viewmodel.OfflineSettingsViewModel
+import com.synfusion.attendance.data.FestivalPreviewManager
 import com.synfusion.attendance.data.FestivalRepository
 import com.synfusion.attendance.ui.components.FestivalHeaderBanner
 import com.synfusion.attendance.viewmodel.OfflineSettingsState
@@ -467,6 +469,11 @@ fun DashboardScreen(
                     onNavigateBack = { bottomNavController.navigateUp() }
                 )
             }
+            composable("festival_preview") {
+                FestivalPreviewScreen(
+                    onNavigateBack = { bottomNavController.navigateUp() }
+                )
+            }
 
         }
             }
@@ -646,11 +653,13 @@ fun HeaderSection(state: OfflineDashboardState, onProfileClick: () -> Unit = {})
         SimpleDateFormat("EEEE, dd MMMM yyyy", Locale.getDefault()).format(todayCal.time)
     }
 
-    val todaySpecialEvent = remember(todayCal) {
+    val activePreviewEvent by FestivalPreviewManager.activePreviewEvent.collectAsStateWithLifecycle(initialValue = null)
+
+    val todaySpecialEvent = remember(todayCal, activePreviewEvent) {
         val day = todayCal.get(Calendar.DAY_OF_MONTH)
         val month = todayCal.get(Calendar.MONTH) + 1
         val year = todayCal.get(Calendar.YEAR)
-        FestivalRepository.getTodaySpecialHomeEvent(day, month, year)
+        FestivalPreviewManager.getEffectiveSpecialHomeEvent(day, month, year)
     }
 
     val displayName = state.name.trim()
@@ -756,6 +765,53 @@ fun HeaderSection(state: OfflineDashboardState, onProfileClick: () -> Unit = {})
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Normal,
                     color = Color.Gray
+                )
+            }
+        }
+    }
+
+    if (activePreviewEvent != null) {
+        Spacer(modifier = Modifier.height(8.dp))
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .clickable { FestivalPreviewManager.clearPreview() },
+            shape = RoundedCornerShape(12.dp),
+            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.AutoAwesome,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Text(
+                        text = "Festival Preview: ${activePreviewEvent?.name}",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+
+                Text(
+                    text = "Exit",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.clickable { FestivalPreviewManager.clearPreview() }
                 )
             }
         }
