@@ -1,7 +1,10 @@
 package com.synfusion.attendance.ui
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.background
 import com.synfusion.attendance.ui.components.ShimmerBox
 import com.synfusion.attendance.ui.components.ShimmerCircle
@@ -29,6 +32,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -129,8 +133,6 @@ fun PersonalCalendarView(
     val festivalMap = remember(month, year) {
         FestivalRepository.getEventsForMonth(month + 1, year)
     }
-
-    var selectedFestivalEvent by rememberSaveable { mutableStateOf<FestivalEvent?>(null) }
 
     val dayMap = remember(state.personalAttendance) {
         val map = mutableMapOf<Int, OfflineAttendanceRecord>()
@@ -296,108 +298,20 @@ fun PersonalCalendarView(
                                     ) {
                                         if (day in 1..daysInMonth) {
                                             val data = dayMap[day]
-                                            val isPresent = data?.status == "present"
-                                            val isAbsent = data?.status == "absent"
-                                            val isHalf = data?.type == "half"
-                                            val hasAdvance = data?.advanceAmount != null && data.advanceAmount > 0
                                             val isToday = isCurrentMonth && day == todayDay
-
-                                            val bgColor = when {
-                                                isPresent && isHalf -> com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay()
-                                                isPresent -> com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent()
-                                                isAbsent -> com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent()
-                                                else -> Color.Transparent
-                                            }
-
-                                            val textColor = when {
-                                                isPresent || isAbsent -> Color.White
-                                                isToday -> MaterialTheme.colorScheme.onSurface
-                                                else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                                            }
-
-                                            val hasOT = data?.overtimeHours != null && data.overtimeHours > 0
                                             val dayFestivals = festivalMap[day]
                                             val mainFestival = dayFestivals?.firstOrNull()
 
-                                            Box(
-                                                modifier = Modifier
-                                                    .fillMaxSize()
-                                                    .clip(CircleShape)
-                                                    .background(bgColor)
-                                                    .clickable {
-                                                        selectedDay = day
-                                                        showDialog = true
-                                                    }
-                                                    .border(
-                                                        width = if (hasOT) 2.dp else if (isToday && !isPresent && !isAbsent) 2.dp else 0.dp,
-                                                        color = if (hasOT) com.synfusion.attendance.ui.theme.AttendanceStatusColors.getLeave() else if (isToday && !isPresent && !isAbsent) MaterialTheme.colorScheme.primary else Color.Transparent,
-                                                        shape = CircleShape
-                                                    ),
-                                                contentAlignment = Alignment.Center
-                                            ) {
-                                                Text(
-                                                    text = day.toString(),
-                                                    fontSize = 14.sp,
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = textColor
-                                                )
-
-                                                if (mainFestival != null) {
-                                                    val isSpecialHome = mainFestival.category == FestivalCategory.SPECIAL_HOME_EVENT
-                                                    val badgeSize = if (isSpecialHome) 18.dp else 15.dp
-                                                    val badgeBg = if (isSpecialHome) {
-                                                        Color(mainFestival.primaryColorHex).copy(alpha = 0.25f)
-                                                    } else {
-                                                        MaterialTheme.colorScheme.surface
-                                                    }
-                                                    val badgeBorder = if (isSpecialHome) {
-                                                        Color(mainFestival.accentColorHex).copy(alpha = 0.6f)
-                                                    } else {
-                                                        MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
-                                                    }
-
-                                                    Box(
-                                                        modifier = Modifier
-                                                            .align(Alignment.TopStart)
-                                                            .offset(x = (-3).dp, y = (-3).dp)
-                                                            .size(badgeSize)
-                                                            .clip(CircleShape)
-                                                            .background(badgeBg)
-                                                            .border(1.dp, badgeBorder, CircleShape)
-                                                            .clickable {
-                                                                selectedFestivalEvent = mainFestival
-                                                            },
-                                                        contentAlignment = Alignment.Center
-                                                    ) {
-                                                        Text(
-                                                            text = mainFestival.emoji,
-                                                            fontSize = if (isSpecialHome) 10.sp else 8.sp,
-                                                            textAlign = TextAlign.Center
-                                                        )
-                                                    }
+                                            CalendarDateCell(
+                                                day = day,
+                                                data = data,
+                                                isToday = isToday,
+                                                mainFestival = mainFestival,
+                                                onClick = {
+                                                    selectedDay = day
+                                                    showDialog = true
                                                 }
-
-                                                if (isHalf) {
-                                                    Box(
-                                                        modifier = Modifier
-                                                            .align(Alignment.TopEnd)
-                                                            .padding(4.dp)
-                                                            .size(6.dp)
-                                                            .clip(CircleShape)
-                                                            .background(MaterialTheme.colorScheme.onPrimary)
-                                                    )
-                                                }
-                                                if (hasAdvance) {
-                                                    Box(
-                                                        modifier = Modifier
-                                                            .align(Alignment.BottomCenter)
-                                                            .padding(bottom = 6.dp)
-                                                            .size(8.dp)
-                                                            .clip(CircleShape)
-                                                            .background(com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay())
-                                                    )
-                                                }
-                                            }
+                                            )
                                         }
                                     }
                                 }
@@ -534,108 +448,20 @@ fun PersonalCalendarView(
                                                 ) {
                                                     if (day in 1..daysInMonth) {
                                                         val data = dayMap[day]
-                                                        val isPresent = data?.status == "present"
-                                                        val isAbsent = data?.status == "absent"
-                                                        val isHalf = data?.type == "half"
-                                                        val hasAdvance = data?.advanceAmount != null && data.advanceAmount > 0
                                                         val isToday = isCurrentMonth && day == todayDay
-
-                                                        val bgColor = when {
-                                                            isPresent && isHalf -> com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay()
-                                                            isPresent -> com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent()
-                                                            isAbsent -> com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent()
-                                                            else -> Color.Transparent
-                                                        }
-
-                                                        val textColor = when {
-                                                            isPresent || isAbsent -> Color.White
-                                                            isToday -> MaterialTheme.colorScheme.onSurface
-                                                            else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                                                        }
-
-                                                        val hasOT = data?.overtimeHours != null && data.overtimeHours > 0
                                                         val dayFestivals = festivalMap[day]
                                                         val mainFestival = dayFestivals?.firstOrNull()
 
-                                                        Box(
-                                                            modifier = Modifier
-                                                                .fillMaxSize()
-                                                                .clip(CircleShape)
-                                                                .background(bgColor)
-                                                                .clickable {
-                                                                    selectedDay = day
-                                                                    showDialog = true
-                                                                }
-                                                                .border(
-                                                                    width = if (hasOT) 2.dp else if (isToday && !isPresent && !isAbsent) 2.dp else 0.dp,
-                                                                    color = if (hasOT) com.synfusion.attendance.ui.theme.AttendanceStatusColors.getLeave() else if (isToday && !isPresent && !isAbsent) MaterialTheme.colorScheme.primary else Color.Transparent,
-                                                                    shape = CircleShape
-                                                                ),
-                                                            contentAlignment = Alignment.Center
-                                                        ) {
-                                                            Text(
-                                                                text = day.toString(),
-                                                                fontSize = 14.sp,
-                                                                fontWeight = FontWeight.Bold,
-                                                                color = textColor
-                                                            )
-
-                                                            if (mainFestival != null) {
-                                                                val isSpecialHome = mainFestival.category == FestivalCategory.SPECIAL_HOME_EVENT
-                                                                val badgeSize = if (isSpecialHome) 18.dp else 15.dp
-                                                                val badgeBg = if (isSpecialHome) {
-                                                                    Color(mainFestival.primaryColorHex).copy(alpha = 0.25f)
-                                                                } else {
-                                                                    MaterialTheme.colorScheme.surface
-                                                                }
-                                                                val badgeBorder = if (isSpecialHome) {
-                                                                    Color(mainFestival.accentColorHex).copy(alpha = 0.6f)
-                                                                } else {
-                                                                    MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
-                                                                }
-
-                                                                Box(
-                                                                    modifier = Modifier
-                                                                        .align(Alignment.TopStart)
-                                                                        .offset(x = (-3).dp, y = (-3).dp)
-                                                                        .size(badgeSize)
-                                                                        .clip(CircleShape)
-                                                                        .background(badgeBg)
-                                                                        .border(1.dp, badgeBorder, CircleShape)
-                                                                        .clickable {
-                                                                            selectedFestivalEvent = mainFestival
-                                                                        },
-                                                                    contentAlignment = Alignment.Center
-                                                                ) {
-                                                                    Text(
-                                                                        text = mainFestival.emoji,
-                                                                        fontSize = if (isSpecialHome) 10.sp else 8.sp,
-                                                                        textAlign = TextAlign.Center
-                                                                    )
-                                                                }
+                                                        CalendarDateCell(
+                                                            day = day,
+                                                            data = data,
+                                                            isToday = isToday,
+                                                            mainFestival = mainFestival,
+                                                            onClick = {
+                                                                selectedDay = day
+                                                                showDialog = true
                                                             }
-
-                                                            if (isHalf) {
-                                                                Box(
-                                                                    modifier = Modifier
-                                                                        .align(Alignment.TopEnd)
-                                                                        .padding(4.dp)
-                                                                        .size(6.dp)
-                                                                        .clip(CircleShape)
-                                                                        .background(MaterialTheme.colorScheme.onPrimary)
-                                                                )
-                                                            }
-                                                            if (hasAdvance) {
-                                                                Box(
-                                                                    modifier = Modifier
-                                                                        .align(Alignment.BottomCenter)
-                                                                        .padding(bottom = 6.dp)
-                                                                        .size(8.dp)
-                                                                        .clip(CircleShape)
-                                                                        .background(com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay())
-                                                                )
-                                                            }
-                                                        }
+                                                        )
                                                     }
                                                 }
                                             }
@@ -740,15 +566,6 @@ fun PersonalCalendarView(
                 }
             }
         }
-    }
-
-    if (selectedFestivalEvent != null) {
-        FestivalDetailDialog(
-            event = selectedFestivalEvent!!,
-            monthName = SimpleDateFormat("MMMM", Locale.getDefault()).format(currentMonthDate),
-            year = year,
-            onDismiss = { selectedFestivalEvent = null }
-        )
     }
 
     if (showDialog && selectedDay != null) {
@@ -932,33 +749,128 @@ fun PersonalAttendanceDialog(
             ) {
                 val mainFestival = dayFestivals.firstOrNull()
                 if (mainFestival != null) {
-                    val pColor = Color(mainFestival.primaryColorHex)
+                var headerVisible by remember { mutableStateOf(false) }
+                LaunchedEffect(mainFestival) {
+                    headerVisible = true
+                }
+
+                AnimatedVisibility(
+                    visible = headerVisible,
+                    enter = fadeIn(animationSpec = tween(300)) + scaleIn(initialScale = 0.92f, animationSpec = tween(300))
+                    ) {
+                    val pColor = remember(mainFestival.primaryColorHex) { Color(mainFestival.primaryColorHex) }
+                    val sColor = remember(mainFestival.secondaryColorHex) { Color(mainFestival.secondaryColorHex) }
+                    val aColor = remember(mainFestival.accentColorHex) { Color(mainFestival.accentColorHex) }
+
+                    val categoryLabel = when (mainFestival.category) {
+                        FestivalCategory.SPECIAL_HOME_EVENT -> if (mainFestival.isPublicHoliday) "Special Festival • Public Holiday" else "Special Festival"
+                        FestivalCategory.CALENDAR_EVENT -> if (mainFestival.isPublicHoliday) "Calendar Event • Public Holiday" else "Calendar Event"
+                        FestivalCategory.OBSERVANCE -> "Observance"
+                    }
+
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(bottom = 12.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(pColor.copy(alpha = 0.12f))
-                            .border(1.dp, pColor.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
-                            .padding(12.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            Text(mainFestival.emoji, fontSize = 22.sp)
-                            Column {
-                                Text(
-                                    text = mainFestival.name,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 14.sp,
-                                    color = MaterialTheme.colorScheme.onSurface
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(
+                                        pColor.copy(alpha = 0.18f),
+                                        sColor.copy(alpha = 0.08f),
+                                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                                    )
                                 )
+                                )
+                            .border(1.dp, aColor.copy(alpha = 0.4f), RoundedCornerShape(16.dp))
+                            .padding(14.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(46.dp)
+                                        .clip(CircleShape)
+                                        .background(pColor.copy(alpha = 0.25f))
+                                        .border(1.5.dp, aColor.copy(alpha = 0.6f), CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(mainFestival.emoji, fontSize = 24.sp, textAlign = TextAlign.Center)
+                                }
+
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = mainFestival.name,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 16.sp,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+
+                                    Surface(
+                                        shape = RoundedCornerShape(6.dp),
+                                        color = pColor.copy(alpha = 0.2f),
+                                        modifier = Modifier.padding(top = 2.dp)
+                                    ) {
+                                        Text(
+                                            text = categoryLabel,
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = pColor,
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                                        )
+                                    }
+                                }
+                            }
+
+                            if (mainFestival.greeting.isNotBlank()) {
                                 Text(
                                     text = mainFestival.greeting,
-                                    fontSize = 11.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
+                            }
+
+                            if (mainFestival.description.isNotBlank()) {
+                                Text(
+                                    text = mainFestival.description,
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    lineHeight = 16.sp
+                                )
+                            }
+
+                            if (dayFestivals.size > 1) {
+                                val otherEvents = dayFestivals.drop(1)
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 4.dp),
+                                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    HorizontalDivider(color = aColor.copy(alpha = 0.2f), thickness = 0.8.dp)
+                                    otherEvents.forEach { other ->
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            Text(other.emoji, fontSize = 12.sp)
+                                            Text(
+                                                text = other.name,
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                }
+                            }
                             }
                         }
                     }
@@ -1123,6 +1035,126 @@ fun PersonalAttendanceDialog(
             }
         }
     )
+}
+
+@Composable
+fun FestivalCalendarBadge(
+    event: FestivalEvent,
+    modifier: Modifier = Modifier
+) {
+    val isSpecialHome = event.category == FestivalCategory.SPECIAL_HOME_EVENT
+    val primaryColor = remember(event.primaryColorHex) { Color(event.primaryColorHex) }
+    val accentColor = remember(event.accentColorHex) { Color(event.accentColorHex) }
+
+    val badgeSize = if (isSpecialHome) 18.dp else 15.dp
+    val fontSize = if (isSpecialHome) 10.sp else 8.sp
+
+    val badgeBg = if (isSpecialHome) {
+        primaryColor.copy(alpha = 0.32f)
+    } else {
+        MaterialTheme.colorScheme.surface
+    }
+    val badgeBorder = if (isSpecialHome) {
+        accentColor.copy(alpha = 0.75f)
+    } else {
+        MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+    }
+
+    Box(
+        modifier = modifier
+            .size(badgeSize)
+            .clip(CircleShape)
+            .background(badgeBg)
+            .border(1.dp, badgeBorder, CircleShape),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = event.emoji,
+            fontSize = fontSize,
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+@Composable
+fun CalendarDateCell(
+    day: Int,
+    data: OfflineAttendanceRecord?,
+    isToday: Boolean,
+    mainFestival: FestivalEvent?,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val isPresent = data?.status == "present"
+    val isAbsent = data?.status == "absent"
+    val isHalf = data?.type == "half"
+    val hasAdvance = data?.advanceAmount != null && data.advanceAmount > 0
+    val hasOT = data?.overtimeHours != null && data.overtimeHours > 0
+
+    val bgColor = when {
+        isPresent && isHalf -> com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay()
+        isPresent -> com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent()
+        isAbsent -> com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent()
+        else -> Color.Transparent
+    }
+
+    val textColor = when {
+        isPresent || isAbsent -> Color.White
+        isToday -> MaterialTheme.colorScheme.onSurface
+        else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+    }
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .clip(CircleShape)
+            .background(bgColor)
+            .clickable(onClick = onClick)
+            .border(
+                width = if (hasOT) 2.dp else if (isToday && !isPresent && !isAbsent) 2.dp else 0.dp,
+                color = if (hasOT) com.synfusion.attendance.ui.theme.AttendanceStatusColors.getLeave() else if (isToday && !isPresent && !isAbsent) MaterialTheme.colorScheme.primary else Color.Transparent,
+                shape = CircleShape
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = day.toString(),
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold,
+            color = textColor
+        )
+
+        if (mainFestival != null) {
+            FestivalCalendarBadge(
+                event = mainFestival,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .offset(x = (-2).dp, y = (-2).dp)
+            )
+        }
+
+        if (isHalf) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(4.dp)
+                    .size(6.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.onPrimary)
+            )
+        }
+
+        if (hasAdvance) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 6.dp)
+                    .size(8.dp)
+                    .clip(CircleShape)
+                    .background(com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay())
+            )
+        }
+    }
 }
 
 @Composable
