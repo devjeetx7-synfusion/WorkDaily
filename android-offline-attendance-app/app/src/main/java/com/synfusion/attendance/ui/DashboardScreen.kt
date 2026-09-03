@@ -59,7 +59,7 @@ import com.synfusion.attendance.viewmodel.OfflinePassbookViewModel
 import com.synfusion.attendance.viewmodel.OfflineSettingsViewModel
 import com.synfusion.attendance.data.FestivalPreviewManager
 import com.synfusion.attendance.data.FestivalRepository
-import com.synfusion.attendance.ui.components.FestivalHeaderBanner
+import com.synfusion.attendance.ui.components.FestivalHeroEnvironment
 import com.synfusion.attendance.viewmodel.OfflineSettingsState
 import com.synfusion.attendance.viewmodel.OfflineDashboardViewModel
 import com.synfusion.attendance.viewmodel.OfflineDashboardState
@@ -684,61 +684,64 @@ fun HeaderSection(state: OfflineDashboardState, onProfileClick: () -> Unit = {})
         } else null
     }
 
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
+    if (todaySpecialEvent != null) {
+        // Render Premium Festival Hero Environment
+        FestivalHeroEnvironment(
+            event = todaySpecialEvent,
+            displayName = displayName,
+            formattedDate = todayFullDate,
+            photoUrl = state.photoUrl,
+            onProfileClick = onProfileClick
+        )
+    } else {
+        // Standard WorkDaily Header
         Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .weight(1f)
-                .clip(RoundedCornerShape(12.dp))
-                .clickable { onProfileClick() }
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .border(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), CircleShape)
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
-                contentAlignment = Alignment.Center
+                    .weight(1f)
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable { onProfileClick() }
             ) {
-                if (showLocalImage && imageRequest != null) {
-                    coil.compose.SubcomposeAsyncImage(
-                        model = imageRequest,
-                        contentDescription = "Profile Photo",
-                        modifier = Modifier.fillMaxSize().clip(CircleShape),
-                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                        error = {
-                            Text(
-                                text = avatarLetters,
-                                color = MaterialTheme.colorScheme.primary,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 14.sp
-                            )
-                        }
-                    )
-                } else {
-                    Text(
-                        text = avatarLetters,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.width(12.dp))
-            Column {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (todaySpecialEvent != null) {
-                        Text(
-                            text = todaySpecialEvent.greeting,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onBackground
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .border(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), CircleShape)
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (showLocalImage && imageRequest != null) {
+                        coil.compose.SubcomposeAsyncImage(
+                            model = imageRequest,
+                            contentDescription = "Profile Photo",
+                            modifier = Modifier.fillMaxSize().clip(CircleShape),
+                            contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                            error = {
+                                Text(
+                                    text = avatarLetters,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp
+                                )
+                            }
                         )
                     } else {
+                        Text(
+                            text = avatarLetters,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Column {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             text = "Hi, ",
                             fontSize = 20.sp,
@@ -759,13 +762,13 @@ fun HeaderSection(state: OfflineDashboardState, onProfileClick: () -> Unit = {})
                             modifier = Modifier.size(20.dp)
                         )
                     }
+                    Text(
+                        text = todayFullDate,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Normal,
+                        color = Color.Gray
+                    )
                 }
-                Text(
-                    text = todayFullDate,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Normal,
-                    color = Color.Gray
-                )
             }
         }
     }
@@ -815,11 +818,6 @@ fun HeaderSection(state: OfflineDashboardState, onProfileClick: () -> Unit = {})
                 )
             }
         }
-    }
-
-    if (todaySpecialEvent != null) {
-        Spacer(modifier = Modifier.height(12.dp))
-        FestivalHeaderBanner(event = todaySpecialEvent)
     }
 }
 
