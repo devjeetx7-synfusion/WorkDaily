@@ -56,6 +56,8 @@ import com.synfusion.attendance.viewmodel.OfflineCalendarViewModel
 import com.synfusion.attendance.viewmodel.OfflineStatsViewModel
 import com.synfusion.attendance.viewmodel.OfflinePassbookViewModel
 import com.synfusion.attendance.viewmodel.OfflineSettingsViewModel
+import com.synfusion.attendance.data.FestivalRepository
+import com.synfusion.attendance.ui.components.FestivalHeaderBanner
 import com.synfusion.attendance.viewmodel.OfflineSettingsState
 import com.synfusion.attendance.viewmodel.OfflineDashboardViewModel
 import com.synfusion.attendance.viewmodel.OfflineDashboardState
@@ -70,6 +72,7 @@ import com.synfusion.attendance.ui.responsive.LocalWindowSizeInfo
 import com.synfusion.attendance.ui.responsive.ResponsiveContainer
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
@@ -638,8 +641,16 @@ fun DashboardShimmer() {
 @Composable
 fun HeaderSection(state: OfflineDashboardState, onProfileClick: () -> Unit = {}) {
     val context = LocalContext.current
+    val todayCal = remember { Calendar.getInstance() }
     val todayFullDate = remember {
-        SimpleDateFormat("EEEE, dd MMMM yyyy", Locale.getDefault()).format(Date())
+        SimpleDateFormat("EEEE, dd MMMM yyyy", Locale.getDefault()).format(todayCal.time)
+    }
+
+    val todaySpecialEvent = remember(todayCal) {
+        val day = todayCal.get(Calendar.DAY_OF_MONTH)
+        val month = todayCal.get(Calendar.MONTH) + 1
+        val year = todayCal.get(Calendar.YEAR)
+        FestivalRepository.getTodaySpecialHomeEvent(day, month, year)
     }
 
     val displayName = state.name.trim()
@@ -711,25 +722,34 @@ fun HeaderSection(state: OfflineDashboardState, onProfileClick: () -> Unit = {})
             Spacer(modifier = Modifier.width(12.dp))
             Column {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = "Hi, ",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                    Text(
-                        text = firstName,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Icon(
-                        imageVector = WavingHandIcon,
-                        contentDescription = "Greeting",
-                        tint = MaterialTheme.colorScheme.onBackground,
-                        modifier = Modifier.size(20.dp)
-                    )
+                    if (todaySpecialEvent != null) {
+                        Text(
+                            text = todaySpecialEvent.greeting,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                    } else {
+                        Text(
+                            text = "Hi, ",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                        Text(
+                            text = firstName,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Icon(
+                            imageVector = WavingHandIcon,
+                            contentDescription = "Greeting",
+                            tint = MaterialTheme.colorScheme.onBackground,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 }
                 Text(
                     text = todayFullDate,
@@ -739,6 +759,11 @@ fun HeaderSection(state: OfflineDashboardState, onProfileClick: () -> Unit = {})
                 )
             }
         }
+    }
+
+    if (todaySpecialEvent != null) {
+        Spacer(modifier = Modifier.height(12.dp))
+        FestivalHeaderBanner(event = todaySpecialEvent)
     }
 }
 
