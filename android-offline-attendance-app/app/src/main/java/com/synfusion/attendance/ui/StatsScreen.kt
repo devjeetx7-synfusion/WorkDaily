@@ -276,13 +276,32 @@ fun PersonalStatsView(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     if (!isAllTime) {
+                        var showMonthPicker by remember { mutableStateOf(false) }
+                        if (showMonthPicker) {
+                            com.synfusion.attendance.ui.components.MonthYearPickerDialog(
+                                initialDate = state.selectedMonthDate,
+                                onMonthYearSelected = { newDate ->
+                                    viewModel.setMonth(newDate)
+                                },
+                                onDismiss = { showMonthPicker = false }
+                            )
+                        }
+
                         Row(
                             modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(8.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             IconButton(onClick = { viewModel.changeMonth(-1) }) { Icon(Icons.Default.ChevronLeft, contentDescription = "Previous") }
-                            Text(text = monthYearStr, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                            Text(
+                                text = monthYearStr,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable { showMonthPicker = true }
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
                             IconButton(onClick = { viewModel.changeMonth(1) }) { Icon(Icons.Default.ChevronRight, contentDescription = "Next") }
                         }
                     }
@@ -493,13 +512,32 @@ fun PersonalStatsView(
                             verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
                             if (!isAllTime) {
+                                var showMonthPickerWide by remember { mutableStateOf(false) }
+                                if (showMonthPickerWide) {
+                                    com.synfusion.attendance.ui.components.MonthYearPickerDialog(
+                                        initialDate = state.selectedMonthDate,
+                                        onMonthYearSelected = { newDate ->
+                                            viewModel.setMonth(newDate)
+                                        },
+                                        onDismiss = { showMonthPickerWide = false }
+                                    )
+                                }
+
                                 Row(
                                     modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).padding(8.dp),
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     IconButton(onClick = { viewModel.changeMonth(-1) }) { Icon(Icons.Default.ChevronLeft, contentDescription = "Previous") }
-                                    Text(text = monthYearStr, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                    Text(
+                                        text = monthYearStr,
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .clickable { showMonthPickerWide = true }
+                                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                                    )
                                     IconButton(onClick = { viewModel.changeMonth(1) }) { Icon(Icons.Default.ChevronRight, contentDescription = "Next") }
                                 }
                             }

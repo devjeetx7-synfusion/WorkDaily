@@ -308,6 +308,17 @@ fun PassbookScreen(
                                 }
 
                                 item {
+                                    var showPbPicker by remember { mutableStateOf(false) }
+                                    if (showPbPicker) {
+                                        com.synfusion.attendance.ui.components.MonthYearPickerDialog(
+                                            initialDate = state.selectedMonthDate,
+                                            onMonthYearSelected = { newDate ->
+                                                viewModel.setMonth(newDate)
+                                            },
+                                            onDismiss = { showPbPicker = false }
+                                        )
+                                    }
+
                                     Row(
                                         modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(12.dp)).padding(8.dp),
                                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -316,7 +327,16 @@ fun PassbookScreen(
                                         Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.passbook_month), fontSize = 14.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 8.dp))
                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                             IconButton(onClick = { viewModel.changeMonth(-1) }) { Icon(Icons.Default.ChevronLeft, contentDescription = "Previous", modifier = Modifier.size(20.dp)) }
-                                            Text(text = monthYearStr, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                                            Text(
+                                                text = monthYearStr,
+                                                fontSize = 14.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier
+                                                    .clip(RoundedCornerShape(6.dp))
+                                                    .clickable { showPbPicker = true }
+                                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                                            )
                                             IconButton(onClick = { viewModel.changeMonth(1) }) { Icon(Icons.Default.ChevronRight, contentDescription = "Next", modifier = Modifier.size(20.dp)) }
                                         }
                                     }
@@ -605,6 +625,17 @@ fun PassbookScreen(
                                                 }
                                             }
 
+                                            var showPbPickerWide by remember { mutableStateOf(false) }
+                                            if (showPbPickerWide) {
+                                                com.synfusion.attendance.ui.components.MonthYearPickerDialog(
+                                                    initialDate = state.selectedMonthDate,
+                                                    onMonthYearSelected = { newDate ->
+                                                        viewModel.setMonth(newDate)
+                                                    },
+                                                    onDismiss = { showPbPickerWide = false }
+                                                )
+                                            }
+
                                             Row(
                                                 modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(12.dp)).padding(8.dp),
                                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -613,7 +644,16 @@ fun PassbookScreen(
                                                 Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.passbook_month), fontSize = 14.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 8.dp))
                                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                                     IconButton(onClick = { viewModel.changeMonth(-1) }) { Icon(Icons.Default.ChevronLeft, contentDescription = "Previous", modifier = Modifier.size(20.dp)) }
-                                                    Text(text = monthYearStr, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                                                    Text(
+                                                        text = monthYearStr,
+                                                        fontSize = 14.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = MaterialTheme.colorScheme.primary,
+                                                        modifier = Modifier
+                                                            .clip(RoundedCornerShape(6.dp))
+                                                            .clickable { showPbPickerWide = true }
+                                                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                                                    )
                                                     IconButton(onClick = { viewModel.changeMonth(1) }) { Icon(Icons.Default.ChevronRight, contentDescription = "Next", modifier = Modifier.size(20.dp)) }
                                                 }
                                             }

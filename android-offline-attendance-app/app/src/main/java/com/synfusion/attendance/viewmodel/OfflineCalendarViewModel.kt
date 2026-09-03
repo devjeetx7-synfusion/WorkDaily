@@ -148,6 +148,13 @@ class OfflineCalendarViewModel(
         loadData(showLoadingIndicator = true)
     }
 
+    fun setPersonalMonth(date: Date) {
+        _calendarState.update { it.copy(
+            currentMonthDate = date
+        ) }
+        loadData(showLoadingIndicator = true)
+    }
+
     fun markPersonalAttendance(
         date: String,
         status: String,

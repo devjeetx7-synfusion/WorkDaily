@@ -204,6 +204,7 @@ fun BackupRestoreBottomSheet(
         ),
         containerColor = MaterialTheme.colorScheme.background,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        windowInsets = WindowInsets(0.dp),
         dragHandle = { if (!isOperating) BottomSheetDefaults.DragHandle() }
     ) {
         Box(

@@ -122,6 +122,12 @@ fun PersonalCalendarView(
 
     val dayLabels = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
 
+    val holidayMap = remember(month, year) {
+        com.synfusion.attendance.data.IndianHolidayRepository.getHolidaysForMonth(month + 1, year)
+    }
+
+    var selectedHoliday by rememberSaveable { mutableStateOf<com.synfusion.attendance.data.IndianHoliday?>(null) }
+
     val dayMap = remember(state.personalAttendance) {
         val map = mutableMapOf<Int, OfflineAttendanceRecord>()
         val advances = mutableMapOf<Int, Double>()
@@ -174,6 +180,17 @@ fun PersonalCalendarView(
                 }
 
                 item {
+                    var showCalPicker by remember { mutableStateOf(false) }
+                    if (showCalPicker) {
+                        com.synfusion.attendance.ui.components.MonthYearPickerDialog(
+                            initialDate = currentMonthDate,
+                            onMonthYearSelected = { newDate ->
+                                viewModel.setPersonalMonth(newDate)
+                            },
+                            onDismiss = { showCalPicker = false }
+                        )
+                    }
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -185,7 +202,11 @@ fun PersonalCalendarView(
                         Text(
                             text = monthYearStr,
                             fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable { showCalPicker = true }
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
                         )
                         IconButton(onClick = { viewModel.changePersonalMonth(1) }) {
                             Icon(Icons.Default.ChevronRight, contentDescription = "Next Month")
@@ -291,6 +312,8 @@ fun PersonalCalendarView(
                                             }
 
                                             val hasOT = data?.overtimeHours != null && data.overtimeHours > 0
+                                            val dayHolidays = holidayMap[day]
+                                            val mainHoliday = dayHolidays?.firstOrNull()
 
                                             Box(
                                                 modifier = Modifier
@@ -314,6 +337,29 @@ fun PersonalCalendarView(
                                                     fontWeight = FontWeight.Bold,
                                                     color = textColor
                                                 )
+
+                                                if (mainHoliday != null) {
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .align(Alignment.TopStart)
+                                                            .offset(x = (-2).dp, y = (-2).dp)
+                                                            .size(16.dp)
+                                                            .clip(CircleShape)
+                                                            .background(MaterialTheme.colorScheme.surface)
+                                                            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f), CircleShape)
+                                                            .clickable {
+                                                                selectedHoliday = mainHoliday
+                                                            },
+                                                        contentAlignment = Alignment.Center
+                                                    ) {
+                                                        Text(
+                                                            text = mainHoliday.emoji,
+                                                            fontSize = 9.sp,
+                                                            textAlign = TextAlign.Center
+                                                        )
+                                                    }
+                                                }
+
                                                 if (isHalf) {
                                                     Box(
                                                         modifier = Modifier
@@ -403,6 +449,17 @@ fun PersonalCalendarView(
                             border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
                         ) {
                             Column(modifier = Modifier.padding(20.dp)) {
+                                var showCalPickerWide by remember { mutableStateOf(false) }
+                                if (showCalPickerWide) {
+                                    com.synfusion.attendance.ui.components.MonthYearPickerDialog(
+                                        initialDate = currentMonthDate,
+                                        onMonthYearSelected = { newDate ->
+                                            viewModel.setPersonalMonth(newDate)
+                                        },
+                                        onDismiss = { showCalPickerWide = false }
+                                    )
+                                }
+
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -414,7 +471,11 @@ fun PersonalCalendarView(
                                     Text(
                                         text = monthYearStr,
                                         fontSize = 18.sp,
-                                        fontWeight = FontWeight.Bold
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .clickable { showCalPickerWide = true }
+                                            .padding(horizontal = 8.dp, vertical = 4.dp)
                                     )
                                     IconButton(onClick = { viewModel.changePersonalMonth(1) }) {
                                         Icon(Icons.Default.ChevronRight, contentDescription = "Next Month")
@@ -476,6 +537,8 @@ fun PersonalCalendarView(
                                                         }
 
                                                         val hasOT = data?.overtimeHours != null && data.overtimeHours > 0
+                                                        val dayHolidays = holidayMap[day]
+                                                        val mainHoliday = dayHolidays?.firstOrNull()
 
                                                         Box(
                                                             modifier = Modifier
@@ -499,6 +562,29 @@ fun PersonalCalendarView(
                                                                 fontWeight = FontWeight.Bold,
                                                                 color = textColor
                                                             )
+
+                                                            if (mainHoliday != null) {
+                                                                Box(
+                                                                    modifier = Modifier
+                                                                        .align(Alignment.TopStart)
+                                                                        .offset(x = (-2).dp, y = (-2).dp)
+                                                                        .size(16.dp)
+                                                                        .clip(CircleShape)
+                                                                        .background(MaterialTheme.colorScheme.surface)
+                                                                        .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f), CircleShape)
+                                                                        .clickable {
+                                                                            selectedHoliday = mainHoliday
+                                                                        },
+                                                                    contentAlignment = Alignment.Center
+                                                                ) {
+                                                                    Text(
+                                                                        text = mainHoliday.emoji,
+                                                                        fontSize = 9.sp,
+                                                                        textAlign = TextAlign.Center
+                                                                    )
+                                                                }
+                                                            }
+
                                                             if (isHalf) {
                                                                 Box(
                                                                     modifier = Modifier
@@ -626,6 +712,15 @@ fun PersonalCalendarView(
         }
     }
 
+    if (selectedHoliday != null) {
+        HolidayDetailDialog(
+            holiday = selectedHoliday!!,
+            monthName = SimpleDateFormat("MMMM", Locale.getDefault()).format(currentMonthDate),
+            year = year,
+            onDismiss = { selectedHoliday = null }
+        )
+    }
+
     if (showDialog && selectedDay != null) {
         val dateStr = String.format(Locale.US, "%04d-%02d-%02d", year, month + 1, selectedDay!!)
         val existingRecord = dayMap[selectedDay!!]
@@ -644,6 +739,113 @@ fun PersonalCalendarView(
             }
         )
     }
+}
+
+@Composable
+fun HolidayDetailDialog(
+    holiday: com.synfusion.attendance.data.IndianHoliday,
+    monthName: String,
+    year: Int,
+    onDismiss: () -> Unit
+) {
+    val tagBgColor = when (holiday.category) {
+        com.synfusion.attendance.data.HolidayCategory.PUBLIC_HOLIDAY -> MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+        com.synfusion.attendance.data.HolidayCategory.FESTIVAL -> com.synfusion.attendance.ui.theme.AttendanceStatusColors.getLeave().copy(alpha = 0.15f)
+        com.synfusion.attendance.data.HolidayCategory.OBSERVANCE -> MaterialTheme.colorScheme.secondary.copy(alpha = 0.15f)
+    }
+
+    val tagTextColor = when (holiday.category) {
+        com.synfusion.attendance.data.HolidayCategory.PUBLIC_HOLIDAY -> MaterialTheme.colorScheme.primary
+        com.synfusion.attendance.data.HolidayCategory.FESTIVAL -> com.synfusion.attendance.ui.theme.AttendanceStatusColors.getLeave()
+        com.synfusion.attendance.data.HolidayCategory.OBSERVANCE -> MaterialTheme.colorScheme.secondary
+    }
+
+    val categoryText = when (holiday.category) {
+        com.synfusion.attendance.data.HolidayCategory.PUBLIC_HOLIDAY -> "Public Holiday"
+        com.synfusion.attendance.data.HolidayCategory.FESTIVAL -> "Festival"
+        com.synfusion.attendance.data.HolidayCategory.OBSERVANCE -> "Observance"
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = null,
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                // Circular Emoji Banner
+                Box(
+                    modifier = Modifier
+                        .size(72.dp)
+                        .clip(CircleShape)
+                        .background(tagBgColor),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = holiday.emoji,
+                        fontSize = 36.sp,
+                        textAlign = TextAlign.Center
+                    )
+                }
+
+                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        text = holiday.name,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        textAlign = TextAlign.Center
+                    )
+
+                    Text(
+                        text = "${holiday.day} $monthName $year",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = tagBgColor
+                ) {
+                    Text(
+                        text = categoryText,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = tagTextColor,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                    )
+                }
+
+                if (holiday.description.isNotEmpty()) {
+                    Text(
+                        text = holiday.description,
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                        lineHeight = 18.sp,
+                        modifier = Modifier.padding(horizontal = 8.dp)
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text("Close", fontWeight = FontWeight.Bold)
+            }
+        },
+        shape = RoundedCornerShape(24.dp),
+        containerColor = MaterialTheme.colorScheme.surface
+    )
 }
 
 @Composable

@@ -70,8 +70,7 @@ fun NavigationCustomizationContent(
         listOf(
             "dashboard" to "Home",
             "calendar" to "Calendar",
-            "stats" to "Statistics",
-            "all_time_passbook" to "Passbook"
+            "stats" to "Statistics"
         )
     }
 
@@ -80,7 +79,6 @@ fun NavigationCustomizationContent(
             "dashboard" to "Home",
             "calendar" to "Calendar",
             "stats" to "Statistics",
-            "all_time_passbook" to "Passbook",
             "settings" to "Settings"
         )
     }

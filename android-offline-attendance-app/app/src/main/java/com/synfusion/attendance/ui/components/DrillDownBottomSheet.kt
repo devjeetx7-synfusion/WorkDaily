@@ -75,6 +75,7 @@ fun DrillDownBottomSheet(
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = MaterialTheme.colorScheme.background,
         dragHandle = { BottomSheetDefaults.DragHandle() },
+        windowInsets = WindowInsets(0.dp),
         shape = sheetShape,
         modifier = sheetModifier
     ) {
@@ -109,7 +110,7 @@ fun DrillDownBottomSheet(
                         .padding(horizontal = 16.dp),
                     placeholder = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.search_records)) },
                     leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                    shape = RoundedCornerShape(12.dp),
+                    shape = CircleShape,
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = MaterialTheme.colorScheme.primary,
