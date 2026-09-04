@@ -18,8 +18,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import android.app.Activity
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
+import androidx.core.view.WindowCompat
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.synfusion.attendance.data.FestivalEvent
@@ -81,6 +84,17 @@ fun FestivalHeroEnvironment(
         } else null
     }
 
+    val view = LocalView.current
+    if (!view.isInEditMode) {
+        SideEffect {
+            val window = (context as? Activity)?.window
+            if (window != null) {
+                val insetsController = WindowCompat.getInsetsController(window, view)
+                insetsController.isAppearanceLightStatusBars = !event.useLightStatusBarIcons
+            }
+        }
+    }
+
     var isVisible by remember { mutableStateOf(false) }
     LaunchedEffect(event.id) {
         isVisible = true
@@ -116,6 +130,21 @@ fun FestivalHeroEnvironment(
             FestivalArtwork(
                 event = event,
                 modifier = Modifier.matchParentSize()
+            )
+
+            // Layer 3 — Smooth Bottom Gradient Transition Fade into WorkDaily background
+            val targetBgColor = MaterialTheme.colorScheme.background
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .background(
+                        brush = Brush.verticalGradient(
+                            0.0f to Color.Transparent,
+                            0.55f to Color.Transparent,
+                            0.82f to bgGradientBottom.copy(alpha = 0.5f),
+                            1.0f to targetBgColor
+                        )
+                    )
             )
 
             // Content Overlay with Top Safe Insets for Transparent Status Bar
@@ -241,7 +270,8 @@ fun FestivalHeroEnvironment(
                     modifier = Modifier.padding(end = 80.dp)
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                // Bottom padding space reserved for overlapping earnings cards
+                Spacer(modifier = Modifier.height(44.dp))
             }
         }
     }
