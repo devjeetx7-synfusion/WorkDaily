@@ -884,7 +884,10 @@ fun AppPreferencesCardSection(
         border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
-            // 1. Theme — Toggle
+            // 1. Theme — Toggle (reflects effective dark theme including system inheritance)
+            val isSystemDark = isSystemInDarkTheme()
+            val effectiveDarkMode = state.isDarkMode ?: isSystemDark
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -901,7 +904,7 @@ fun AppPreferencesCardSection(
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            if (state.isDarkMode) Icons.Default.DarkMode else Icons.Default.LightMode,
+                            if (effectiveDarkMode) Icons.Default.DarkMode else Icons.Default.LightMode,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary
                         )
@@ -916,7 +919,7 @@ fun AppPreferencesCardSection(
                     }
                 }
                 Switch(
-                    checked = state.isDarkMode,
+                    checked = effectiveDarkMode,
                     onCheckedChange = { viewModel.toggleTheme(it) }
                 )
             }

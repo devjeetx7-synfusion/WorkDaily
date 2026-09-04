@@ -292,10 +292,35 @@ fun DashboardScreen(
                 ) { page ->
                     when (page) {
                         0 -> {
+                            val todayCal = remember { Calendar.getInstance() }
+                            val activePreviewEvent by FestivalPreviewManager.activePreviewEvent.collectAsStateWithLifecycle(initialValue = null)
+                            val todaySpecialEvent = remember(todayCal, activePreviewEvent) {
+                                val day = todayCal.get(Calendar.DAY_OF_MONTH)
+                                val month = todayCal.get(Calendar.MONTH) + 1
+                                val year = todayCal.get(Calendar.YEAR)
+                                FestivalPreviewManager.getEffectiveSpecialHomeEvent(day, month, year)
+                            }
+
+                            val festivalBgModifier = if (todaySpecialEvent != null) {
+                                val pColor = Color(todaySpecialEvent.primaryColorHex).copy(alpha = 0.12f)
+                                val sColor = Color(todaySpecialEvent.secondaryColorHex).copy(alpha = 0.05f)
+                                Modifier.background(
+                                    brush = androidx.compose.ui.graphics.Brush.verticalGradient(
+                                        colors = listOf(
+                                            pColor,
+                                            sColor,
+                                            MaterialTheme.colorScheme.background
+                                        )
+                                    )
+                                )
+                            } else {
+                                Modifier.background(MaterialTheme.colorScheme.background)
+                            }
+
                             WorkDailyPullToRefreshBox(
                                 isRefreshing = dashboardState.isRefreshing,
                                 onRefresh = { dashboardViewModel.refresh() },
-                                modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
+                                modifier = Modifier.fillMaxSize().then(festivalBgModifier)
                             ) {
                                 Crossfade(
                                     targetState = if (dashboardState.isLoading) "shimmer" else if (dashboardState.errorMessage != null) "error" else "content",

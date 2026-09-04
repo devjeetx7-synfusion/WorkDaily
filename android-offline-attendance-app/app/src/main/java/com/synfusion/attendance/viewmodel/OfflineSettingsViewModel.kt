@@ -28,7 +28,7 @@ data class OfflineSettingsState(
     val originalProfileImageUrl: String = "",
     val profileImageUri: Uri? = null,
     val language: String = "en",
-    val isDarkMode: Boolean = false,
+    val isDarkMode: Boolean? = null,
     val isRemindersEnabled: Boolean = false,
     val isSaving: Boolean = false,
     val savedMessage: String? = null,
@@ -63,7 +63,7 @@ class OfflineSettingsViewModel(
         loadSettings()
         viewModelScope.launch {
             repository.darkModeFlow.collect { isDark ->
-                _state.update { it.copy(isDarkMode = isDark ?: false) }
+                _state.update { it.copy(isDarkMode = isDark) }
             }
         }
         viewModelScope.launch {
