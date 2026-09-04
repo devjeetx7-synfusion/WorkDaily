@@ -24,6 +24,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -373,7 +375,18 @@ fun DashboardScreen(
                                                             Column(
                                                                 modifier = Modifier
                                                                     .fillMaxWidth()
-                                                                    .padding(horizontal = if (hasFestival) 16.dp else 0.dp),
+                                                                    .padding(horizontal = if (hasFestival) 16.dp else 0.dp)
+                                                                    .then(
+                                                                        if (hasFestival) {
+                                                                            Modifier.layout { measurable, constraints ->
+                                                                                val placeable = measurable.measure(constraints)
+                                                                                val overlapPx = 36.dp.roundToPx()
+                                                                                layout(placeable.width, (placeable.height - overlapPx).coerceAtLeast(0)) {
+                                                                                    placeable.placeRelative(0, -overlapPx)
+                                                                                }
+                                                                            }
+                                                                        } else Modifier
+                                                                    ),
                                                                 verticalArrangement = Arrangement.spacedBy(16.dp)
                                                             ) {
                                                                 PersonalStatsGrid(
@@ -856,30 +869,87 @@ fun HeaderSection(state: OfflineDashboardState, onProfileClick: () -> Unit = {})
 fun PersonalStatsGrid(state: OfflineDashboardState, onNavigatePassbook: () -> Unit, onEarningsClick: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            Column(
-                modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).clickable(onClick = onEarningsClick).padding(20.dp)
+            Surface(
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable(onClick = onEarningsClick),
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surface,
+                shadowElevation = 4.dp,
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
             ) {
-                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.todays_earnings), fontSize = 12.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-                Spacer(modifier = Modifier.height(8.dp))
-                Text("₹${AmountFormatter.format(state.todayEarned)}", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent(), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                Column(modifier = Modifier.padding(20.dp)) {
+                    Text(
+                        text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.todays_earnings),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "₹${AmountFormatter.format(state.todayEarned)}",
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent(),
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    )
+                }
             }
-            Column(
-                modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).clickable(onClick = onEarningsClick).padding(20.dp)
+            Surface(
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable(onClick = onEarningsClick),
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surface,
+                shadowElevation = 4.dp,
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
             ) {
-                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.monthly_earnings), fontSize = 12.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-                Spacer(modifier = Modifier.height(8.dp))
-                Text("₹${AmountFormatter.format(state.monthEarned)}", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent(), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                Column(modifier = Modifier.padding(20.dp)) {
+                    Text(
+                        text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.monthly_earnings),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "₹${AmountFormatter.format(state.monthEarned)}",
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent(),
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    )
+                }
             }
         }
 
-        Row(
-            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)).border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), RoundedCornerShape(16.dp)).clickable(onClick = onNavigatePassbook).padding(16.dp),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onNavigatePassbook),
+            shape = RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
         ) {
-            Icon(Icons.Default.Description, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.view_my_passbook), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            Row(
+                modifier = Modifier.padding(16.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(Icons.Default.Description, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.view_my_passbook),
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
         }
     }
 }
