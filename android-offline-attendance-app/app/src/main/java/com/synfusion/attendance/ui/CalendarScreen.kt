@@ -48,6 +48,7 @@ import com.synfusion.attendance.viewmodel.OfflineAttendanceRecord
 import com.synfusion.attendance.viewmodel.OfflineCalendarViewModel
 import com.synfusion.attendance.utils.IndianCurrencyVisualTransformation
 import com.synfusion.attendance.utils.collectAsStateWithLifecycle
+import androidx.compose.ui.platform.LocalContext
 import com.synfusion.attendance.ui.responsive.LocalWindowSizeInfo
 import com.synfusion.attendance.ui.responsive.ResponsiveContainer
 import java.text.SimpleDateFormat
@@ -636,6 +637,7 @@ fun FestivalDetailDialog(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
+                    val calendarAssetUrl = remember(event.calendarAssetPath) { "file:///android_asset/${event.calendarAssetPath}" }
                     Box(
                         modifier = Modifier
                             .size(72.dp)
@@ -644,10 +646,22 @@ fun FestivalDetailDialog(
                             .border(2.dp, accentColor.copy(alpha = 0.5f), CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = event.emoji,
-                            fontSize = 36.sp,
-                            textAlign = TextAlign.Center
+                        coil.compose.SubcomposeAsyncImage(
+                            model = coil.request.ImageRequest.Builder(LocalContext.current)
+                                .data(calendarAssetUrl)
+                                .crossfade(true)
+                                .build(),
+                            contentDescription = "${event.name} Artwork",
+                            modifier = Modifier.fillMaxSize().clip(CircleShape),
+                            contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                            error = {
+                                Text(
+                                    text = event.name.take(1),
+                                    fontSize = 28.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = primaryColor
+                                )
+                            }
                         )
                     }
 
@@ -821,6 +835,7 @@ fun PersonalAttendanceDialog(
                                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                                         modifier = Modifier.weight(1f)
                                     ) {
+                                        val calAssetUrl = remember(mainFestival.calendarAssetPath) { "file:///android_asset/${mainFestival.calendarAssetPath}" }
                                         Box(
                                             modifier = Modifier
                                                 .size(48.dp)
@@ -829,7 +844,23 @@ fun PersonalAttendanceDialog(
                                                 .border(1.5.dp, aColor.copy(alpha = 0.6f), CircleShape),
                                             contentAlignment = Alignment.Center
                                         ) {
-                                            Text(mainFestival.emoji, fontSize = 26.sp, textAlign = TextAlign.Center)
+                                            coil.compose.SubcomposeAsyncImage(
+                                                model = coil.request.ImageRequest.Builder(LocalContext.current)
+                                                    .data(calAssetUrl)
+                                                    .crossfade(true)
+                                                    .build(),
+                                                contentDescription = "${mainFestival.name} Artwork",
+                                                modifier = Modifier.fillMaxSize().clip(CircleShape),
+                                                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                                                error = {
+                                                    Text(
+                                                        text = mainFestival.name.take(1),
+                                                        fontSize = 20.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = pColor
+                                                    )
+                                                }
+                                            )
                                         }
 
                                         Column {
@@ -885,7 +916,12 @@ fun PersonalAttendanceDialog(
                                                 verticalAlignment = Alignment.CenterVertically,
                                                 horizontalArrangement = Arrangement.spacedBy(6.dp)
                                             ) {
-                                                Text(other.emoji, fontSize = 12.sp)
+                                                Box(
+                                                    modifier = Modifier
+                                                        .size(8.dp)
+                                                        .clip(CircleShape)
+                                                        .background(Color(other.primaryColorHex))
+                                                )
                                                 Text(
                                                     text = other.name,
                                                     fontSize = 11.sp,
@@ -1110,13 +1146,21 @@ fun CalendarDateCell(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     val isPresent = data?.status == "present"
     val isAbsent = data?.status == "absent"
     val isHalf = data?.type == "half"
     val hasAdvance = data?.advanceAmount != null && data.advanceAmount > 0
     val hasOT = data?.overtimeHours != null && data.overtimeHours > 0
 
-    val bgColor = when {
+    val isFestivalDay = mainFestival != null
+    var isCalendarAssetLoaded by remember(mainFestival?.id) { mutableStateOf(false) }
+
+    val festivalBgColor = remember(mainFestival) {
+        if (mainFestival != null) Color(mainFestival.primaryColorHex) else Color.Transparent
+    }
+
+    val defaultBgColor = when {
         isPresent && isHalf -> com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay()
         isPresent -> com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent()
         isAbsent -> com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent()
@@ -1124,24 +1168,67 @@ fun CalendarDateCell(
     }
 
     val textColor = when {
+        isFestivalDay && mainFestival != null -> Color(mainFestival.calendarTextColorHex)
         isPresent || isAbsent -> Color.White
         isToday -> MaterialTheme.colorScheme.onSurface
         else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+    }
+
+    // Border hierarchy for attendance and today indicators on festival/normal date cells
+    val borderStrokeWidth = when {
+        isPresent || isAbsent || isHalf -> 2.5.dp
+        hasOT -> 2.dp
+        isToday -> 2.dp
+        else -> 0.dp
+    }
+
+    val borderStrokeColor = when {
+        isPresent && isHalf -> com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay()
+        isPresent -> com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent()
+        isAbsent -> com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent()
+        hasOT -> com.synfusion.attendance.ui.theme.AttendanceStatusColors.getLeave()
+        isToday -> MaterialTheme.colorScheme.primary
+        else -> Color.Transparent
     }
 
     Box(
         modifier = modifier
             .fillMaxSize()
             .clip(CircleShape)
-            .background(bgColor)
+            .then(
+                if (isFestivalDay) {
+                    Modifier.background(festivalBgColor)
+                } else {
+                    Modifier.background(defaultBgColor)
+                }
+            )
             .clickable(onClick = onClick)
             .border(
-                width = if (hasOT) 2.dp else if (isToday && !isPresent && !isAbsent) 2.dp else 0.dp,
-                color = if (hasOT) com.synfusion.attendance.ui.theme.AttendanceStatusColors.getLeave() else if (isToday && !isPresent && !isAbsent) MaterialTheme.colorScheme.primary else Color.Transparent,
+                width = borderStrokeWidth,
+                color = borderStrokeColor,
                 shape = CircleShape
             ),
         contentAlignment = Alignment.Center
     ) {
+        // Full Circular Festival Image Asset (if available for festival date)
+        if (isFestivalDay && mainFestival != null) {
+            val calendarAssetUrl = remember(mainFestival.calendarAssetPath) { "file:///android_asset/${mainFestival.calendarAssetPath}" }
+            coil.compose.SubcomposeAsyncImage(
+                model = coil.request.ImageRequest.Builder(context)
+                    .data(calendarAssetUrl)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = "${mainFestival.name} Calendar Artwork",
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(CircleShape),
+                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                onSuccess = { isCalendarAssetLoaded = true },
+                onError = { isCalendarAssetLoaded = false }
+            )
+        }
+
+        // Date Number centered ON TOP of artwork / circle
         Text(
             text = day.toString(),
             fontSize = 14.sp,
@@ -1149,15 +1236,7 @@ fun CalendarDateCell(
             color = textColor
         )
 
-        if (mainFestival != null) {
-            FestivalCalendarBadge(
-                event = mainFestival,
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .offset(x = (-2).dp, y = (-2).dp)
-            )
-        }
-
+        // Attendance status overlay badges (Half-day / Advance indicators)
         if (isHalf) {
             Box(
                 modifier = Modifier
@@ -1165,7 +1244,7 @@ fun CalendarDateCell(
                     .padding(4.dp)
                     .size(6.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.onPrimary)
+                    .background(com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay())
             )
         }
 
@@ -1173,8 +1252,8 @@ fun CalendarDateCell(
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(bottom = 6.dp)
-                    .size(8.dp)
+                    .padding(bottom = 4.dp)
+                    .size(6.dp)
                     .clip(CircleShape)
                     .background(com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay())
             )

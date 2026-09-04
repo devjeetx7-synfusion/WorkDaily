@@ -107,6 +107,9 @@ fun FestivalHeroEnvironment(
         enter = fadeIn(animationSpec = tween(600)),
         exit = fadeOut(animationSpec = tween(400))
     ) {
+        val heroAssetUrl = remember(event.heroAssetPath) { "file:///android_asset/${event.heroAssetPath}" }
+        var isHeroAssetLoaded by remember(event.id) { mutableStateOf(false) }
+
         Box(
             modifier = modifier
                 .fillMaxWidth()
@@ -120,17 +123,30 @@ fun FestivalHeroEnvironment(
                     )
                 )
         ) {
-            // Layer 1 — Festival Animation Canvas (Particles & Glows)
-            FestivalAnimationCanvas(
-                event = event,
-                modifier = Modifier.matchParentSize()
+            // Layer 1 — Bundled PNG Hero Asset Image (if available) with responsive cover crop
+            coil.compose.SubcomposeAsyncImage(
+                model = coil.request.ImageRequest.Builder(context)
+                    .data(heroAssetUrl)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = "${event.name} Hero Artwork",
+                modifier = Modifier.matchParentSize(),
+                contentScale = ContentScale.Crop,
+                onSuccess = { isHeroAssetLoaded = true },
+                onError = { isHeroAssetLoaded = false }
             )
 
-            // Layer 2 — High-Quality Poster Vector Artwork
-            FestivalArtwork(
-                event = event,
-                modifier = Modifier.matchParentSize()
-            )
+            // Layer 2 — Vector Artwork & Animation Canvas Fallback (if hero.png PNG asset is missing)
+            if (!isHeroAssetLoaded) {
+                FestivalAnimationCanvas(
+                    event = event,
+                    modifier = Modifier.matchParentSize()
+                )
+                FestivalArtwork(
+                    event = event,
+                    modifier = Modifier.matchParentSize()
+                )
+            }
 
             // Layer 3 — Smooth Bottom Gradient Transition Fade into WorkDaily background
             val targetBgColor = MaterialTheme.colorScheme.background
@@ -140,8 +156,8 @@ fun FestivalHeroEnvironment(
                     .background(
                         brush = Brush.verticalGradient(
                             0.0f to Color.Transparent,
-                            0.55f to Color.Transparent,
-                            0.82f to bgGradientBottom.copy(alpha = 0.5f),
+                            0.45f to Color.Transparent,
+                            0.78f to bgGradientBottom.copy(alpha = 0.65f),
                             1.0f to targetBgColor
                         )
                     )

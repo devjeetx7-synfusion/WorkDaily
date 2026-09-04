@@ -50,5 +50,21 @@ data class FestivalEvent(
     val avoidText: String = "",
     val heroBgGradientTopHex: Long? = null,
     val heroBgGradientBottomHex: Long? = null,
-    val useLightStatusBarIcons: Boolean = true
-)
+    val useLightStatusBarIcons: Boolean = true,
+    val customBaseKey: String? = null,
+    val calendarTextColorHex: Long = 0xFFFFFFFF
+) {
+    val baseKey: String
+        get() {
+            if (customBaseKey != null) return customBaseKey
+            val k = id.replace(Regex("_20\\d\\d$"), "")
+            if (k.startsWith("eid_ul_fitr") || k.startsWith("eid_ul_adha")) return "eid"
+            return k
+        }
+
+    val heroAssetPath: String
+        get() = "festivals/$baseKey/hero.png"
+
+    val calendarAssetPath: String
+        get() = "festivals/$baseKey/calendar.png"
+}
