@@ -569,21 +569,120 @@ private fun DrawScope.drawGaneshArtwork(
     drawPath(path = trunkPath, color = primary, style = Stroke(width = 4f, cap = StrokeCap.Round))
 }
 
-// 11. Janmashtami Artwork — Peacock Feather & Flute
+// 11. Janmashtami Artwork — Peacock Feather, Golden Flute, Divine Matki (Pot) & Hanging Pearls
 private fun DrawScope.drawJanmashtamiArtwork(
     w: Float, h: Float,
     primary: Color, secondary: Color, accent: Color
 ) {
-    val cx = w * 0.76f
-    val cy = h * 0.5f
+    val cx = w * 0.80f
+    val cy = h * 0.48f
 
-    // Peacock Eye
-    drawCircle(color = primary, radius = h * 0.28f, center = Offset(cx, cy - 10f))
-    drawCircle(color = secondary, radius = h * 0.18f, center = Offset(cx, cy - 10f))
-    drawCircle(color = accent, radius = h * 0.09f, center = Offset(cx, cy - 10f))
+    // Radial Divine Soft Cyan/Golden Aura Glow
+    drawCircle(
+        brush = Brush.radialGradient(
+            colors = listOf(Color(0xFF38BDF8).copy(alpha = 0.45f), Color(0xFFFACC15).copy(alpha = 0.25f), Color.Transparent),
+            center = Offset(cx, cy),
+            radius = h * 0.65f
+        )
+    )
 
-    // Flute Line
-    drawLine(color = accent, start = Offset(cx - 45f, cy + 25f), end = Offset(cx + 45f, cy + 15f), strokeWidth = 5f, cap = StrokeCap.Round)
+    // 1. PEACOCK FEATHER (Layered Iridescent Eye & Barbs)
+    val featherCenterX = cx + 15f
+    val featherCenterY = cy - 25f
+
+    // Outer Feather Soft Glow
+    drawCircle(
+        brush = Brush.radialGradient(
+            colors = listOf(Color(0xFF10B981).copy(alpha = 0.6f), Color(0xFF0284C7).copy(alpha = 0.3f), Color.Transparent),
+            center = Offset(featherCenterX, featherCenterY),
+            radius = 60f
+        )
+    )
+
+    // Feather Barbs / Fine Radial Strands
+    for (i in 0 until 24) {
+        val angle = i * 15f * (Math.PI / 180.0)
+        val r1 = 22f
+        val r2 = 45f + (i % 3) * 6f
+        val x1 = featherCenterX + r1 * cos(angle).toFloat()
+        val y1 = featherCenterY + r1 * sin(angle).toFloat()
+        val x2 = featherCenterX + r2 * cos(angle).toFloat()
+        val y2 = featherCenterY + r2 * sin(angle).toFloat()
+        val barbColor = if (i % 2 == 0) Color(0xFF10B981) else Color(0xFF38BDF8)
+        drawLine(
+            color = barbColor.copy(alpha = 0.7f),
+            start = Offset(x1, y1),
+            end = Offset(x2, y2),
+            strokeWidth = 1.8f,
+            cap = StrokeCap.Round
+        )
+    }
+
+    // Peacock Eye Oval Layers
+    drawCircle(color = Color(0xFF047857), radius = 24f, center = Offset(featherCenterX, featherCenterY))
+    drawCircle(color = Color(0xFF0284C7), radius = 17f, center = Offset(featherCenterX, featherCenterY))
+    drawCircle(color = Color(0xFFFACC15), radius = 10f, center = Offset(featherCenterX, featherCenterY))
+    drawCircle(color = Color(0xFF1E1B4B), radius = 5f, center = Offset(featherCenterX, featherCenterY))
+
+    // 2. ORNATE GOLDEN FLUTE (Bansuri with Hanging Pearl Drops)
+    val fluteStartX = cx - 75f
+    val fluteStartY = cy + 30f
+    val fluteEndX = cx + 55f
+    val fluteEndY = cy + 10f
+
+    // Flute Body
+    drawLine(
+        color = Color(0xFFFACC15),
+        start = Offset(fluteStartX, fluteStartY),
+        end = Offset(fluteEndX, fluteEndY),
+        strokeWidth = 7f,
+        cap = StrokeCap.Round
+    )
+
+    // Flute Finger Holes
+    for (i in 1..5) {
+        val frac = i / 6f
+        val holeX = fluteStartX + (fluteEndX - fluteStartX) * frac
+        val holeY = fluteStartY + (fluteEndY - fluteStartY) * frac
+        drawCircle(color = Color(0xFF78350F), radius = 2.2f, center = Offset(holeX, holeY))
+    }
+
+    // Hanging Pearl Strings from Flute
+    val hangingX = fluteStartX + 20f
+    val hangingY = fluteStartY - 2f
+    drawLine(color = Color.White.copy(alpha = 0.8f), start = Offset(hangingX, hangingY), end = Offset(hangingX - 5f, hangingY + 25f), strokeWidth = 1.5f)
+    drawCircle(color = Color(0xFFFACC15), radius = 4f, center = Offset(hangingX - 5f, hangingY + 25f))
+    drawCircle(color = Color.White, radius = 2.5f, center = Offset(hangingX - 5f, hangingY + 31f))
+
+    // 3. MATKI (Dahi Handi Pot & White Dripping Butter)
+    val potX = cx - 40f
+    val potY = cy - 10f
+
+    // Pot Base Body
+    val potPath = Path().apply {
+        moveTo(potX - 16f, potY - 8f)
+        cubicTo(potX - 32f, potY + 8f, potX - 28f, potY + 28f, potX, potY + 28f)
+        cubicTo(potX + 28f, potY + 28f, potX + 32f, potY + 8f, potX + 16f, potY - 8f)
+        close()
+    }
+    drawPath(path = potPath, color = Color(0xFFB45309))
+    drawPath(path = potPath, color = Color(0xFFFACC15), style = Stroke(width = 1.5f))
+
+    // Pot Neck Rim
+    drawOval(
+        color = Color(0xFFD97706),
+        topLeft = Offset(potX - 18f, potY - 14f),
+        size = Size(36f, 10f)
+    )
+
+    // Dripping White Butter / Makhan Overflow
+    val butterPath = Path().apply {
+        moveTo(potX - 14f, potY - 10f)
+        cubicTo(potX - 8f, potY + 2f, potX - 4f, potY + 12f, potX - 2f, potY + 12f)
+        cubicTo(potX, potY + 12f, potX + 4f, potY + 2f, potX + 14f, potY - 10f)
+        close()
+    }
+    drawPath(path = butterPath, color = Color.White)
 }
 
 // 12. Raksha Bandhan Artwork — Rakhi Jewel & Threads

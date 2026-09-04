@@ -44,11 +44,23 @@ fun FestivalHeroEnvironment(
     val secondaryColor = remember(event.secondaryColorHex) { Color(event.secondaryColorHex) }
     val accentColor = remember(event.accentColorHex) { Color(event.accentColorHex) }
 
+    val bgGradientTop = remember(event) {
+        event.heroBgGradientTopHex?.let { Color(it) } ?: Color(0xFF0B1026)
+    }
+    val bgGradientBottom = remember(event) {
+        event.heroBgGradientBottomHex?.let { Color(it) } ?: Color(0xFF1E2B58)
+    }
+
+    val firstName = remember(displayName) {
+        val trimmed = displayName.trim()
+        if (trimmed.isNotEmpty()) trimmed.split(" ")[0] else "Rajesh"
+    }
+
     val avatarLetters = remember(displayName) {
         val trimmed = displayName.trim()
         if (trimmed.length >= 2) trimmed.take(2).uppercase()
         else if (trimmed.isNotEmpty()) trimmed.take(1).uppercase()
-        else "U"
+        else "R"
     }
 
     val imageFile = remember(photoUrl) {
@@ -69,162 +81,167 @@ fun FestivalHeroEnvironment(
         } else null
     }
 
-    // Smooth Entrance Sequence (600-900ms)
     var isVisible by remember { mutableStateOf(false) }
     LaunchedEffect(event.id) {
         isVisible = true
     }
 
+    val statusBarPadding = WindowInsets.statusBars.asPaddingValues()
+
     AnimatedVisibility(
         visible = isVisible,
-        enter = fadeIn(animationSpec = tween(700)) + expandVertically(animationSpec = tween(700)),
-        exit = fadeOut(animationSpec = tween(400)) + shrinkVertically(animationSpec = tween(400))
+        enter = fadeIn(animationSpec = tween(600)),
+        exit = fadeOut(animationSpec = tween(400))
     ) {
-        Surface(
+        Box(
             modifier = modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(24.dp))
-                .border(
-                    width = 1.dp,
+                .background(
                     brush = Brush.verticalGradient(
                         colors = listOf(
-                            primaryColor.copy(alpha = 0.5f),
-                            accentColor.copy(alpha = 0.2f),
-                            Color.Transparent
-                        )
-                    ),
-                    shape = RoundedCornerShape(24.dp)
-                ),
-            shape = RoundedCornerShape(24.dp),
-            color = Color.Transparent
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 150.dp, max = 220.dp)
-                    .background(
-                        brush = Brush.verticalGradient(
-                            colors = listOf(
-                                primaryColor.copy(alpha = 0.35f),
-                                secondaryColor.copy(alpha = 0.18f),
-                                accentColor.copy(alpha = 0.06f),
-                                MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
-                            )
+                            bgGradientTop,
+                            bgGradientBottom,
+                            bgGradientBottom.copy(alpha = 0.9f)
                         )
                     )
+                )
+        ) {
+            // Layer 1 — Festival Animation Canvas (Particles & Glows)
+            FestivalAnimationCanvas(
+                event = event,
+                modifier = Modifier.matchParentSize()
+            )
+
+            // Layer 2 — High-Quality Poster Vector Artwork
+            FestivalArtwork(
+                event = event,
+                modifier = Modifier.matchParentSize()
+            )
+
+            // Content Overlay with Top Safe Insets for Transparent Status Bar
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = statusBarPadding.calculateTopPadding())
+                    .padding(horizontal = 20.dp, vertical = 16.dp)
             ) {
-                // Layer 1 — Festival Animation Canvas (Particles & Glows)
-                FestivalAnimationCanvas(
-                    event = event,
-                    modifier = Modifier.matchParentSize()
-                )
-
-                // Layer 2 — High-Quality Festival Vector Artwork
-                FestivalArtwork(
-                    event = event,
-                    modifier = Modifier.matchParentSize()
-                )
-
-                // Content Overlay (Layer 3 & 4 — Profile, Greeting, Real Date)
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(20.dp),
-                    verticalArrangement = Arrangement.SpaceBetween
+                // Top Header Row: User Avatar / Greeting (Left) & Date / Subtitle (Right)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Top
                 ) {
+                    // Profile Avatar + Personal Greeting
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(20.dp))
+                            .clickable { onProfileClick() }
+                            .padding(vertical = 4.dp, horizontal = 2.dp)
                     ) {
-                        // Profile Avatar + Greeting + Real Date
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(16.dp))
-                                .clickable { onProfileClick() }
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(52.dp)
-                                    .clip(CircleShape)
-                                    .border(2.dp, accentColor.copy(alpha = 0.8f), CircleShape)
-                                    .background(primaryColor.copy(alpha = 0.25f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                if (showLocalImage && imageRequest != null) {
-                                    coil.compose.SubcomposeAsyncImage(
-                                        model = imageRequest,
-                                        contentDescription = "Profile Photo",
-                                        modifier = Modifier.fillMaxSize().clip(CircleShape),
-                                        contentScale = ContentScale.Crop,
-                                        error = {
-                                            Text(
-                                                text = avatarLetters,
-                                                color = accentColor,
-                                                fontWeight = FontWeight.Bold,
-                                                fontSize = 16.sp
-                                            )
-                                        }
-                                    )
-                                } else {
-                                    Text(
-                                        text = avatarLetters,
-                                        color = accentColor,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 16.sp
-                                    )
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.width(14.dp))
-
-                            Column {
-                                Text(
-                                    text = event.greeting,
-                                    fontSize = 22.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = MaterialTheme.colorScheme.onBackground
-                                )
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Text(
-                                    text = formattedDate,
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f)
-                                )
-                            }
-                        }
-
-                        // Circular Festival Emoji Badge
                         Box(
                             modifier = Modifier
                                 .size(46.dp)
                                 .clip(CircleShape)
-                                .background(accentColor.copy(alpha = 0.25f))
-                                .border(1.5.dp, accentColor.copy(alpha = 0.6f), CircleShape),
+                                .border(2.dp, Color(0xFFFACC15).copy(alpha = 0.9f), CircleShape)
+                                .background(Color.White.copy(alpha = 0.15f)),
                             contentAlignment = Alignment.Center
                         ) {
+                            if (showLocalImage && imageRequest != null) {
+                                coil.compose.SubcomposeAsyncImage(
+                                    model = imageRequest,
+                                    contentDescription = "Profile Photo",
+                                    modifier = Modifier.fillMaxSize().clip(CircleShape),
+                                    contentScale = ContentScale.Crop,
+                                    error = {
+                                        Text(
+                                            text = avatarLetters,
+                                            color = Color.White,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 16.sp
+                                        )
+                                    }
+                                )
+                            } else {
+                                Text(
+                                    text = avatarLetters,
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 16.sp
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.width(12.dp))
+
+                        Column {
+                            val subGreeting = when {
+                                event.id.contains("janmashtami") -> "Radhe Radhe,"
+                                event.id.contains("ram_navami") -> "Jai Shri Ram,"
+                                event.id.contains("eid") -> "Khair Mubarak,"
+                                event.id.contains("diwali") -> "Shubh Deepavali,"
+                                event.id.contains("chhath") -> "Jai Chhathi Maiya,"
+                                event.id.contains("teachers") -> "Respects,"
+                                else -> "Greetings,"
+                            }
                             Text(
-                                text = event.emoji,
-                                fontSize = 24.sp
+                                text = subGreeting,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = Color.White.copy(alpha = 0.75f)
+                            )
+                            Text(
+                                text = firstName,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
                             )
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    // Festival Description / Wishes Sub-Text
-                    Text(
-                        text = event.description,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Normal,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2,
-                        modifier = Modifier.padding(start = 4.dp, end = 40.dp)
-                    )
+                    // Formatted Real Date Tag
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = Color.Black.copy(alpha = 0.3f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.2f))
+                    ) {
+                        Text(
+                            text = formattedDate,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.White.copy(alpha = 0.9f),
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                        )
+                    }
                 }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Prominent Festival Title (High Contrast Poster Style)
+                Text(
+                    text = event.greeting,
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Color.White,
+                    letterSpacing = 0.5.sp,
+                    lineHeight = 38.sp,
+                    modifier = Modifier.padding(end = 60.dp)
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                // Subtitle / Description Text
+                Text(
+                    text = event.description,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color.White.copy(alpha = 0.85f),
+                    maxLines = 2,
+                    lineHeight = 18.sp,
+                    modifier = Modifier.padding(end = 80.dp)
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
             }
         }
     }
