@@ -601,6 +601,8 @@ fun FestivalDetailDialog(
     val primaryColor = remember(event.primaryColorHex) { Color(event.primaryColorHex) }
     val secondaryColor = remember(event.secondaryColorHex) { Color(event.secondaryColorHex) }
     val accentColor = remember(event.accentColorHex) { Color(event.accentColorHex) }
+    val context = LocalContext.current
+    val calDrawableRes = remember(event, context) { event.getCalendarDrawableRes(context) }
 
     val categoryText = when (event.category) {
         FestivalCategory.SPECIAL_HOME_EVENT -> if (event.isPublicHoliday) "Special Festival • Public Holiday" else "Special Festival"
@@ -612,15 +614,17 @@ fun FestivalDetailDialog(
         onDismissRequest = onDismiss,
         title = null,
         text = {
+            val scrollState = rememberScrollState()
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(20.dp))
+                    .heightIn(max = 480.dp)
+                    .clip(RoundedCornerShape(24.dp))
                     .background(
-                        androidx.compose.ui.graphics.Brush.verticalGradient(
+                        Brush.verticalGradient(
                             colors = listOf(
-                                primaryColor.copy(alpha = 0.15f),
-                                secondaryColor.copy(alpha = 0.08f),
+                                primaryColor.copy(alpha = 0.22f),
+                                secondaryColor.copy(alpha = 0.12f),
                                 MaterialTheme.colorScheme.surface
                             )
                         )
@@ -633,62 +637,66 @@ fun FestivalDetailDialog(
                 )
 
                 Column(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(scrollState),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    val calendarAssetUrl = remember(event.calendarAssetPath) { "file:///android_asset/${event.calendarAssetPath}" }
                     Box(
                         modifier = Modifier
                             .size(72.dp)
                             .clip(CircleShape)
                             .background(primaryColor.copy(alpha = 0.2f))
-                            .border(2.dp, accentColor.copy(alpha = 0.5f), CircleShape),
+                            .border(2.dp, accentColor.copy(alpha = 0.6f), CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
-                        coil.compose.SubcomposeAsyncImage(
-                            model = coil.request.ImageRequest.Builder(LocalContext.current)
-                                .data(calendarAssetUrl)
-                                .crossfade(true)
-                                .build(),
-                            contentDescription = "${event.name} Artwork",
-                            modifier = Modifier.fillMaxSize().clip(CircleShape),
-                            contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                            error = {
-                                Text(
-                                    text = event.name.take(1),
-                                    fontSize = 28.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = primaryColor
-                                )
-                            }
-                        )
+                        if (calDrawableRes != 0) {
+                            coil.compose.SubcomposeAsyncImage(
+                                model = coil.request.ImageRequest.Builder(context)
+                                    .data(calDrawableRes)
+                                    .crossfade(true)
+                                    .build(),
+                                contentDescription = "${event.name} Artwork",
+                                modifier = Modifier.fillMaxSize().clip(CircleShape),
+                                contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                            )
+                        } else {
+                            Text(
+                                text = event.emoji,
+                                fontSize = 34.sp,
+                                textAlign = TextAlign.Center
+                            )
+                        }
                     }
 
-                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
                         Text(
-                            text = event.name,
+                            text = event.greeting.ifBlank { event.name },
                             fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = FontWeight.ExtraBold,
                             color = MaterialTheme.colorScheme.onSurface,
                             textAlign = TextAlign.Center
                         )
 
                         Text(
                             text = "${event.day} $monthName $year",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
 
                     Surface(
                         shape = RoundedCornerShape(8.dp),
-                        color = primaryColor.copy(alpha = 0.15f)
+                        color = primaryColor.copy(alpha = 0.18f)
                     ) {
                         Text(
                             text = categoryText,
-                            fontSize = 12.sp,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             color = primaryColor,
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
@@ -835,7 +843,8 @@ fun PersonalAttendanceDialog(
                                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                                         modifier = Modifier.weight(1f)
                                     ) {
-                                        val calAssetUrl = remember(mainFestival.calendarAssetPath) { "file:///android_asset/${mainFestival.calendarAssetPath}" }
+                                        val dialogContext = LocalContext.current
+                                        val calDrawableRes = remember(mainFestival, dialogContext) { mainFestival.getCalendarDrawableRes(dialogContext) }
                                         Box(
                                             modifier = Modifier
                                                 .size(48.dp)
@@ -844,23 +853,23 @@ fun PersonalAttendanceDialog(
                                                 .border(1.5.dp, aColor.copy(alpha = 0.6f), CircleShape),
                                             contentAlignment = Alignment.Center
                                         ) {
-                                            coil.compose.SubcomposeAsyncImage(
-                                                model = coil.request.ImageRequest.Builder(LocalContext.current)
-                                                    .data(calAssetUrl)
-                                                    .crossfade(true)
-                                                    .build(),
-                                                contentDescription = "${mainFestival.name} Artwork",
-                                                modifier = Modifier.fillMaxSize().clip(CircleShape),
-                                                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                                                error = {
-                                                    Text(
-                                                        text = mainFestival.name.take(1),
-                                                        fontSize = 20.sp,
-                                                        fontWeight = FontWeight.Bold,
-                                                        color = pColor
-                                                    )
-                                                }
-                                            )
+                                            if (calDrawableRes != 0) {
+                                                coil.compose.SubcomposeAsyncImage(
+                                                    model = coil.request.ImageRequest.Builder(dialogContext)
+                                                        .data(calDrawableRes)
+                                                        .crossfade(true)
+                                                        .build(),
+                                                    contentDescription = "${mainFestival.name} Artwork",
+                                                    modifier = Modifier.fillMaxSize().clip(CircleShape),
+                                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                                                )
+                                            } else {
+                                                Text(
+                                                    text = mainFestival.emoji,
+                                                    fontSize = 24.sp,
+                                                    textAlign = TextAlign.Center
+                                                )
+                                            }
                                         }
 
                                         Column {
@@ -1155,10 +1164,18 @@ fun CalendarDateCell(
 
     val isFestivalDay = mainFestival != null
     val calDrawableRes = remember(mainFestival, context) { mainFestival?.getCalendarDrawableRes(context) ?: 0 }
-    val calAssetUrl = remember(mainFestival?.calendarAssetPath) { mainFestival?.let { "file:///android_asset/${it.calendarAssetPath}" } }
 
-    val festivalBgColor = remember(mainFestival) {
-        if (mainFestival != null) Color(mainFestival.primaryColorHex) else Color.Transparent
+    val festivalGradientBrush = remember(mainFestival) {
+        if (mainFestival != null) {
+            val primary = Color(mainFestival.primaryColorHex)
+            val secondary = Color(mainFestival.secondaryColorHex)
+            val accent = Color(mainFestival.accentColorHex)
+            Brush.linearGradient(
+                colors = listOf(primary, secondary, accent)
+            )
+        } else {
+            null
+        }
     }
 
     val defaultBgColor = when {
@@ -1197,8 +1214,8 @@ fun CalendarDateCell(
             .fillMaxSize()
             .clip(CircleShape)
             .then(
-                if (isFestivalDay) {
-                    Modifier.background(festivalBgColor)
+                if (isFestivalDay && festivalGradientBrush != null) {
+                    Modifier.background(festivalGradientBrush)
                 } else {
                     Modifier.background(defaultBgColor)
                 }
@@ -1211,7 +1228,7 @@ fun CalendarDateCell(
             ),
         contentAlignment = Alignment.Center
     ) {
-        // FULL CIRCULAR FESTIVAL ARTWORK IMAGE FILLING THE ENTIRE DATE CIRCLE (NO EMOJIS, NO GREEN FESTIVAL OVERLAY)
+        // Render custom artwork image if available; if artwork is missing, render emoji as fallback
         if (isFestivalDay && mainFestival != null) {
             if (calDrawableRes != 0) {
                 coil.compose.SubcomposeAsyncImage(
@@ -1225,25 +1242,25 @@ fun CalendarDateCell(
                         .clip(CircleShape),
                     contentScale = androidx.compose.ui.layout.ContentScale.Crop
                 )
-            } else if (calAssetUrl != null) {
-                coil.compose.SubcomposeAsyncImage(
-                    model = coil.request.ImageRequest.Builder(context)
-                        .data(calAssetUrl)
-                        .crossfade(true)
-                        .build(),
-                    contentDescription = "${mainFestival.name} Calendar Circle Artwork",
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(CircleShape),
-                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
-                )
+            } else {
+                // Fallback emoji icon for festivals without custom artwork
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = mainFestival.emoji,
+                        fontSize = 18.sp,
+                        textAlign = TextAlign.Center
+                    )
+                }
             }
         }
 
-        // CENTERED DATE NUMBER OVERLAID DIRECTLY ON TOP OF FESTIVAL ARTWORK
+        // CENTERED DATE NUMBER OVERLAID DIRECTLY ON TOP OF FESTIVAL ARTWORK / FALLBACK
         Text(
             text = day.toString(),
-            fontSize = 14.sp,
+            fontSize = if (isFestivalDay && calDrawableRes == 0) 12.sp else 14.sp,
             fontWeight = FontWeight.Bold,
             color = textColor
         )
