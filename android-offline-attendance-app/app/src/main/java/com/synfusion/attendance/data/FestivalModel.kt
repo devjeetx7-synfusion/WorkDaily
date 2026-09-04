@@ -47,5 +47,8 @@ data class FestivalEvent(
     val primaryColorHex: Long,
     val secondaryColorHex: Long,
     val accentColorHex: Long,
-    val avoidText: String = ""
+    val avoidText: String = "",
+    val heroBgGradientTopHex: Long? = null,
+    val heroBgGradientBottomHex: Long? = null,
+    val useLightStatusBarIcons: Boolean = true
 )

@@ -227,7 +227,7 @@ fun DashboardScreen(
 
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-        contentWindowInsets = WindowInsets.statusBars,
+        contentWindowInsets = WindowInsets(0.dp),
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Box(
@@ -351,11 +351,16 @@ fun DashboardScreen(
                                         "content" -> {
                                             ResponsiveContainer {
                                                 if (isCompactPortrait) {
+                                                    val hasFestival = todaySpecialEvent != null
                                                     LazyColumn(
                                                         state = dashboardScrollState,
                                                         modifier = Modifier
                                                             .fillMaxSize(),
-                                                        contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 96.dp),
+                                                        contentPadding = if (hasFestival) {
+                                                            PaddingValues(start = 0.dp, top = 0.dp, end = 0.dp, bottom = 96.dp)
+                                                        } else {
+                                                            PaddingValues(start = 16.dp, top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 12.dp, end = 16.dp, bottom = 96.dp)
+                                                        },
                                                         verticalArrangement = Arrangement.spacedBy(16.dp)
                                                     ) {
                                                         item {
@@ -365,23 +370,24 @@ fun DashboardScreen(
                                                             )
                                                         }
                                                         item {
-                                                            PersonalStatsGrid(
-                                                                state = dashboardState,
-                                                                onNavigatePassbook = { bottomNavController.navigate("passbook") },
-                                                                onEarningsClick = { dashboardViewModel.openDrillDown(DrillDownType.EARNINGS) }
-                                                            )
-                                                        }
-                                                        item {
-                                                            AllTimePassbookButton(onNavigate = { bottomNavController.navigate("all_time_passbook") })
-                                                        }
-                                                        item {
-                                                            PersonalQuickActions(
-                                                                todayAdvanceAmount = dashboardState.todayAdvanceAmount,
-                                                                onAddAdvance = { showAdvanceDialog = true }
-                                                            )
-                                                        }
-                                                        item {
-                                                            PersonalDailyLog(dashboardState, dashboardViewModel)
+                                                            Column(
+                                                                modifier = Modifier
+                                                                    .fillMaxWidth()
+                                                                    .padding(horizontal = if (hasFestival) 16.dp else 0.dp),
+                                                                verticalArrangement = Arrangement.spacedBy(16.dp)
+                                                            ) {
+                                                                PersonalStatsGrid(
+                                                                    state = dashboardState,
+                                                                    onNavigatePassbook = { bottomNavController.navigate("passbook") },
+                                                                    onEarningsClick = { dashboardViewModel.openDrillDown(DrillDownType.EARNINGS) }
+                                                                )
+                                                                AllTimePassbookButton(onNavigate = { bottomNavController.navigate("all_time_passbook") })
+                                                                PersonalQuickActions(
+                                                                    todayAdvanceAmount = dashboardState.todayAdvanceAmount,
+                                                                    onAddAdvance = { showAdvanceDialog = true }
+                                                                )
+                                                                PersonalDailyLog(dashboardState, dashboardViewModel)
+                                                            }
                                                         }
                                                     }
                                                 } else {
