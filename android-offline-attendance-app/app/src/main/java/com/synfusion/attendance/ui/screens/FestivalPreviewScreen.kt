@@ -277,7 +277,8 @@ fun FestivalPreviewCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                // Circular Festival Emoji/Icon Badge
+                // Circular Festival Artwork Image / Badge
+                val calendarAssetUrl = remember(event.calendarAssetPath) { "file:///android_asset/${event.calendarAssetPath}" }
                 Box(
                     modifier = Modifier
                         .size(56.dp)
@@ -286,9 +287,22 @@ fun FestivalPreviewCard(
                         .border(1.5.dp, accentColor.copy(alpha = 0.5f), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = event.emoji,
-                        fontSize = 30.sp
+                    coil.compose.SubcomposeAsyncImage(
+                        model = coil.request.ImageRequest.Builder(LocalContext.current)
+                            .data(calendarAssetUrl)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = "${event.name} Artwork",
+                        modifier = Modifier.fillMaxSize().clip(CircleShape),
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                        error = {
+                            Text(
+                                text = event.name.take(1),
+                                fontSize = 22.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = primaryColor
+                            )
+                        }
                     )
                 }
 
