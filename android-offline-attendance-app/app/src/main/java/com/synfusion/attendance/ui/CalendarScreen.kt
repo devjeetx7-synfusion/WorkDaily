@@ -1154,7 +1154,8 @@ fun CalendarDateCell(
     val hasOT = data?.overtimeHours != null && data.overtimeHours > 0
 
     val isFestivalDay = mainFestival != null
-    var isCalendarAssetLoaded by remember(mainFestival?.id) { mutableStateOf(false) }
+    val calDrawableRes = remember(mainFestival, context) { mainFestival?.getCalendarDrawableRes(context) ?: 0 }
+    val calAssetUrl = remember(mainFestival?.calendarAssetPath) { mainFestival?.let { "file:///android_asset/${it.calendarAssetPath}" } }
 
     val festivalBgColor = remember(mainFestival) {
         if (mainFestival != null) Color(mainFestival.primaryColorHex) else Color.Transparent
@@ -1174,7 +1175,7 @@ fun CalendarDateCell(
         else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
     }
 
-    // Border hierarchy for attendance and today indicators on festival/normal date cells
+    // Border hierarchy for attendance rings and today indicators on festival/normal date cells
     val borderStrokeWidth = when {
         isPresent || isAbsent || isHalf -> 2.5.dp
         hasOT -> 2.dp
@@ -1210,25 +1211,36 @@ fun CalendarDateCell(
             ),
         contentAlignment = Alignment.Center
     ) {
-        // Full Circular Festival Image Asset (if available for festival date)
+        // FULL CIRCULAR FESTIVAL ARTWORK IMAGE FILLING THE ENTIRE DATE CIRCLE (NO EMOJIS, NO GREEN FESTIVAL OVERLAY)
         if (isFestivalDay && mainFestival != null) {
-            val calendarAssetUrl = remember(mainFestival.calendarAssetPath) { "file:///android_asset/${mainFestival.calendarAssetPath}" }
-            coil.compose.SubcomposeAsyncImage(
-                model = coil.request.ImageRequest.Builder(context)
-                    .data(calendarAssetUrl)
-                    .crossfade(true)
-                    .build(),
-                contentDescription = "${mainFestival.name} Calendar Artwork",
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(CircleShape),
-                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                onSuccess = { isCalendarAssetLoaded = true },
-                onError = { isCalendarAssetLoaded = false }
-            )
+            if (calDrawableRes != 0) {
+                coil.compose.SubcomposeAsyncImage(
+                    model = coil.request.ImageRequest.Builder(context)
+                        .data(calDrawableRes)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = "${mainFestival.name} Calendar Circle Artwork",
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(CircleShape),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                )
+            } else if (calAssetUrl != null) {
+                coil.compose.SubcomposeAsyncImage(
+                    model = coil.request.ImageRequest.Builder(context)
+                        .data(calAssetUrl)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = "${mainFestival.name} Calendar Circle Artwork",
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(CircleShape),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                )
+            }
         }
 
-        // Date Number centered ON TOP of artwork / circle
+        // CENTERED DATE NUMBER OVERLAID DIRECTLY ON TOP OF FESTIVAL ARTWORK
         Text(
             text = day.toString(),
             fontSize = 14.sp,
@@ -1236,7 +1248,7 @@ fun CalendarDateCell(
             color = textColor
         )
 
-        // Attendance status overlay badges (Half-day / Advance indicators)
+        // Subtle attendance indicator badges (Half-day / Advance)
         if (isHalf) {
             Box(
                 modifier = Modifier
