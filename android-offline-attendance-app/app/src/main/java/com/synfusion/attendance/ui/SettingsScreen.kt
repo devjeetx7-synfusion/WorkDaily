@@ -266,18 +266,27 @@ fun SettingsScreen(
 
                     ProfileCardSection(state = state, viewModel = viewModel, hasChanges = hasChanges, onEditPhoto = { onNavigate("profile") })
                     StayConnectedCardSection(context = context)
-                    AppPreferencesCardSection(
-                        state = state,
-                        viewModel = viewModel,
-                        actualNotificationState = actualNotificationState,
-                        isAppNotificationsEnabled = isAppNotificationsEnabled,
-                        isPostPermissionsGranted = isPostPermissionsGranted,
-                        isChannelEnabled = isChannelEnabled,
-                        permissionLauncher = permissionLauncher,
-                        supportedLanguages = supportedLanguages,
-                        context = context,
-                        onNavigate = onNavigate
-                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text(
+                            text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.category_app_preferences),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(start = 4.dp)
+                        )
+                        AppPreferencesCardSection(
+                            state = state,
+                            viewModel = viewModel,
+                            actualNotificationState = actualNotificationState,
+                            isAppNotificationsEnabled = isAppNotificationsEnabled,
+                            isPostPermissionsGranted = isPostPermissionsGranted,
+                            isChannelEnabled = isChannelEnabled,
+                            permissionLauncher = permissionLauncher,
+                            supportedLanguages = supportedLanguages,
+                            context = context,
+                            onNavigate = onNavigate
+                        )
+                    }
                     BackupRestoreCardSection(state = state, lastBackupFile = lastBackupFile, context = context, onManageBackup = { showBackupSheet = true })
                     InfoSupportCardSection(onNavigate = onNavigate, onDeveloperContact = { showDeveloperSheet = true })
 
@@ -1146,46 +1155,6 @@ fun AppPreferencesCardSection(
                 )
             }
 
-            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
-
-            // 6. Festival Preview — Navigation item
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onNavigate("festival_preview") }
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(androidx.compose.foundation.shape.CircleShape)
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            Icons.Default.AutoAwesome,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column {
-                        Text("Festival Preview", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                        Text("Preview special festival experiences without waiting for the actual date.", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
-                Icon(
-                    Icons.Default.ChevronRight,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
         }
     }
 }

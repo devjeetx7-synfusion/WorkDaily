@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import android.app.Activity
 import androidx.compose.ui.platform.LocalContext
@@ -85,13 +86,23 @@ fun FestivalHeroEnvironment(
     }
 
     val view = LocalView.current
-    if (!view.isInEditMode) {
-        SideEffect {
-            val window = (context as? Activity)?.window
-            if (window != null) {
-                val insetsController = WindowCompat.getInsetsController(window, view)
-                insetsController.isAppearanceLightStatusBars = !event.useLightStatusBarIcons
+    DisposableEffect(event.id, event.useLightStatusBarIcons) {
+        val activity = (context as? Activity)
+        val window = activity?.window
+        if (window != null && !view.isInEditMode) {
+            val transparentColor = androidx.compose.ui.graphics.Color.Transparent.toArgb()
+            val originalStatusBarColor = window.statusBarColor
+            window.statusBarColor = transparentColor
+            val insetsController = WindowCompat.getInsetsController(window, view)
+            val originalLightStatusBars = insetsController.isAppearanceLightStatusBars
+            insetsController.isAppearanceLightStatusBars = !event.useLightStatusBarIcons
+
+            onDispose {
+                window.statusBarColor = originalStatusBarColor
+                insetsController.isAppearanceLightStatusBars = originalLightStatusBars
             }
+        } else {
+            onDispose { }
         }
     }
 

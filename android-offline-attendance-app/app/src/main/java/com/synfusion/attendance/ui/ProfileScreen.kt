@@ -137,249 +137,487 @@ fun ProfileScreen(
                 .padding(paddingValues)
         ) {
             ResponsiveContainer {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .verticalScroll(rememberScrollState())
-                        .padding(horizontal = 20.dp, vertical = 16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(24.dp)
-                ) {
-                    // Profile Photo Header Section
-                    var animatePhoto by remember { mutableStateOf(false) }
-                    LaunchedEffect(Unit) {
-                        animatePhoto = true
-                    }
-                    val animatedScale by animateFloatAsState(
-                        targetValue = if (animatePhoto) 1f else 0.75f,
-                        animationSpec = spring(
-                            dampingRatio = Spring.DampingRatioMediumBouncy,
-                            stiffness = Spring.StiffnessLow
-                        ),
-                        label = "profilePhotoScale"
-                    )
+                val windowSizeInfo = LocalWindowSizeInfo.current
+                val isLandscape = windowSizeInfo.isLandscape
 
-                    Box(
+                if (isLandscape) {
+                    Row(
                         modifier = Modifier
-                            .padding(top = 8.dp)
-                            .graphicsLayer {
-                                scaleX = animatedScale
-                                scaleY = animatedScale
-                            },
-                        contentAlignment = Alignment.Center
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                            .padding(horizontal = 20.dp, vertical = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(20.dp),
+                        verticalAlignment = Alignment.Top
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(120.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
-                                .border(3.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f), CircleShape)
-                                .clickable { showPhotoActionSheet = true },
-                            contentAlignment = Alignment.Center
+                        // Left Section: Photo and name
+                        Column(
+                            modifier = Modifier.weight(0.8f),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
-                            val imageRequest = remember(imageModel) {
-                                if (imageModel != null) {
-                                    val builder = coil.request.ImageRequest.Builder(context)
-                                        .data(imageModel)
-                                        .crossfade(true)
-                                    if (imageModel is java.io.File) {
-                                        builder.memoryCacheKey("${imageModel.absolutePath}_${imageModel.lastModified()}")
-                                            .diskCacheKey("${imageModel.absolutePath}_${imageModel.lastModified()}")
+                            Box(
+                                modifier = Modifier.padding(top = 8.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(110.dp)
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+                                        .border(3.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f), CircleShape)
+                                        .clickable { showPhotoActionSheet = true },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    val imageRequest = remember(imageModel) {
+                                        if (imageModel != null) {
+                                            val builder = coil.request.ImageRequest.Builder(context)
+                                                .data(imageModel)
+                                                .crossfade(true)
+                                            if (imageModel is java.io.File) {
+                                                builder.memoryCacheKey("${imageModel.absolutePath}_${imageModel.lastModified()}")
+                                                    .diskCacheKey("${imageModel.absolutePath}_${imageModel.lastModified()}")
+                                            }
+                                            builder.networkCachePolicy(coil.request.CachePolicy.DISABLED)
+                                                .diskCachePolicy(coil.request.CachePolicy.ENABLED)
+                                                .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
+                                                .build()
+                                        } else null
                                     }
-                                    builder.networkCachePolicy(coil.request.CachePolicy.DISABLED)
-                                        .diskCachePolicy(coil.request.CachePolicy.ENABLED)
-                                        .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
-                                        .build()
-                                } else null
-                            }
 
-                            if (imageModel != null && imageRequest != null) {
-                                coil.compose.SubcomposeAsyncImage(
-                                    model = imageRequest,
-                                    contentDescription = "Profile Photo",
-                                    modifier = Modifier.fillMaxSize().clip(CircleShape),
-                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                                    error = {
+                                    if (imageModel != null && imageRequest != null) {
+                                        coil.compose.SubcomposeAsyncImage(
+                                            model = imageRequest,
+                                            contentDescription = "Profile Photo",
+                                            modifier = Modifier.fillMaxSize().clip(CircleShape),
+                                            contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                                            error = {
+                                                Icon(
+                                                    imageVector = Icons.Default.Person,
+                                                    contentDescription = "Default Avatar",
+                                                    modifier = Modifier.size(50.dp),
+                                                    tint = MaterialTheme.colorScheme.primary
+                                                )
+                                            }
+                                        )
+                                    } else {
                                         Icon(
                                             imageVector = Icons.Default.Person,
                                             contentDescription = "Default Avatar",
-                                            modifier = Modifier.size(60.dp),
+                                            modifier = Modifier.size(50.dp),
                                             tint = MaterialTheme.colorScheme.primary
                                         )
                                     }
-                                )
-                            } else {
-                                Icon(
-                                    imageVector = Icons.Default.Person,
-                                    contentDescription = "Default Avatar",
-                                    modifier = Modifier.size(60.dp),
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
+                                }
+
+                                Box(
+                                    modifier = Modifier
+                                        .align(Alignment.BottomEnd)
+                                        .size(34.dp)
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.primary)
+                                        .border(2.dp, MaterialTheme.colorScheme.surface, CircleShape)
+                                        .clickable { showPhotoActionSheet = true },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.PhotoCamera,
+                                        contentDescription = "Edit Profile Photo",
+                                        tint = MaterialTheme.colorScheme.onPrimary,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
                             }
-                        }
 
-                        // Circular edit/pencil button overlay
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.BottomEnd)
-                                .size(36.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primary)
-                                .border(2.dp, MaterialTheme.colorScheme.surface, CircleShape)
-                                .clickable { showPhotoActionSheet = true },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.PhotoCamera,
-                                contentDescription = "Edit Profile Photo",
-                                tint = MaterialTheme.colorScheme.onPrimary,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                    }
-
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Text(
-                            text = state.name.ifEmpty { androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.user_name) },
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        if (state.phone.isNotEmpty()) {
-                            Text(
-                                text = "+91 ${state.phone}",
-                                fontSize = 14.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-
-                    // Structured Information Cards (WhatsApp-inspired clean fields)
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(20.dp),
-                            verticalArrangement = Arrangement.spacedBy(18.dp)
-                        ) {
-                            Text(
-                                text = "Personal Info",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-
-                            OutlinedTextField(
-                                value = state.name,
-                                onValueChange = { viewModel.onNameChange(it) },
-                                modifier = Modifier.fillMaxWidth(),
-                                label = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.full_name)) },
-                                leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
-                                shape = RoundedCornerShape(14.dp),
-                                singleLine = true
-                            )
-
-                            OutlinedTextField(
-                                value = if (state.dailyWage > 0) state.dailyWage.toInt().toString() else "",
-                                onValueChange = { viewModel.onWageChange(it.filter { ch -> ch.isDigit() }) },
-                                modifier = Modifier.fillMaxWidth(),
-                                label = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.daily_wage)) },
-                                leadingIcon = { Icon(Icons.Default.CurrencyRupee, contentDescription = null) },
-                                shape = RoundedCornerShape(14.dp),
-                                singleLine = true,
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                visualTransformation = IndianCurrencyVisualTransformation()
-                            )
-
-                            OutlinedTextField(
-                                value = state.phone,
-                                onValueChange = { newValue ->
-                                    val digits = newValue.filter { it.isDigit() }.take(10)
-                                    viewModel.onPhoneChange(digits)
-                                },
-                                modifier = Modifier.fillMaxWidth(),
-                                label = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.phone_number)) },
-                                leadingIcon = { Text("+91 ", fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 12.dp)) },
-                                shape = RoundedCornerShape(14.dp),
-                                singleLine = true,
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                            )
-                        }
-                    }
-
-                    // Storage & Privacy Badge Card
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.06f)),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(14.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(42.dp)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
-                                contentAlignment = Alignment.Center
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.Security,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(22.dp)
-                                )
-                            }
-                            Column {
                                 Text(
-                                    text = "100% Offline & Private",
-                                    fontSize = 14.sp,
+                                    text = state.name.ifEmpty { androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.user_name) },
+                                    fontSize = 20.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
+                                if (state.phone.isNotEmpty()) {
+                                    Text(
+                                        text = "+91 ${state.phone}",
+                                        fontSize = 14.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.06f)),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(14.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(36.dp)
+                                            .clip(CircleShape)
+                                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Security,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                    Column {
+                                        Text(
+                                            text = "100% Offline & Private",
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Text(
+                                            text = "Your details are saved locally.",
+                                            fontSize = 11.sp,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        // Right Section: Editable Personal Info Form
+                        Column(
+                            modifier = Modifier.weight(1.2f),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(20.dp),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(20.dp),
+                                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                                ) {
+                                    Text(
+                                        text = "Personal Info",
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+
+                                    OutlinedTextField(
+                                        value = state.name,
+                                        onValueChange = { viewModel.onNameChange(it) },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        label = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.full_name)) },
+                                        leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
+                                        shape = RoundedCornerShape(14.dp),
+                                        singleLine = true
+                                    )
+
+                                    OutlinedTextField(
+                                        value = if (state.dailyWage > 0) state.dailyWage.toInt().toString() else "",
+                                        onValueChange = { viewModel.onWageChange(it.filter { ch -> ch.isDigit() }) },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        label = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.daily_wage)) },
+                                        leadingIcon = { Icon(Icons.Default.CurrencyRupee, contentDescription = null) },
+                                        shape = RoundedCornerShape(14.dp),
+                                        singleLine = true,
+                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                        visualTransformation = IndianCurrencyVisualTransformation()
+                                    )
+
+                                    OutlinedTextField(
+                                        value = state.phone,
+                                        onValueChange = { newValue ->
+                                            val digits = newValue.filter { it.isDigit() }.take(10)
+                                            viewModel.onPhoneChange(digits)
+                                        },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        label = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.phone_number)) },
+                                        leadingIcon = { Text("+91 ", fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 12.dp)) },
+                                        shape = RoundedCornerShape(14.dp),
+                                        singleLine = true,
+                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                                    )
+                                }
+                            }
+
+                            if (hasChanges) {
+                                Button(
+                                    onClick = { viewModel.saveChanges() },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(50.dp),
+                                    shape = RoundedCornerShape(14.dp),
+                                    enabled = !state.isSaving
+                                ) {
+                                    if (state.isSaving) {
+                                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
+                                    } else {
+                                        Icon(Icons.Default.Save, contentDescription = null, modifier = Modifier.size(20.dp))
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.save_changes),
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 15.sp
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                            .padding(horizontal = 20.dp, vertical = 16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(24.dp)
+                    ) {
+                        // Profile Photo Header Section
+                        var animatePhoto by remember { mutableStateOf(false) }
+                        LaunchedEffect(Unit) {
+                            animatePhoto = true
+                        }
+                        val animatedScale by animateFloatAsState(
+                            targetValue = if (animatePhoto) 1f else 0.75f,
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioMediumBouncy,
+                                stiffness = Spring.StiffnessLow
+                            ),
+                            label = "profilePhotoScale"
+                        )
+
+                        Box(
+                            modifier = Modifier
+                                .padding(top = 8.dp)
+                                .graphicsLayer {
+                                    scaleX = animatedScale
+                                    scaleY = animatedScale
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(120.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+                                    .border(3.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f), CircleShape)
+                                    .clickable { showPhotoActionSheet = true },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                val imageRequest = remember(imageModel) {
+                                    if (imageModel != null) {
+                                        val builder = coil.request.ImageRequest.Builder(context)
+                                            .data(imageModel)
+                                            .crossfade(true)
+                                        if (imageModel is java.io.File) {
+                                            builder.memoryCacheKey("${imageModel.absolutePath}_${imageModel.lastModified()}")
+                                                .diskCacheKey("${imageModel.absolutePath}_${imageModel.lastModified()}")
+                                        }
+                                        builder.networkCachePolicy(coil.request.CachePolicy.DISABLED)
+                                            .diskCachePolicy(coil.request.CachePolicy.ENABLED)
+                                            .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
+                                            .build()
+                                    } else null
+                                }
+
+                                if (imageModel != null && imageRequest != null) {
+                                    coil.compose.SubcomposeAsyncImage(
+                                        model = imageRequest,
+                                        contentDescription = "Profile Photo",
+                                        modifier = Modifier.fillMaxSize().clip(CircleShape),
+                                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                                        error = {
+                                            Icon(
+                                                imageVector = Icons.Default.Person,
+                                                contentDescription = "Default Avatar",
+                                                modifier = Modifier.size(60.dp),
+                                                tint = MaterialTheme.colorScheme.primary
+                                            )
+                                        }
+                                    )
+                                } else {
+                                    Icon(
+                                        imageVector = Icons.Default.Person,
+                                        contentDescription = "Default Avatar",
+                                        modifier = Modifier.size(60.dp),
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
+
+                            // Circular edit/pencil button overlay
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.BottomEnd)
+                                    .size(36.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.primary)
+                                    .border(2.dp, MaterialTheme.colorScheme.surface, CircleShape)
+                                    .clickable { showPhotoActionSheet = true },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.PhotoCamera,
+                                    contentDescription = "Edit Profile Photo",
+                                    tint = MaterialTheme.colorScheme.onPrimary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Text(
+                                text = state.name.ifEmpty { androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.user_name) },
+                                fontSize = 22.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            if (state.phone.isNotEmpty()) {
                                 Text(
-                                    text = "Your profile details are safely saved locally on your device.",
-                                    fontSize = 12.sp,
+                                    text = "+91 ${state.phone}",
+                                    fontSize = 14.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         }
-                    }
 
-                    // Save Action Button
-                    if (hasChanges) {
-                        Button(
-                            onClick = { viewModel.saveChanges() },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(52.dp),
-                            shape = RoundedCornerShape(14.dp),
-                            enabled = !state.isSaving
+                        // Structured Information Cards (WhatsApp-inspired clean fields)
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(20.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
                         ) {
-                            if (state.isSaving) {
-                                CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
-                            } else {
-                                Icon(Icons.Default.Save, contentDescription = null, modifier = Modifier.size(20.dp))
-                                Spacer(modifier = Modifier.width(8.dp))
+                            Column(
+                                modifier = Modifier.padding(20.dp),
+                                verticalArrangement = Arrangement.spacedBy(18.dp)
+                            ) {
                                 Text(
-                                    text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.save_changes),
+                                    text = "Personal Info",
+                                    fontSize = 13.sp,
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 16.sp
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+
+                                OutlinedTextField(
+                                    value = state.name,
+                                    onValueChange = { viewModel.onNameChange(it) },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    label = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.full_name)) },
+                                    leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
+                                    shape = RoundedCornerShape(14.dp),
+                                    singleLine = true
+                                )
+
+                                OutlinedTextField(
+                                    value = if (state.dailyWage > 0) state.dailyWage.toInt().toString() else "",
+                                    onValueChange = { viewModel.onWageChange(it.filter { ch -> ch.isDigit() }) },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    label = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.daily_wage)) },
+                                    leadingIcon = { Icon(Icons.Default.CurrencyRupee, contentDescription = null) },
+                                    shape = RoundedCornerShape(14.dp),
+                                    singleLine = true,
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                    visualTransformation = IndianCurrencyVisualTransformation()
+                                )
+
+                                OutlinedTextField(
+                                    value = state.phone,
+                                    onValueChange = { newValue ->
+                                        val digits = newValue.filter { it.isDigit() }.take(10)
+                                        viewModel.onPhoneChange(digits)
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    label = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.phone_number)) },
+                                    leadingIcon = { Text("+91 ", fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 12.dp)) },
+                                    shape = RoundedCornerShape(14.dp),
+                                    singleLine = true,
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                                 )
                             }
                         }
-                    }
 
-                    Spacer(modifier = Modifier.height(32.dp))
+                        // Storage & Privacy Badge Card
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.06f)),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.15f))
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(14.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(42.dp)
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Security,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
+                                Column {
+                                    Text(
+                                        text = "100% Offline & Private",
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = "Your profile details are safely saved locally on your device.",
+                                        fontSize = 12.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+
+                        // Save Action Button
+                        if (hasChanges) {
+                            Button(
+                                onClick = { viewModel.saveChanges() },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(52.dp),
+                                shape = RoundedCornerShape(14.dp),
+                                enabled = !state.isSaving
+                            ) {
+                                if (state.isSaving) {
+                                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
+                                } else {
+                                    Icon(Icons.Default.Save, contentDescription = null, modifier = Modifier.size(20.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.save_changes),
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 16.sp
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(32.dp))
+                    }
                 }
             }
 
