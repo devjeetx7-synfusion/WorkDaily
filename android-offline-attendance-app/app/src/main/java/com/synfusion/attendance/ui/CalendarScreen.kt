@@ -730,151 +730,175 @@ fun PersonalAttendanceDialog(
     var editAdvance by remember { mutableStateOf((existingRecord?.advanceAmount ?: 0.0).toInt().toString()) }
 
     val absenceReasons = listOf("sick", "family", "travel", "other")
+    val mainFestival = dayFestivals.firstOrNull()
+
+    // Smooth Entrance Sequence (250-400ms)
+    var isDialogVisible by remember { mutableStateOf(false) }
+    LaunchedEffect(displayDate) {
+        isDialogVisible = true
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = {
-            Column {
-                Text(displayDate, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.tap_to_edit_attendance_or_add_noteadvanc_msg), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
+        shape = RoundedCornerShape(28.dp),
+        containerColor = if (mainFestival != null) {
+            MaterialTheme.colorScheme.surface
+        } else {
+            MaterialTheme.colorScheme.surface
         },
+        title = if (mainFestival == null) {
+            {
+                Column {
+                    Text(displayDate, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                    Text(
+                        androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.tap_to_edit_attendance_or_add_noteadvanc_msg),
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        } else null,
         text = {
             val scrollState = rememberScrollState()
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = 420.dp)
-                    .verticalScroll(scrollState)
+            AnimatedVisibility(
+                visible = isDialogVisible,
+                enter = fadeIn(animationSpec = tween(300)) + scaleIn(initialScale = 0.95f, animationSpec = tween(300))
             ) {
-                val mainFestival = dayFestivals.firstOrNull()
-                if (mainFestival != null) {
-                var headerVisible by remember { mutableStateOf(false) }
-                LaunchedEffect(mainFestival) {
-                    headerVisible = true
-                }
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 480.dp)
+                        .verticalScroll(scrollState)
+                ) {
+                    if (mainFestival != null) {
+                        val pColor = remember(mainFestival.primaryColorHex) { Color(mainFestival.primaryColorHex) }
+                        val sColor = remember(mainFestival.secondaryColorHex) { Color(mainFestival.secondaryColorHex) }
+                        val aColor = remember(mainFestival.accentColorHex) { Color(mainFestival.accentColorHex) }
 
-                AnimatedVisibility(
-                    visible = headerVisible,
-                    enter = fadeIn(animationSpec = tween(300)) + scaleIn(initialScale = 0.92f, animationSpec = tween(300))
-                    ) {
-                    val pColor = remember(mainFestival.primaryColorHex) { Color(mainFestival.primaryColorHex) }
-                    val sColor = remember(mainFestival.secondaryColorHex) { Color(mainFestival.secondaryColorHex) }
-                    val aColor = remember(mainFestival.accentColorHex) { Color(mainFestival.accentColorHex) }
+                        val categoryLabel = when (mainFestival.category) {
+                            FestivalCategory.SPECIAL_HOME_EVENT -> if (mainFestival.isPublicHoliday) "Special Festival • Public Holiday" else "Special Festival"
+                            FestivalCategory.CALENDAR_EVENT -> if (mainFestival.isPublicHoliday) "Calendar Event • Public Holiday" else "Calendar Event"
+                            FestivalCategory.OBSERVANCE -> "Observance"
+                        }
 
-                    val categoryLabel = when (mainFestival.category) {
-                        FestivalCategory.SPECIAL_HOME_EVENT -> if (mainFestival.isPublicHoliday) "Special Festival • Public Holiday" else "Special Festival"
-                        FestivalCategory.CALENDAR_EVENT -> if (mainFestival.isPublicHoliday) "Calendar Event • Public Holiday" else "Calendar Event"
-                        FestivalCategory.OBSERVANCE -> "Observance"
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 12.dp)
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(
-                                Brush.verticalGradient(
-                                    colors = listOf(
-                                        pColor.copy(alpha = 0.18f),
-                                        sColor.copy(alpha = 0.08f),
-                                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                        // Full Festival Header directly integrated into dialog top surface (No nested card container)
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 16.dp)
+                                .clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp, bottomStart = 16.dp, bottomEnd = 16.dp))
+                                .background(
+                                    Brush.verticalGradient(
+                                        colors = listOf(
+                                            pColor.copy(alpha = 0.28f),
+                                            sColor.copy(alpha = 0.12f),
+                                            aColor.copy(alpha = 0.05f),
+                                            Color.Transparent
+                                        )
                                     )
                                 )
-                                )
-                            .border(1.dp, aColor.copy(alpha = 0.4f), RoundedCornerShape(16.dp))
-                            .padding(14.dp)
-                    ) {
-                        Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(46.dp)
-                                        .clip(CircleShape)
-                                        .background(pColor.copy(alpha = 0.25f))
-                                        .border(1.5.dp, aColor.copy(alpha = 0.6f), CircleShape),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(mainFestival.emoji, fontSize = 24.sp, textAlign = TextAlign.Center)
-                                }
+                            // Layer 1 — Festival Particles
+                            FestivalAnimationCanvas(
+                                event = mainFestival,
+                                modifier = Modifier.matchParentSize()
+                            )
 
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = mainFestival.name,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 16.sp,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
+                            // Layer 2 — Integrated Content
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(48.dp)
+                                                .clip(CircleShape)
+                                                .background(aColor.copy(alpha = 0.25f))
+                                                .border(1.5.dp, aColor.copy(alpha = 0.6f), CircleShape),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(mainFestival.emoji, fontSize = 26.sp, textAlign = TextAlign.Center)
+                                        }
+
+                                        Column {
+                                            Text(
+                                                text = mainFestival.greeting.ifBlank { mainFestival.name },
+                                                fontWeight = FontWeight.ExtraBold,
+                                                fontSize = 18.sp,
+                                                color = MaterialTheme.colorScheme.onSurface
+                                            )
+                                            Text(
+                                                text = displayDate,
+                                                fontSize = 12.sp,
+                                                fontWeight = FontWeight.Medium,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
 
                                     Surface(
-                                        shape = RoundedCornerShape(6.dp),
-                                        color = pColor.copy(alpha = 0.2f),
-                                        modifier = Modifier.padding(top = 2.dp)
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = pColor.copy(alpha = 0.2f)
                                     ) {
                                         Text(
                                             text = categoryLabel,
                                             fontSize = 10.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = pColor,
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                                         )
                                     }
                                 }
-                            }
 
-                            if (mainFestival.greeting.isNotBlank()) {
-                                Text(
-                                    text = mainFestival.greeting,
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                            }
+                                if (mainFestival.description.isNotBlank()) {
+                                    Text(
+                                        text = mainFestival.description,
+                                        fontSize = 12.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        lineHeight = 16.sp
+                                    )
+                                }
 
-                            if (mainFestival.description.isNotBlank()) {
-                                Text(
-                                    text = mainFestival.description,
-                                    fontSize = 12.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    lineHeight = 16.sp
-                                )
-                            }
-
-                            if (dayFestivals.size > 1) {
-                                val otherEvents = dayFestivals.drop(1)
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(top = 4.dp),
-                                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                                ) {
-                                    HorizontalDivider(color = aColor.copy(alpha = 0.2f), thickness = 0.8.dp)
-                                    otherEvents.forEach { other ->
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                        ) {
-                                            Text(other.emoji, fontSize = 12.sp)
-                                            Text(
-                                                text = other.name,
-                                                fontSize = 11.sp,
-                                                fontWeight = FontWeight.SemiBold,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
+                                if (dayFestivals.size > 1) {
+                                    val otherEvents = dayFestivals.drop(1)
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(top = 4.dp),
+                                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        HorizontalDivider(color = aColor.copy(alpha = 0.2f), thickness = 0.8.dp)
+                                        otherEvents.forEach { other ->
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                            ) {
+                                                Text(other.emoji, fontSize = 12.sp)
+                                                Text(
+                                                    text = other.name,
+                                                    fontSize = 11.sp,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
                                         }
                                     }
                                 }
                             }
-                            }
                         }
                     }
-                }
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(
@@ -1005,6 +1029,7 @@ fun PersonalAttendanceDialog(
                     modifier = Modifier.fillMaxWidth().height(100.dp),
                     shape = RoundedCornerShape(12.dp)
                 )
+            }
             }
         },
         confirmButton = {
