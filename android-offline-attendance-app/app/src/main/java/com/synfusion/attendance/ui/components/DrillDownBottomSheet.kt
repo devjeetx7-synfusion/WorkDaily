@@ -96,12 +96,100 @@ fun DrillDownBottomSheet(
                 }
             }
 
+            val isLandscape = com.synfusion.attendance.ui.responsive.LocalWindowSizeInfo.current.isLandscape
             if (logs.isEmpty()) {
                 // Phase 2 Contextual Empty State with smooth staggered animations
                 ContextualEmptyState(title = title)
                 Spacer(modifier = Modifier.height(24.dp))
+            } else if (isLandscape) {
+                // Two-Column Responsive Landscape Composition
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // LEFT COLUMN: Search, Sorting, and Sticky Summary
+                    Column(
+                        modifier = Modifier
+                            .weight(0.42f)
+                            .fillMaxHeight(),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = searchQuery,
+                            onValueChange = { searchQuery = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            placeholder = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.search_records)) },
+                            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                            shape = CircleShape,
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                            )
+                        )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.Start
+                        ) {
+                            TextButton(onClick = { sortAscending = !sortAscending }) {
+                                Text(if (sortAscending) stringResource(R.string.sort_oldest_first) else stringResource(R.string.sort_newest_first))
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.weight(1f))
+
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(MaterialTheme.colorScheme.surface)
+                                .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp))
+                                .padding(16.dp)
+                        ) {
+                            Column {
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.all_records_drilldown), fontWeight = FontWeight.Bold)
+                                    Text(totalRecordsText, fontWeight = FontWeight.Bold)
+                                }
+                                if (totalAmountText != null) {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.all_amount_drilldown), fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent())
+                                        Text("₹$totalAmountText", fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent())
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // RIGHT COLUMN: Scrollable Records List
+                    Box(
+                        modifier = Modifier
+                            .weight(0.58f)
+                            .fillMaxHeight()
+                    ) {
+                        if (filteredLogs.isEmpty()) {
+                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.no_records_found_dots), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        } else {
+                            LazyColumn(
+                                modifier = Modifier.fillMaxSize(),
+                                verticalArrangement = Arrangement.spacedBy(12.dp),
+                                contentPadding = PaddingValues(bottom = 16.dp)
+                            ) {
+                                items(filteredLogs, key = { it.date }) { log ->
+                                    DrillDownRecordItem(log)
+                                }
+                            }
+                        }
+                    }
+                }
             } else {
-                // Populate/Populated State Controls (Hides entirely when list is empty)
+                // Populate/Populated State Controls (Portrait Layout)
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },

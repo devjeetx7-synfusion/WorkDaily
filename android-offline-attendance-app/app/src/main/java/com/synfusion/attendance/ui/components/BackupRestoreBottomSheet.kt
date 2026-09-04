@@ -211,9 +211,10 @@ fun BackupRestoreBottomSheet(
             modifier = Modifier.fillMaxWidth(),
             contentAlignment = Alignment.TopCenter
         ) {
+            val isLandscape = com.synfusion.attendance.ui.responsive.LocalWindowSizeInfo.current.isLandscape
             Column(
                 modifier = Modifier
-                    .widthIn(max = 640.dp)
+                    .widthIn(max = if (isLandscape) 840.dp else 640.dp)
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp, vertical = 16.dp)
                     .verticalScroll(rememberScrollState()),
@@ -490,6 +491,35 @@ fun BackupRestoreBottomSheet(
                         ) {
                             Text(stringResource(R.string.start_restore), fontWeight = FontWeight.Bold)
                         }
+                    }
+                }
+            } else if (isLandscape) {
+                // Actions selection main view — Landscape 2-part grid
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Box(modifier = Modifier.weight(1f)) {
+                        BackupOptionCard(
+                            title = stringResource(R.string.create_new_backup),
+                            subtitle = stringResource(R.string.create_new_backup_subtitle),
+                            icon = Icons.Default.CloudUpload,
+                            onClick = {
+                                customBackupName = "My WorkDaily Backup"
+                                showBackupNameDialog = true
+                            }
+                        )
+                    }
+
+                    Box(modifier = Modifier.weight(1f)) {
+                        BackupOptionCard(
+                            title = stringResource(R.string.restore_from_backup),
+                            subtitle = stringResource(R.string.restore_from_backup_subtitle),
+                            icon = Icons.Default.CloudDownload,
+                            onClick = {
+                                pickRestoreLauncher.launch(arrayOf("application/zip"))
+                            }
+                        )
                     }
                 }
             } else {
