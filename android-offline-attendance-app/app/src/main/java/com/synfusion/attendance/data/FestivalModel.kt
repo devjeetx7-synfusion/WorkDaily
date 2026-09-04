@@ -67,4 +67,25 @@ data class FestivalEvent(
 
     val calendarAssetPath: String
         get() = "festivals/$baseKey/calendar.png"
+
+    val backgroundDrawableName: String
+        get() = "festival_${baseKey}_background"
+
+    val heroDrawableName: String
+        get() = "festival_${baseKey}_hero"
+
+    val calendarDrawableName: String
+        get() = "festival_${baseKey}_calendar"
+
+    fun getBackgroundDrawableRes(context: android.content.Context): Int {
+        return context.resources.getIdentifier(backgroundDrawableName, "drawable", context.packageName)
+    }
+
+    fun getHeroDrawableRes(context: android.content.Context): Int {
+        return context.resources.getIdentifier(heroDrawableName, "drawable", context.packageName)
+    }
+
+    fun getCalendarDrawableRes(context: android.content.Context): Int {
+        return context.resources.getIdentifier(calendarDrawableName, "drawable", context.packageName)
+    }
 }

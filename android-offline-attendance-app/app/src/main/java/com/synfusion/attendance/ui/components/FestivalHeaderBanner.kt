@@ -107,12 +107,14 @@ fun FestivalHeroEnvironment(
         enter = fadeIn(animationSpec = tween(600)),
         exit = fadeOut(animationSpec = tween(400))
     ) {
+        val bgDrawableRes = remember(event, context) { event.getBackgroundDrawableRes(context) }
+        val heroDrawableRes = remember(event, context) { event.getHeroDrawableRes(context) }
         val heroAssetUrl = remember(event.heroAssetPath) { "file:///android_asset/${event.heroAssetPath}" }
-        var isHeroAssetLoaded by remember(event.id) { mutableStateOf(false) }
 
         Box(
             modifier = modifier
                 .fillMaxWidth()
+                .heightIn(min = 260.dp)
                 .background(
                     brush = Brush.verticalGradient(
                         colors = listOf(
@@ -123,32 +125,76 @@ fun FestivalHeroEnvironment(
                     )
                 )
         ) {
-            // Layer 1 — Bundled PNG Hero Asset Image (if available) with responsive cover crop
-            coil.compose.SubcomposeAsyncImage(
-                model = coil.request.ImageRequest.Builder(context)
-                    .data(heroAssetUrl)
-                    .crossfade(true)
-                    .build(),
-                contentDescription = "${event.name} Hero Artwork",
-                modifier = Modifier.matchParentSize(),
-                contentScale = ContentScale.Crop,
-                onSuccess = { isHeroAssetLoaded = true },
-                onError = { isHeroAssetLoaded = false }
-            )
-
-            // Layer 2 — Vector Artwork & Animation Canvas Fallback (if hero.png PNG asset is missing)
-            if (!isHeroAssetLoaded) {
-                FestivalAnimationCanvas(
-                    event = event,
-                    modifier = Modifier.matchParentSize()
-                )
-                FestivalArtwork(
-                    event = event,
-                    modifier = Modifier.matchParentSize()
+            // LAYER 1 — Secondary Background Artwork (Large, Low Opacity, Soft Atmospheric Layer)
+            if (bgDrawableRes != 0) {
+                coil.compose.SubcomposeAsyncImage(
+                    model = coil.request.ImageRequest.Builder(context)
+                        .data(bgDrawableRes)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = "${event.name} Secondary Background",
+                    modifier = Modifier
+                        .matchParentSize(),
+                    contentScale = ContentScale.FillWidth,
+                    alpha = 0.35f
                 )
             }
 
-            // Layer 3 — Smooth Bottom Gradient Transition Fade into WorkDaily background
+            // LAYER 2 — Main Hero Artwork (Prominent, High Resolution, Dominant Visual on Right)
+            var isHeroLoaded by remember(event.id) { mutableStateOf(false) }
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(280.dp)
+                    .align(Alignment.BottomEnd),
+                contentAlignment = Alignment.BottomEnd
+            ) {
+                if (heroDrawableRes != 0) {
+                    coil.compose.SubcomposeAsyncImage(
+                        model = coil.request.ImageRequest.Builder(context)
+                            .data(heroDrawableRes)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = "${event.name} Main Hero Artwork",
+                        modifier = Modifier
+                            .fillMaxHeight(0.92f)
+                            .fillMaxWidth(0.65f),
+                        contentScale = ContentScale.Fit,
+                        alignment = Alignment.BottomEnd,
+                        onSuccess = { isHeroLoaded = true },
+                        onError = { isHeroLoaded = false }
+                    )
+                } else {
+                    coil.compose.SubcomposeAsyncImage(
+                        model = coil.request.ImageRequest.Builder(context)
+                            .data(heroAssetUrl)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = "${event.name} Main Hero Artwork",
+                        modifier = Modifier
+                            .fillMaxHeight(0.92f)
+                            .fillMaxWidth(0.65f),
+                        contentScale = ContentScale.Fit,
+                        alignment = Alignment.BottomEnd,
+                        onSuccess = { isHeroLoaded = true },
+                        onError = { isHeroLoaded = false }
+                    )
+                }
+
+                // Fallback vector canvas if raster hero artwork fails to load or is unavailable
+                if (!isHeroLoaded) {
+                    FestivalAnimationCanvas(
+                        event = event,
+                        modifier = Modifier.matchParentSize()
+                    )
+                    FestivalArtwork(
+                        event = event,
+                        modifier = Modifier.matchParentSize()
+                    )
+                }
+            }
+
+            // LAYER 3 — Smooth Bottom Gradient Fade transitioning into WorkDaily theme background
             val targetBgColor = MaterialTheme.colorScheme.background
             Box(
                 modifier = Modifier
@@ -156,8 +202,8 @@ fun FestivalHeroEnvironment(
                     .background(
                         brush = Brush.verticalGradient(
                             0.0f to Color.Transparent,
-                            0.45f to Color.Transparent,
-                            0.78f to bgGradientBottom.copy(alpha = 0.65f),
+                            0.40f to Color.Transparent,
+                            0.72f to bgGradientBottom.copy(alpha = 0.55f),
                             1.0f to targetBgColor
                         )
                     )
