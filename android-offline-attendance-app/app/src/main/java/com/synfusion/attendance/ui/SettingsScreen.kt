@@ -76,7 +76,6 @@ enum class SettingsCategory(val titleRes: Int, val icon: androidx.compose.ui.gra
     PROFILE(com.synfusion.attendance.R.string.category_profile_settings, Icons.Default.Person),
     STAY_CONNECTED(com.synfusion.attendance.R.string.category_stay_connected, Icons.Default.Favorite),
     PREFERENCES(com.synfusion.attendance.R.string.category_app_preferences, Icons.Default.Settings),
-    NOTIFICATIONS(com.synfusion.attendance.R.string.category_notifications, Icons.Default.Notifications),
     BACKUP(com.synfusion.attendance.R.string.category_backup, Icons.Default.Backup),
     INFO_SUPPORT(com.synfusion.attendance.R.string.category_info_support, Icons.Default.Info)
 }
@@ -436,9 +435,6 @@ fun SettingsScreen(
                                         context = context,
                                         onNavigate = onNavigate
                                     )
-                                }
-                                SettingsCategory.NOTIFICATIONS -> {
-                                    // Merged into PREFERENCES card section
                                 }
                                 SettingsCategory.BACKUP -> {
                                     BackupRestoreCardSection(state = state, lastBackupFile = lastBackupFile, context = context, onManageBackup = { showBackupSheet = true })
@@ -1333,6 +1329,7 @@ fun LogoutBottomSheet(
     onBackupAndLogout: () -> Unit,
     onLogoutWithoutBackup: () -> Unit
 ) {
+    val isLandscape = com.synfusion.attendance.ui.responsive.LocalWindowSizeInfo.current.isLandscape
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
@@ -1341,68 +1338,143 @@ fun LogoutBottomSheet(
         windowInsets = WindowInsets(0.dp),
         dragHandle = { BottomSheetDefaults.DragHandle() }
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Icon(
-                imageVector = Icons.Default.Logout,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.error,
-                modifier = Modifier.size(48.dp)
-            )
-
-            Text(
-                text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.logout_title),
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-
-            Text(
-                text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.logout_backup_question),
-                fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Button(
-                onClick = onBackupAndLogout,
-                modifier = Modifier.fillMaxWidth().height(50.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+        if (isLandscape) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(24.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Backup, null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.backup_logout), fontWeight = FontWeight.Bold)
+                // LEFT COLUMN: Icon + Information
+                Column(
+                    modifier = Modifier.weight(0.45f),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Logout,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(44.dp)
+                    )
+
+                    Text(
+                        text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.logout_title),
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+
+                    Text(
+                        text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.logout_backup_question),
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
+                    )
+                }
+
+                // RIGHT COLUMN: Primary & Secondary Actions
+                Column(
+                    modifier = Modifier.weight(0.55f),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Button(
+                        onClick = onBackupAndLogout,
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Backup, null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.backup_logout), fontWeight = FontWeight.Bold)
+                        }
+                    }
+
+                    OutlinedButton(
+                        onClick = onLogoutWithoutBackup,
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.error)
+                    ) {
+                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.logout_without_backup), fontWeight = FontWeight.Bold)
+                    }
+
+                    TextButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.fillMaxWidth().height(44.dp)
+                    ) {
+                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.cancel), color = MaterialTheme.colorScheme.onSurface)
+                    }
                 }
             }
-
-            OutlinedButton(
-                onClick = onLogoutWithoutBackup,
-                modifier = Modifier.fillMaxWidth().height(50.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.error)
+            Spacer(modifier = Modifier.height(16.dp))
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.logout_without_backup), fontWeight = FontWeight.Bold)
-            }
+                Icon(
+                    imageVector = Icons.Default.Logout,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(48.dp)
+                )
 
-            TextButton(
-                onClick = onDismiss,
-                modifier = Modifier.fillMaxWidth().height(48.dp)
-            ) {
-                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.cancel), color = MaterialTheme.colorScheme.onSurface)
-            }
+                Text(
+                    text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.logout_title),
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
 
-            Spacer(modifier = Modifier.height(24.dp))
+                Text(
+                    text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.logout_backup_question),
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Button(
+                    onClick = onBackupAndLogout,
+                    modifier = Modifier.fillMaxWidth().height(50.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Backup, null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.backup_logout), fontWeight = FontWeight.Bold)
+                    }
+                }
+
+                OutlinedButton(
+                    onClick = onLogoutWithoutBackup,
+                    modifier = Modifier.fillMaxWidth().height(50.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.error)
+                ) {
+                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.logout_without_backup), fontWeight = FontWeight.Bold)
+                }
+
+                TextButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.fillMaxWidth().height(48.dp)
+                ) {
+                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.cancel), color = MaterialTheme.colorScheme.onSurface)
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+            }
         }
     }
 }

@@ -790,11 +790,13 @@ fun PersonalAttendanceDialog(
             val scrollState = rememberScrollState()
             AnimatedVisibility(
                 visible = isDialogVisible,
-                enter = fadeIn(animationSpec = tween(300)) + scaleIn(initialScale = 0.95f, animationSpec = tween(300))
+                enter = fadeIn(animationSpec = tween(300)) + scaleIn(initialScale = 0.95f, animationSpec = tween(300)),
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .widthIn(min = 280.dp)
                         .heightIn(max = 480.dp)
                         .verticalScroll(scrollState)
                 ) {
