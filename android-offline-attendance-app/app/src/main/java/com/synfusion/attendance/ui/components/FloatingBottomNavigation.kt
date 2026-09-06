@@ -254,10 +254,10 @@ fun FloatingBottomNavigation(
             Surface(
                 modifier = Modifier
                     .shadow(
-                        elevation = 8.dp,
+                        elevation = 3.dp,
                         shape = RoundedCornerShape(32.dp),
-                        ambientColor = Color.Black.copy(alpha = 0.04f),
-                        spotColor = Color.Black.copy(alpha = 0.02f)
+                        ambientColor = Color.Black.copy(alpha = 0.03f),
+                        spotColor = Color.Black.copy(alpha = 0.03f)
                     )
                     .clip(RoundedCornerShape(32.dp))
                     .background(MaterialTheme.colorScheme.surface)
@@ -307,10 +307,10 @@ fun FloatingBottomNavigation(
                 modifier = Modifier
                     .size(60.dp)
                     .shadow(
-                        elevation = 8.dp,
+                        elevation = 3.dp,
                         shape = CircleShape,
-                        ambientColor = Color.Black.copy(alpha = 0.04f),
-                        spotColor = Color.Black.copy(alpha = 0.02f)
+                        ambientColor = Color.Black.copy(alpha = 0.03f),
+                        spotColor = Color.Black.copy(alpha = 0.03f)
                     )
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.surface)

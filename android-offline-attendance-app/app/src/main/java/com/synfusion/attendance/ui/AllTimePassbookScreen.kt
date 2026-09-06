@@ -108,7 +108,6 @@ fun AllTimePassbookScreen(
     }
 
     Scaffold(
-        contentWindowInsets = WindowInsets(0.dp),
         topBar = {
             AnimatedContent(
                 targetState = isSearchActive,
@@ -156,7 +155,6 @@ fun AllTimePassbookScreen(
                                 Icon(Icons.Default.ArrowBack, contentDescription = "Close search")
                             }
                         },
-                        windowInsets = WindowInsets(0.dp),
                         colors = TopAppBarDefaults.topAppBarColors(
                             containerColor = MaterialTheme.colorScheme.background
                         )
@@ -180,7 +178,6 @@ fun AllTimePassbookScreen(
                                 Icon(Icons.Default.PictureAsPdf, contentDescription = "Export All Time PDF")
                             }
                         },
-                        windowInsets = WindowInsets(0.dp),
                         colors = TopAppBarDefaults.topAppBarColors(
                             containerColor = MaterialTheme.colorScheme.background
                         )

@@ -171,7 +171,7 @@ fun PersonalCalendarView(
             LazyColumn(
                 state = scrollState,
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 96.dp)
+                contentPadding = PaddingValues(start = 16.dp, top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 16.dp, end = 16.dp, bottom = 96.dp)
             ) {
                 item {
                     Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.calendar), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
@@ -349,6 +349,7 @@ fun PersonalCalendarView(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(horizontal = 20.dp, vertical = 12.dp),
+                contentPadding = PaddingValues(top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 item {
@@ -819,7 +820,7 @@ fun CalendarDateCell(
         else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
     }
 
-    // Border hierarchy for attendance rings and today indicators on festival/normal date cells
+    // Border hierarchy for attendance rings and today indicators
     val borderStrokeWidth = when {
         isPresent || isAbsent || isHalf -> 2.5.dp
         hasOT -> 2.dp
@@ -851,26 +852,13 @@ fun CalendarDateCell(
             ),
         contentAlignment = Alignment.Center
     ) {
-        // Render custom artwork image if available; if artwork is missing, render emoji as fallback
-        // CENTERED DATE NUMBER OVERLAID DIRECTLY ON TOP OF FESTIVAL ARTWORK / FALLBACK
-        val textStyle = if (false) {
-            LocalTextStyle.current.copy(
-                shadow = androidx.compose.ui.graphics.Shadow(
-                    color = Color.Black.copy(alpha = 0.85f),
-                    offset = androidx.compose.ui.geometry.Offset(0f, 2f),
-                    blurRadius = 4f
-                )
-            )
-        } else {
-            LocalTextStyle.current
-        }
-
+        // CENTERED DATE NUMBER
         Text(
             text = day.toString(),
             fontSize = 14.sp,
             fontWeight = FontWeight.Bold,
             color = textColor,
-            style = textStyle
+            style = LocalTextStyle.current
         )
 
         // Subtle attendance indicator badges (Half-day / Advance)
