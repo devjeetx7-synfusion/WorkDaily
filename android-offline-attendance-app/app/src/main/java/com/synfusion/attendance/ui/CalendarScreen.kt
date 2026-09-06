@@ -40,10 +40,6 @@ import com.synfusion.attendance.utils.OvertimeCalculator
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.synfusion.attendance.data.FestivalCategory
-import com.synfusion.attendance.data.FestivalEvent
-import com.synfusion.attendance.data.FestivalRepository
-import com.synfusion.attendance.ui.components.FestivalAnimationCanvas
 import com.synfusion.attendance.viewmodel.OfflineAttendanceRecord
 import com.synfusion.attendance.viewmodel.OfflineCalendarViewModel
 import com.synfusion.attendance.utils.IndianCurrencyVisualTransformation
@@ -130,10 +126,6 @@ fun PersonalCalendarView(
     val todayDay = todayCal.get(Calendar.DAY_OF_MONTH)
 
     val dayLabels = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
-
-    val festivalMap = remember(month, year) {
-        FestivalRepository.getEventsForMonth(month + 1, year)
-    }
 
     val dayMap = remember(state.personalAttendance) {
         val map = mutableMapOf<Int, OfflineAttendanceRecord>()
@@ -300,14 +292,10 @@ fun PersonalCalendarView(
                                         if (day in 1..daysInMonth) {
                                             val data = dayMap[day]
                                             val isToday = isCurrentMonth && day == todayDay
-                                            val dayFestivals = festivalMap[day]
-                                            val mainFestival = dayFestivals?.firstOrNull()
-
                                             CalendarDateCell(
                                                 day = day,
                                                 data = data,
                                                 isToday = isToday,
-                                                mainFestival = mainFestival,
                                                 onClick = {
                                                     selectedDay = day
                                                     showDialog = true
@@ -450,15 +438,11 @@ fun PersonalCalendarView(
                                                     if (day in 1..daysInMonth) {
                                                         val data = dayMap[day]
                                                         val isToday = isCurrentMonth && day == todayDay
-                                                        val dayFestivals = festivalMap[day]
-                                                        val mainFestival = dayFestivals?.firstOrNull()
-
                                                         CalendarDateCell(
-                                                            day = day,
-                                                            data = data,
-                                                            isToday = isToday,
-                                                            mainFestival = mainFestival,
-                                                            onClick = {
+                                                day = day,
+                                                data = data,
+                                                isToday = isToday,
+                                                onClick = {
                                                                 selectedDay = day
                                                                 showDialog = true
                                                             }
@@ -572,12 +556,10 @@ fun PersonalCalendarView(
     if (showDialog && selectedDay != null) {
         val dateStr = String.format(Locale.US, "%04d-%02d-%02d", year, month + 1, selectedDay!!)
         val existingRecord = dayMap[selectedDay!!]
-        val dayFestivals = festivalMap[selectedDay!!]
-
         PersonalAttendanceDialog(
             displayDate = "$selectedDay ${SimpleDateFormat("MMMM", Locale.getDefault()).format(currentMonthDate)} $year",
             existingRecord = existingRecord,
-            dayFestivals = dayFestivals ?: emptyList(),
+
             onDismiss = { showDialog = false },
             onSave = { status, type, reason, overtime, note, advance ->
                 viewModel.markPersonalAttendance(dateStr, status, type, reason, overtime, note, advance)
@@ -592,155 +574,9 @@ fun PersonalCalendarView(
 }
 
 @Composable
-fun FestivalDetailDialog(
-    event: FestivalEvent,
-    monthName: String,
-    year: Int,
-    onDismiss: () -> Unit
-) {
-    val primaryColor = remember(event.primaryColorHex) { Color(event.primaryColorHex) }
-    val secondaryColor = remember(event.secondaryColorHex) { Color(event.secondaryColorHex) }
-    val accentColor = remember(event.accentColorHex) { Color(event.accentColorHex) }
-    val context = LocalContext.current
-    val calDrawableRes = remember(event, context) { event.getCalendarDrawableRes(context) }
-
-    val categoryText = when (event.category) {
-        FestivalCategory.SPECIAL_HOME_EVENT -> if (event.isPublicHoliday) "Special Festival • Public Holiday" else "Special Festival"
-        FestivalCategory.CALENDAR_EVENT -> if (event.isPublicHoliday) "Calendar Event • Public Holiday" else "Calendar Event"
-        FestivalCategory.OBSERVANCE -> "Observance"
-    }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = null,
-        text = {
-            val scrollState = rememberScrollState()
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = 480.dp)
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                primaryColor.copy(alpha = 0.22f),
-                                secondaryColor.copy(alpha = 0.12f),
-                                MaterialTheme.colorScheme.surface
-                            )
-                        )
-                    )
-                    .padding(16.dp)
-            ) {
-                FestivalAnimationCanvas(
-                    event = event,
-                    modifier = Modifier.matchParentSize()
-                )
-
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .verticalScroll(scrollState),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(72.dp)
-                            .clip(CircleShape)
-                            .background(primaryColor.copy(alpha = 0.2f))
-                            .border(2.dp, accentColor.copy(alpha = 0.6f), CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        if (calDrawableRes != 0) {
-                            coil.compose.SubcomposeAsyncImage(
-                                model = coil.request.ImageRequest.Builder(context)
-                                    .data(calDrawableRes)
-                                    .crossfade(true)
-                                    .build(),
-                                contentDescription = "${event.name} Artwork",
-                                modifier = Modifier.fillMaxSize().clip(CircleShape),
-                                contentScale = androidx.compose.ui.layout.ContentScale.Crop
-                            )
-                        } else {
-                            Text(
-                                text = event.emoji,
-                                fontSize = 34.sp,
-                                textAlign = TextAlign.Center
-                            )
-                        }
-                    }
-
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            text = event.greeting.ifBlank { event.name },
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            textAlign = TextAlign.Center,
-                            softWrap = true,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-
-                        Text(
-                            text = "${event.day} $monthName $year",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center,
-                            softWrap = true,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = primaryColor.copy(alpha = 0.18f)
-                    ) {
-                        Text(
-                            text = categoryText,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = primaryColor,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
-                        )
-                    }
-
-                    if (event.description.isNotEmpty()) {
-                        Text(
-                            text = event.description,
-                            fontSize = 13.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center,
-                            lineHeight = 18.sp,
-                            modifier = Modifier.padding(horizontal = 8.dp)
-                        )
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = onDismiss,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Text("Close", fontWeight = FontWeight.Bold)
-            }
-        },
-        shape = RoundedCornerShape(24.dp),
-        containerColor = MaterialTheme.colorScheme.surface
-    )
-}
-
-@Composable
 fun PersonalAttendanceDialog(
     displayDate: String,
     existingRecord: OfflineAttendanceRecord?,
-    dayFestivals: List<FestivalEvent> = emptyList(),
     onDismiss: () -> Unit,
     onSave: (String, String, String, Int, String, Double) -> Unit,
     onDelete: () -> Unit
@@ -758,7 +594,6 @@ fun PersonalAttendanceDialog(
     var editAdvance by remember { mutableStateOf((existingRecord?.advanceAmount ?: 0.0).toInt().toString()) }
 
     val absenceReasons = listOf("sick", "family", "travel", "other")
-    val mainFestival = dayFestivals.firstOrNull()
 
     // Smooth Entrance Sequence (250-400ms)
     var isDialogVisible by remember { mutableStateOf(false) }
@@ -769,23 +604,17 @@ fun PersonalAttendanceDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         shape = RoundedCornerShape(28.dp),
-        containerColor = if (mainFestival != null) {
-            MaterialTheme.colorScheme.surface
-        } else {
-            MaterialTheme.colorScheme.surface
-        },
-        title = if (mainFestival == null) {
-            {
-                Column {
-                    Text(displayDate, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                    Text(
-                        androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.tap_to_edit_attendance_or_add_noteadvanc_msg),
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+        containerColor = MaterialTheme.colorScheme.surface,
+        title = {
+            Column {
+                Text(displayDate, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                Text(
+                    androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.tap_to_edit_attendance_or_add_noteadvanc_msg),
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
-        } else null,
+        },
         text = {
             val scrollState = rememberScrollState()
             AnimatedVisibility(
@@ -800,161 +629,6 @@ fun PersonalAttendanceDialog(
                         .heightIn(max = 480.dp)
                         .verticalScroll(scrollState)
                 ) {
-                    if (mainFestival != null) {
-                        val pColor = remember(mainFestival.primaryColorHex) { Color(mainFestival.primaryColorHex) }
-                        val sColor = remember(mainFestival.secondaryColorHex) { Color(mainFestival.secondaryColorHex) }
-                        val aColor = remember(mainFestival.accentColorHex) { Color(mainFestival.accentColorHex) }
-
-                        val categoryLabel = when (mainFestival.category) {
-                            FestivalCategory.SPECIAL_HOME_EVENT -> if (mainFestival.isPublicHoliday) "Special Festival • Public Holiday" else "Special Festival"
-                            FestivalCategory.CALENDAR_EVENT -> if (mainFestival.isPublicHoliday) "Calendar Event • Public Holiday" else "Calendar Event"
-                            FestivalCategory.OBSERVANCE -> "Observance"
-                        }
-
-                        // Full Festival Header directly integrated into dialog top surface (No nested card container)
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 16.dp)
-                                .clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp, bottomStart = 16.dp, bottomEnd = 16.dp))
-                                .background(
-                                    Brush.verticalGradient(
-                                        colors = listOf(
-                                            pColor.copy(alpha = 0.28f),
-                                            sColor.copy(alpha = 0.12f),
-                                            aColor.copy(alpha = 0.05f),
-                                            Color.Transparent
-                                        )
-                                    )
-                                )
-                        ) {
-                            // Layer 1 — Festival Particles
-                            FestivalAnimationCanvas(
-                                event = mainFestival,
-                                modifier = Modifier.matchParentSize()
-                            )
-
-                            // Layer 2 — Integrated Content
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.End
-                                ) {
-                                    Surface(
-                                        shape = RoundedCornerShape(8.dp),
-                                        color = pColor.copy(alpha = 0.2f)
-                                    ) {
-                                        Text(
-                                            text = categoryLabel,
-                                            fontSize = 10.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = pColor,
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                            softWrap = true
-                                        )
-                                    }
-                                }
-
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    val dialogContext = LocalContext.current
-                                    val calDrawableRes = remember(mainFestival, dialogContext) { mainFestival.getCalendarDrawableRes(dialogContext) }
-                                    Box(
-                                        modifier = Modifier
-                                            .size(48.dp)
-                                            .clip(CircleShape)
-                                            .background(aColor.copy(alpha = 0.25f))
-                                            .border(1.5.dp, aColor.copy(alpha = 0.6f), CircleShape),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        if (calDrawableRes != 0) {
-                                            coil.compose.SubcomposeAsyncImage(
-                                                model = coil.request.ImageRequest.Builder(dialogContext)
-                                                    .data(calDrawableRes)
-                                                    .crossfade(true)
-                                                    .build(),
-                                                contentDescription = "${mainFestival.name} Artwork",
-                                                modifier = Modifier.fillMaxSize().clip(CircleShape),
-                                                contentScale = androidx.compose.ui.layout.ContentScale.Crop
-                                            )
-                                        } else {
-                                            Text(
-                                                text = mainFestival.emoji,
-                                                fontSize = 24.sp,
-                                                textAlign = TextAlign.Center
-                                            )
-                                        }
-                                    }
-
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            text = mainFestival.greeting.ifBlank { mainFestival.name },
-                                            fontWeight = FontWeight.ExtraBold,
-                                            fontSize = 18.sp,
-                                            color = MaterialTheme.colorScheme.onSurface,
-                                            softWrap = true
-                                        )
-                                        Text(
-                                            text = displayDate,
-                                            fontSize = 12.sp,
-                                            fontWeight = FontWeight.Medium,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            softWrap = true
-                                        )
-                                    }
-                                }
-
-                                if (mainFestival.description.isNotBlank()) {
-                                    Text(
-                                        text = mainFestival.description,
-                                        fontSize = 12.sp,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        lineHeight = 16.sp
-                                    )
-                                }
-
-                                if (dayFestivals.size > 1) {
-                                    val otherEvents = dayFestivals.drop(1)
-                                    Column(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(top = 4.dp),
-                                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                                    ) {
-                                        HorizontalDivider(color = aColor.copy(alpha = 0.2f), thickness = 0.8.dp)
-                                        otherEvents.forEach { other ->
-                                            Row(
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                            ) {
-                                                Box(
-                                                    modifier = Modifier
-                                                        .size(8.dp)
-                                                        .clip(CircleShape)
-                                                        .background(Color(other.primaryColorHex))
-                                                )
-                                                Text(
-                                                    text = other.name,
-                                                    fontSize = 11.sp,
-                                                    fontWeight = FontWeight.SemiBold,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(
                         onClick = { editStatus = "present" },
@@ -1118,50 +792,10 @@ fun PersonalAttendanceDialog(
 }
 
 @Composable
-fun FestivalCalendarBadge(
-    event: FestivalEvent,
-    modifier: Modifier = Modifier
-) {
-    val isSpecialHome = event.category == FestivalCategory.SPECIAL_HOME_EVENT
-    val primaryColor = remember(event.primaryColorHex) { Color(event.primaryColorHex) }
-    val accentColor = remember(event.accentColorHex) { Color(event.accentColorHex) }
-
-    val badgeSize = if (isSpecialHome) 18.dp else 15.dp
-    val fontSize = if (isSpecialHome) 10.sp else 8.sp
-
-    val badgeBg = if (isSpecialHome) {
-        primaryColor.copy(alpha = 0.32f)
-    } else {
-        MaterialTheme.colorScheme.surface
-    }
-    val badgeBorder = if (isSpecialHome) {
-        accentColor.copy(alpha = 0.75f)
-    } else {
-        MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
-    }
-
-    Box(
-        modifier = modifier
-            .size(badgeSize)
-            .clip(CircleShape)
-            .background(badgeBg)
-            .border(1.dp, badgeBorder, CircleShape),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = event.emoji,
-            fontSize = fontSize,
-            textAlign = TextAlign.Center
-        )
-    }
-}
-
-@Composable
 fun CalendarDateCell(
     day: Int,
     data: OfflineAttendanceRecord?,
     isToday: Boolean,
-    mainFestival: FestivalEvent?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -1172,30 +806,6 @@ fun CalendarDateCell(
     val hasAdvance = data?.advanceAmount != null && data.advanceAmount > 0
     val hasOT = data?.overtimeHours != null && data.overtimeHours > 0
 
-    val isFestivalDay = mainFestival != null
-    val calDrawableRes = remember(mainFestival, context) { mainFestival?.getCalendarDrawableRes(context) ?: 0 }
-
-    val festivalGradientBrush = remember(mainFestival) {
-        if (mainFestival != null) {
-            val primary = Color(mainFestival.primaryColorHex)
-            val secondary = Color(mainFestival.secondaryColorHex)
-            val accent = Color(mainFestival.accentColorHex)
-            when (mainFestival.category) {
-                FestivalCategory.SPECIAL_HOME_EVENT -> Brush.sweepGradient(
-                    colors = listOf(primary, secondary, accent, primary)
-                )
-                FestivalCategory.CALENDAR_EVENT -> Brush.radialGradient(
-                    colors = listOf(primary.copy(alpha = 0.95f), secondary, accent)
-                )
-                FestivalCategory.OBSERVANCE -> Brush.linearGradient(
-                    colors = listOf(primary, accent)
-                )
-            }
-        } else {
-            null
-        }
-    }
-
     val defaultBgColor = when {
         isPresent && isHalf -> com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay()
         isPresent -> com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent()
@@ -1204,7 +814,6 @@ fun CalendarDateCell(
     }
 
     val textColor = when {
-        isFestivalDay && mainFestival != null -> Color(mainFestival.calendarTextColorHex)
         isPresent || isAbsent -> Color.White
         isToday -> MaterialTheme.colorScheme.onSurface
         else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
@@ -1232,11 +841,7 @@ fun CalendarDateCell(
             .fillMaxSize()
             .clip(CircleShape)
             .then(
-                if (isFestivalDay && festivalGradientBrush != null) {
-                    Modifier.background(festivalGradientBrush)
-                } else {
-                    Modifier.background(defaultBgColor)
-                }
+                Modifier.background(defaultBgColor)
             )
             .clickable(onClick = onClick)
             .border(
@@ -1247,59 +852,8 @@ fun CalendarDateCell(
         contentAlignment = Alignment.Center
     ) {
         // Render custom artwork image if available; if artwork is missing, render emoji as fallback
-        if (isFestivalDay && mainFestival != null) {
-            if (calDrawableRes != 0) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(2.dp)
-                        .clip(CircleShape)
-                        .background(
-                            Brush.radialGradient(
-                                colors = listOf(
-                                    Color(mainFestival.accentColorHex).copy(alpha = 0.4f),
-                                    Color(mainFestival.primaryColorHex).copy(alpha = 0.2f),
-                                    Color.Transparent
-                                )
-                            )
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    coil.compose.SubcomposeAsyncImage(
-                        model = coil.request.ImageRequest.Builder(context)
-                            .data(calDrawableRes)
-                            .crossfade(true)
-                            .build(),
-                        contentDescription = "${mainFestival.name} Calendar Circle Artwork",
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clip(CircleShape),
-                        contentScale = androidx.compose.ui.layout.ContentScale.Crop
-                    )
-                }
-            } else {
-                // Emoji icon area with category-specific gradient background treatment
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(CircleShape)
-                        .then(
-                            if (festivalGradientBrush != null) Modifier.background(festivalGradientBrush)
-                            else Modifier
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = mainFestival.emoji,
-                        fontSize = 16.sp,
-                        textAlign = TextAlign.Center
-                    )
-                }
-            }
-        }
-
         // CENTERED DATE NUMBER OVERLAID DIRECTLY ON TOP OF FESTIVAL ARTWORK / FALLBACK
-        val textStyle = if (isFestivalDay) {
+        val textStyle = if (false) {
             LocalTextStyle.current.copy(
                 shadow = androidx.compose.ui.graphics.Shadow(
                     color = Color.Black.copy(alpha = 0.85f),
@@ -1313,7 +867,7 @@ fun CalendarDateCell(
 
         Text(
             text = day.toString(),
-            fontSize = if (isFestivalDay && calDrawableRes == 0) 12.sp else 14.sp,
+            fontSize = 14.sp,
             fontWeight = FontWeight.Bold,
             color = textColor,
             style = textStyle

@@ -2,8 +2,8 @@ package com.synfusion.attendance.utils
 
 import android.content.Context
 import android.util.Log
-import com.synfusion.attendance.data.FestivalCategory
-import com.synfusion.attendance.data.FestivalRepository
+import com.synfusion.attendance.data.HolidayCategory
+import com.synfusion.attendance.data.IndianHolidayRepository
 import com.synfusion.attendance.data.LocalAttendanceRepository
 import com.synfusion.attendance.data.entities.AttendanceEntity
 import com.synfusion.attendance.data.entities.UserEntity
@@ -300,12 +300,11 @@ object NotificationRuleEngine {
         val tomorrowYear = tomorrowCal.get(Calendar.YEAR)
 
         // 1. Check Today's Festival
-        val todayEvent = FestivalRepository.getTodaySpecialHomeEvent(todayDay, todayMonth, todayYear)
-            ?: FestivalRepository.getEventsForDate(todayDay, todayMonth, todayYear)
-                .firstOrNull { it.category == FestivalCategory.SPECIAL_HOME_EVENT || it.priority >= 80 }
+        val todayEvent = IndianHolidayRepository.getHolidaysForDate(todayDay, todayMonth, todayYear)
+            .firstOrNull { it.category == HolidayCategory.FESTIVAL }
 
         if (todayEvent != null) {
-            val normId = FestivalNotificationRepository.normalizeFestivalId(todayEvent.id)
+            val normId = FestivalNotificationRepository.normalizeFestivalId(todayEvent.name)
             val stateKey = "${KEY_FESTIVAL_SENT_DATE}_${normId}_$userId"
             val lastSentDate = pref.getString(stateKey, "")
 
@@ -336,11 +335,11 @@ object NotificationRuleEngine {
         }
 
         // 2. Check Tomorrow's Festival (Upcoming Festival Reminder)
-        val tomorrowEvent = FestivalRepository.getEventsForDate(tomorrowDay, tomorrowMonth, tomorrowYear)
-            .firstOrNull { it.category == FestivalCategory.SPECIAL_HOME_EVENT || it.priority >= 80 }
+        val tomorrowEvent = IndianHolidayRepository.getHolidaysForDate(tomorrowDay, tomorrowMonth, tomorrowYear)
+            .firstOrNull { it.category == HolidayCategory.FESTIVAL }
 
         if (tomorrowEvent != null) {
-            val normId = FestivalNotificationRepository.normalizeFestivalId(tomorrowEvent.id)
+            val normId = FestivalNotificationRepository.normalizeFestivalId(tomorrowEvent.name)
             val upcomingStateKey = "${KEY_FESTIVAL_UPCOMING_SENT_DATE}_${normId}_$userId"
             val lastUpcomingSentDate = pref.getString(upcomingStateKey, "")
 
