@@ -58,8 +58,6 @@ import com.synfusion.attendance.viewmodel.OfflineCalendarViewModel
 import com.synfusion.attendance.viewmodel.OfflineStatsViewModel
 import com.synfusion.attendance.viewmodel.OfflinePassbookViewModel
 import com.synfusion.attendance.viewmodel.OfflineSettingsViewModel
-import com.synfusion.attendance.data.FestivalRepository
-import com.synfusion.attendance.ui.components.FestivalHeroEnvironment
 import com.synfusion.attendance.viewmodel.OfflineSettingsState
 import com.synfusion.attendance.viewmodel.OfflineDashboardViewModel
 import com.synfusion.attendance.viewmodel.OfflineDashboardState
@@ -292,34 +290,10 @@ fun DashboardScreen(
                 ) { page ->
                     when (page) {
                         0 -> {
-                            val todayCal = remember { Calendar.getInstance() }
-                            val todaySpecialEvent = remember(todayCal) {
-                                val day = todayCal.get(Calendar.DAY_OF_MONTH)
-                                val month = todayCal.get(Calendar.MONTH) + 1
-                                val year = todayCal.get(Calendar.YEAR)
-                                FestivalRepository.getTodaySpecialHomeEvent(day, month, year)
-                            }
-
-                            val festivalBgModifier = if (todaySpecialEvent != null) {
-                                val pColor = Color(todaySpecialEvent.primaryColorHex).copy(alpha = 0.12f)
-                                val sColor = Color(todaySpecialEvent.secondaryColorHex).copy(alpha = 0.05f)
-                                Modifier.background(
-                                    brush = androidx.compose.ui.graphics.Brush.verticalGradient(
-                                        colors = listOf(
-                                            pColor,
-                                            sColor,
-                                            MaterialTheme.colorScheme.background
-                                        )
-                                    )
-                                )
-                            } else {
-                                Modifier.background(MaterialTheme.colorScheme.background)
-                            }
-
                             WorkDailyPullToRefreshBox(
                                 isRefreshing = dashboardState.isRefreshing,
                                 onRefresh = { dashboardViewModel.refresh() },
-                                modifier = Modifier.fillMaxSize().then(festivalBgModifier)
+                                modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
                             ) {
                                 Crossfade(
                                     targetState = if (dashboardState.isLoading) "shimmer" else if (dashboardState.errorMessage != null) "error" else "content",
@@ -350,16 +324,11 @@ fun DashboardScreen(
                                         "content" -> {
                                             ResponsiveContainer {
                                                 if (isCompactPortrait) {
-                                                    val hasFestival = todaySpecialEvent != null
                                                     LazyColumn(
                                                         state = dashboardScrollState,
                                                         modifier = Modifier
                                                             .fillMaxSize(),
-                                                        contentPadding = if (hasFestival) {
-                                                            PaddingValues(start = 0.dp, top = 0.dp, end = 0.dp, bottom = 96.dp)
-                                                        } else {
-                                                            PaddingValues(start = 16.dp, top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 12.dp, end = 16.dp, bottom = 96.dp)
-                                                        },
+                                                        contentPadding = PaddingValues(start = 16.dp, top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 12.dp, end = 16.dp, bottom = 96.dp),
                                                         verticalArrangement = Arrangement.spacedBy(16.dp)
                                                     ) {
                                                         item {
@@ -370,20 +339,7 @@ fun DashboardScreen(
                                                         }
                                                         item {
                                                             Column(
-                                                                modifier = Modifier
-                                                                    .fillMaxWidth()
-                                                                    .padding(horizontal = if (hasFestival) 16.dp else 0.dp)
-                                                                    .then(
-                                                                        if (hasFestival) {
-                                                                            Modifier.layout { measurable, constraints ->
-                                                                                val placeable = measurable.measure(constraints)
-                                                                                val overlapPx = 36.dp.roundToPx()
-                                                                                layout(placeable.width, (placeable.height - overlapPx).coerceAtLeast(0)) {
-                                                                                    placeable.placeRelative(0, -overlapPx)
-                                                                                }
-                                                                            }
-                                                                        } else Modifier
-                                                                    ),
+                                                                modifier = Modifier.fillMaxWidth(),
                                                                 verticalArrangement = Arrangement.spacedBy(16.dp)
                                                             ) {
                                                                 PersonalStatsGrid(
@@ -689,13 +645,6 @@ fun HeaderSection(state: OfflineDashboardState, onProfileClick: () -> Unit = {})
         SimpleDateFormat("EEEE, dd MMMM yyyy", Locale.getDefault()).format(todayCal.time)
     }
 
-    val todaySpecialEvent = remember(todayCal) {
-        val day = todayCal.get(Calendar.DAY_OF_MONTH)
-        val month = todayCal.get(Calendar.MONTH) + 1
-        val year = todayCal.get(Calendar.YEAR)
-        FestivalRepository.getTodaySpecialHomeEvent(day, month, year)
-    }
-
     val displayName = state.name.trim()
     val firstName = if (displayName.isNotEmpty()) displayName.split(" ")[0] else "User"
     val avatarLetters = if (displayName.length >= 2) displayName.take(2).uppercase() else if (displayName.isNotEmpty()) displayName.take(1).uppercase() else "U"
@@ -718,22 +667,12 @@ fun HeaderSection(state: OfflineDashboardState, onProfileClick: () -> Unit = {})
         } else null
     }
 
-    if (todaySpecialEvent != null) {
-        // Render Premium Festival Hero Environment
-        FestivalHeroEnvironment(
-            event = todaySpecialEvent,
-            displayName = displayName,
-            formattedDate = todayFullDate,
-            photoUrl = state.photoUrl,
-            onProfileClick = onProfileClick
-        )
-    } else {
-        // Standard WorkDaily Header
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+    // Standard WorkDaily Header
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
@@ -805,8 +744,6 @@ fun HeaderSection(state: OfflineDashboardState, onProfileClick: () -> Unit = {})
                 }
             }
         }
-    }
-
 }
 
 @Composable
