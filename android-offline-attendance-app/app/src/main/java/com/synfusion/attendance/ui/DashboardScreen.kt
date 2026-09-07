@@ -225,7 +225,6 @@ fun DashboardScreen(
 
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-        contentWindowInsets = WindowInsets(0.dp),
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Box(
@@ -756,7 +755,7 @@ fun PersonalStatsGrid(state: OfflineDashboardState, onNavigatePassbook: () -> Un
                     .clickable(onClick = onEarningsClick),
                 shape = RoundedCornerShape(16.dp),
                 color = MaterialTheme.colorScheme.surface,
-                shadowElevation = 4.dp,
+                shadowElevation = 0.dp,
                 border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
             ) {
                 Column(modifier = Modifier.padding(20.dp)) {
@@ -785,7 +784,7 @@ fun PersonalStatsGrid(state: OfflineDashboardState, onNavigatePassbook: () -> Un
                     .clickable(onClick = onEarningsClick),
                 shape = RoundedCornerShape(16.dp),
                 color = MaterialTheme.colorScheme.surface,
-                shadowElevation = 4.dp,
+                shadowElevation = 0.dp,
                 border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
             ) {
                 Column(modifier = Modifier.padding(20.dp)) {

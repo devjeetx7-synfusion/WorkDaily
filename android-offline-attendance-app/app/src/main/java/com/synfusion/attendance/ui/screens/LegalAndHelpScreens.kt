@@ -195,7 +195,6 @@ fun TermsHeaderIllustration() {
 @Composable
 fun HowToUseScreen(onNavigateBack: () -> Unit) {
     Scaffold(
-        contentWindowInsets = WindowInsets(0.dp),
         topBar = {
             WorkDailyAppBar(
                 title = stringResource(R.string.how_to_use),
@@ -417,7 +416,6 @@ fun TutorialStepCard(
 @Composable
 fun PrivacyPolicyScreen(onNavigateBack: () -> Unit) {
     Scaffold(
-        contentWindowInsets = WindowInsets(0.dp),
         topBar = {
             WorkDailyAppBar(
                 title = stringResource(R.string.privacy_policy),
@@ -513,7 +511,6 @@ fun PrivacyPolicyScreen(onNavigateBack: () -> Unit) {
 @Composable
 fun TermsConditionsScreen(onNavigateBack: () -> Unit) {
     Scaffold(
-        contentWindowInsets = WindowInsets(0.dp),
         topBar = {
             WorkDailyAppBar(
                 title = stringResource(R.string.terms_conditions),
