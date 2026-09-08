@@ -124,13 +124,38 @@ jobs:
           echo "Using apksigner at: ${APKSIGNER_BIN}"
 
           echo "Verifying APK signing status..."
-          SIGN_VERIFY_OUTPUT=$("${APKSIGNER_BIN}" verify --verbose --print-certs "${APK_SOURCE}" 2>&1)
+          if SIGN_VERIFY_OUTPUT=$("${APKSIGNER_BIN}" verify --verbose --print-certs "${APK_SOURCE}" 2>&1); then
+            VERIFY_EXIT=0
+          else
+            VERIFY_EXIT=$?
+          fi
+
           echo "${SIGN_VERIFY_OUTPUT}"
 
-          if ! echo "${SIGN_VERIFY_OUTPUT}" | grep -q "Verifies: true"; then
-            echo "::error::APK signature verification failed! The APK is NOT signed."
+          if [ ${VERIFY_EXIT} -ne 0 ]; then
+            echo "::error::apksigner verify returned non-zero exit code (${VERIFY_EXIT}). APK signature verification failed!"
             exit 1
           fi
+
+          NUM_SIGNERS=$(echo "${SIGN_VERIFY_OUTPUT}" | grep -i "Number of signers:" | awk '{print $NF}' || echo "0")
+          if [ "${NUM_SIGNERS}" -lt 1 ]; then
+            echo "::error::APK has no valid signers found."
+            exit 1
+          fi
+
+          V1_SCHEME=$(echo "${SIGN_VERIFY_OUTPUT}" | grep -i "Verified using v1 scheme" | awk '{print $NF}' || echo "false")
+          V2_SCHEME=$(echo "${SIGN_VERIFY_OUTPUT}" | grep -i "Verified using v2 scheme" | awk '{print $NF}' || echo "false")
+          V3_SCHEME=$(echo "${SIGN_VERIFY_OUTPUT}" | grep -i "Verified using v3 scheme" | awk '{print $NF}' || echo "false")
+          V4_SCHEME=$(echo "${SIGN_VERIFY_OUTPUT}" | grep -i "Verified using v4 scheme" | awk '{print $NF}' || echo "false")
+          CERT_DN=$(echo "${SIGN_VERIFY_OUTPUT}" | grep -i "Signer #1 certificate DN:" | sed 's/Signer #1 certificate DN: //' || echo "N/A")
+
+          echo "--- Safe Signing Metadata ---"
+          echo "Number of Signers: ${NUM_SIGNERS}"
+          echo "v1 Scheme (JAR): ${V1_SCHEME}"
+          echo "v2 Scheme (APK v2): ${V2_SCHEME}"
+          echo "v3 Scheme (APK v3): ${V3_SCHEME}"
+          echo "v4 Scheme (APK v4): ${V4_SCHEME}"
+          echo "Certificate DN: ${CERT_DN}"
 
           # Expected Certificate Fingerprints
           EXPECTED_SHA256="5434859969124668a6ab9c13266962661761768b4e17003b17888ecd046e2421"
@@ -146,6 +171,8 @@ jobs:
             echo "::error::Signing identity mismatch! The APK was signed with a different key than expected."
             exit 1
           fi
+
+          echo "SIGNATURE VALIDATION: PASS"
           echo "Signing certificate verification PASSED: Identity matches existing WorkDaily certificate."
 
           # Verify Package ID
