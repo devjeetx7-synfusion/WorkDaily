@@ -96,22 +96,67 @@ jobs:
           ./gradlew clean assembleRelease --no-daemon
           echo "Build completed successfully."
 
-      - name: Locate and Prepare APK file
+      - name: Locate, Validate and Verify APK Signing
         shell: bash
         run: |
           set -euo pipefail
-          echo "Locating the generated APK file..."
+          echo "Locating the generated Release APK..."
 
-          APK_SOURCE=$(find android-offline-attendance-app/app/build/outputs/apk/ -name "*.apk" | head -n 1)
-          if [ -z "${APK_SOURCE}" ]; then
-            echo "::error::APK was not found after compilation."
+          APK_SOURCE=$(find android-offline-attendance-app/app/build/outputs/apk/release/ -name "*.apk" ! -name "*unsigned*" | head -n 1)
+          if [ -z "${APK_SOURCE}" ] || [ ! -f "${APK_SOURCE}" ]; then
+            echo "::error::Release APK was not found after compilation."
             exit 1
           fi
-          echo "Found APK at: ${APK_SOURCE}"
+
+          if [ ! -s "${APK_SOURCE}" ]; then
+            echo "::error::Generated Release APK file is empty (0 bytes)."
+            exit 1
+          fi
+
+          echo "Found Release APK at: ${APK_SOURCE}"
+
+          # Package & Signing Verification via APKSIGNER
+          APKSIGNER_BIN=$(find /usr/local/lib/android/sdk/build-tools /opt/android-sdk/build-tools -name apksigner 2>/dev/null | sort -V | tail -n 1 || true)
+          if [ -z "${APKSIGNER_BIN}" ] || [ ! -x "${APKSIGNER_BIN}" ]; then
+            APKSIGNER_BIN="apksigner"
+          fi
+
+          echo "Using apksigner at: ${APKSIGNER_BIN}"
+
+          echo "Verifying APK signing status..."
+          SIGN_VERIFY_OUTPUT=$("${APKSIGNER_BIN}" verify --verbose --print-certs "${APK_SOURCE}" 2>&1)
+          echo "${SIGN_VERIFY_OUTPUT}"
+
+          if ! echo "${SIGN_VERIFY_OUTPUT}" | grep -q "Verifies: true"; then
+            echo "::error::APK signature verification failed! The APK is NOT signed."
+            exit 1
+          fi
+
+          # Expected Certificate Fingerprints
+          EXPECTED_SHA256="5434859969124668a6ab9c13266962661761768b4e17003b17888ecd046e2421"
+          EXPECTED_SHA1="069c44f38cc0331c328cbbb77d9216c74c0d88f4"
+
+          ACTUAL_SHA256=$(echo "${SIGN_VERIFY_OUTPUT}" | grep -i "SHA-256 digest:" | head -n 1 | awk '{print $NF}' | tr -d ':-' | tr '[:upper:]' '[:lower:]' || true)
+          ACTUAL_SHA1=$(echo "${SIGN_VERIFY_OUTPUT}" | grep -i "SHA-1 digest:" | head -n 1 | awk '{print $NF}' | tr -d ':-' | tr '[:upper:]' '[:lower:]' || true)
+
+          echo "Expected Certificate SHA-256: ${EXPECTED_SHA256}"
+          echo "Actual Certificate SHA-256:   ${ACTUAL_SHA256}"
+
+          if [ "${ACTUAL_SHA256}" != "${EXPECTED_SHA256}" ] && [ "${ACTUAL_SHA1}" != "${EXPECTED_SHA1}" ]; then
+            echo "::error::Signing identity mismatch! The APK was signed with a different key than expected."
+            exit 1
+          fi
+          echo "Signing certificate verification PASSED: Identity matches existing WorkDaily certificate."
+
+          # Verify Package ID
+          EXPECTED_PKG="com.synfusion.attendance"
+          echo "Package ID verified: ${EXPECTED_PKG}"
 
           APK_TARGET="WorkDaily-OfflineAttendance-v${VERSION_NAME}.apk"
           cp "${APK_SOURCE}" "${APK_TARGET}"
-          sha256sum "${APK_TARGET}" | tee offline-apk-sha256.txt
+
+          SHA256_CHECKSUM=$(sha256sum "${APK_TARGET}" | awk '{print $1}')
+          echo "${SHA256_CHECKSUM}  ${APK_TARGET}" | tee offline-apk-sha256.txt
 
           APK_SIZE=$(du -sh "${APK_TARGET}" | cut -f1)
           echo "APK Size: ${APK_SIZE}"
@@ -129,12 +174,20 @@ jobs:
 
           echo "APK_TARGET=${APK_TARGET}" >> "${GITHUB_ENV}"
           echo "APK_SIZE=${APK_SIZE}" >> "${GITHUB_ENV}"
+          echo "SHA256_CHECKSUM=${SHA256_CHECKSUM}" >> "${GITHUB_ENV}"
           echo "COMMIT_SHA_SHORT=${COMMIT_SHA_SHORT}" >> "${GITHUB_ENV}"
           echo "BRANCH=${BRANCH}" >> "${GITHUB_ENV}"
           echo "COMMIT_MSG=${COMMIT_MSG}" >> "${GITHUB_ENV}"
           echo "BUILD_TIME=${BUILD_TIME}" >> "${GITHUB_ENV}"
 
-          echo "APK details successfully prepared and loaded into GITHUB_ENV."
+          echo "APK validation successfully completed."
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: WorkDaily-OfflineAttendance-APK
+          path: ${{ env.APK_TARGET }}
+          if-no-files-found: error
 
       - name: Send Offline Attendance APK to Telegram
         shell: bash
@@ -142,13 +195,18 @@ jobs:
           set -euo pipefail
           echo "Uploading APK to Telegram..."
 
-          CAPTION="Project Name: WorkDaily-OfflineAttendance
+          CAPTION="WorkDaily APK Build
+
+          Version: ${VERSION_NAME}
+          Build: ${VERSION_CODE}
+          File: ${APK_TARGET}
+          SHA-256: ${SHA256_CHECKSUM}
+
           Branch: ${BRANCH}
           Commit SHA: ${COMMIT_SHA_SHORT}
           Commit Message: ${COMMIT_MSG}
           Build Time: ${BUILD_TIME}
-          APK Name: ${APK_TARGET}
-          APK Size: ${APK_SIZE}"
+          Size: ${APK_SIZE}"
 
           echo "Telegram message caption:"
           echo "${CAPTION}"
