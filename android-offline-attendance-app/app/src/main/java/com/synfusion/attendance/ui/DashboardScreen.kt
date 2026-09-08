@@ -51,7 +51,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollState
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 import com.synfusion.attendance.viewmodel.OfflineCalendarViewModel
@@ -224,6 +223,7 @@ fun DashboardScreen(
     }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0.dp),
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
@@ -359,8 +359,8 @@ fun DashboardScreen(
                                                     LazyColumn(
                                                         state = dashboardScrollState,
                                                         modifier = Modifier
-                                                            .fillMaxSize()
-                                                            .padding(horizontal = 20.dp, vertical = 12.dp),
+                                                            .fillMaxSize(),
+                                                        contentPadding = PaddingValues(start = 20.dp, top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 12.dp, end = 20.dp, bottom = 24.dp),
                                                         verticalArrangement = Arrangement.spacedBy(16.dp)
                                                     ) {
                                                         item {
