@@ -1,0 +1,216 @@
+name: Build AAB & Send to Telegram
+
+on:
+  workflow_dispatch:
+    inputs:
+      send_to_telegram:
+        description: 'Send generated AAB to Telegram'
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-send-aab:
+    name: Build Unsigned Release AAB & Send to Telegram
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: temurin
+          cache: gradle
+
+      - name: Grant execute permission for Gradle wrapper
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Granting executable permissions to Gradle wrapper..."
+          chmod +x android-offline-attendance-app/gradlew
+          echo "Execution permissions granted."
+
+      - name: Extract project version metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Extracting version metadata from build.gradle.kts..."
+
+          VERSION_INFO=$(python3 - <<'PY'
+          import re
+          from pathlib import Path
+
+          path = Path("android-offline-attendance-app/app/build.gradle.kts")
+          content = path.read_text()
+
+          vcode_match = re.search(r'versionCode\s*=\s*(\d+)', content)
+          vname_match = re.search(r'versionName\s*=\s*"([^"]+)"', content)
+
+          vcode = vcode_match.group(1) if vcode_match else "1"
+          vname = vname_match.group(1) if vname_match else "1.0.0"
+
+          print(f"{vcode}|{vname}")
+          PY
+          )
+
+          VERSION_CODE=$(echo "${VERSION_INFO}" | cut -d'|' -f1)
+          VERSION_NAME=$(echo "${VERSION_INFO}" | cut -d'|' -f2)
+
+          echo "VERSION_CODE=${VERSION_CODE}" >> "${GITHUB_ENV}"
+          echo "VERSION_NAME=${VERSION_NAME}" >> "${GITHUB_ENV}"
+
+          echo "Extracted Version Code: ${VERSION_CODE}"
+          echo "Extracted Version Name: ${VERSION_NAME}"
+
+      - name: Build Unsigned Release AAB
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Building Unsigned Release AAB with Gradle..."
+          cd android-offline-attendance-app
+          ./gradlew clean bundleRelease --no-daemon
+          echo "Gradle bundleRelease completed successfully."
+
+      - name: Locate and Validate Release AAB
+        id: validate_aab
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Locating and validating the generated Release AAB..."
+
+          AAB_DIR="android-offline-attendance-app/app/build/outputs/bundle/release"
+          AAB_PATH=$(find "${AAB_DIR}" -maxdepth 1 -name "*.aab" | head -n 1)
+
+          if [ -z "${AAB_PATH}" ]; then
+            echo "::error::No .aab file found in ${AAB_DIR} after compilation."
+            exit 1
+          fi
+
+          echo "AAB path found: ${AAB_PATH}"
+
+          if [ ! -f "${AAB_PATH}" ]; then
+            echo "::error::Target AAB file does not exist: ${AAB_PATH}"
+            exit 1
+          fi
+
+          if [ ! -s "${AAB_PATH}" ]; then
+            echo "::error::Target AAB file is empty (0 bytes): ${AAB_PATH}"
+            exit 1
+          fi
+
+          # Validate zip file integrity and required AAB entries
+          if ! unzip -t "${AAB_PATH}" > /dev/null 2>&1; then
+            echo "::error::AAB file failed ZIP structure validation check."
+            exit 1
+          fi
+
+          if ! unzip -l "${AAB_PATH}" | grep -q "BundleConfig.pb"; then
+            echo "::error::AAB is missing BundleConfig.pb - invalid Android App Bundle."
+            exit 1
+          fi
+
+          if ! unzip -l "${AAB_PATH}" | grep -q "base/manifest/AndroidManifest.xml"; then
+            echo "::error::AAB is missing AndroidManifest.xml in base module."
+            exit 1
+          fi
+
+          AAB_FILENAME=$(basename "${AAB_PATH}")
+          AAB_SIZE=$(du -h "${AAB_PATH}" | cut -f1)
+          AAB_SHA256=$(sha256sum "${AAB_PATH}" | awk '{print $1}')
+
+          echo "AAB_PATH=${AAB_PATH}" >> "${GITHUB_ENV}"
+          echo "AAB_FILENAME=${AAB_FILENAME}" >> "${GITHUB_ENV}"
+          echo "AAB_SIZE=${AAB_SIZE}" >> "${GITHUB_ENV}"
+          echo "AAB_SHA256=${AAB_SHA256}" >> "${GITHUB_ENV}"
+
+          echo "AAB VALIDATION: PASS"
+          echo "Filename: ${AAB_FILENAME}"
+          echo "File Size: ${AAB_SIZE}"
+          echo "SHA-256: ${AAB_SHA256}"
+
+      - name: Upload AAB as GitHub Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: workdaily-release-aab
+          path: ${{ env.AAB_PATH }}
+          if-no-files-found: error
+
+      - name: Send AAB to Telegram
+        id: telegram_upload
+        if: ${{ inputs.send_to_telegram }}
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Validating Telegram credentials and uploading AAB..."
+
+          if [ -z "${TELEGRAM_BOT_TOKEN}" ]; then
+            echo "::error::Missing TELEGRAM_BOT_TOKEN secret."
+            exit 1
+          fi
+
+          if [[ "${TELEGRAM_BOT_TOKEN}" != *:* ]]; then
+            echo "::error::TELEGRAM_BOT_TOKEN secret must be the full bot token."
+            exit 1
+          fi
+
+          if [ -z "${TELEGRAM_CHAT_ID}" ]; then
+            echo "::error::Missing TELEGRAM_CHAT_ID secret."
+            exit 1
+          fi
+
+          CAPTION="WorkDaily Release AAB
+
+          Version: \"${VERSION_NAME}\"
+          Build: \"${VERSION_CODE}\"
+          File: \"${AAB_FILENAME}\"
+          SHA-256: \"${AAB_SHA256}\""
+
+          echo "Sending document to Telegram..."
+          curl --fail --show-error --silent \
+            -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument" \
+            -F chat_id="${TELEGRAM_CHAT_ID}" \
+            -F document=@"${AAB_PATH}" \
+            -F caption="${CAPTION}"
+
+          echo "AAB document successfully uploaded to Telegram."
+
+      - name: Generate Workflow Summary
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BUILD_STATUS="${{ steps.validate_aab.outcome == 'success' && 'PASS' || 'FAIL' }}"
+          VALIDATION_STATUS="${{ steps.validate_aab.outcome == 'success' && 'PASS' || 'FAIL' }}"
+
+          if [ "${{ inputs.send_to_telegram }}" = "true" ]; then
+            TELEGRAM_STATUS="${{ steps.telegram_upload.outcome == 'success' && 'PASS' || 'FAIL' }}"
+          else
+            TELEGRAM_STATUS="SKIPPED"
+          fi
+
+          cat << EOF >> "${GITHUB_STEP_SUMMARY}"
+          ## WorkDaily Release AAB Workflow Summary
+
+          - **AAB BUILD:** ${BUILD_STATUS}
+          - **AAB VALIDATION:** ${VALIDATION_STATUS}
+          - **TELEGRAM UPLOAD:** ${TELEGRAM_STATUS}
+
+          ### Build Details
+          | Parameter | Value |
+          | --- | --- |
+          | **Filename** | \`${AAB_FILENAME:-N/A}\` |
+          | **Version Name** | \`${VERSION_NAME:-N/A}\` |
+          | **Version Code** | \`${VERSION_CODE:-N/A}\` |
+          | **File Size** | \`${AAB_SIZE:-N/A}\` |
+          | **SHA-256 Checksum** | \`${AAB_SHA256:-N/A}\` |
+          EOF
