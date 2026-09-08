@@ -86,6 +86,7 @@ fun LanguageSelectorScreen(
     var selectedLang by remember { mutableStateOf(currentLang) }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0.dp),
         topBar = {
             TopAppBar(
                 title = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.app_language), fontWeight = FontWeight.Bold) },

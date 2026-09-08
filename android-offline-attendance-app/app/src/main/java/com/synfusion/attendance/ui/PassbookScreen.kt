@@ -52,7 +52,6 @@ import com.synfusion.attendance.ui.components.PdfExportLoadingDialog
 import com.synfusion.attendance.ui.responsive.LocalWindowSizeInfo
 import com.synfusion.attendance.ui.responsive.ResponsiveContainer
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.DisposableEffect
 import androidx.core.content.FileProvider
 import kotlinx.coroutines.launch
@@ -226,7 +225,7 @@ fun PassbookScreen(
                         if (windowSizeInfo.isCompact) {
                             LazyColumn(
                                 modifier = Modifier.fillMaxSize(),
-                                contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 96.dp),
+                                contentPadding = PaddingValues(start = 16.dp, top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 16.dp, end = 16.dp, bottom = 96.dp),
                                 verticalArrangement = Arrangement.spacedBy(16.dp)
                             ) {
                                 item {
@@ -539,7 +538,7 @@ fun PassbookScreen(
                         } else {
                             LazyColumn(
                                 modifier = Modifier.fillMaxSize(),
-                                contentPadding = PaddingValues(start = 24.dp, top = 24.dp, end = 24.dp, bottom = 96.dp),
+                                contentPadding = PaddingValues(start = 24.dp, top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 24.dp, end = 24.dp, bottom = 96.dp),
                                 verticalArrangement = Arrangement.spacedBy(20.dp)
                             ) {
                                 item {

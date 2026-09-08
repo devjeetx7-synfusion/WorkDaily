@@ -116,6 +116,7 @@ fun StatsScreen(
     val tabs = listOf(tabMonthly, tabAllTime)
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0.dp),
         topBar = {
             TopAppBar(
                 title = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.statistics), fontWeight = FontWeight.Bold) },

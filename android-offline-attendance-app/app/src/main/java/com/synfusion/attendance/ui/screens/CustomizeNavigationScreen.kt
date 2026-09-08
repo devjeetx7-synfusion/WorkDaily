@@ -30,6 +30,7 @@ fun CustomizeNavigationScreen(
     val state by viewModel.state.collectAsStateWithLifecycle(initialValue = OfflineSettingsState())
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0.dp),
         topBar = {
             WorkDailyAppBar(
                 title = "Customize Navigation",

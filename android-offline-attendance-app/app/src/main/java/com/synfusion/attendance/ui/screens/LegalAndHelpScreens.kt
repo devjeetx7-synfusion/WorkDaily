@@ -44,7 +44,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.synfusion.attendance.R
 import com.synfusion.attendance.ui.responsive.ResponsiveContainer
 
@@ -88,7 +87,7 @@ fun WorkDailyAppBar(
             titleContentColor = MaterialTheme.colorScheme.onBackground,
             navigationIconContentColor = MaterialTheme.colorScheme.primary
         ),
-        windowInsets = WindowInsets(0.dp)
+        windowInsets = TopAppBarDefaults.windowInsets
     )
 }
 
@@ -195,6 +194,7 @@ fun TermsHeaderIllustration() {
 @Composable
 fun HowToUseScreen(onNavigateBack: () -> Unit) {
     Scaffold(
+        contentWindowInsets = WindowInsets(0.dp),
         topBar = {
             WorkDailyAppBar(
                 title = stringResource(R.string.how_to_use),
@@ -416,6 +416,7 @@ fun TutorialStepCard(
 @Composable
 fun PrivacyPolicyScreen(onNavigateBack: () -> Unit) {
     Scaffold(
+        contentWindowInsets = WindowInsets(0.dp),
         topBar = {
             WorkDailyAppBar(
                 title = stringResource(R.string.privacy_policy),
@@ -511,6 +512,7 @@ fun PrivacyPolicyScreen(onNavigateBack: () -> Unit) {
 @Composable
 fun TermsConditionsScreen(onNavigateBack: () -> Unit) {
     Scaffold(
+        contentWindowInsets = WindowInsets(0.dp),
         topBar = {
             WorkDailyAppBar(
                 title = stringResource(R.string.terms_conditions),

@@ -108,6 +108,7 @@ fun AllTimePassbookScreen(
     }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0.dp),
         topBar = {
             AnimatedContent(
                 targetState = isSearchActive,
@@ -157,7 +158,8 @@ fun AllTimePassbookScreen(
                         },
                         colors = TopAppBarDefaults.topAppBarColors(
                             containerColor = MaterialTheme.colorScheme.background
-                        )
+                        ),
+                        windowInsets = TopAppBarDefaults.windowInsets
                     )
                 } else {
                     TopAppBar(
@@ -180,7 +182,8 @@ fun AllTimePassbookScreen(
                         },
                         colors = TopAppBarDefaults.topAppBarColors(
                             containerColor = MaterialTheme.colorScheme.background
-                        )
+                        ),
+                        windowInsets = TopAppBarDefaults.windowInsets
                     )
                 }
             }

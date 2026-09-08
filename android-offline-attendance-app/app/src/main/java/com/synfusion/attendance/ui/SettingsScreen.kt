@@ -70,7 +70,6 @@ import com.synfusion.attendance.ui.responsive.ResponsiveContainer
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.safeDrawing
 
 enum class SettingsCategory(val titleRes: Int, val icon: androidx.compose.ui.graphics.vector.ImageVector) {
     PROFILE(com.synfusion.attendance.R.string.category_profile_settings, Icons.Default.Person),
@@ -253,7 +252,7 @@ fun SettingsScreen(
                         .fillMaxSize()
                         .verticalScroll(scrollState)
                         .padding(paddingValues)
-                        .padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 96.dp),
+                        .padding(start = 16.dp, top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 16.dp, end = 16.dp, bottom = 96.dp),
                     verticalArrangement = Arrangement.spacedBy(20.dp)
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
@@ -308,7 +307,7 @@ fun SettingsScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(paddingValues)
-                        .padding(horizontal = 20.dp, vertical = 12.dp),
+                        .padding(start = 20.dp, top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 12.dp, end = 20.dp, bottom = 24.dp),
                     horizontalArrangement = Arrangement.spacedBy(20.dp)
                 ) {
                     // Left Pane: Navigation List
