@@ -365,36 +365,57 @@
     <string name="htu_language_desc">हिंदी और इंग्लिश में से अपनी पसंद की भाषा चुनें।</string>
     <string name="htu_settings_title">11. सेटिंग्स</string>
     <string name="htu_settings_desc">अपनी प्रोफाइल, दिहाड़ी, रिमाइंडर और ऐप सेटिंग्स चेंज करें।</string>
-    <string name="privacy_intro">WorkDaily आपकी प्राइवेसी का पूरा ध्यान रखता है। यह प्राइवेसी पॉलिसी बताती है कि आपका लोकल डेटा, नोटिफिकेशन, PDF एक्सपोर्ट और बैकअप कैसे काम करते हैं।</string>
-    <string name="privacy_local_data_title">1. फोन में सेफ डेटा स्टोरेज</string>
-    <string name="privacy_local_data_desc">WorkDaily 100% ऑफलाइन ऐप है। आपकी प्रोफाइल (नाम, फोटो), सेट की गई दिहाड़ी, हाजिरी, overtime, एडवांस, नोट्स और सेटिंग्स केवल आपके फोन के इंटरनल डेटाबेस (Room SQLite, DataStore) में सेफ रहते हैं। वर्कडेली में कोई ऑनलाइन सर्वर, यूजर अकाउंट या ऑटोमैटिक डेटा ट्रांसफर नहीं है।</string>
-    <string name="privacy_notifications_title">2. लोकल नोटिफिकेशन और परमिशन</string>
-    <string name="privacy_notifications_desc">WorkDaily आपके फोन के अलार्म मैनेजर और वर्क मैनेजर से लोकल रिमाइंडर और हाजिरी/कमाई की समरी भेजता है। नोटिफिकेशन में आपकी सेट की गई दिहाड़ी या कुल कमाई के आंकड़े दिख सकते हैं। ये सभी नोटिफिकेशन 100% आपके फोन के अंदर बनते हैं। आप जब चाहें एंड्रॉइड सेटिंग्स से नोटिफिकेशन बंद कर सकते हैं। लॉक स्क्रीन पर नोटिफिकेशन दिखना आपके फोन की लॉक-स्क्रीन सेटिंग्स पर निर्भर करता है।</string>
-    <string name="privacy_exports_title">3. PDF एक्सपोर्ट और बैकअप फाइल्स</string>
-    <string name="privacy_exports_desc">पासबुक PDF रिपोर्ट और बैकअप ZIP फाइल आपके फोन में ही बनती हैं। जब आप कोई PDF या बैकअप फाइल व्हाट्सएप आदि पर शेयर करते हैं, तो शेयरिंग का पूरा कंट्रोल आपके पास होता है। WorkDaily खुद से किसी सर्वर पर फाइल अपलोड नहीं करता।</string>
-    <string name="privacy_sharing_title">4. दूसरी ऐप्स और लिंक्स</string>
-    <string name="privacy_sharing_desc">WorkDaily में कोई थर्ड-पार्टी एनालिटिक्स, विज्ञापन (Ads) या ट्रैकिंग SDK मौजूद नहीं है। ऐप में दिए गए सोशल लिंक्स (व्हाट्सएप चैनल, टेलीग्राम, इंस्टाग्राम, यूट्यूब या सपोर्ट ईमेल) खोलने पर उन प्लेटफॉर्म्स की अपनी प्राइवेसी पॉलिसी लागू होती है।</string>
-    <string name="privacy_deletion_title">5. डेटा डिलीट और रिटेंशन</string>
-    <string name="privacy_deletion_desc">आपका डेटा तब तक फोन में रहता है जब तक आप खुद रिकॉर्ड डिलीट नहीं करते या ऐप अनइन्स्टॉल नहीं करते। ऐप अनइन्स्टॉल करने पर सारा लोकल डेटाबेस डिलीट हो जाता है। आपके द्वारा फोन में सेव की गई बैकअप ZIP फाइलें आपको खुद मैनेज या डिलीट करनी होती हैं।</string>
-    <string name="privacy_contact_title">6. सपोर्ट और संपर्क करें</string>
-    <string name="privacy_contact_desc">प्राइवेसी से जुड़ा कोई सवाल या सुझाव हो तो वर्कडेली टीम (SynFusion) से workdaily.synfusion@gmail.com पर ईमेल करें।</string>
+    <!-- Mandatory Login Consent & Legal Consent Strings -->
+    <string name="legal_consent_full">I confirm that I have read and agree to WorkDaily Terms of Use and Privacy Policy.</string>
+    <string name="terms_of_use_clickable">Terms of Use</string>
+    <string name="privacy_policy_clickable">Privacy Policy</string>
 
+    <!-- Support & Contact Actions Strings -->
+    <string name="copy_email">कॉपी ईमेल</string>
+    <string name="email_copied">ईमेल कॉपी हो गया</string>
+    <string name="contact_support">सपोर्ट से संपर्क करें</string>
+    <string name="support_email_subject">WorkDaily Support Request</string>
+    <string name="support_email_address">workdaily.synfusion@gmail.com</string>
+    <string name="no_email_app_found">कोई ईमेल ऐप नहीं मिला। सपोर्ट ईमेल क्लिपबोर्ड पर कॉपी कर दिया गया है।</string>
+    <string name="support_section_title">सवाल, समस्या या सपोर्ट</string>
+    <string name="support_section_desc">अगर आपको WorkDaily में कोई दिक्कत आ रही है, लगता है कि कुछ सही काम नहीं कर रहा, या इन नियमों/प्राइवेसी पॉलिसी के बारे में कोई सवाल है, तो आप WorkDaily सपोर्ट टीम से संपर्क कर सकते हैं।\n\nईमेल:\nworkdaily.synfusion@gmail.com\n\nसपोर्ट से संपर्क करते समय अपनी समस्या स्पष्ट रूप से लिखें। कृपया पासवर्ड, लॉगइन क्रेडेंशियल या अन्य संवेदनशील जानकारी न भेजें।</string>
+    <string name="legal_footer_title">WorkDaily</string>
+    <string name="last_updated_date">अंतिम अपडेट: 30 मार्च 2025</string>
+
+    <!-- Privacy Policy Strings -->
+    <string name="privacy_intro">WorkDaily आपकी प्राइवेसी का पूरा ध्यान रखता है। यह प्राइवेसी पॉलिसी बताती है कि जब आप वर्कडेली एंड्रॉइड ऐप का उपयोग करते हैं, तो आपकी लोकल जानकारी, नोटिफिकेशन, एक्सपोर्ट फाइल्स और सेटिंग्स कैसे काम करती हैं।</string>
+    <string name="privacy_local_data_title">1. फोन में सेफ डेटा स्टोरेज</string>
+    <string name="privacy_local_data_desc">आपके द्वारा दर्ज की गई सभी जानकारी—जैसे प्रोफाइल नाम, फोटो, मोबाइल नंबर, सेट की गई दिहाड़ी, हाजिरी, ओवर-टाइम, एडवांस, नोट्स और सेटिंग्स केवल आपके फोन के इंटरनल डेटाबेस (Room SQLite, DataStore) में सेफ रहती हैं। WorkDaily में कोई ऑनलाइन सर्वर, यूजर अकाउंट या ऑटोमैटिक डेटा ट्रांसफर नहीं होता है।</string>
+    <string name="privacy_notifications_title">2. लोकल नोटिफिकेशन और परमिशन</string>
+    <string name="privacy_notifications_desc">WorkDaily आपके फोन के अलार्म मैनेजर और वर्क मैनेजर से लोकल रिमाइंडर और हाजिरी/कमाई की समरी भेजता है। ये सभी नोटिफिकेशन 100% आपके फोन के अंदर बनते हैं। आप जब चाहें एंड्रॉइड सेटिंग्स से नोटिफिकेशन बंद या चालू कर सकते हैं।</string>
+    <string name="privacy_exports_title">3. PDF रिपोर्ट और बैकअप फाइल्स</string>
+    <string name="privacy_exports_desc">पासबुक PDF रिपोर्ट और बैकअप ZIP फाइल आपके फोन में ही बनती हैं। जब आप कोई PDF या बैकअप फाइल शेयर करते हैं, तो शेयरिंग का पूरा कंट्रोल आपके पास होता है। WorkDaily खुद से किसी सर्वर पर फाइल अपलोड नहीं करता है।</string>
+    <string name="privacy_sharing_title">4. दूसरी ऐप्स और नेटवर्क एक्टिविटी</string>
+    <string name="privacy_sharing_desc">WorkDaily में कोई थर्ड-पार्टी एनालिटिक्स, विज्ञापन (Ads), क्रैश रिपोर्टिंग SDK या ट्रैकिंग फ्रेमवर्क मौजूद नहीं है। इंटरनेट का उपयोग केवल तब होता है जब आप खुद कोई एक्सटर्नल लिंक या ईमेल सपोर्ट बटन दबाते हैं।</string>
+    <string name="privacy_deletion_title">5. डेटा डिलीट और यूजर कंट्रोल</string>
+    <string name="privacy_deletion_desc">आपका डेटा तब तक फोन में रहता है जब तक आप खुद रिकॉर्ड डिलीट नहीं करते या ऐप अनइन्स्टॉल नहीं करते। ऐप अनइन्स्टॉल करने पर सारा लोकल डेटाबेस डिलीट हो जाता है। आपके द्वारा फोन में सेव की गई बैकअप ZIP फाइलें आपको खुद मैनेज या डिलीट करनी होती हैं।</string>
+    <string name="privacy_children_title">6. बच्चों की प्राइवेसी</string>
+    <string name="privacy_children_desc">WorkDaily कामगारों, कर्मचारियों, ठेकेदारों और सुपरवाइजरों के लिए दैनिक दिहाड़ी का हिसाब रखने के लिए बनाया गया है। ऐप 13 वर्ष से कम उम्र के बच्चों से कोई व्यक्तिगत जानकारी एकत्र नहीं करता है।</string>
+    <string name="privacy_contact_title">7. सपोर्ट और संपर्क करें</string>
+    <string name="privacy_contact_desc">प्राइवेसी से जुड़ा कोई सवाल या सुझाव हो तो वर्कडेली टीम से workdaily.synfusion@gmail.com पर संपर्क करें।</string>
+
+    <!-- Terms of Use Strings -->
     <string name="terms_acceptance_title">1. नियमों की मंजूरी</string>
-    <string name="terms_acceptance_desc">WorkDaily ऐप को इन्स्टॉल या इस्तेमाल करने पर आप इन सेवा शर्तों (Terms of Service) को स्वीकार करते हैं।</string>
-    <string name="terms_use_title">2. ऐप का उद्देश्य</string>
-    <string name="terms_use_desc">WorkDaily आपकी रोज की हाजिरी, दिहाड़ी, ओवरटाइम, एडवांस और पासबुक रिपोर्ट का हिसाब रखने के लिए एक पर्सनल, 100% ऑफलाइन टूल है।</string>
-    <string name="terms_responsibilities_title">3. आपकी जिम्मेदारी और सही रिकॉर्ड</string>
-    <string name="terms_responsibilities_desc">ऐप में दर्ज की गई दिहाड़ी, हाजिरी, ओवरटाइम और एडवांस की जानकारी सही दर्ज करने की पूरी जिम्मेदारी आपकी है। इसके अलावा अपने फोन और बैकअप फाइल्स को सुरक्षित रखना भी आपकी जिम्मेदारी है।</string>
-    <string name="terms_financial_title">4. हिसाब-किताब की जानकारी (Disclaimer)</string>
-    <string name="terms_financial_desc">WorkDaily में दिया गया हिसाब आपके द्वारा डाले गए आंकड़ों पर आधारित होता है। WorkDaily कोई बैंक, टैक्स एडवाइजर या लीगल पेरोल सर्विस नहीं है। किसी भी व्यक्ति या ठेकेदार से लेन-देन करने से पहले हिसाब खुद चेक कर लें।</string>
-    <string name="terms_notifications_title">5. लोकल नोटिफिकेशन की शर्तें</string>
-    <string name="terms_notifications_desc">लोकल नोटिफिकेशन आपकी सुविधा के लिए फोन द्वारा भेजे जाते हैं। एंड्रॉइड की बैटरी सेवर सेटिंग्स या बैकग्राउंड लिमिट के कारण नोटिफिकेशन मिलने में देरी हो सकती है।</string>
-    <string name="terms_backup_title">6. बैकअप और डेटा लॉस जिम्मेदारी</string>
-    <string name="terms_backup_desc">सब डेटा केवल आपके फोन में सेफ रहता है। फोन खोने, खराब होने या ऐप डिलीट होने पर SynFusion के पास कोई क्लाउड बैकअप नहीं होता। इसलिए समय-समय पर ZIP बैकअप फाइल बनाकर रखना यूजर की जिम्मेदारी है।</string>
-    <string name="terms_branding_title">7. ब्रांडिंग और राइट्स</string>
-    <string name="terms_branding_desc">WorkDaily और उससे जुड़े सभी अधिकार, कोड, डिजाइन और ब्रांड एसेट्स SynFusion के पास सुरक्षित हैं।</string>
-    <string name="terms_contact_title">8. संपर्क करें</string>
-    <string name="terms_contact_desc">इन सेवा शर्तों से जुड़े किसी भी सवाल या सहायता के लिए workdaily.synfusion@gmail.com पर SynFusion से संपर्क करें।</string>
+    <string name="terms_acceptance_desc">WorkDaily ऐप का उपयोग करने या लॉगइन करने पर आप इन सेवा शर्तों (Terms of Use) और प्राइवेसी पॉलिसी को स्वीकार करते हैं। यदि आप इन शर्तों से सहमत नहीं हैं, तो कृपया ऐप का उपयोग न करें।</string>
+    <string name="terms_use_title">2. ऐप का उद्देश्य और दायरा</string>
+    <string name="terms_use_desc">WorkDaily आपकी रोज की हाजिरी, काम के दिन, दिहाड़ी, ओवर-टाइम, एडवांस, नोट्स और कमाई के रिकॉर्ड का हिसाब रखने के लिए एक पर्सनल रिकॉर्ड-कीपिंग टूल है। WorkDaily केवल एक सॉफ्टवेयर टूल है और यह कोई बैंक, वित्तीय संस्थान, नियोक्ता, पेरोल प्रोसेसर, टैक्स एडवाइजर, लीगल सर्विस या सरकारी एजेंसी नहीं है।</string>
+    <string name="terms_responsibilities_title">3. आपकी जिम्मेदारी और सही रिकॉर्ड की चेतावनी</string>
+    <string name="terms_responsibilities_desc">ऐप में दर्ज की गई दिहाड़ी, हाजिरी, ओवर-टाइम, एडवांस और नोट्स की जानकारी सही दर्ज करने की पूरी जिम्मेदारी आपकी है। WorkDaily यूजर द्वारा दर्ज की गई जानकारी की जांच नहीं करता है।\n\nसत्यापन चेतावनी: किसी भी भुगतान, लेन-देन, रोजगार दावे, टैक्स या कानूनी उद्देश्य के लिए हिसाब का उपयोग करने से पहले यूजर को सभी रिकॉर्ड्स और जोड़-घटाव की खुद जांच कर लेनी चाहिए।</string>
+    <string name="terms_financial_title">4. गलत डेटा और रिकॉर्ड डिस्क्लेमर</string>
+    <string name="terms_financial_desc">कानून द्वारा दी गई अधिकतम सीमा तक, गलत, अधूरे या पुराने डेटा दर्ज करने, गलत गणना समझने, या रिकॉर्ड्स का सत्यापन किए बिना उनका उपयोग करने से होने वाले किसी भी नुकसान या विवाद के लिए WorkDaily और इसके डेवलपर जिम्मेदार नहीं होंगे।</string>
+    <string name="terms_notifications_title">5. ऐप उपलब्धता और गणना डिस्क्लेमर</string>
+    <string name="terms_notifications_desc">WorkDaily एक सॉफ्टवेयर टूल के रूप में प्रदान किया जाता है। हालांकि सटीक गणितीय गणनाएं सुनिश्चित करने के प्रयास किए गए हैं, फिर भी किसी सॉफ्टवेयर की 100% त्रुटिहीन संचालन की गारंटी नहीं दी जा सकती। महत्वपूर्ण फैसलों से पहले हिसाब को स्वयं जांच लें।</string>
+    <string name="terms_backup_title">6. ऑफ-लाइन स्टोरेज और बैकअप जिम्मेदारी</string>
+    <string name="terms_backup_desc">सब डेटा केवल आपके फोन में सेफ रहता है। फोन खोने, खराब होने या ऐप डिलीट होने पर डेवलपर के पास कोई क्लाउड बैकअप नहीं होता। इसलिए समय-समय पर ZIP बैकअप फाइल बनाकर सुरक्षित रखना यूजर की जिम्मेदारी है।</string>
+    <string name="terms_branding_title">7. बौद्धिक संपदा और अधिकार</string>
+    <string name="terms_branding_desc">WorkDaily और उससे जुड़े सभी अधिकार, कोड, डिजाइन, ट्रेडमार्क और ब्रांड एसेट्स WorkDaily और इसके डेवलपर के पास सुरक्षित हैं।</string>
+    <string name="terms_contact_title">8. सपोर्ट और संपर्क</string>
+    <string name="terms_contact_desc">इन सेवा शर्तों से जुड़े किसी भी सवाल या सहायता के लिए workdaily.synfusion@gmail.com पर संपर्क करें।</string>
 <string name="how_to_use">इस्तेमाल कैसे करें</string>
     <string name="error_opening_link">लिंक खोलने के लिए कोई ऐप नहीं मिला</string>
     <string name="error_generic_link">लिंक नहीं खुल पा रहा है</string>

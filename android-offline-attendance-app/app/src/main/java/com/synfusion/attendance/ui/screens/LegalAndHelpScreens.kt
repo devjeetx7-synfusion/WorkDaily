@@ -39,6 +39,10 @@ import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.sp
 
+import android.content.Intent
+import android.net.Uri
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -496,11 +500,21 @@ fun PrivacyPolicyScreen(onNavigateBack: () -> Unit) {
             }
             item {
                 LegalSectionCard(
+                    title = stringResource(R.string.privacy_children_title),
+                    description = stringResource(R.string.privacy_children_desc),
+                    icon = androidx.compose.material.icons.Icons.Default.Face
+                )
+            }
+            item {
+                LegalSectionCard(
                     title = stringResource(R.string.privacy_contact_title),
                     description = stringResource(R.string.privacy_contact_desc),
                     icon = androidx.compose.material.icons.Icons.Default.Email
                 )
             }
+            item { Spacer(modifier = Modifier.height(8.dp)) }
+            item { LegalSupportCard() }
+            item { LegalFooterCard(pageTitle = stringResource(R.string.privacy_policy)) }
             item { Spacer(modifier = Modifier.height(32.dp)) }
         }
         }
@@ -611,9 +625,173 @@ fun TermsConditionsScreen(onNavigateBack: () -> Unit) {
                     icon = androidx.compose.material.icons.Icons.Default.ContactMail
                 )
             }
+            item { Spacer(modifier = Modifier.height(8.dp)) }
+            item { LegalSupportCard() }
+            item { LegalFooterCard(pageTitle = stringResource(R.string.terms_conditions)) }
             item { Spacer(modifier = Modifier.height(32.dp)) }
         }
         }
+    }
+}
+
+@Composable
+fun LegalSupportCard() {
+    val context = LocalContext.current
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp,
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(androidx.compose.foundation.shape.CircleShape)
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Email,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = stringResource(R.string.support_section_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+
+            Text(
+                text = stringResource(R.string.support_section_desc),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                lineHeight = 22.sp
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                OutlinedButton(
+                    onClick = {
+                        val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                        val clip = android.content.ClipData.newPlainText("WorkDaily Support Email", "workdaily.synfusion@gmail.com")
+                        clipboard.setPrimaryClip(clip)
+                        Toast.makeText(context, context.getString(R.string.email_copied), Toast.LENGTH_SHORT).show()
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ContentCopy,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = stringResource(R.string.copy_email),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp
+                    )
+                }
+
+                Button(
+                    onClick = {
+                        try {
+                            val intent = Intent(Intent.ACTION_SENDTO).apply {
+                                data = Uri.parse("mailto:workdaily.synfusion@gmail.com")
+                                putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.support_email_subject))
+                            }
+                            context.startActivity(Intent.createChooser(intent, context.getString(R.string.contact_support)))
+                        } catch (e: Exception) {
+                            val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                            val clip = android.content.ClipData.newPlainText("WorkDaily Support Email", "workdaily.synfusion@gmail.com")
+                            clipboard.setPrimaryClip(clip)
+                            Toast.makeText(context, context.getString(R.string.no_email_app_found), Toast.LENGTH_LONG).show()
+                        }
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Send,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = stringResource(R.string.contact_support),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun LegalFooterCard(pageTitle: String) {
+    val context = LocalContext.current
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "WorkDaily",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Text(
+            text = pageTitle,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = stringResource(R.string.last_updated_date),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = "Support: workdaily.synfusion@gmail.com",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.primary,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier
+                .clickable {
+                    val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                    val clip = android.content.ClipData.newPlainText("WorkDaily Support Email", "workdaily.synfusion@gmail.com")
+                    clipboard.setPrimaryClip(clip)
+                    Toast.makeText(context, context.getString(R.string.email_copied), Toast.LENGTH_SHORT).show()
+                }
+                .padding(4.dp)
+        )
     }
 }
 

@@ -52,6 +52,11 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.foundation.text.ClickableText
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.synfusion.attendance.viewmodel.OfflineAuthViewModel
@@ -102,6 +107,10 @@ fun LoginScreen(
     var name by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
+
+    var isConsentChecked by rememberSaveable { mutableStateOf(false) }
+    var showTermsSheet by rememberSaveable { mutableStateOf(false) }
+    var showPrivacySheet by rememberSaveable { mutableStateOf(false) }
 
     var detectedBackupFile by remember { mutableStateOf<File?>(null) }
     var showSmartBackupDialog by remember { mutableStateOf(false) }
@@ -516,11 +525,20 @@ fun LoginScreen(
                             singleLine = true,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                         )
-                        Spacer(modifier = Modifier.height(20.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // Mandatory Legal Consent Row
+                        LegalConsentRow(
+                            isConsentChecked = isConsentChecked,
+                            onConsentChange = { isConsentChecked = it },
+                            onTermsClick = { showTermsSheet = true },
+                            onPrivacyClick = { showPrivacySheet = true }
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
 
                         Button(
                             onClick = {
-                                if (name.isNotBlank() && phone.length >= 10) {
+                                if (name.isNotBlank() && phone.length >= 10 && isConsentChecked) {
                                     authViewModel.login(name, email, phone)
                                 }
                             },
@@ -529,7 +547,7 @@ fun LoginScreen(
                                 .height(58.dp)
                                 .pressScaleEffect(),
                             shape = RoundedCornerShape(20.dp),
-                            enabled = name.isNotBlank() && phone.length >= 10 && !isProcessing
+                            enabled = name.isNotBlank() && phone.length >= 10 && isConsentChecked && !isProcessing
                         ) {
                             if (isProcessing) {
                                 CircularProgressIndicator(
@@ -642,11 +660,20 @@ fun LoginScreen(
                             singleLine = true,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                         )
-                        Spacer(modifier = Modifier.height(20.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // Mandatory Legal Consent Row
+                        LegalConsentRow(
+                            isConsentChecked = isConsentChecked,
+                            onConsentChange = { isConsentChecked = it },
+                            onTermsClick = { showTermsSheet = true },
+                            onPrivacyClick = { showPrivacySheet = true }
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
 
                         Button(
                             onClick = {
-                                if (name.isNotBlank() && phone.length >= 10) {
+                                if (name.isNotBlank() && phone.length >= 10 && isConsentChecked) {
                                     authViewModel.login(name, email, phone)
                                 }
                             },
@@ -655,7 +682,7 @@ fun LoginScreen(
                                 .height(58.dp)
                                 .pressScaleEffect(),
                             shape = RoundedCornerShape(20.dp),
-                            enabled = name.isNotBlank() && phone.length >= 10 && !isProcessing
+                            enabled = name.isNotBlank() && phone.length >= 10 && isConsentChecked && !isProcessing
                         ) {
                             if (isProcessing) {
                                 CircularProgressIndicator(
@@ -703,6 +730,104 @@ fun LoginScreen(
                 }
             }
         }
+
+        if (showTermsSheet) {
+            TermsConditionsBottomSheet(onDismiss = { showTermsSheet = false })
+        }
+        if (showPrivacySheet) {
+            PrivacyPolicyBottomSheet(onDismiss = { showPrivacySheet = false })
+        }
+    }
+}
+
+@Composable
+fun LegalConsentRow(
+    isConsentChecked: Boolean,
+    onConsentChange: (Boolean) -> Unit,
+    onTermsClick: () -> Unit,
+    onPrivacyClick: () -> Unit
+) {
+    val fullConsentText = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.legal_consent_full)
+    val termsString = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.terms_of_use_clickable)
+    val privacyString = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.privacy_policy_clickable)
+
+    val termsStart = fullConsentText.indexOf(termsString)
+    val termsEnd = if (termsStart != -1) termsStart + termsString.length else -1
+
+    val privacyStart = fullConsentText.indexOf(privacyString)
+    val privacyEnd = if (privacyStart != -1) privacyStart + privacyString.length else -1
+
+    val annotatedString = buildAnnotatedString {
+        append(fullConsentText)
+        if (termsStart != -1) {
+            addStyle(
+                style = SpanStyle(
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold,
+                    textDecoration = TextDecoration.Underline
+                ),
+                start = termsStart,
+                end = termsEnd
+            )
+            addStringAnnotation(
+                tag = "URL",
+                annotation = "terms",
+                start = termsStart,
+                end = termsEnd
+            )
+        }
+        if (privacyStart != -1) {
+            addStyle(
+                style = SpanStyle(
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold,
+                    textDecoration = TextDecoration.Underline
+                ),
+                start = privacyStart,
+                end = privacyEnd
+            )
+            addStringAnnotation(
+                tag = "URL",
+                annotation = "privacy",
+                start = privacyStart,
+                end = privacyEnd
+            )
+        }
+    }
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+    ) {
+        Checkbox(
+            checked = isConsentChecked,
+            onCheckedChange = onConsentChange,
+            colors = CheckboxDefaults.colors(
+                checkedColor = MaterialTheme.colorScheme.primary,
+                uncheckedColor = MaterialTheme.colorScheme.outline
+            )
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        ClickableText(
+            text = annotatedString,
+            style = MaterialTheme.typography.bodySmall.copy(
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 12.sp,
+                lineHeight = 16.sp
+            ),
+            onClick = { offset ->
+                annotatedString.getStringAnnotations(tag = "URL", start = offset, end = offset)
+                    .firstOrNull()?.let { annotation ->
+                        if (annotation.item == "terms") {
+                            onTermsClick()
+                        } else if (annotation.item == "privacy") {
+                            onPrivacyClick()
+                        }
+                    }
+            }
+        )
     }
 }
 
