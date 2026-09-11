@@ -366,36 +366,57 @@
     <string name="htu_language_desc">Switch between English and Hindi languages for a fully localized user interface.</string>
     <string name="htu_settings_title">11. Settings</string>
     <string name="htu_settings_desc">Manage your app preferences, contact the developer, read the Privacy Policy and Terms &amp; Conditions, and explore more help topics.</string>
-    <string name="privacy_intro">WorkDaily is committed to protecting your privacy through an offline-first architecture. This Privacy Policy details how your local data, notifications, exported files, and preferences are handled.</string>
-    <string name="privacy_local_data_title">1. Local Storage &amp; Data Handling</string>
-    <string name="privacy_local_data_desc">All user-entered data—including profile information (name, avatar photo), daily wage configurations, attendance logs, overtime hours, advance payments, notes, and preferences—is stored exclusively on your device inside Room SQLite database, DataStore preferences, and app-private internal storage. WorkDaily operates without a backend cloud server, user account requirement, or external data transmission.</string>
-    <string name="privacy_notifications_title">2. Local Notifications &amp; System Permissions</string>
-    <string name="privacy_notifications_desc">WorkDaily uses system AlarmManager and WorkManager to deliver local attendance reminders and earnings summaries directly on your device. Notification content may dynamically include your configured wage rate or calculated work summaries. Notifications are generated 100% locally on device. You can grant or revoke notification permissions at any time in Android Settings, and lock screen visibility of notification content depends on your device notification privacy settings.</string>
-    <string name="privacy_exports_title">3. PDF Exports &amp; Backup Files</string>
-    <string name="privacy_exports_desc">PDF Passbook reports and ZIP backup packages are compiled locally on your device. When you choose to export or share a PDF report or backup ZIP file, you select the destination application or storage location via the Android system Sharesheet. WorkDaily does not automatically upload or transmit your backup files to external servers.</string>
-    <string name="privacy_sharing_title">4. Third-Party Services &amp; External Links</string>
-    <string name="privacy_sharing_desc">WorkDaily does not integrate third-party analytics, advertising SDKs, tracking frameworks, or cloud synchronization services. Optional external links (such as WhatsApp Channel, Telegram, Instagram, YouTube, or support email) launch external applications which are governed by their respective privacy policies.</string>
-    <string name="privacy_deletion_title">5. Data Retention &amp; Deletion</string>
-    <string name="privacy_deletion_desc">Your data remains on your device for as long as the application is installed or until you explicitly delete individual records, perform a reset, or clear application data. Uninstalling WorkDaily permanently removes all internal database records and local profile assets. User-created backup ZIP files saved outside application directories must be managed or deleted manually by the user.</string>
-    <string name="privacy_contact_title">6. Support &amp; Contact Information</string>
-    <string name="privacy_contact_desc">If you have any questions or feedback regarding this Privacy Policy or data handling in WorkDaily, please contact SynFusion at workdaily.synfusion@gmail.com.</string>
+    <!-- Mandatory Login Consent & Legal Consent Strings -->
+    <string name="legal_consent_full">I confirm that I have read and agree to WorkDaily Terms of Use and Privacy Policy.</string>
+    <string name="terms_of_use_clickable">Terms of Use</string>
+    <string name="privacy_policy_clickable">Privacy Policy</string>
 
+    <!-- Support & Contact Actions Strings -->
+    <string name="copy_email">Copy Email</string>
+    <string name="email_copied">Email copied</string>
+    <string name="contact_support">Contact Support</string>
+    <string name="support_email_subject">WorkDaily Support Request</string>
+    <string name="support_email_address">workdaily.synfusion@gmail.com</string>
+    <string name="no_email_app_found">No email app found. Support email copied to clipboard.</string>
+    <string name="support_section_title">Questions, Issues, or Support</string>
+    <string name="support_section_desc">If you experience a problem with WorkDaily, believe something is not working correctly, have questions about these Terms or our Privacy Policy, or need assistance with the application, you can contact the WorkDaily support team.\n\nEmail:\nworkdaily.synfusion@gmail.com\n\nWhen contacting support, please describe the issue clearly and include relevant details that help us understand and reproduce the problem. Please do not send passwords, authentication credentials, payment-card information, or other unnecessary sensitive information.</string>
+    <string name="legal_footer_title">WorkDaily</string>
+    <string name="last_updated_date">Last Updated: March 30, 2025</string>
+
+    <!-- Privacy Policy Strings -->
+    <string name="privacy_intro">WorkDaily is committed to protecting your privacy through an offline-first architecture. This Privacy Policy details how your local information, notifications, exported files, and preferences are handled when you use the WorkDaily Android application.</string>
+    <string name="privacy_local_data_title">1. Local Storage &amp; Data Handling</string>
+    <string name="privacy_local_data_desc">All information entered by you—including profile name, optional profile avatar photo, mobile phone number, daily wage configurations, attendance logs, overtime hours, advance payments, notes, and app preferences—is stored exclusively on your device inside Room SQLite database, DataStore preferences, and app-private internal storage. WorkDaily operates without a remote backend server, user account requirement, or external cloud transmission.</string>
+    <string name="privacy_notifications_title">2. Local Notifications &amp; System Permissions</string>
+    <string name="privacy_notifications_desc">WorkDaily uses system AlarmManager and WorkManager to deliver local attendance reminders and summary alerts directly on your device. Notification content is generated 100% locally on your device and may dynamically include user-configured wage rates or calculated work summaries. You can grant or revoke notification permissions at any time in Android Settings.</string>
+    <string name="privacy_exports_title">3. PDF Reports &amp; Backup Files</string>
+    <string name="privacy_exports_desc">PDF Passbook reports and ZIP backup packages are compiled locally on your device. When you choose to export or share a PDF report or backup ZIP file, you select the destination application or storage location using the Android system Sharesheet. WorkDaily does not automatically upload or transmit your backup files to external servers.</string>
+    <string name="privacy_sharing_title">4. Third-Party Services &amp; Network Activity</string>
+    <string name="privacy_sharing_desc">WorkDaily does not integrate third-party analytics SDKs, advertising networks, crash reporting SDKs, tracking frameworks, or cloud synchronization services. Internet network permissions are used solely when you explicitly initiate external contact actions (such as opening the WhatsApp channel, Instagram page, or launching an email client to contact support).</string>
+    <string name="privacy_deletion_title">5. Data Retention, Deletion &amp; User Control</string>
+    <string name="privacy_deletion_desc">Your information remains stored on your local device for as long as the application remains installed, or until you explicitly edit or delete individual records or clear application storage. Uninstalling WorkDaily permanently removes all internal database records and local profile assets. User-created backup ZIP files stored in downloads or external folders must be managed or deleted manually by the user.</string>
+    <string name="privacy_children_title">6. Children\'s Privacy</string>
+    <string name="privacy_children_desc">WorkDaily is designed for working individuals, employees, supervisors, and contractors to manage daily wage records. WorkDaily does not knowingly collect or solicit personal information from children under the age of 13.</string>
+    <string name="privacy_contact_title">7. Support &amp; Contact Information</string>
+    <string name="privacy_contact_desc">If you have any questions or feedback regarding this Privacy Policy or data handling in WorkDaily, please contact the WorkDaily support team at workdaily.synfusion@gmail.com.</string>
+
+    <!-- Terms of Use Strings -->
     <string name="terms_acceptance_title">1. Acceptance of Terms</string>
-    <string name="terms_acceptance_desc">By installing, accessing, or using WorkDaily, you agree to be bound by these Terms of Service. If you do not agree to these terms, please refrain from using the application.</string>
-    <string name="terms_use_title">2. Description &amp; Scope of Application</string>
-    <string name="terms_use_desc">WorkDaily is a personal, offline-first productivity tool designed for logging daily attendance, calculating wage estimates, managing advances, and generating personal Passbook reports for individual record-keeping.</string>
-    <string name="terms_responsibilities_title">3. User Responsibilities &amp; Record Accuracy</string>
-    <string name="terms_responsibilities_desc">You are solely responsible for ensuring the accuracy of all entries made in WorkDaily, including wage rates, attendance statuses, overtime hours, and advance amounts. You are also responsible for maintaining the physical security of your device and any exported backup or PDF files.</string>
-    <string name="terms_financial_title">4. Earnings &amp; Calculation Disclaimer</string>
-    <string name="terms_financial_desc">Calculations in WorkDaily are provided strictly as convenience estimates based on user-entered values. WorkDaily is not a banking service, payment processor, tax advisor, or legal payroll system. You must independently verify all calculation totals before conducting financial settlements.</string>
-    <string name="terms_notifications_title">5. Local Notification Service Disclaimer</string>
-    <string name="terms_notifications_desc">WorkDaily schedules notifications locally on device for user convenience. Delivery times may be affected by OS battery optimization, background execution limits, or notification permissions, and notifications should not be treated as guaranteed legal or business alerts.</string>
-    <string name="terms_backup_title">6. Backup &amp; Data Loss Disclaimer</string>
-    <string name="terms_backup_desc">Because WorkDaily stores data offline without cloud synchronization, SynFusion cannot access, recover, or restore lost data resulting from device loss, damage, operating system updates, or application uninstallation. Users are solely responsible for creating and maintaining regular backup ZIP files.</string>
-    <string name="terms_branding_title">7. Intellectual Property &amp; Branding</string>
-    <string name="terms_branding_desc">All intellectual property rights in WorkDaily—including branding, source code, UI designs, graphics, and documentation—belong exclusively to SynFusion.</string>
-    <string name="terms_contact_title">8. Contact &amp; Governing Law</string>
-    <string name="terms_contact_desc">For legal inquiries or support regarding these Terms of Service, please contact SynFusion at workdaily.synfusion@gmail.com.</string>
+    <string name="terms_acceptance_desc">By accessing, logging in, or using the WorkDaily application, you confirm that you have read and agree to be bound by these Terms of Use and our Privacy Policy. If you do not agree to these Terms, you must not use the application.</string>
+    <string name="terms_use_title">2. Application Purpose &amp; Scope</string>
+    <string name="terms_use_desc">WorkDaily is a productivity and personal record-keeping application intended to help users record and manage information such as daily attendance, work days, daily wages, overtime hours, advances, employment-related notes, and financial/earning records entered by the user. WorkDaily is provided solely as a personal record-keeping software tool and is not a financial institution, bank, employer, payroll processor, accounting authority, tax advisor, legal service, or government agency.</string>
+    <string name="terms_responsibilities_title">3. User-Entered Data Accuracy &amp; Verification Warning</string>
+    <string name="terms_responsibilities_desc">You are solely responsible for all information you enter into WorkDaily, including accuracy, completeness, correct dates, correct attendance statuses, correct wage amounts, correct overtime hours, correct advance cash draws, correct employment notes, and keeping your records updated where necessary. WorkDaily does not independently verify or validate information entered by users.\n\nPractical Verification Warning: Users should review and verify all important records, calculations, and summaries before relying on them for payment settlements, employment claims, accounting, tax, legal, financial, or other consequential purposes.</string>
+    <string name="terms_financial_title">4. Incorrect Data &amp; Record Disclaimer</string>
+    <string name="terms_financial_desc">To the maximum extent permitted by applicable law, WorkDaily and its developer/founder are not responsible for losses, damages, disputes, or consequences arising from inaccurate, incomplete, outdated, or incorrectly entered user data, misunderstood calculations, unverified records, or a user\'s failure to review records before relying on them for external financial or employment decisions.</string>
+    <string name="terms_notifications_title">5. Application Availability &amp; Calculations Disclaimer</string>
+    <string name="terms_notifications_desc">WorkDaily is provided as a software tool on an \"as is\" and \"as available\" basis. While reasonable efforts are made to ensure mathematical accuracy, no software can guarantee absolute error-free operation under all device configurations. Calculations and summaries should be reviewed independently and should not be treated as the sole authoritative source for legally or financially significant records.</string>
+    <string name="terms_backup_title">6. Offline Storage &amp; Backup Responsibility</string>
+    <string name="terms_backup_desc">WorkDaily operates 100% offline without remote cloud backup. You are solely responsible for creating and maintaining regular ZIP backup files using the in-app backup feature and securing your physical device. The developer cannot recover data lost due to device damage, OS resets, uninstallation, or lost backup files.</string>
+    <string name="terms_branding_title">7. Intellectual Property &amp; Rights</string>
+    <string name="terms_branding_desc">All intellectual property rights, trademarks, branding, user interface designs, and code in WorkDaily belong exclusively to WorkDaily and its developer/founder.</string>
+    <string name="terms_contact_title">8. Governing Terms &amp; Support</string>
+    <string name="terms_contact_desc">For questions regarding these Terms of Use, please contact support at workdaily.synfusion@gmail.com.</string>
 <string name="how_to_use">How to Use</string>
     <string name="error_opening_link">No app found to open link</string>
     <string name="error_generic_link">Error opening link</string>

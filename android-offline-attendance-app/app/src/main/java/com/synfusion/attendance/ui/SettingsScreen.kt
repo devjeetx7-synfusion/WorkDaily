@@ -1519,6 +1519,7 @@ fun PrivacyPolicyBottomSheet(onDismiss: () -> Unit) {
                 Pair(com.synfusion.attendance.R.string.privacy_exports_title, com.synfusion.attendance.R.string.privacy_exports_desc),
                 Pair(com.synfusion.attendance.R.string.privacy_sharing_title, com.synfusion.attendance.R.string.privacy_sharing_desc),
                 Pair(com.synfusion.attendance.R.string.privacy_deletion_title, com.synfusion.attendance.R.string.privacy_deletion_desc),
+                Pair(com.synfusion.attendance.R.string.privacy_children_title, com.synfusion.attendance.R.string.privacy_children_desc),
                 Pair(com.synfusion.attendance.R.string.privacy_contact_title, com.synfusion.attendance.R.string.privacy_contact_desc)
             )
 
