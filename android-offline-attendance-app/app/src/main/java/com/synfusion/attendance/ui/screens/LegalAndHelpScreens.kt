@@ -685,7 +685,9 @@ fun LegalSupportCard() {
             )
 
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(IntrinsicSize.Min),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 OutlinedButton(
@@ -697,20 +699,30 @@ fun LegalSupportCard() {
                     },
                     modifier = Modifier
                         .weight(1f)
-                        .height(48.dp),
-                    shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
+                        .fillMaxHeight()
+                        .defaultMinSize(minHeight = 48.dp),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.ContentCopy,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = stringResource(R.string.copy_email),
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 13.sp
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ContentCopy,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = stringResource(R.string.copy_email),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp,
+                            maxLines = 2,
+                            lineHeight = 15.sp,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                    }
                 }
 
                 Button(
@@ -730,20 +742,30 @@ fun LegalSupportCard() {
                     },
                     modifier = Modifier
                         .weight(1f)
-                        .height(48.dp),
-                    shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
+                        .fillMaxHeight()
+                        .defaultMinSize(minHeight = 48.dp),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
+                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Send,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = stringResource(R.string.contact_support),
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 13.sp
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Send,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = stringResource(R.string.contact_support),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp,
+                            maxLines = 2,
+                            lineHeight = 15.sp,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                    }
                 }
             }
         }
@@ -871,10 +893,10 @@ fun LegalSectionCard(
                 Column(modifier = Modifier.weight(1f)) {
                     if (sectionNumber != null) {
                         Text(
-                            text = "SECTION $sectionNumber",
+                            text = "Section $sectionNumber",
                             style = MaterialTheme.typography.labelSmall.copy(
                                 fontWeight = FontWeight.SemiBold,
-                                letterSpacing = 1.sp
+                                letterSpacing = 0.5.sp
                             ),
                             color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
                         )

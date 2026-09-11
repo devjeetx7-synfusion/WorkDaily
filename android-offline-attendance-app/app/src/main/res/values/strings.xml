@@ -378,10 +378,10 @@
     <string name="support_email_subject">WorkDaily Support Request</string>
     <string name="support_email_address">workdaily.synfusion@gmail.com</string>
     <string name="no_email_app_found">No email app found. Support email copied to clipboard.</string>
-    <string name="support_section_title">Questions, Issues, or Support</string>
-    <string name="support_section_desc">If you experience a problem with WorkDaily, believe something is not working correctly, have questions about these Terms or our Privacy Policy, or need assistance with the application, you can contact the WorkDaily support team.\n\nEmail:\nworkdaily.synfusion@gmail.com\n\nWhen contacting support, please describe the issue clearly and include relevant details that help us understand and reproduce the problem. Please do not send passwords, authentication credentials, payment-card information, or other unnecessary sensitive information.</string>
+    <string name="support_section_title">Questions, Problems or Support</string>
+    <string name="support_section_desc">If you are experiencing any issue with WorkDaily, believe that a feature is not working correctly, or have any questions about these Terms and Conditions or the Privacy Policy, you can contact the WorkDaily Support Team.\n\nEmail:\nworkdaily.synfusion@gmail.com\n\nWhen contacting support, clearly describe your issue and provide the necessary information to help understand and reproduce the problem.\n\nPlease do not send passwords, login credentials, payment card information, or any other unnecessary sensitive information.</string>
     <string name="legal_footer_title">WorkDaily</string>
-    <string name="last_updated_date">Last Updated: March 30, 2025</string>
+    <string name="last_updated_date">Last Updated: 11 September 2026</string>
 
     <!-- Privacy Policy Strings -->
     <string name="privacy_intro">WorkDaily is committed to protecting your privacy through an offline-first architecture. This Privacy Policy details how your local information, notifications, exported files, and preferences are handled when you use the WorkDaily Android application.</string>
@@ -415,7 +415,7 @@
     <string name="terms_backup_desc">WorkDaily operates 100% offline without remote cloud backup. You are solely responsible for creating and maintaining regular ZIP backup files using the in-app backup feature and securing your physical device. The developer cannot recover data lost due to device damage, OS resets, uninstallation, or lost backup files.</string>
     <string name="terms_branding_title">7. Intellectual Property &amp; Rights</string>
     <string name="terms_branding_desc">All intellectual property rights, trademarks, branding, user interface designs, and code in WorkDaily belong exclusively to WorkDaily and its developer/founder.</string>
-    <string name="terms_contact_title">8. Governing Terms &amp; Support</string>
+    <string name="terms_contact_title">8. Support and Contact</string>
     <string name="terms_contact_desc">For questions regarding these Terms of Use, please contact support at workdaily.synfusion@gmail.com.</string>
 <string name="how_to_use">How to Use</string>
     <string name="error_opening_link">No app found to open link</string>

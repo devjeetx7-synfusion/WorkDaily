@@ -378,9 +378,9 @@
     <string name="support_email_address">workdaily.synfusion@gmail.com</string>
     <string name="no_email_app_found">कोई ईमेल ऐप नहीं मिला। सपोर्ट ईमेल क्लिपबोर्ड पर कॉपी कर दिया गया है।</string>
     <string name="support_section_title">सवाल, समस्या या सपोर्ट</string>
-    <string name="support_section_desc">अगर आपको WorkDaily में कोई दिक्कत आ रही है, लगता है कि कुछ सही काम नहीं कर रहा, या इन नियमों/प्राइवेसी पॉलिसी के बारे में कोई सवाल है, तो आप WorkDaily सपोर्ट टीम से संपर्क कर सकते हैं।\n\nईमेल:\nworkdaily.synfusion@gmail.com\n\nसपोर्ट से संपर्क करते समय अपनी समस्या स्पष्ट रूप से लिखें। कृपया पासवर्ड, लॉगइन क्रेडेंशियल या अन्य संवेदनशील जानकारी न भेजें।</string>
+    <string name="support_section_desc">अगर आपको WorkDaily में कोई समस्या आ रही है, लगता है कि कोई फीचर सही से काम नहीं कर रहा, या इन नियमों और शर्तों या प्राइवेसी पॉलिसी के बारे में कोई सवाल है, तो आप WorkDaily सपोर्ट टीम से संपर्क कर सकते हैं।\n\nईमेल:\nworkdaily.synfusion@gmail.com\n\nसपोर्ट से संपर्क करते समय अपनी समस्या का स्पष्ट रूप से वर्णन करें और समस्या को समझने व हल करने के लिए आवश्यक जानकारी प्रदान करें।\n\nकृपया पासवर्ड, लॉगइन क्रेडेंशियल, पेमेंट कार्ड की जानकारी या कोई भी अन्य अनावश्यक संवेदनशील जानकारी न भेजें।</string>
     <string name="legal_footer_title">WorkDaily</string>
-    <string name="last_updated_date">अंतिम अपडेट: 30 मार्च 2025</string>
+    <string name="last_updated_date">अंतिम अपडेट: 11 सितंबर 2026</string>
 
     <!-- Privacy Policy Strings -->
     <string name="privacy_intro">WorkDaily आपकी प्राइवेसी का पूरा ध्यान रखता है। यह प्राइवेसी पॉलिसी बताती है कि जब आप वर्कडेली एंड्रॉइड ऐप का उपयोग करते हैं, तो आपकी लोकल जानकारी, नोटिफिकेशन, एक्सपोर्ट फाइल्स और सेटिंग्स कैसे काम करती हैं।</string>
