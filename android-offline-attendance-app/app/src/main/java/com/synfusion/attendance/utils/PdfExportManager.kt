@@ -296,6 +296,7 @@ class PdfExportManager(
                 totalHalfDays = totalHalfDays,
                 totalAbsent = totalAbsent,
                 totalWorkingDays = totalWorkingDays,
+                amountToReceive = calcResult.settlement.amountToReceive,
                 years = yearGroups
             )
 

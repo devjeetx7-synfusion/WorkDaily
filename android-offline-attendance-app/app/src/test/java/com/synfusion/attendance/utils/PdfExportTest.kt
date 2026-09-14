@@ -184,6 +184,7 @@ class PdfExportTest {
             totalHalfDays = 1,
             totalAbsent = 0,
             totalWorkingDays = 1.5,
+            amountToReceive = 825.0,
             years = listOf(yearGroup2023, yearGroup2024)
         )
 
@@ -196,6 +197,7 @@ class PdfExportTest {
         assertEquals(125.0, model.totalOvertime, 0.0)
         assertEquals(50.0, model.totalAdvance, 0.0)
         assertEquals(1.5, model.totalWorkingDays, 0.0)
+        assertEquals(825.0, model.amountToReceive, 0.0)
     }
 
     @Test

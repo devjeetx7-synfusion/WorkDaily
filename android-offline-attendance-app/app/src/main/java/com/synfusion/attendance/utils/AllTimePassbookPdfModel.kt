@@ -45,5 +45,6 @@ data class AllTimePassbookPdfModel(
     val totalHalfDays: Int,
     val totalAbsent: Int,
     val totalWorkingDays: Double,
+    val amountToReceive: Double,
     val years: List<AllTimePdfYearGroup>
 )
