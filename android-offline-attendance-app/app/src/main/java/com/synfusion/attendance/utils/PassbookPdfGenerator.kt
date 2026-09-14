@@ -579,7 +579,7 @@ object PassbookPdfGenerator {
             Pair(context.getString(R.string.pdf_present), data.totalPresent.toString()),
             Pair(context.getString(R.string.pdf_half), data.totalHalfDays.toString()),
             Pair(context.getString(R.string.pdf_absent), data.totalAbsent.toString()),
-            Pair(context.getString(R.string.pdf_working_days), AmountFormatter.format(data.totalWorkingDays))
+            Pair(context.getString(R.string.pdf_amount_to_receive), "$rsStr ${AmountFormatter.format(data.amountToReceive)}")
         )
 
         drawOverallSummary(renderContext, summaryItems)
