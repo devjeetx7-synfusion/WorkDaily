@@ -111,7 +111,7 @@ class NotificationAlarmReceiver : BroadcastReceiver() {
                 }
 
                 // Reschedule next alarms cleanly for future triggers
-                NotificationScheduler.scheduleExactAlarms(appContext)
+                NotificationScheduler.scheduleAlarms(appContext)
             } catch (e: Exception) {
                 Log.e("WorkDailyNotification", "Error in NotificationAlarmReceiver: ${e.localizedMessage}", e)
                 LocalNotificationManager.logNotificationHistory(
