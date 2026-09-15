@@ -24,15 +24,15 @@ object NotificationScheduler {
     private const val REQUEST_CODE_BACKUP = 1003
 
     fun scheduleAllSchedules(context: Context) {
-        scheduleExactAlarms(context)
+        scheduleAlarms(context)
         schedulePeriodicWork(context)
     }
 
-    fun scheduleExactAlarms(context: Context) {
+    fun scheduleAlarms(context: Context) {
         try {
             val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
-            scheduleExactAlarmAtHour(
+            scheduleAlarmAtHour(
                 context = context,
                 alarmManager = alarmManager,
                 action = ACTION_DAILY_REMINDER,
@@ -41,7 +41,7 @@ object NotificationScheduler {
                 targetMinute = 0
             )
 
-            scheduleExactAlarmAtHour(
+            scheduleAlarmAtHour(
                 context = context,
                 alarmManager = alarmManager,
                 action = ACTION_SUMMARY_REMINDER,
@@ -52,13 +52,18 @@ object NotificationScheduler {
 
             scheduleWeeklyBackupAlarm(context, alarmManager)
 
-            Log.i(TAG, "Exact alarms scheduled successfully via AlarmManager.")
+            Log.i(TAG, "Inexact alarms scheduled successfully via AlarmManager.")
         } catch (e: Exception) {
-            Log.e(TAG, "Failed scheduling exact alarms: ${e.localizedMessage}", e)
+            Log.e(TAG, "Failed scheduling alarms: ${e.localizedMessage}", e)
         }
     }
 
-    private fun scheduleExactAlarmAtHour(
+    // Retained for backward compatibility
+    fun scheduleExactAlarms(context: Context) {
+        scheduleAlarms(context)
+    }
+
+    private fun scheduleAlarmAtHour(
         context: Context,
         alarmManager: AlarmManager,
         action: String,
@@ -89,27 +94,17 @@ object NotificationScheduler {
 
         val triggerAtMs = calendar.timeInMillis
 
-        val canScheduleExact = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            alarmManager.canScheduleExactAlarms()
-        } else {
-            true
-        }
-
-        if (canScheduleExact) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMs, pendingIntent)
-            } else {
-                alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerAtMs, pendingIntent)
-            }
-        } else {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMs, pendingIntent)
+        } else {
+            alarmManager.set(AlarmManager.RTC_WAKEUP, triggerAtMs, pendingIntent)
         }
 
         LocalNotificationManager.logNotificationHistory(
             context,
             "scheduler",
             "",
-            "Scheduled $action for ${calendar.time} (exact=$canScheduleExact)"
+            "Scheduled $action for ${calendar.time} (inexact)"
         )
     }
 
@@ -136,20 +131,10 @@ object NotificationScheduler {
             }
         }
 
-        val canScheduleExact = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            alarmManager.canScheduleExactAlarms()
-        } else {
-            true
-        }
-
-        if (canScheduleExact) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, calendar.timeInMillis, pendingIntent)
-            } else {
-                alarmManager.setExact(AlarmManager.RTC_WAKEUP, calendar.timeInMillis, pendingIntent)
-            }
-        } else {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, calendar.timeInMillis, pendingIntent)
+        } else {
+            alarmManager.set(AlarmManager.RTC_WAKEUP, calendar.timeInMillis, pendingIntent)
         }
     }
 
