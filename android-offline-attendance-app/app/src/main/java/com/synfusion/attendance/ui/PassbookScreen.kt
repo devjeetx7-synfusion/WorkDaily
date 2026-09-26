@@ -66,7 +66,8 @@ import com.synfusion.attendance.ui.components.WorkDailyPullToRefreshBox
 fun PassbookScreen(
     viewModel: OfflinePassbookViewModel,
     onNavigateBack: () -> Unit,
-    onNavigateToCalendar: () -> Unit
+    onNavigateToCalendar: () -> Unit,
+    onOpenPdfViewer: (Uri, String) -> Unit = { _, _ -> }
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle(initialValue = OfflinePassbookState(isLoading = true))
     val sdfMonth = SimpleDateFormat("MMMM yyyy", Locale.getDefault())
@@ -96,16 +97,7 @@ fun PassbookScreen(
                     kotlinx.coroutines.delay(600)
                     exportManager.resetState()
                     val uri = FileProvider.getUriForFile(context, "com.synfusion.attendance.fileprovider", file)
-                    val intent = Intent(Intent.ACTION_SEND).apply {
-                        type = "application/pdf"
-                        putExtra(Intent.EXTRA_STREAM, uri)
-                        flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-                    }
-                    try {
-                        context.startActivity(Intent.createChooser(intent, "Share PDF"))
-                    } catch (e: Exception) {
-                        android.widget.Toast.makeText(context, "No app found to share PDF", android.widget.Toast.LENGTH_SHORT).show()
-                    }
+                    onOpenPdfViewer(uri, file.name)
                 }
             }
         }
