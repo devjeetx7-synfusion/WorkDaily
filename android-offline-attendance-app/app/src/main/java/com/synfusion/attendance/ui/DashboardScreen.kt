@@ -84,6 +84,8 @@ import java.util.Locale
 fun DashboardScreen(
     factory: OfflineViewModelFactory,
     settingsViewModel: OfflineSettingsViewModel,
+    externalPdfUri: Uri? = null,
+    onClearExternalPdfUri: () -> Unit = {},
     onLogout: () -> Unit
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
@@ -124,6 +126,17 @@ fun DashboardScreen(
             2 -> "stats"
             3 -> "settings"
             else -> "dashboard"
+        }
+    }
+
+    LaunchedEffect(externalPdfUri) {
+        if (externalPdfUri != null) {
+            val encodedUri = URLEncoder.encode(externalPdfUri.toString(), "UTF-8")
+            val encodedTitle = URLEncoder.encode("", "UTF-8")
+            bottomNavController.navigate("pdf_viewer?uri=$encodedUri&title=$encodedTitle") {
+                launchSingleTop = true
+            }
+            onClearExternalPdfUri()
         }
     }
 

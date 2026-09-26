@@ -1,5 +1,7 @@
 package com.synfusion.attendance.ui
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.compose.setContent
@@ -55,12 +57,17 @@ import java.util.Locale
 import androidx.activity.enableEdgeToEdge
 
 class MainActivity : AppCompatActivity() {
+
+    private var externalPdfUriState = mutableStateOf<Uri?>(null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
             window.attributes.layoutInDisplayCutoutMode = android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
         }
         super.onCreate(savedInstanceState)
+
+        handlePdfIntent(intent)
 
         val repository = OfflinePreferencesRepository(applicationContext)
         val factory = OfflineViewModelFactory(repository, applicationContext)
@@ -82,6 +89,7 @@ class MainActivity : AppCompatActivity() {
             val isDarkMode = userThemePreference ?: isSystemInDarkTheme()
 
             var showRestoreSuccessDialog by remember { mutableStateOf(restoreReport) }
+            val currentExternalPdfUri by externalPdfUriState
 
             DailyWorkTheme(darkTheme = isDarkMode) {
                 ProvideWindowSizeInfo {
@@ -90,7 +98,11 @@ class MainActivity : AppCompatActivity() {
                         color = MaterialTheme.colorScheme.background
                     ) {
                         Box(modifier = Modifier.fillMaxSize()) {
-                            OfflineDailyWorkApp(factory)
+                            OfflineDailyWorkApp(
+                                factory = factory,
+                                externalPdfUri = currentExternalPdfUri,
+                                onClearExternalPdfUri = { externalPdfUriState.value = null }
+                            )
 
                             showRestoreSuccessDialog?.let { report ->
                                 RestoreSuccessDetailDialog(
@@ -101,6 +113,25 @@ class MainActivity : AppCompatActivity() {
                         }
                     }
                 }
+            }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handlePdfIntent(intent)
+    }
+
+    private fun handlePdfIntent(intent: Intent?) {
+        if (intent == null) return
+        val action = intent.action
+        val type = intent.type
+        val data = intent.data
+        if (action == Intent.ACTION_VIEW && data != null) {
+            val mime = type ?: contentResolver.getType(data)
+            if (mime == "application/pdf" || data.toString().lowercase(Locale.ROOT).contains(".pdf")) {
+                externalPdfUriState.value = data
             }
         }
     }
@@ -195,7 +226,11 @@ fun DetailRow(label: String, value: String) {
 }
 
 @Composable
-fun OfflineDailyWorkApp(factory: OfflineViewModelFactory) {
+fun OfflineDailyWorkApp(
+    factory: OfflineViewModelFactory,
+    externalPdfUri: Uri? = null,
+    onClearExternalPdfUri: () -> Unit = {}
+) {
     val navController = rememberNavController()
     val authViewModel: OfflineAuthViewModel = viewModel(factory = factory)
     val settingsViewModel: OfflineSettingsViewModel = viewModel(factory = factory)
@@ -288,6 +323,8 @@ fun OfflineDailyWorkApp(factory: OfflineViewModelFactory) {
             DashboardScreen(
                 factory = factory,
                 settingsViewModel = settingsViewModel,
+                externalPdfUri = externalPdfUri,
+                onClearExternalPdfUri = onClearExternalPdfUri,
                 onLogout = {
                     authViewModel.logout()
                     navController.navigate("login") {
