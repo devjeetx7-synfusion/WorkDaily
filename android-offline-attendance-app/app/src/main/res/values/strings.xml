@@ -601,4 +601,28 @@
     <string name="restore_storage_insufficient_msg">Restore failed because there is not enough free storage space on your device.</string>
     <string name="restore_checksum_mismatch_msg">Restore failed because file integrity validation failed (SHA-256 checksum mismatch).</string>
     <string name="restore_db_swap_failed_msg">Restore failed because database file replacement could not be completed safely.</string>
+
+    <!-- Built-in PDF Viewer Strings -->
+    <string name="pdf_viewer_title">WorkDaily Passbook</string>
+    <string name="pdf_share">Share PDF</string>
+    <string name="pdf_save">Save PDF</string>
+    <string name="pdf_more">More</string>
+    <string name="pdf_print">Print</string>
+    <string name="pdf_info">PDF Information</string>
+    <string name="pdf_close">Close Viewer</string>
+    <string name="pdf_vertical">Vertical</string>
+    <string name="pdf_horizontal">Horizontal</string>
+    <string name="pdf_touch_indicators">Touch Indicators</string>
+    <string name="pdf_loading">Loading PDF...</string>
+    <string name="pdf_unable_to_open">Unable to open PDF</string>
+    <string name="pdf_error_desc">The PDF could not be loaded.</string>
+    <string name="pdf_could_not_share">Couldn\'t share PDF. Try again.</string>
+    <string name="pdf_could_not_save">Couldn\'t save PDF. Try again.</string>
+    <string name="pdf_saved_success">PDF saved successfully</string>
+    <string name="pdf_no_share_app">No app available to share this PDF.</string>
+    <string name="pdf_try_again">Try Again</string>
+    <string name="pdf_go_back">Go Back</string>
+    <string name="pdf_file_name">File Name</string>
+    <string name="pdf_total_pages">Pages</string>
+    <string name="pdf_file_size">File Size</string>
 </resources>

@@ -69,6 +69,10 @@ import com.synfusion.attendance.viewmodel.OfflineViewModelFactory
 import com.synfusion.attendance.utils.collectAsStateWithLifecycle
 import com.synfusion.attendance.ui.responsive.LocalWindowSizeInfo
 import com.synfusion.attendance.ui.responsive.ResponsiveContainer
+import com.synfusion.attendance.ui.pdf.PdfViewerScreen
+import android.net.Uri
+import java.net.URLDecoder
+import java.net.URLEncoder
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -434,6 +438,11 @@ fun DashboardScreen(
                     onNavigateToCalendar = {
                         bottomNavController.navigateUp()
                         selectedTab = 1
+                    },
+                    onOpenPdfViewer = { uri, title ->
+                        val encodedUri = URLEncoder.encode(uri.toString(), "UTF-8")
+                        val encodedTitle = URLEncoder.encode(title, "UTF-8")
+                        bottomNavController.navigate("pdf_viewer?uri=$encodedUri&title=$encodedTitle")
                     }
                 )
             }
@@ -441,6 +450,24 @@ fun DashboardScreen(
                 val allTimeViewModel: com.synfusion.attendance.viewmodel.OfflineAllTimePassbookViewModel = viewModel(factory = factory)
                 AllTimePassbookScreen(
                     viewModel = allTimeViewModel,
+                    onNavigateBack = { bottomNavController.navigateUp() },
+                    onOpenPdfViewer = { uri, title ->
+                        val encodedUri = URLEncoder.encode(uri.toString(), "UTF-8")
+                        val encodedTitle = URLEncoder.encode(title, "UTF-8")
+                        bottomNavController.navigate("pdf_viewer?uri=$encodedUri&title=$encodedTitle")
+                    }
+                )
+            }
+            composable("pdf_viewer?uri={uri}&title={title}") { backStackEntry ->
+                val encodedUri = backStackEntry.arguments?.getString("uri") ?: ""
+                val encodedTitle = backStackEntry.arguments?.getString("title") ?: ""
+                val decodedUriStr = URLDecoder.decode(encodedUri, "UTF-8")
+                val decodedTitle = URLDecoder.decode(encodedTitle, "UTF-8")
+                val pdfUri = Uri.parse(decodedUriStr)
+
+                PdfViewerScreen(
+                    pdfUri = pdfUri,
+                    title = decodedTitle,
                     onNavigateBack = { bottomNavController.navigateUp() }
                 )
             }

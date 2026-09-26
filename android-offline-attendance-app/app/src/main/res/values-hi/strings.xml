@@ -600,4 +600,28 @@
     <string name="restore_storage_insufficient_msg">रिस्टोर फेल हो गया क्योंकि आपके फोन में पर्याप्त स्टोरेज स्पेस नहीं है।</string>
     <string name="restore_checksum_mismatch_msg">रिस्टोर फेल हो गया क्योंकि फाइल की सत्यता (SHA-256) मैच नहीं हुई।</string>
     <string name="restore_db_swap_failed_msg">रिस्टोर फेल हो गया क्योंकि डेटाबेस फाइल सेफ तरीके से बदली नहीं जा सकी।</string>
+
+    <!-- Built-in PDF Viewer Strings -->
+    <string name="pdf_viewer_title">वर्कडेली पासबुक</string>
+    <string name="pdf_share">पीडीएफ शेयर करें</string>
+    <string name="pdf_save">पीडीएफ सेव करें</string>
+    <string name="pdf_more">और विकल्प</string>
+    <string name="pdf_print">प्रिंट करें</string>
+    <string name="pdf_info">पीडीएफ जानकारी</string>
+    <string name="pdf_close">व्यूअर बंद करें</string>
+    <string name="pdf_vertical">वर्टिकल</string>
+    <string name="pdf_horizontal">हॉरिजॉन्टल</string>
+    <string name="pdf_touch_indicators">टच इंडिकेटर</string>
+    <string name="pdf_loading">पीडीएफ लोड हो रहा है...</string>
+    <string name="pdf_unable_to_open">पीडीएफ खोलने में असमर्थ</string>
+    <string name="pdf_error_desc">पीडीएफ लोड नहीं किया जा सका।</string>
+    <string name="pdf_could_not_share">पीडीएफ शेयर नहीं हो सका। फिर कोशिश करें।</string>
+    <string name="pdf_could_not_save">पीडीएफ सेव नहीं हो सका। फिर कोशिश करें।</string>
+    <string name="pdf_saved_success">पीडीएफ सफलतापूर्वक सेव हो गया</string>
+    <string name="pdf_no_share_app">पीडीएफ शेयर करने के लिए कोई ऐप उपलब्ध नहीं है।</string>
+    <string name="pdf_try_again">फिर कोशिश करें</string>
+    <string name="pdf_go_back">वापस जाएं</string>
+    <string name="pdf_file_name">फाइल का नाम</string>
+    <string name="pdf_total_pages">कुल पेज</string>
+    <string name="pdf_file_size">फाइल साइज</string>
 </resources>
