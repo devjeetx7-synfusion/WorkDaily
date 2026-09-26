@@ -75,7 +75,7 @@ fun PdfViewerScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val state by viewModel.uiState.collectAsStateWithLifecycle(initialValue = PdfViewerState())
 
     LaunchedEffect(pdfUri) {
         viewModel.loadPdf(pdfUri, title)
