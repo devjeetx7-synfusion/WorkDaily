@@ -32,25 +32,6 @@ object PdfShareManager {
             val targets = mutableListOf<PdfShareAppTarget>()
             val seenPackages = mutableSetOf<String>()
 
-            // Priority packages order if present
-            val priorityPackages = listOf(
-                "com.whatsapp",
-                "org.telegram.messenger",
-                "com.google.android.gm",
-                "com.google.android.apps.docs"
-            )
-
-            // First add priority packages in order if found
-            for (priorityPkg in priorityPackages) {
-                val match = resolveInfos.firstOrNull { it.activityInfo.packageName == priorityPkg }
-                if (match != null && seenPackages.add(priorityPkg)) {
-                    val label = match.loadLabel(pm).toString()
-                    val icon = match.loadIcon(pm)
-                    targets.add(PdfShareAppTarget(label = label, packageName = priorityPkg, icon = icon))
-                }
-            }
-
-            // Then add remaining resolved apps up to a maximum of 8
             for (info in resolveInfos) {
                 val pkg = info.activityInfo.packageName
                 if (pkg == context.packageName) continue // Skip self

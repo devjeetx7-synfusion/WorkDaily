@@ -30,29 +30,14 @@ fun PdfViewerTopBar(
 ) {
     TopAppBar(
         title = {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    text = title.ifEmpty { stringResource(R.string.pdf_viewer_title) },
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    modifier = Modifier.weight(1f, fill = false)
-                )
-                if (totalPages > 0) {
-                    Text(
-                        text = "$currentPage / $totalPages",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
+            Text(
+                text = title.ifEmpty { stringResource(R.string.pdf_viewer_title) },
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                color = MaterialTheme.colorScheme.onBackground
+            )
         },
         navigationIcon = {
             IconButton(onClick = onNavigateBack) {

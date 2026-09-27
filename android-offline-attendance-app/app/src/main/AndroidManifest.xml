@@ -32,7 +32,7 @@
             android:targetActivity=".ui.MainActivity"
             android:enabled="true"
             android:exported="true"
-            android:icon="@drawable/ic_pdf_launcher"
+            android:icon="@mipmap/workdaily_pdf"
             android:label="WorkDaily">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
