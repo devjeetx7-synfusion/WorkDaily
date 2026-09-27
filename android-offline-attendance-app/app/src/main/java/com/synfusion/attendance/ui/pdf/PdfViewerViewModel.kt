@@ -6,8 +6,12 @@ import android.graphics.pdf.PdfRenderer
 import android.net.Uri
 import android.os.ParcelFileDescriptor
 import android.util.LruCache
+import androidx.core.content.FileProvider
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.synfusion.attendance.data.LocalAttendanceRepository
+import com.synfusion.attendance.utils.PdfExportManager
+import com.synfusion.attendance.utils.PdfExportState
 import com.synfusion.attendance.utils.pdf.PdfFileManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,6 +20,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
+import java.util.Date
 
 class PdfViewerViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -40,11 +46,7 @@ class PdfViewerViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
-    fun loadPdf(uri: Uri, title: String? = null) {
-        if (_uiState.value.pdfUri == uri && !_uiState.value.isLoading && _uiState.value.errorMessage == null) {
-            return
-        }
-
+    fun loadPdf(uri: Uri, title: String? = null, exportType: String = "", monthDate: Long = 0L) {
         viewModelScope.launch {
             _uiState.update {
                 it.copy(
@@ -59,7 +61,49 @@ class PdfViewerViewModel(application: Application) : AndroidViewModel(applicatio
                     closeRenderer()
 
                     val context = getApplication<Application>()
-                    val descriptor = PdfFileManager.openParcelFileDescriptor(context, uri)
+                    var targetUri = uri
+
+                    if (exportType == "monthly" || exportType == "all_time") {
+                        val localRepo = LocalAttendanceRepository(context)
+                        val exportManager = PdfExportManager(context, localRepo)
+                        var generatedFile: File? = null
+                        var exportError: String? = null
+
+                        if (exportType == "monthly") {
+                            val selectedDate = if (monthDate > 0L) Date(monthDate) else Date()
+                            exportManager.exportMonthlyPdf(selectedDate) { file ->
+                                generatedFile = file
+                            }
+                        } else {
+                            exportManager.exportAllTimePdf { file ->
+                                generatedFile = file
+                            }
+                        }
+
+                        val lastState = exportManager.exportState.value
+                        if (lastState is PdfExportState.Error) {
+                            exportError = lastState.message
+                        }
+
+                        val file = generatedFile
+                        if (file != null && file.exists() && file.length() > 0L) {
+                            targetUri = FileProvider.getUriForFile(
+                                context,
+                                "${context.packageName}.fileprovider",
+                                file
+                            )
+                        } else {
+                            _uiState.update {
+                                it.copy(
+                                    isLoading = false,
+                                    errorMessage = exportError ?: "Failed to generate PDF document"
+                                )
+                            }
+                            return@withContext
+                        }
+                    }
+
+                    val descriptor = PdfFileManager.openParcelFileDescriptor(context, targetUri)
                     if (descriptor == null) {
                         _uiState.update {
                             it.copy(
@@ -75,10 +119,10 @@ class PdfViewerViewModel(application: Application) : AndroidViewModel(applicatio
                     pdfRenderer = renderer
 
                     val pages = renderer.pageCount
-                    val sizeBytes = PdfFileManager.getFileSize(context, uri)
+                    val sizeBytes = PdfFileManager.getFileSize(context, targetUri)
                     val formattedSize = PdfFileManager.formatFileSize(sizeBytes)
 
-                    var name = title ?: uri.lastPathSegment ?: "WorkDaily_Passbook.pdf"
+                    var name = title ?: targetUri.lastPathSegment ?: "WorkDaily_Passbook.pdf"
                     if (name.contains("/")) {
                         name = name.substringAfterLast("/")
                     }
@@ -88,6 +132,7 @@ class PdfViewerViewModel(application: Application) : AndroidViewModel(applicatio
 
                     _uiState.update {
                         it.copy(
+                            pdfUri = targetUri,
                             fileName = name,
                             totalPages = pages,
                             currentPage = 1,
@@ -117,8 +162,8 @@ class PdfViewerViewModel(application: Application) : AndroidViewModel(applicatio
         val renderer = pdfRenderer ?: return@withContext null
         if (pageIndex < 0 || pageIndex >= renderer.pageCount) return@withContext null
 
-        val clampedRenderScale = renderScale.coerceIn(1.0f, 4.5f)
-        // Quantize scale to 0.5f steps for memory efficiency and smooth bitmap reuse
+        val clampedRenderScale = renderScale.coerceIn(1.0f, 4.0f)
+        // Quantize scale to 0.5f steps for memory efficiency and bitmap reuse
         val roundedScale = (clampedRenderScale * 2f).toInt() / 2f
         val cacheKey = "${pageIndex}_${targetWidth}_${roundedScale}"
         bitmapCache.get(cacheKey)?.let { cachedBitmap ->
@@ -126,22 +171,26 @@ class PdfViewerViewModel(application: Application) : AndroidViewModel(applicatio
         }
 
         try {
-            val page = renderer.openPage(pageIndex)
-            val origWidth = page.width
-            val origHeight = page.height
+            val bitmap: Bitmap
+            synchronized(this@PdfViewerViewModel) {
+                val page = renderer.openPage(pageIndex)
+                val origWidth = page.width
+                val origHeight = page.height
 
-            val screenDensityScale = targetWidth.toFloat() / origWidth.toFloat()
-            val effectiveScale = screenDensityScale * roundedScale
+                val baseScale = targetWidth.toFloat() / origWidth.toFloat()
+                val effectiveScale = baseScale * roundedScale
 
-            // Bound maximum dimension to 4096px to prevent OOM while maintaining crisp text
-            val renderWidth = (origWidth * effectiveScale).toInt().coerceIn(1, 4096)
-            val renderHeight = (origHeight * effectiveScale).toInt().coerceIn(1, 4096)
+                // Bound max dimensions safely to prevent OOM while keeping text vector-crisp
+                val renderWidth = (origWidth * effectiveScale).toInt().coerceIn(1, 4096)
+                val renderHeight = (origHeight * effectiveScale).toInt().coerceIn(1, 4096)
 
-            val bitmap = Bitmap.createBitmap(renderWidth, renderHeight, Bitmap.Config.ARGB_8888)
-            bitmap.eraseColor(android.graphics.Color.WHITE)
+                val bmp = Bitmap.createBitmap(renderWidth, renderHeight, Bitmap.Config.ARGB_8888)
+                bmp.eraseColor(android.graphics.Color.WHITE)
 
-            page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-            page.close()
+                page.render(bmp, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                page.close()
+                bitmap = bmp
+            }
 
             bitmapCache.put(cacheKey, bitmap)
             return@withContext bitmap
@@ -161,16 +210,20 @@ class PdfViewerViewModel(application: Application) : AndroidViewModel(applicatio
         }
 
         try {
-            val page = renderer.openPage(pageIndex)
-            val thumbWidth = 180
-            val scale = thumbWidth.toFloat() / page.width.toFloat()
-            val thumbHeight = (page.height * scale).toInt().coerceAtLeast(1)
+            val bitmap: Bitmap
+            synchronized(this@PdfViewerViewModel) {
+                val page = renderer.openPage(pageIndex)
+                val thumbWidth = 180
+                val scale = thumbWidth.toFloat() / page.width.toFloat()
+                val thumbHeight = (page.height * scale).toInt().coerceAtLeast(1)
 
-            val bitmap = Bitmap.createBitmap(thumbWidth, thumbHeight, Bitmap.Config.ARGB_8888)
-            bitmap.eraseColor(android.graphics.Color.WHITE)
+                val bmp = Bitmap.createBitmap(thumbWidth, thumbHeight, Bitmap.Config.ARGB_8888)
+                bmp.eraseColor(android.graphics.Color.WHITE)
 
-            page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-            page.close()
+                page.render(bmp, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                page.close()
+                bitmap = bmp
+            }
 
             bitmapCache.put(cacheKey, bitmap)
             return@withContext bitmap
@@ -218,16 +271,6 @@ class PdfViewerViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun setShowThumbnailsSheet(show: Boolean) {
         _uiState.update { it.copy(showThumbnailsSheet = show) }
-    }
-
-    fun toggleAutoSlide() {
-        _uiState.update {
-            it.copy(isAutoSliding = !it.isAutoSliding)
-        }
-    }
-
-    fun setAutoSlide(enabled: Boolean) {
-        _uiState.update { it.copy(isAutoSliding = enabled) }
     }
 
     private fun closeRenderer() {

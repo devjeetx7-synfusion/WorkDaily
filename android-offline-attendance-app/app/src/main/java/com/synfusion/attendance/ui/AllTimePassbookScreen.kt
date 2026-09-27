@@ -44,7 +44,6 @@ import com.synfusion.attendance.viewmodel.OfflineAllTimePassbookState
 import com.synfusion.attendance.ui.components.DrillDownRecordItem
 import com.synfusion.attendance.utils.PdfExportManager
 import com.synfusion.attendance.utils.PdfExportState
-import com.synfusion.attendance.ui.components.PdfExportLoadingDialog
 import androidx.activity.compose.BackHandler
 import androidx.compose.ui.platform.LocalContext
 import com.synfusion.attendance.ui.responsive.LocalWindowSizeInfo
@@ -59,7 +58,7 @@ import androidx.compose.material.icons.filled.PictureAsPdf
 fun AllTimePassbookScreen(
     viewModel: OfflineAllTimePassbookViewModel,
     onNavigateBack: () -> Unit,
-    onOpenPdfViewer: (android.net.Uri, String) -> Unit = { _, _ -> }
+    onOpenPdfViewer: (android.net.Uri, String, String, Long) -> Unit = { _, _, _, _ -> }
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle(initialValue = OfflineAllTimePassbookState())
     val expandedMonths = remember { mutableStateMapOf<String, Boolean>() }
@@ -77,17 +76,8 @@ fun AllTimePassbookScreen(
     val isExporting = exportState != PdfExportState.Idle && exportState !is PdfExportState.Success && exportState !is PdfExportState.Error
 
     fun exportAllTimePDF() {
-        if (isExporting) return
-        scope.launch {
-            exportManager.exportAllTimePdf { file ->
-                scope.launch {
-                    kotlinx.coroutines.delay(600)
-                    exportManager.resetState()
-                    val uri = FileProvider.getUriForFile(context, "com.synfusion.attendance.fileprovider", file)
-                    onOpenPdfViewer(uri, file.name)
-                }
-            }
-        }
+        val title = context.getString(com.synfusion.attendance.R.string.pdf_all_time_passbook)
+        onOpenPdfViewer(android.net.Uri.EMPTY, title, "all_time", 0L)
     }
 
     var isSearchActive by remember { mutableStateOf(false) }
@@ -252,12 +242,6 @@ fun AllTimePassbookScreen(
             }
         }
     }
-
-    PdfExportLoadingDialog(
-        state = exportState,
-        onCancel = { exportManager.resetState() },
-        onDismissError = { exportManager.resetState() }
-    )
 }
 
 @Composable
