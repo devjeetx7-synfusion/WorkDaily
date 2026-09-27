@@ -170,10 +170,11 @@ class PdfViewerViewModel(application: Application) : AndroidViewModel(applicatio
             return@withContext cachedBitmap
         }
 
+        if (!kotlinx.coroutines.currentCoroutineContext().isActive) return@withContext null
+
         try {
-            val bitmap: Bitmap
-            synchronized(this@PdfViewerViewModel) {
-                if (!kotlinx.coroutines.currentCoroutineContext().isActive) return@withContext null
+            val bitmap: Bitmap? = synchronized(this@PdfViewerViewModel) {
+                if (pdfRenderer != renderer) return@synchronized null
 
                 val page = renderer.openPage(pageIndex)
                 val origWidth = page.width
@@ -191,10 +192,12 @@ class PdfViewerViewModel(application: Application) : AndroidViewModel(applicatio
 
                 page.render(bmp, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
                 page.close()
-                bitmap = bmp
+                bmp
             }
 
-            bitmapCache.put(cacheKey, bitmap)
+            if (bitmap != null) {
+                bitmapCache.put(cacheKey, bitmap)
+            }
             return@withContext bitmap
         } catch (e: Exception) {
             e.printStackTrace()
@@ -211,10 +214,11 @@ class PdfViewerViewModel(application: Application) : AndroidViewModel(applicatio
             return@withContext cachedBitmap
         }
 
+        if (!kotlinx.coroutines.currentCoroutineContext().isActive) return@withContext null
+
         try {
-            val bitmap: Bitmap
-            synchronized(this@PdfViewerViewModel) {
-                if (!kotlinx.coroutines.currentCoroutineContext().isActive) return@withContext null
+            val bitmap: Bitmap? = synchronized(this@PdfViewerViewModel) {
+                if (pdfRenderer != renderer) return@synchronized null
 
                 val page = renderer.openPage(pageIndex)
                 val thumbWidth = 180
@@ -226,10 +230,12 @@ class PdfViewerViewModel(application: Application) : AndroidViewModel(applicatio
 
                 page.render(bmp, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
                 page.close()
-                bitmap = bmp
+                bmp
             }
 
-            bitmapCache.put(cacheKey, bitmap)
+            if (bitmap != null) {
+                bitmapCache.put(cacheKey, bitmap)
+            }
             return@withContext bitmap
         } catch (e: Exception) {
             e.printStackTrace()
