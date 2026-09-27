@@ -9,6 +9,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material3.*
@@ -30,8 +32,10 @@ fun PdfViewerTopBar(
     currentPage: Int,
     totalPages: Int,
     viewMode: PdfViewMode,
+    isAutoSliding: Boolean = false,
     onNavigateBack: () -> Unit,
     onToggleViewMode: () -> Unit,
+    onToggleAutoSlide: () -> Unit = {},
     onOpenMore: () -> Unit
 ) {
     TopAppBar(
@@ -93,6 +97,14 @@ fun PdfViewerTopBar(
                             color = MaterialTheme.colorScheme.primary
                         )
                     }
+                }
+
+                IconButton(onClick = onToggleAutoSlide) {
+                    Icon(
+                        imageVector = if (isAutoSliding) Icons.Default.Pause else Icons.Default.PlayArrow,
+                        contentDescription = if (isAutoSliding) "Pause Auto-Slide" else "Play Auto-Slide",
+                        tint = if (isAutoSliding) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground
+                    )
                 }
             }
 

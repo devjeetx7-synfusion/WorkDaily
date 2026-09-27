@@ -25,8 +25,14 @@ class PdfViewerViewModel(application: Application) : AndroidViewModel(applicatio
     private var pfd: ParcelFileDescriptor? = null
     private var pdfRenderer: PdfRenderer? = null
 
-    // Cache up to 25 page/thumbnail bitmaps in memory for smooth rendering
-    private val bitmapCache = object : LruCache<String, Bitmap>(25) {
+    // Memory-aware LRU cache using 1/8th of available memory for smooth, crisp rendering
+    private val maxMemoryKb = (Runtime.getRuntime().maxMemory() / 1024).toInt()
+    private val cacheSizeKb = (maxMemoryKb / 8).coerceIn(10240, 65536) // 10MB to 64MB
+    private val bitmapCache = object : LruCache<String, Bitmap>(cacheSizeKb) {
+        override fun sizeOf(key: String, bitmap: Bitmap): Int {
+            return (bitmap.byteCount / 1024).coerceAtLeast(1)
+        }
+
         override fun entryRemoved(evicted: Boolean, key: String, oldValue: Bitmap, newValue: Bitmap?) {
             if (evicted && !oldValue.isRecycled) {
                 oldValue.recycle()
@@ -103,27 +109,32 @@ class PdfViewerViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
-    suspend fun renderPageBitmap(pageIndex: Int, targetWidth: Int, scale: Float = 1.0f): Bitmap? = withContext(Dispatchers.IO) {
+    suspend fun renderPageBitmap(
+        pageIndex: Int,
+        targetWidth: Int,
+        scale: Float = 1.0f,
+        renderScale: Float = 1.0f
+    ): Bitmap? = withContext(Dispatchers.IO) {
         val renderer = pdfRenderer ?: return@withContext null
         if (pageIndex < 0 || pageIndex >= renderer.pageCount) return@withContext null
 
-        val rotation = _uiState.value.rotationDegrees
-        val cacheKey = "${pageIndex}_${targetWidth}_${scale}_$rotation"
+        val clampedRenderScale = renderScale.coerceIn(1.0f, 5.0f)
+        val cacheKey = "${pageIndex}_${targetWidth}_${scale}_${clampedRenderScale}"
         bitmapCache.get(cacheKey)?.let { cachedBitmap ->
             if (!cachedBitmap.isRecycled) return@withContext cachedBitmap
         }
 
         try {
             val page = renderer.openPage(pageIndex)
-            val isRotated90or270 = (rotation == 90 || rotation == 270)
-            val origWidth = if (isRotated90or270) page.height else page.width
-            val origHeight = if (isRotated90or270) page.width else page.height
+            val origWidth = page.width
+            val origHeight = page.height
 
             val screenDensityScale = targetWidth.toFloat() / origWidth.toFloat()
-            val effectiveScale = screenDensityScale * scale.coerceIn(0.5f, 5.0f)
+            val effectiveScale = screenDensityScale * scale.coerceIn(0.5f, 5.0f) * clampedRenderScale
 
-            val renderWidth = (origWidth * effectiveScale).toInt().coerceAtLeast(1)
-            val renderHeight = (origHeight * effectiveScale).toInt().coerceAtLeast(1)
+            // Bound maximum dimension to 4096px to prevent OOM and Canvas overflow while ensuring crispness
+            val renderWidth = (origWidth * effectiveScale).toInt().coerceIn(1, 4096)
+            val renderHeight = (origHeight * effectiveScale).toInt().coerceIn(1, 4096)
 
             val bitmap = Bitmap.createBitmap(renderWidth, renderHeight, Bitmap.Config.ARGB_8888)
             bitmap.eraseColor(android.graphics.Color.WHITE)
@@ -131,19 +142,8 @@ class PdfViewerViewModel(application: Application) : AndroidViewModel(applicatio
             page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
             page.close()
 
-            val finalBitmap = if (rotation != 0) {
-                val matrix = android.graphics.Matrix().apply { postRotate(rotation.toFloat()) }
-                val rotated = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
-                if (rotated != bitmap && !bitmap.isRecycled) {
-                    bitmap.recycle()
-                }
-                rotated
-            } else {
-                bitmap
-            }
-
-            bitmapCache.put(cacheKey, finalBitmap)
-            return@withContext finalBitmap
+            bitmapCache.put(cacheKey, bitmap)
+            return@withContext bitmap
         } catch (e: Exception) {
             e.printStackTrace()
             return@withContext null
@@ -208,14 +208,13 @@ class PdfViewerViewModel(application: Application) : AndroidViewModel(applicatio
         _uiState.update { it.copy(fitMode = fitMode) }
     }
 
-    fun rotateClockwise() {
-        val nextRotation = (_uiState.value.rotationDegrees + 90) % 360
-        bitmapCache.evictAll()
-        _uiState.update { it.copy(rotationDegrees = nextRotation) }
-    }
 
     fun toggleControlsVisibility() {
         _uiState.update { it.copy(isControlsVisible = !it.isControlsVisible) }
+    }
+
+    fun setControlsVisible(visible: Boolean) {
+        _uiState.update { it.copy(isControlsVisible = visible) }
     }
 
     fun toggleFabExpanded() {
@@ -238,63 +237,19 @@ class PdfViewerViewModel(application: Application) : AndroidViewModel(applicatio
         _uiState.update { it.copy(showThumbnailsSheet = show) }
     }
 
-    fun setShowSearchSheet(show: Boolean) {
-        _uiState.update { it.copy(showSearchSheet = show) }
-    }
 
-    fun updateSearchQuery(query: String) {
-        _uiState.update { it.copy(searchQuery = query) }
-    }
-
-    fun performSearch(query: String) {
-        if (query.isBlank()) {
-            _uiState.update {
-                it.copy(
-                    searchQuery = "",
-                    searchMatches = emptyList(),
-                    currentMatchIndex = -1,
-                    searchMessage = null
-                )
-            }
-            return
-        }
-
-        viewModelScope.launch {
-            _uiState.update {
-                it.copy(
-                    searchQuery = query,
-                    searchMessage = "No searchable text layer found in this PDF document."
-                )
-            }
+    fun toggleAutoSlide() {
+        _uiState.update {
+            val nextState = !it.isAutoSliding
+            it.copy(
+                isAutoSliding = nextState,
+                viewMode = if (nextState) PdfViewMode.HORIZONTAL else it.viewMode
+            )
         }
     }
 
-    fun nextSearchMatch() {
-        val matches = _uiState.value.searchMatches
-        if (matches.isNotEmpty()) {
-            val nextIdx = (_uiState.value.currentMatchIndex + 1) % matches.size
-            val targetPage = matches[nextIdx]
-            _uiState.update {
-                it.copy(
-                    currentMatchIndex = nextIdx,
-                    currentPage = targetPage
-                )
-            }
-        }
-    }
-
-    fun previousSearchMatch() {
-        val matches = _uiState.value.searchMatches
-        if (matches.isNotEmpty()) {
-            val prevIdx = if (_uiState.value.currentMatchIndex - 1 < 0) matches.size - 1 else _uiState.value.currentMatchIndex - 1
-            val targetPage = matches[prevIdx]
-            _uiState.update {
-                it.copy(
-                    currentMatchIndex = prevIdx,
-                    currentPage = targetPage
-                )
-            }
-        }
+    fun setAutoSlide(enabled: Boolean) {
+        _uiState.update { it.copy(isAutoSliding = enabled) }
     }
 
     fun updateZoom(zoom: Float) {

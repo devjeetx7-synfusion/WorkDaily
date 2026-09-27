@@ -18,6 +18,10 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
@@ -42,9 +46,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ErrorOutline
-import androidx.compose.material.icons.filled.NavigateNext
-import androidx.compose.material.icons.filled.NavigateBefore
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -197,38 +198,6 @@ fun PdfViewerScreen(
 
     Scaffold(
         contentWindowInsets = WindowInsets(0.dp),
-        topBar = {
-            AnimatedVisibility(
-                visible = state.isControlsVisible,
-                enter = fadeIn(),
-                exit = fadeOut()
-            ) {
-                PdfViewerTopBar(
-                    title = state.fileName,
-                    currentPage = state.currentPage,
-                    totalPages = state.totalPages,
-                    viewMode = state.viewMode,
-                    onNavigateBack = onNavigateBack,
-                    onToggleViewMode = { viewModel.toggleViewMode() },
-                    onOpenMore = { showMoreSheet = true }
-                )
-            }
-        },
-        floatingActionButton = {
-            AnimatedVisibility(
-                visible = state.isControlsVisible && !state.isLoading && state.errorMessage == null && state.totalPages > 0,
-                enter = fadeIn(),
-                exit = fadeOut()
-            ) {
-                PdfViewerFab(
-                    expanded = state.fabExpanded,
-                    onToggleExpanded = { viewModel.toggleFabExpanded() },
-                    onShare = { showShareSheet = true },
-                    onSave = { initiateSave() },
-                    onMore = { showMoreSheet = true }
-                )
-            }
-        },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Box(
@@ -313,18 +282,53 @@ fun PdfViewerScreen(
                         PdfFitMode.ACTUAL_SIZE -> 1.25f
                     }
 
+                    val renderScale = when {
+                        scale < 1.3f -> 1.0f
+                        scale < 2.3f -> 2.0f
+                        scale < 3.3f -> 3.0f
+                        else -> 4.0f
+                    }
+
+                    val screenHeightPx = with(LocalDensity.current) { configuration.screenHeightDp.dp.toPx() }
+
+                    LaunchedEffect(state.isAutoSliding, state.currentPage, state.totalPages) {
+                        if (state.isAutoSliding && state.totalPages > 1) {
+                            kotlinx.coroutines.delay(3000L)
+                            val nextPage = if (state.currentPage >= state.totalPages) 1 else state.currentPage + 1
+                            viewModel.jumpToPage(nextPage)
+                        }
+                    }
+
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
                             .pointerInput(Unit) {
                                 detectTransformGestures { centroid, pan, zoom, _ ->
-                                    val newScale = (scale * zoom).coerceIn(1.0f, 5.0f)
-                                    scale = newScale
-                                    if (scale > 1.0f) {
-                                        offset += pan
-                                    } else {
-                                        offset = Offset.Zero
+                                    if (state.isAutoSliding) {
+                                        viewModel.setAutoSlide(false)
                                     }
+                                    val oldScale = scale
+                                    val newScale = (scale * zoom).coerceIn(1.0f, 5.0f)
+                                    val scaleFactor = if (oldScale > 0.001f) newScale / oldScale else 1.0f
+
+                                    // Scale around touch centroid focal point
+                                    var newOffset = centroid - (centroid - offset) * scaleFactor + pan
+
+                                    // Clamp pan offsets within PDF page bounds
+                                    if (newScale > 1.0f) {
+                                        val maxX = (screenWidthPx * (newScale - 1f)) / 2f
+                                        val maxY = (screenHeightPx * (newScale - 1f)) / 2f
+                                        newOffset = Offset(
+                                            x = newOffset.x.coerceIn(-maxX, maxX),
+                                            y = newOffset.y.coerceIn(-maxY, maxY)
+                                        )
+                                    } else {
+                                        newOffset = Offset.Zero
+                                    }
+
+                                    scale = newScale
+                                    offset = newOffset
+
                                     if (state.showTouchIndicators) {
                                         touchPoint1 = centroid
                                         touchPoint2 = centroid + Offset(30f, 30f)
@@ -341,8 +345,17 @@ fun PdfViewerScreen(
                                             scale = 1.0f
                                             offset = Offset.Zero
                                         } else {
-                                            scale = 2.5f
-                                            offset = tapOffset
+                                            val targetScale = 2.5f
+                                            val center = Offset(screenWidthPx / 2f, screenHeightPx / 2f)
+                                            var targetOffset = (center - tapOffset) * targetScale
+                                            val maxX = (screenWidthPx * (targetScale - 1f)) / 2f
+                                            val maxY = (screenHeightPx * (targetScale - 1f)) / 2f
+                                            targetOffset = Offset(
+                                                x = targetOffset.x.coerceIn(-maxX, maxX),
+                                                y = targetOffset.y.coerceIn(-maxY, maxY)
+                                            )
+                                            scale = targetScale
+                                            offset = targetOffset
                                         }
                                     },
                                     onPress = { tapOffset ->
@@ -371,6 +384,30 @@ fun PdfViewerScreen(
                                     initialFirstVisibleItemIndex = (state.currentPage - 1).coerceAtLeast(0)
                                 )
 
+                                var previousIndex by remember { mutableIntStateOf(0) }
+                                var previousOffset by remember { mutableIntStateOf(0) }
+
+                                LaunchedEffect(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset) {
+                                    val currIdx = listState.firstVisibleItemIndex
+                                    val currOff = listState.firstVisibleItemScrollOffset
+
+                                    if (currIdx == 0 && currOff == 0) {
+                                        viewModel.setControlsVisible(true)
+                                    } else {
+                                        val isScrollingDown = if (currIdx != previousIndex) currIdx > previousIndex else (currOff - previousOffset) > 15
+                                        val isScrollingUp = if (currIdx != previousIndex) currIdx < previousIndex else (previousOffset - currOff) > 15
+
+                                        if (isScrollingDown && state.isControlsVisible) {
+                                            viewModel.setControlsVisible(false)
+                                        } else if (isScrollingUp && !state.isControlsVisible) {
+                                            viewModel.setControlsVisible(true)
+                                        }
+                                    }
+
+                                    previousIndex = currIdx
+                                    previousOffset = currOff
+                                }
+
                                 val visiblePage by remember {
                                     derivedStateOf {
                                         val firstVisible = listState.firstVisibleItemIndex
@@ -391,8 +428,13 @@ fun PdfViewerScreen(
                                 LazyColumn(
                                     state = listState,
                                     modifier = Modifier.fillMaxSize(),
-                                    contentPadding = PaddingValues(vertical = 16.dp, horizontal = 12.dp),
-                                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                                    contentPadding = PaddingValues(
+                                        top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 64.dp,
+                                        bottom = 80.dp,
+                                        start = 8.dp,
+                                        end = 8.dp
+                                    ),
+                                    verticalArrangement = Arrangement.spacedBy(10.dp)
                                 ) {
                                     itemsIndexed(
                                         items = List(state.totalPages) { it },
@@ -402,6 +444,7 @@ fun PdfViewerScreen(
                                             pageIndex = pageIndex,
                                             targetWidth = screenWidthPx,
                                             fitScaleMultiplier = fitScaleMultiplier,
+                                            renderScale = renderScale,
                                             viewModel = viewModel
                                         )
                                     }
@@ -432,6 +475,7 @@ fun PdfViewerScreen(
                                         pageIndex = pageIndex,
                                         targetWidth = screenWidthPx,
                                         fitScaleMultiplier = fitScaleMultiplier,
+                                        renderScale = renderScale,
                                         viewModel = viewModel
                                     )
                                 }
@@ -467,6 +511,50 @@ fun PdfViewerScreen(
                                 }
                             }
                         }
+                    }
+
+                    // Overlay Top Bar
+                    AnimatedVisibility(
+                        visible = state.isControlsVisible,
+                        enter = fadeIn() + slideInVertically { -it },
+                        exit = fadeOut() + slideOutVertically { -it },
+                        modifier = Modifier.align(Alignment.TopCenter)
+                    ) {
+                        Surface(
+                            shadowElevation = 4.dp,
+                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            PdfViewerTopBar(
+                                title = state.fileName,
+                                currentPage = state.currentPage,
+                                totalPages = state.totalPages,
+                                viewMode = state.viewMode,
+                                isAutoSliding = state.isAutoSliding,
+                                onNavigateBack = onNavigateBack,
+                                onToggleViewMode = { viewModel.toggleViewMode() },
+                                onToggleAutoSlide = { viewModel.toggleAutoSlide() },
+                                onOpenMore = { showMoreSheet = true }
+                            )
+                        }
+                    }
+
+                    // Overlay FAB
+                    AnimatedVisibility(
+                        visible = state.isControlsVisible && !state.isLoading && state.errorMessage == null && state.totalPages > 0,
+                        enter = fadeIn() + scaleIn(),
+                        exit = fadeOut() + scaleOut(),
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(bottom = 24.dp, end = 24.dp)
+                    ) {
+                        PdfViewerFab(
+                            expanded = state.fabExpanded,
+                            onToggleExpanded = { viewModel.toggleFabExpanded() },
+                            onShare = { showShareSheet = true },
+                            onSave = { initiateSave() },
+                            onMore = { showMoreSheet = true }
+                        )
                     }
                 }
             }
@@ -507,12 +595,10 @@ fun PdfViewerScreen(
             fitMode = state.fitMode,
             showTouchIndicators = state.showTouchIndicators,
             onToggleTouchIndicators = { viewModel.toggleTouchIndicators() },
-            onOpenSearch = { viewModel.setShowSearchSheet(true) },
             onOpenGoToPage = { viewModel.setShowPageJumpDialog(true) },
             onOpenThumbnails = { viewModel.setShowThumbnailsSheet(true) },
             onToggleViewMode = { viewModel.toggleViewMode() },
             onSelectFitMode = { viewModel.setFitMode(it) },
-            onRotate = { viewModel.rotateClockwise() },
             onPrint = { printPdf() },
             onOpenWith = { openWithExternalApp() },
             onDismiss = { showMoreSheet = false },
@@ -647,96 +733,6 @@ fun PdfViewerScreen(
         }
     }
 
-    // PDF Search Sheet
-    if (state.showSearchSheet) {
-        val keyboardController = LocalSoftwareKeyboardController.current
-
-        ModalBottomSheet(
-            onDismissRequest = { viewModel.setShowSearchSheet(false) },
-            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-            containerColor = MaterialTheme.colorScheme.surface,
-            windowInsets = WindowInsets(0.dp)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = stringResource(R.string.pdf_search),
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    IconButton(onClick = { viewModel.setShowSearchSheet(false) }) {
-                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.close))
-                    }
-                }
-
-                OutlinedTextField(
-                    value = state.searchQuery,
-                    onValueChange = { viewModel.updateSearchQuery(it) },
-                    placeholder = { Text(stringResource(R.string.pdf_search_placeholder)) },
-                    trailingIcon = {
-                        IconButton(onClick = {
-                            keyboardController?.hide()
-                            viewModel.performSearch(state.searchQuery)
-                        }) {
-                            Icon(Icons.Default.Search, contentDescription = stringResource(R.string.pdf_search))
-                        }
-                    },
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                    keyboardActions = KeyboardActions(onSearch = {
-                        keyboardController?.hide()
-                        viewModel.performSearch(state.searchQuery)
-                    }),
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                if (state.searchMessage != null) {
-                    Text(
-                        text = state.searchMessage ?: "",
-                        fontSize = 13.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(vertical = 8.dp)
-                    )
-                }
-
-                if (state.searchMatches.isNotEmpty()) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "${state.currentMatchIndex + 1} of ${state.searchMatches.size}",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-
-                        Row {
-                            IconButton(onClick = { viewModel.previousSearchMatch() }) {
-                                Icon(Icons.Default.NavigateBefore, contentDescription = "Previous")
-                            }
-                            IconButton(onClick = { viewModel.nextSearchMatch() }) {
-                                Icon(Icons.Default.NavigateNext, contentDescription = "Next")
-                            }
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-            }
-        }
-    }
 }
 
 @Composable
@@ -744,24 +740,34 @@ private fun PdfPageView(
     pageIndex: Int,
     targetWidth: Int,
     fitScaleMultiplier: Float,
+    renderScale: Float = 1.0f,
     viewModel: PdfViewerViewModel
 ) {
     var bitmap by remember { mutableStateOf<Bitmap?>(null) }
     var isLoadingPage by remember { mutableStateOf(true) }
 
-    LaunchedEffect(pageIndex, targetWidth, fitScaleMultiplier) {
-        isLoadingPage = true
-        bitmap = viewModel.renderPageBitmap(pageIndex, targetWidth, scale = fitScaleMultiplier)
+    LaunchedEffect(pageIndex, targetWidth, fitScaleMultiplier, renderScale) {
+        isLoadingPage = (bitmap == null)
+        val newBitmap = viewModel.renderPageBitmap(
+            pageIndex = pageIndex,
+            targetWidth = targetWidth,
+            scale = fitScaleMultiplier,
+            renderScale = renderScale
+        )
+        if (newBitmap != null) {
+            bitmap = newBitmap
+        }
         isLoadingPage = false
     }
 
-    Card(
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
             .wrapContentHeight(),
-        shape = RoundedCornerShape(8.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        shape = androidx.compose.ui.graphics.RectangleShape,
+        color = Color.White,
+        shadowElevation = 0.dp,
+        tonalElevation = 0.dp
     ) {
         Box(
             modifier = Modifier
