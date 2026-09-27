@@ -270,6 +270,12 @@ fun PdfViewerScreen(
                         // Zoom & Pan State
                         var zoomScale by remember { mutableFloatStateOf(1.0f) }
                         var panOffset by remember { mutableStateOf(Offset.Zero) }
+                        var renderScale by remember { mutableFloatStateOf(1.0f) }
+
+                        LaunchedEffect(zoomScale) {
+                            kotlinx.coroutines.delay(250) // Debounce rapid pinch movements
+                            renderScale = zoomScale
+                        }
 
                         // Transient Floating Page Indicator Auto-Fade Effect
                         var showPageIndicator by remember { mutableStateOf(false) }
@@ -426,7 +432,7 @@ fun PdfViewerScreen(
                                         PdfPageView(
                                             pageIndex = pageIndex,
                                             targetWidth = viewportWidthPx.toInt(),
-                                            renderScale = zoomScale,
+                                            renderScale = renderScale,
                                             viewModel = viewModel
                                         )
                                     }
@@ -678,6 +684,7 @@ private fun PdfPageView(
 ) {
     var bitmap by remember { mutableStateOf<Bitmap?>(null) }
     var isLoadingPage by remember { mutableStateOf(true) }
+    var renderRequestId by remember { mutableLongStateOf(0L) }
 
     val discreteScale = when {
         renderScale > 3.2f -> 4.0f
@@ -688,15 +695,21 @@ private fun PdfPageView(
     }
 
     LaunchedEffect(pageIndex, targetWidth, discreteScale) {
+        renderRequestId++
+        val currentRequestId = renderRequestId
+
         val newBitmap = viewModel.renderPageBitmap(
             pageIndex = pageIndex,
             targetWidth = targetWidth,
             renderScale = discreteScale
         )
-        if (newBitmap != null) {
-            bitmap = newBitmap
+
+        if (currentRequestId == renderRequestId) {
+            if (newBitmap != null) {
+                bitmap = newBitmap
+            }
+            isLoadingPage = false
         }
-        isLoadingPage = false
     }
 
     Surface(
@@ -715,7 +728,7 @@ private fun PdfPageView(
             contentAlignment = Alignment.Center
         ) {
             val bmp = bitmap
-            if (bmp != null && !bmp.isRecycled) {
+            if (bmp != null) {
                 Image(
                     bitmap = bmp.asImageBitmap(),
                     contentDescription = "Page ${pageIndex + 1}",
@@ -751,7 +764,7 @@ private fun PdfThumbnailView(
         contentAlignment = Alignment.Center
     ) {
         val bmp = bitmap
-        if (bmp != null && !bmp.isRecycled) {
+        if (bmp != null) {
             Image(
                 bitmap = bmp.asImageBitmap(),
                 contentDescription = "Thumbnail ${pageIndex + 1}",

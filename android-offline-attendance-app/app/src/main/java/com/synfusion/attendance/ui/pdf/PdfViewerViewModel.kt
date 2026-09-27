@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.isActive
 import java.io.File
 import java.util.Date
 
@@ -40,9 +41,8 @@ class PdfViewerViewModel(application: Application) : AndroidViewModel(applicatio
         }
 
         override fun entryRemoved(evicted: Boolean, key: String, oldValue: Bitmap, newValue: Bitmap?) {
-            if (evicted && !oldValue.isRecycled) {
-                oldValue.recycle()
-            }
+            // Do not call oldValue.recycle() here to avoid crashes in Compose when it is still being displayed.
+            // Rely on Garbage Collection.
         }
     }
 
@@ -167,12 +167,14 @@ class PdfViewerViewModel(application: Application) : AndroidViewModel(applicatio
         val roundedScale = (clampedRenderScale * 2f).toInt() / 2f
         val cacheKey = "${pageIndex}_${targetWidth}_${roundedScale}"
         bitmapCache.get(cacheKey)?.let { cachedBitmap ->
-            if (!cachedBitmap.isRecycled) return@withContext cachedBitmap
+            return@withContext cachedBitmap
         }
 
         try {
             val bitmap: Bitmap
             synchronized(this@PdfViewerViewModel) {
+                if (!kotlinx.coroutines.currentCoroutineContext().isActive) return@withContext null
+
                 val page = renderer.openPage(pageIndex)
                 val origWidth = page.width
                 val origHeight = page.height
@@ -206,12 +208,14 @@ class PdfViewerViewModel(application: Application) : AndroidViewModel(applicatio
 
         val cacheKey = "thumb_$pageIndex"
         bitmapCache.get(cacheKey)?.let { cachedBitmap ->
-            if (!cachedBitmap.isRecycled) return@withContext cachedBitmap
+            return@withContext cachedBitmap
         }
 
         try {
             val bitmap: Bitmap
             synchronized(this@PdfViewerViewModel) {
+                if (!kotlinx.coroutines.currentCoroutineContext().isActive) return@withContext null
+
                 val page = renderer.openPage(pageIndex)
                 val thumbWidth = 180
                 val scale = thumbWidth.toFloat() / page.width.toFloat()
@@ -275,14 +279,16 @@ class PdfViewerViewModel(application: Application) : AndroidViewModel(applicatio
 
     private fun closeRenderer() {
         bitmapCache.evictAll()
-        try {
-            pdfRenderer?.close()
-        } catch (_: Exception) {}
-        pdfRenderer = null
-        try {
-            pfd?.close()
-        } catch (_: Exception) {}
-        pfd = null
+        synchronized(this@PdfViewerViewModel) {
+            try {
+                pdfRenderer?.close()
+            } catch (_: Exception) {}
+            pdfRenderer = null
+            try {
+                pfd?.close()
+            } catch (_: Exception) {}
+            pfd = null
+        }
     }
 
     override fun onCleared() {
