@@ -1,6 +1,5 @@
 package com.synfusion.attendance.ui.pdf
 
-import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
@@ -20,22 +19,32 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ErrorOutline
+import androidx.compose.material.icons.filled.NavigateNext
+import androidx.compose.material.icons.filled.NavigateBefore
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -50,8 +59,11 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -60,12 +72,11 @@ import com.synfusion.attendance.utils.collectAsStateWithLifecycle
 import com.synfusion.attendance.utils.pdf.PdfFileManager
 import com.synfusion.attendance.utils.pdf.PdfShareManager
 import kotlinx.coroutines.launch
-import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.InputStream
 import java.io.OutputStream
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun PdfViewerScreen(
     pdfUri: Uri,
@@ -107,6 +118,19 @@ fun PdfViewerScreen(
     fun initiateSave() {
         val defaultName = state.fileName.ifEmpty { "WorkDaily_Passbook.pdf" }
         saveLauncher.launch(defaultName)
+    }
+
+    fun openWithExternalApp() {
+        try {
+            val intent = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(pdfUri, "application/pdf")
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            context.startActivity(Intent.createChooser(intent, context.getString(R.string.pdf_open_with)))
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Toast.makeText(context, context.getString(R.string.pdf_no_share_app), Toast.LENGTH_SHORT).show()
+        }
     }
 
     fun printPdf() {
@@ -174,18 +198,28 @@ fun PdfViewerScreen(
     Scaffold(
         contentWindowInsets = WindowInsets(0.dp),
         topBar = {
-            PdfViewerTopBar(
-                title = state.fileName,
-                currentPage = state.currentPage,
-                totalPages = state.totalPages,
-                viewMode = state.viewMode,
-                onNavigateBack = onNavigateBack,
-                onToggleViewMode = { viewModel.toggleViewMode() },
-                onOpenMore = { showMoreSheet = true }
-            )
+            AnimatedVisibility(
+                visible = state.isControlsVisible,
+                enter = fadeIn(),
+                exit = fadeOut()
+            ) {
+                PdfViewerTopBar(
+                    title = state.fileName,
+                    currentPage = state.currentPage,
+                    totalPages = state.totalPages,
+                    viewMode = state.viewMode,
+                    onNavigateBack = onNavigateBack,
+                    onToggleViewMode = { viewModel.toggleViewMode() },
+                    onOpenMore = { showMoreSheet = true }
+                )
+            }
         },
         floatingActionButton = {
-            if (!state.isLoading && state.errorMessage == null && state.totalPages > 0) {
+            AnimatedVisibility(
+                visible = state.isControlsVisible && !state.isLoading && state.errorMessage == null && state.totalPages > 0,
+                enter = fadeIn(),
+                exit = fadeOut()
+            ) {
                 PdfViewerFab(
                     expanded = state.fabExpanded,
                     onToggleExpanded = { viewModel.toggleFabExpanded() },
@@ -273,6 +307,12 @@ fun PdfViewerScreen(
                     val configuration = LocalConfiguration.current
                     val screenWidthPx = with(LocalDensity.current) { configuration.screenWidthDp.dp.toPx() }.toInt()
 
+                    val fitScaleMultiplier = when (state.fitMode) {
+                        PdfFitMode.FIT_WIDTH -> 1.0f
+                        PdfFitMode.FIT_PAGE -> 0.85f
+                        PdfFitMode.ACTUAL_SIZE -> 1.25f
+                    }
+
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
@@ -293,6 +333,9 @@ fun PdfViewerScreen(
                             }
                             .pointerInput(Unit) {
                                 detectTapGestures(
+                                    onTap = {
+                                        viewModel.toggleControlsVisibility()
+                                    },
                                     onDoubleTap = { tapOffset ->
                                         if (scale > 1.2f) {
                                             scale = 1.0f
@@ -324,7 +367,9 @@ fun PdfViewerScreen(
                                 )
                         ) {
                             if (state.viewMode == PdfViewMode.VERTICAL) {
-                                val listState = rememberLazyListState()
+                                val listState = rememberLazyListState(
+                                    initialFirstVisibleItemIndex = (state.currentPage - 1).coerceAtLeast(0)
+                                )
 
                                 val visiblePage by remember {
                                     derivedStateOf {
@@ -335,6 +380,12 @@ fun PdfViewerScreen(
 
                                 LaunchedEffect(visiblePage) {
                                     viewModel.updateCurrentPage(visiblePage)
+                                }
+
+                                LaunchedEffect(state.currentPage) {
+                                    if (listState.firstVisibleItemIndex != state.currentPage - 1) {
+                                        listState.scrollToItem((state.currentPage - 1).coerceAtLeast(0))
+                                    }
                                 }
 
                                 LazyColumn(
@@ -350,6 +401,7 @@ fun PdfViewerScreen(
                                         PdfPageView(
                                             pageIndex = pageIndex,
                                             targetWidth = screenWidthPx,
+                                            fitScaleMultiplier = fitScaleMultiplier,
                                             viewModel = viewModel
                                         )
                                     }
@@ -364,6 +416,12 @@ fun PdfViewerScreen(
                                     viewModel.updateCurrentPage(pagerState.currentPage + 1)
                                 }
 
+                                LaunchedEffect(state.currentPage) {
+                                    if (pagerState.currentPage != state.currentPage - 1) {
+                                        pagerState.scrollToPage((state.currentPage - 1).coerceAtLeast(0))
+                                    }
+                                }
+
                                 HorizontalPager(
                                     state = pagerState,
                                     modifier = Modifier.fillMaxSize(),
@@ -373,6 +431,7 @@ fun PdfViewerScreen(
                                     PdfPageView(
                                         pageIndex = pageIndex,
                                         targetWidth = screenWidthPx,
+                                        fitScaleMultiplier = fitScaleMultiplier,
                                         viewModel = viewModel
                                     )
                                 }
@@ -444,12 +503,239 @@ fun PdfViewerScreen(
             fileName = state.fileName,
             totalPages = state.totalPages,
             fileSizeStr = state.fileSizeStr,
+            viewMode = state.viewMode,
+            fitMode = state.fitMode,
             showTouchIndicators = state.showTouchIndicators,
             onToggleTouchIndicators = { viewModel.toggleTouchIndicators() },
+            onOpenSearch = { viewModel.setShowSearchSheet(true) },
+            onOpenGoToPage = { viewModel.setShowPageJumpDialog(true) },
+            onOpenThumbnails = { viewModel.setShowThumbnailsSheet(true) },
+            onToggleViewMode = { viewModel.toggleViewMode() },
+            onSelectFitMode = { viewModel.setFitMode(it) },
+            onRotate = { viewModel.rotateClockwise() },
             onPrint = { printPdf() },
+            onOpenWith = { openWithExternalApp() },
             onDismiss = { showMoreSheet = false },
             onCloseViewer = onNavigateBack
         )
+    }
+
+    // Go to Page Dialog
+    if (state.showPageJumpDialog) {
+        var pageInput by remember { mutableStateOf(state.currentPage.toString()) }
+        var isError by remember { mutableStateOf(false) }
+
+        AlertDialog(
+            onDismissRequest = { viewModel.setShowPageJumpDialog(false) },
+            title = {
+                Text(
+                    text = stringResource(R.string.pdf_go_to_page),
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = pageInput,
+                        onValueChange = { input ->
+                            pageInput = input.filter { it.isDigit() }
+                            isError = false
+                        },
+                        label = { Text(stringResource(R.string.pdf_enter_page_number)) },
+                        placeholder = { Text("1 - ${state.totalPages}") },
+                        isError = isError,
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Number,
+                            imeAction = ImeAction.Done
+                        ),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    if (isError) {
+                        Text(
+                            text = stringResource(R.string.pdf_invalid_page),
+                            color = MaterialTheme.colorScheme.error,
+                            fontSize = 12.sp
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val parsed = pageInput.toIntOrNull()
+                        if (parsed != null && parsed in 1..state.totalPages) {
+                            viewModel.jumpToPage(parsed)
+                        } else {
+                            isError = true
+                        }
+                    }
+                ) {
+                    Text(stringResource(R.string.done))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.setShowPageJumpDialog(false) }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
+
+    // Page Thumbnails Bottom Sheet
+    if (state.showThumbnailsSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { viewModel.setShowThumbnailsSheet(false) },
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+            containerColor = MaterialTheme.colorScheme.surface,
+            windowInsets = WindowInsets(0.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.pdf_thumbnails),
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(3),
+                    contentPadding = PaddingValues(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.fillMaxHeight(0.6f)
+                ) {
+                    items(state.totalPages) { index ->
+                        val pageNum = index + 1
+                        val isSelected = pageNum == state.currentPage
+
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .border(
+                                    width = if (isSelected) 2.dp else 1.dp,
+                                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                                    shape = RoundedCornerShape(8.dp)
+                                )
+                                .clickable {
+                                    viewModel.jumpToPage(pageNum)
+                                    viewModel.setShowThumbnailsSheet(false)
+                                }
+                                .padding(6.dp)
+                        ) {
+                            PdfThumbnailView(
+                                pageIndex = index,
+                                viewModel = viewModel
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "$pageNum",
+                                fontSize = 12.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // PDF Search Sheet
+    if (state.showSearchSheet) {
+        val keyboardController = LocalSoftwareKeyboardController.current
+
+        ModalBottomSheet(
+            onDismissRequest = { viewModel.setShowSearchSheet(false) },
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+            containerColor = MaterialTheme.colorScheme.surface,
+            windowInsets = WindowInsets(0.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = stringResource(R.string.pdf_search),
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    IconButton(onClick = { viewModel.setShowSearchSheet(false) }) {
+                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.close))
+                    }
+                }
+
+                OutlinedTextField(
+                    value = state.searchQuery,
+                    onValueChange = { viewModel.updateSearchQuery(it) },
+                    placeholder = { Text(stringResource(R.string.pdf_search_placeholder)) },
+                    trailingIcon = {
+                        IconButton(onClick = {
+                            keyboardController?.hide()
+                            viewModel.performSearch(state.searchQuery)
+                        }) {
+                            Icon(Icons.Default.Search, contentDescription = stringResource(R.string.pdf_search))
+                        }
+                    },
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    keyboardActions = KeyboardActions(onSearch = {
+                        keyboardController?.hide()
+                        viewModel.performSearch(state.searchQuery)
+                    }),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                if (state.searchMessage != null) {
+                    Text(
+                        text = state.searchMessage ?: "",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
+                }
+
+                if (state.searchMatches.isNotEmpty()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "${state.currentMatchIndex + 1} of ${state.searchMatches.size}",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+
+                        Row {
+                            IconButton(onClick = { viewModel.previousSearchMatch() }) {
+                                Icon(Icons.Default.NavigateBefore, contentDescription = "Previous")
+                            }
+                            IconButton(onClick = { viewModel.nextSearchMatch() }) {
+                                Icon(Icons.Default.NavigateNext, contentDescription = "Next")
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+        }
     }
 }
 
@@ -457,14 +743,15 @@ fun PdfViewerScreen(
 private fun PdfPageView(
     pageIndex: Int,
     targetWidth: Int,
+    fitScaleMultiplier: Float,
     viewModel: PdfViewerViewModel
 ) {
     var bitmap by remember { mutableStateOf<Bitmap?>(null) }
     var isLoadingPage by remember { mutableStateOf(true) }
 
-    LaunchedEffect(pageIndex, targetWidth) {
+    LaunchedEffect(pageIndex, targetWidth, fitScaleMultiplier) {
         isLoadingPage = true
-        bitmap = viewModel.renderPageBitmap(pageIndex, targetWidth)
+        bitmap = viewModel.renderPageBitmap(pageIndex, targetWidth, scale = fitScaleMultiplier)
         isLoadingPage = false
     }
 
@@ -497,6 +784,41 @@ private fun PdfPageView(
                     strokeWidth = 2.dp
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun PdfThumbnailView(
+    pageIndex: Int,
+    viewModel: PdfViewerViewModel
+) {
+    var bitmap by remember { mutableStateOf<Bitmap?>(null) }
+
+    LaunchedEffect(pageIndex) {
+        bitmap = viewModel.renderThumbnailBitmap(pageIndex)
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(110.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        val bmp = bitmap
+        if (bmp != null && !bmp.isRecycled) {
+            Image(
+                bitmap = bmp.asImageBitmap(),
+                contentDescription = "Thumbnail ${pageIndex + 1}",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Fit
+            )
+        } else {
+            CircularProgressIndicator(
+                modifier = Modifier.size(20.dp),
+                color = MaterialTheme.colorScheme.primary,
+                strokeWidth = 2.dp
+            )
         }
     }
 }

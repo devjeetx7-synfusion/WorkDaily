@@ -1,22 +1,31 @@
 package com.synfusion.attendance.ui.pdf
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AspectRatio
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.OpenInNew
+import androidx.compose.material.icons.filled.Pin
 import androidx.compose.material.icons.filled.Print
+import androidx.compose.material.icons.filled.RotateRight
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.SwapHoriz
+import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -29,9 +38,18 @@ fun PdfViewerSettingsSheet(
     fileName: String,
     totalPages: Int,
     fileSizeStr: String,
+    viewMode: PdfViewMode,
+    fitMode: PdfFitMode,
     showTouchIndicators: Boolean,
     onToggleTouchIndicators: () -> Unit,
+    onOpenSearch: () -> Unit,
+    onOpenGoToPage: () -> Unit,
+    onOpenThumbnails: () -> Unit,
+    onToggleViewMode: () -> Unit,
+    onSelectFitMode: (PdfFitMode) -> Unit,
+    onRotate: () -> Unit,
     onPrint: () -> Unit,
+    onOpenWith: () -> Unit,
     onDismiss: () -> Unit,
     onCloseViewer: () -> Unit
 ) {
@@ -46,8 +64,9 @@ fun PdfViewerSettingsSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(24.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
                 text = stringResource(R.string.pdf_more),
@@ -58,74 +77,116 @@ fun PdfViewerSettingsSheet(
 
             HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
 
-            // Print Action
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .clickable {
-                        onDismiss()
-                        onPrint()
-                    }
-                    .padding(vertical = 12.dp, horizontal = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
+            // Search Action
+            MenuSheetRow(
+                icon = Icons.Default.Search,
+                label = stringResource(R.string.pdf_search),
+                onClick = {
+                    onDismiss()
+                    onOpenSearch()
+                }
+            )
+
+            // Page Jump Action
+            MenuSheetRow(
+                icon = Icons.Default.Pin,
+                label = stringResource(R.string.pdf_go_to_page),
+                onClick = {
+                    onDismiss()
+                    onOpenGoToPage()
+                }
+            )
+
+            // Thumbnails Action
+            MenuSheetRow(
+                icon = Icons.Default.GridView,
+                label = stringResource(R.string.pdf_thumbnails),
+                onClick = {
+                    onDismiss()
+                    onOpenThumbnails()
+                }
+            )
+
+            // View Mode Toggle
+            MenuSheetRow(
+                icon = if (viewMode == PdfViewMode.VERTICAL) Icons.Default.SwapVert else Icons.Default.SwapHoriz,
+                label = stringResource(R.string.pdf_view_mode) + ": " + if (viewMode == PdfViewMode.VERTICAL) stringResource(R.string.pdf_vertical) else stringResource(R.string.pdf_horizontal),
+                onClick = {
+                    onToggleViewMode()
+                }
+            )
+
+            // Rotate Action
+            MenuSheetRow(
+                icon = Icons.Default.RotateRight,
+                label = stringResource(R.string.pdf_rotate),
+                onClick = {
+                    onRotate()
+                }
+            )
+
+            // Fit Mode Option Cards
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
-                    contentAlignment = Alignment.Center
+                Text(
+                    text = stringResource(R.string.pdf_fit_mode),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Print,
-                        contentDescription = stringResource(R.string.pdf_print),
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp)
+                    FitModeChip(
+                        label = stringResource(R.string.pdf_fit_width),
+                        selected = fitMode == PdfFitMode.FIT_WIDTH,
+                        onClick = { onSelectFitMode(PdfFitMode.FIT_WIDTH) },
+                        modifier = Modifier.weight(1f)
+                    )
+                    FitModeChip(
+                        label = stringResource(R.string.pdf_fit_page),
+                        selected = fitMode == PdfFitMode.FIT_PAGE,
+                        onClick = { onSelectFitMode(PdfFitMode.FIT_PAGE) },
+                        modifier = Modifier.weight(1f)
+                    )
+                    FitModeChip(
+                        label = stringResource(R.string.pdf_actual_size),
+                        selected = fitMode == PdfFitMode.ACTUAL_SIZE,
+                        onClick = { onSelectFitMode(PdfFitMode.ACTUAL_SIZE) },
+                        modifier = Modifier.weight(1f)
                     )
                 }
-                Spacer(modifier = Modifier.width(16.dp))
-                Text(
-                    text = stringResource(R.string.pdf_print),
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
             }
 
-            // PDF Information Action
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .clickable {
-                        showInfoDialog = true
-                    }
-                    .padding(vertical = 12.dp, horizontal = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Info,
-                        contentDescription = stringResource(R.string.pdf_info),
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp)
-                    )
+            // Print Action
+            MenuSheetRow(
+                icon = Icons.Default.Print,
+                label = stringResource(R.string.pdf_print),
+                onClick = {
+                    onDismiss()
+                    onPrint()
                 }
-                Spacer(modifier = Modifier.width(16.dp))
-                Text(
-                    text = stringResource(R.string.pdf_info),
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
+            )
+
+            // Open With Action
+            MenuSheetRow(
+                icon = Icons.Default.OpenInNew,
+                label = stringResource(R.string.pdf_open_with),
+                onClick = {
+                    onDismiss()
+                    onOpenWith()
+                }
+            )
+
+            // PDF Information Action
+            MenuSheetRow(
+                icon = Icons.Default.Info,
+                label = stringResource(R.string.pdf_info),
+                onClick = { showInfoDialog = true }
+            )
 
             // Touch Indicators Toggle
             Row(
@@ -133,14 +194,14 @@ fun PdfViewerSettingsSheet(
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
                     .clickable { onToggleTouchIndicators() }
-                    .padding(vertical = 12.dp, horizontal = 8.dp),
+                    .padding(vertical = 8.dp, horizontal = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         modifier = Modifier
-                            .size(40.dp)
+                            .size(36.dp)
                             .clip(CircleShape)
                             .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
                         contentAlignment = Alignment.Center
@@ -149,13 +210,13 @@ fun PdfViewerSettingsSheet(
                             imageVector = Icons.Default.TouchApp,
                             contentDescription = stringResource(R.string.pdf_touch_indicators),
                             tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(18.dp)
                         )
                     }
                     Spacer(modifier = Modifier.width(16.dp))
                     Text(
                         text = stringResource(R.string.pdf_touch_indicators),
-                        fontSize = 15.sp,
+                        fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -167,41 +228,18 @@ fun PdfViewerSettingsSheet(
             }
 
             // Close Viewer Action
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .clickable {
-                        onDismiss()
-                        onCloseViewer()
-                    }
-                    .padding(vertical = 12.dp, horizontal = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.error.copy(alpha = 0.1f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = stringResource(R.string.pdf_close),
-                        tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(20.dp)
-                    )
+            MenuSheetRow(
+                icon = Icons.Default.Close,
+                label = stringResource(R.string.pdf_close),
+                textColor = MaterialTheme.colorScheme.error,
+                iconTint = MaterialTheme.colorScheme.error,
+                onClick = {
+                    onDismiss()
+                    onCloseViewer()
                 }
-                Spacer(modifier = Modifier.width(16.dp))
-                Text(
-                    text = stringResource(R.string.pdf_close),
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.error
-                )
-            }
+            )
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 
@@ -275,4 +313,65 @@ fun PdfViewerSettingsSheet(
             }
         )
     }
+}
+
+@Composable
+private fun MenuSheetRow(
+    icon: ImageVector,
+    label: String,
+    textColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurface,
+    iconTint: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.primary,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
+            .padding(vertical = 8.dp, horizontal = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .clip(CircleShape)
+                .background(iconTint.copy(alpha = 0.1f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = iconTint,
+                modifier = Modifier.size(18.dp)
+            )
+        }
+        Spacer(modifier = Modifier.width(16.dp))
+        Text(
+            text = label,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = textColor
+        )
+    }
+}
+
+@Composable
+private fun FitModeChip(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = {
+            Text(
+                text = label,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        modifier = modifier
+    )
 }

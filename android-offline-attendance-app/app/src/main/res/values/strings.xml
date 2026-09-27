@@ -625,4 +625,18 @@
     <string name="pdf_file_name">File Name</string>
     <string name="pdf_total_pages">Pages</string>
     <string name="pdf_file_size">File Size</string>
+    <string name="pdf_search">Search in PDF</string>
+    <string name="pdf_go_to_page">Go to Page</string>
+    <string name="pdf_thumbnails">Page Thumbnails</string>
+    <string name="pdf_view_mode">View Mode</string>
+    <string name="pdf_fit_mode">Fit Mode</string>
+    <string name="pdf_fit_width">Fit Width</string>
+    <string name="pdf_fit_page">Fit Page</string>
+    <string name="pdf_actual_size">Actual Size</string>
+    <string name="pdf_rotate">Rotate Page</string>
+    <string name="pdf_open_with">Open With</string>
+    <string name="pdf_enter_page_number">Enter Page Number</string>
+    <string name="pdf_invalid_page">Invalid page number</string>
+    <string name="pdf_search_placeholder">Search text...</string>
+    <string name="pdf_no_search_text">No searchable text found in this PDF.</string>
 </resources>

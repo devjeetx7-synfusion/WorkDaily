@@ -1,298 +1,474 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">WorkDaily</string>
+    <string name="default_web_client_id">811601656329-a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6.apps.googleusercontent.com</string>
     <string name="select_language">भाषा चुनें / Select Language</string>
-    <string name="choose_your_preferred_language_to_continue">आगे बढ़ने के लिए अपनी पसंदीदा भाषा चुनें।</string>
-    <string name="continue_btn">आगे बढ़ें</string>
+    <string name="choose_your_preferred_language_to_continue">आगे बढ़ने के लिए अपनी पसंदीदा भाषा चुनें।</string>
+    <string name="continue_btn">आगे बढ़ें</string>
     <string name="language">भाषा</string>
 
-    <string name="statistics">स्टैटिस्टिक्स</string>
-    <string name="global_statistics">कुल आंकड़े</string>
-    <string name="worker_performance_costs">वर्कर परफॉर्मेंस और कमाई</string>
-    <string name="system_overview">ओवरव्यू</string>
+    <string name="statistics">आंकड़े (Stats)</string>
+    <string name="global_statistics">ग्लोबल स्टेट्स</string>
+    <string name="worker_performance_costs">वर्कर परफॉरमेंस और खर्चा</string>
+    <string name="system_overview">सिस्टम ओवरव्यू</string>
     <string name="total_workforce">कुल वर्कर</string>
-    <string name="total_man_days">कुल काम के दिन</string>
-    <string name="daily_costs">रोज का खर्च</string>
-    <string name="cost_breakdown">खर्च का हिसाब</string>
-    <string name="stats">स्टैटिस्टिक्स</string>
+    <string name="total_man_days">कुल मैन डेज</string>
+
+    <string name="daily_costs">रोज का खर्चा</string>
+    <string name="cost_breakdown">खर्चे का हिसाब</string>
+    <string name="stats">स्टेट्स</string>
     <string name="earnings">कमाई</string>
     <string name="total_days">कुल दिन</string>
     <string name="total_overtime">कुल ओवरटाइम</string>
-    <string name="advance_deductions">एडवांस कटौती</string>
+    <string name="advance_deductions">एडवांस की कटौतियां</string>
     <string name="daily_earnings">रोज की कमाई</string>
-    <string name="attendance_breakdown">हाजिरी का हिसाब</string>
+    <string name="attendance_breakdown">हाजिरी का ब्रेकडाउन</string>
     <string name="attendance">हाजिरी</string>
-    <string name="no_data">कोई रिकॉर्ड नहीं है।</string>
-    <string name="all_time_stats">ऑल टाइम स्टैटिस्टिक्स</string>
+    <string name="no_data">कोई डेटा नहीं है।</string>
+    <string name="all_time_stats">ऑल टाइम स्टेट्स</string>
     <string name="total_earnings">कुल कमाई</string>
     <string name="dailywork">WorkDaily</string>
-    <string name="manage_your_daily_labor_earnings">अपनी रोज की हाजिरी और कमाई मैनेज करें</string>
+    <string name="manage_your_daily_labor_earnings">अपनी रोज की मजदूरी और कमाई मैनेज करें</string>
     <string name="copy_error">एरर कॉपी करें</string>
     <string name="close_app">ऐप बंद करें</string>
-    <string name="restart">रीस्टार्ट करें</string>
-    <string name="language_1">Language / भाषा</string>
+    <string name="restart">रीस्टार्ट</string>
+
+    <string name="language_1">भाषा / Language</string>
     <string name="select_your_preferred_language">अपनी पसंदीदा भाषा चुनें</string>
-    <string name="apply">सेव करें</string>
+    <string name="apply">लागू करें</string>
+
     <string name="call">कॉल करें</string>
     <string name="mark_today">आज की हाजिरी</string>
     <string name="advance">एडवांस</string>
-    <string name="passbook_month">पासबुक का महीना</string>
+
+    <string name="passbook_month">पासबुक महीना</string>
     <string name="export_pdf">PDF डाउनलोड करें</string>
+
     <string name="whatsapp">व्हाट्सएप</string>
-    <string name="attendance_rate">हाजिरी %</string>
+    <string name="attendance_rate">हाजिरी रेट</string>
     <string name="present">प्रेजेंट</string>
     <string name="absent">एब्सेंट</string>
     <string name="half">हाफ डे</string>
-    <string name="man_days">काम के दिन</string>
+
+    <string name="man_days">मैन डेज</string>
+
     <string name="financial_summary">कमाई का हिसाब</string>
     <string name="gross_earned">कुल कमाई</string>
     <string name="total_advance">कुल एडवांस</string>
-    <string name="net_payable">फाइनल हिसाब</string>
-    <string name="detailed_ledger">पूरा हिसाब-किताब</string>
-    <string name="no_records_found_for_this_month">इस महीने का कोई रिकॉर्ड नहीं मिला।</string>
-    <string name="worker_history">वर्कर हिस्ट्री</string>
-    <string name="search_by_worker_name">वर्कर का नाम सर्च करें...</string>
-    <string name="filter">फ़िल्टर:</string>
+    <string name="net_payable">अंतिम हिसाब</string>
+
+    <string name="detailed_ledger">विस्तृत बहीखाता</string>
+    <string name="no_records_found_for_this_month">इस महीने के लिए कोई रिकॉर्ड नहीं मिला।</string>
+    <string name="worker_history">वर्कर का इतिहास</string>
+    <string name="search_by_worker_name">वर्कर के नाम से खोजें...</string>
+    <string name="filter">फिल्टर:</string>
     <string name="no_records_found">कोई रिकॉर्ड नहीं मिला</string>
+
     <string name="settings">सेटिंग्स</string>
-    <string name="profile_settings">प्रोफाइल सेटिंग</string>
+    <string name="profile_settings">प्रोफाइल सेटिंग्स</string>
     <string name="full_name">पूरा नाम</string>
     <string name="email">ईमेल</string>
-    <string name="daily_wage">रोज की दिहाड़ी</string>
+
+    <string name="daily_wage">दिहाड़ी</string>
     <string name="phone_number">फोन नंबर</string>
-    <string name="app_preferences">ऐप सेटिंग्स</string>
-    <string name="theme">थीम</string>
-    <string name="reminders">रिमाइंडर</string>
+    <string name="app_preferences">ऐप की पसंद</string>
+
+    <string name="theme">थीम (Theme)</string>
+
+    <string name="reminders">रिमाइंडर (Reminders)</string>
     <string name="daily_attendance_reminder">रोज की हाजिरी का रिमाइंडर</string>
-    <string name="enable_splash_screen">स्प्लैश स्क्रीन चालू करें</string>
+    <string name="enable_splash_screen">वेलकम स्क्रीन चालू रखें</string>
     <string name="language_2">भाषा</string>
-    <string name="role_management">रोल सेटिंग</string>
+    <string name="role_management">रोल मैनेजमेंट</string>
     <string name="dailywork_premium">WorkDaily प्रीमियम</string>
-    <string name="thank_you_for_your_purchase">प्रीमियम लेने के लिए धन्यवाद ❤️</string>
-    <string name="unlock_all_features">सारे फीचर्स अनलॉक करें</string>
+    <string name="thank_you_for_your_purchase">खरीदने के लिए धन्यवाद ❤️</string>
+    <string name="unlock_all_features">सभी फीचर्स अनलॉक करें</string>
     <string name="data_export">डेटा और एक्सपोर्ट</string>
-    <string name="attendance_payment_logs">हाजिरी और एडवांस रिकॉर्ड</string>
-    <string name="export_as_pdf">PDF डाउनलोड करें</string>
-    <string name="only_contractor_premium">सिर्फ ठेकेदार प्रीमियम</string>
-    <string name="share_via_whatsapp">व्हाट्सएप पर शेयर करें</string>
-    <string name="send_digital_passbook">डिजिटल पासबुक शेयर करें</string>
-    <string name="data_support">डेटा और सपोर्ट</string>
-    <string name="how_to_use_dailywork">WorkDaily इस्तेमाल कैसे करें</string>
-    <string name="quick_guide_tutorials">आसान गाइड और ट्यूटोरियल</string>
-    <string name="data_privacy_policy">प्राइवेसी पॉलिसी</string>
-    <string name="stored_securely_in_cloud">आपके फोन में 100% सेफ</string>
+
+    <string name="attendance_payment_logs">हाजिरी और पेमेंट का हिसाब</string>
+    <string name="export_as_pdf">PDF में सेव करें</string>
+
+    <string name="only_contractor_premium">केवल ठेकेदार प्रीमियम</string>
+    <string name="share_via_whatsapp">व्हाट्सएप पर भेजें</string>
+
+    <string name="send_digital_passbook">डिजिटल पासबुक भेजें</string>
+
+    <string name="data_support">डेटा और हेल्प</string>
+    <string name="how_to_use_dailywork">WorkDaily कैसे इस्तेमाल करें</string>
+
+    <string name="quick_guide_tutorials">ट्यूटोरियल और गाइड</string>
+    <string name="data_privacy_policy">डेटा और प्राइवेसी पॉलिसी</string>
+
+    <string name="stored_securely_in_cloud">क्लाउड में सुरक्षित सेव्ड</string>
+
     <string name="developer_contact">डेवलपर से संपर्क करें</string>
-    <string name="reach_out_for_feedback">मदद या सुझाव के लिए मैसेज करें</string>
-    <string name="log_out">लॉग आउट</string>
-    <string name="are_you_sure_you_want_to_log_out_of_your_msg">क्या आप वाकई लॉग आउट करना चाहते हैं?</string>
-    <string name="cancel">कैंसल</string>
+
+    <string name="reach_out_for_feedback">फीडबैक के लिए संपर्क करें</string>
+
+    <string name="log_out">लॉग आउट करें</string>
+
+    <string name="are_you_sure_you_want_to_log_out_of_your_msg">क्या आप सच में अपने अकाउंट से लॉग आउट करना चाहते हैं?</string>
+
+    <string name="cancel">रद्द करें</string>
     <string name="change_role">रोल बदलें</string>
-    <string name="changing_role_will_refresh_the_app_and_s_msg">रोल बदलने से ऐप रीफ्रेश हो जाएगा और आपका डैशबोर्ड बदल जाएगा।</string>
-    <string name="confirm">हाँ, बदलो</string>
-    <string name="a_quick_guide_to_tracking_your_work_effe_msg">काम और हाजिरी का हिसाब रखने की आसान गाइड</string>
+
+    <string name="changing_role_will_refresh_the_app_and_s_msg">रोल बदलने पर ऐप रिफ्रेश होगा और डैशबोर्ड बदल जाएगा।</string>
+
+    <string name="confirm">हाँ, बदलें</string>
+
+    <string name="a_quick_guide_to_tracking_your_work_effe_msg">अपने काम और पैसों का हिसाब रखने का आसान तरीका</string>
+
     <string name="num_1_marking_attendance">1. हाजिरी लगाना</string>
-    <string name="on_the_dashboard_click_full_day_or_half__msg">डैशबोर्ड पर आज की हाजिरी लगाने के लिए फुल डे या हाफ डे पर क्लिक करें। सेव करने से पहले + / - बटन से ओवरटाइम जोड़ सकते हैं। छुट्टी थी तो मार्क एब्सेंट दबाएं।</string>
-    <string name="num_2_net_payable_earnings">2. कुल कमाई और फाइनल हिसाब</string>
-    <string name="your_earnings_are_automatically_calculat_msg">आपकी कमाई काम के दिनों को रोज की दिहाड़ी से गुणा करके अपने आप निकल जाती है। फाइनल हिसाब में आपके कुल पैसे दिखते हैं: (कुल कमाई - एडवांस)।</string>
-    <string name="num_3_advance_payments">3. एडवांस पैसे</string>
-    <string name="if_you_receive_money_ahead_of_time_click_msg">अगर आपने एडवांस पैसे लिए हैं, तो डैशबोर्ड पर ऐड एडवांस दबाएं या कैलेंडर में तारीख चुनकर दर्ज करें। यह फाइनल हिसाब में अपने आप कट जाएगा।</string>
-    <string name="num_4_calendar_history">4. कैलेंडर और हिस्ट्री</string>
-    <string name="use_the_calendar_to_edit_past_records_eg_msg">पुराने रिकॉर्ड बदलने या कल की छूटी हाजिरी लगाने के लिए कैलेंडर का इस्तेमाल करें। महीने का हिसाब देखने और PDF डाउनलोड करने के लिए पासबुक में जाएं।</string>
-    <string name="stored_securely_in_the_cloud">आपके फोन में सेफ</string>
+
+    <string name="on_the_dashboard_click_full_day_or_half__msg">डैशबोर्ड पर हाजिरी लगाने के लिए Full Day या Half Day दबाएं। ओवरटाइम जोड़ने के लिए + / - बटन इस्तेमाल करें। अगर काम नहीं किया तो Mark Absent दबाएं।</string>
+
+    <string name="num_2_net_payable_earnings">2. कमाई और अंतिम हिसाब</string>
+
+    <string name="your_earnings_are_automatically_calculat_msg">आपकी कमाई (Working Days × Daily Wage) के हिसाब से खुद कैलकुलेट होती है। Net Payable आपका बचा हुआ पैसा दिखाता है: (कुल कमाई - एडवांस)।</string>
+
+    <string name="num_3_advance_payments">3. एडवांस पेमेंट</string>
+
+    <string name="if_you_receive_money_ahead_of_time_click_msg">अगर आपने काम से पहले पैसे लिए हैं, तो Dashboard पर Add Advance दबाएं या Calendar में तारीख चुनकर दर्ज करें। यह अपने आप कट जाएगा।</string>
+
+    <string name="num_4_calendar_history">4. कैलेंडर और पिछला रिकॉर्ड</string>
+
+    <string name="use_the_calendar_to_edit_past_records_eg_msg">पुराने दिन की हाजिरी बदलने के लिए Calendar इस्तेमाल करें। Passbook से आप अपने महीने का हिसाब PDF में डाउनलोड कर सकते हैं।</string>
+
+    <string name="stored_securely_in_the_cloud">क्लाउड में सुरक्षित सेव्ड</string>
+
     <string name="data_collection">डेटा कलेक्शन</string>
-    <string name="we_collect_your_name_phone_number_and_at_msg">ऐप सही चलाने के लिए सिर्फ आपका नाम, फोन नंबर और हाजिरी रिकॉर्ड आपके फोन में रखा जाता है।</string>
-    <string name="storage_method">डेटा सेविंग</string>
-    <string name="your_data_is_securely_stored_on_firebase_msg">आपका पूरा डेटा आपके फोन में ही 100% सेफ रहता है।</string>
-    <string name="security_practices">डेटा सुरक्षा</string>
-    <string name="access_to_your_data_is_restricted_to_you_msg">आपका डेटा सिर्फ आपके पास सुरक्षित रहता है।</string>
+
+    <string name="we_collect_your_name_phone_number_and_at_msg">हम ऐप चलाने के लिए आपका नाम, फोन नंबर और हाजिरी का रिकॉर्ड रखते हैं।</string>
+
+    <string name="storage_method">सुरक्षा</string>
+
+    <string name="your_data_is_securely_stored_on_firebase_msg">आपका डेटा Firebase पर पूरी तरह सुरक्षित और एन्क्रिप्टेड रहता है।</string>
+
+    <string name="security_practices">प्राइवेसी सुरक्षा</string>
+
+    <string name="access_to_your_data_is_restricted_to_you_msg">आपके डेटा को सिर्फ आप अपने अकाउंट से ही देख सकते हैं।</string>
+
     <string name="user_control">आपका कंट्रोल</string>
-    <string name="you_can_delete_your_data_by_deleting_you_msg">आप कभी भी अपना डेटा डिलीट कर सकते हैं या PDF डाउनलोड कर सकते हैं।</string>
-    <string name="reach_out_to_us_for_any_feedback_or_supp_msg">कोई दिक्कत हो या सुझाव देना हो तो संपर्क करें</string>
+
+    <string name="you_can_delete_your_data_by_deleting_you_msg">आप जब चाहें अकाउंट डिलीट करके अपना सारा डेटा हटा सकते हैं।</string>
+
+    <string name="reach_out_to_us_for_any_feedback_or_supp_msg">किसी भी सवाल या मदद के लिए हमसे संपर्क करें</string>
+
     <string name="supportdailyworkcom">support@dailywork.com</string>
     <string name="num_91_98765_43210">+91 98765 43210</string>
+
     <string name="wwwdailyworkcom">www.dailywork.com</string>
-    <string name="switch_between_contractor_and_personal_m_msg">ठेकेदार और पर्सनल मोड बदलें</string>
+    <string name="switch_between_contractor_and_personal_m_msg">ठेकेदार मोड और पर्सनल मोड में बदलें</string>
+
     <string name="select_your_billing_cycle">अपना प्लान चुनें</string>
+
     <string name="unlock_everything">सब कुछ अनलॉक करें</string>
+
     <string name="combo_premium">कॉम्बो प्रीमियम</string>
     <string name="lifetime">/ लाइफटाइम</string>
-    <string name="unlocks_both_contractor_personal_modes_p_msg">ठेकेदार और पर्सनल मोड दोनों हमेशा के लिए अनलॉक हो जाएंगे।</string>
+
+    <string name="unlocks_both_contractor_personal_modes_p_msg">ठेकेदार और पर्सनल दोनों मोड हमेशा के लिए अनलॉक हो जाएंगे।</string>
+
     <string name="get_combo_plan">कॉम्बो प्लान लें</string>
-    <string name="features">फायदे</string>
+
+    <string name="features">फीचर्स</string>
     <string name="free">फ्री</string>
+
     <string name="day_singular">दिन</string>
     <string name="premium">प्रीमियम</string>
-    <string name="cancel_anytime_no_hidden_fees">कोई छिपा हुआ चार्ज नहीं।</string>
+
+    <string name="cancel_anytime_no_hidden_fees">कभी भी कैंसिल करें। कोई छुपा हुआ चार्ज नहीं।</string>
+
     <string name="calendar">कैलेंडर</string>
     <string name="present_1">प्रेजेंट</string>
     <string name="absent_1">एब्सेंट</string>
-    <string name="tap_any_day_to_edit_attendance_or_add_no_msg">हाजिरी एडिट करने या नोट/एडवांस जोड़ने के लिए तारीख पर टैप करें।</string>
-    <string name="full_day">फुल डे</string>
-    <string name="half_day">हाफ डे</string>
-    <string name="add_advance_payment">एडवांस पैसे जोड़ें</string>
-    <string name="edit_advance_payment">एडवांस एडिट करें</string>
-    <string name="edit_advance">एडवांस एडिट करें</string>
-    <string name="amount">रुपये / राशि</string>
+
+    <string name="tap_any_day_to_edit_attendance_or_add_no_msg">किसी भी तारीख पर टैप करके हाजिरी या एडवांस बदलें।</string>
+
+    <string name="full_day">पूरा दिन (Full)</string>
+
+    <string name="half_day">आधा दिन (Half)</string>
+
+    <string name="add_advance_payment">एडवांस जोड़ें</string>
+
+    <string name="edit_advance_payment">एडवांस बदलें</string>
+
+    <string name="edit_advance">एडवांस एडिट</string>
+    <string name="amount">रकम (₹)</string>
     <string name="save">सेव करें</string>
-    <string name="no_internet_connection">इंटरनेट चालू नहीं है</string>
-    <string name="youre_currently_offline_you_can_still_us_msg">इंटरनेट बंद है, फिर भी ऐप पूरी तरह काम करेगा।</string>
-    <string name="try_again">फिर से कोशिश करें</string>
+
+    <string name="no_internet_connection">इंटरनेट कनेक्ट नहीं है</string>
+
+    <string name="youre_currently_offline_you_can_still_us_msg">आप अभी ऑफलाइन हैं। आप ऐप इस्तेमाल कर सकते हैं, इंटरनेट आने पर डेटा खुद सिंक हो जाएगा।</string>
+
+    <string name="try_again">फिर कोशिश करें</string>
+
     <string name="continue_offline">ऑफलाइन चलाएं</string>
-    <string name="quick_actions">क्विक एक्शंस</string>
+
+    <string name="quick_actions">शॉर्टकट</string>
+
     <string name="todays_earnings">आज की कमाई</string>
+
     <string name="monthly_earnings">इस महीने की कमाई</string>
+
     <string name="view_my_passbook">मेरी पासबुक देखें</string>
-    <string name="daily_log">आज का हिसाब</string>
+
+    <string name="daily_log">आज का काम दर्ज करें</string>
+
     <string name="overtime_hours">ओवरटाइम (घंटे)</string>
     <string name="ot_amount">ओवरटाइम के पैसे (₹)</string>
-    <string name="add_note_optional">नोट लिखें (जरूरी नहीं)</string>
-    <string name="mark_absent">एब्सेंट लगाएं</string>
+
+    <string name="add_note_optional">कोई नोट लिखें (Optional)</string>
+
+    <string name="mark_absent">छुट्टी लगाएं (Absent)</string>
+
     <string name="remove_attendance">हाजिरी हटाएं</string>
-    <string name="are_you_sure_you_want_to_mark_yourself_a_msg">क्या आज एब्सेंट लगाना है?</string>
+
+    <string name="are_you_sure_you_want_to_mark_yourself_a_msg">क्या आप आज की छुट्टी दर्ज करना चाहते हैं?</string>
+
     <string name="select_role">रोल चुनें</string>
-    <string name="how_will_you_use_this_app">आप इस ऐप का इस्तेमाल किस लिए करेंगे?</string>
-    <string name="continue_action">आगे बढ़ें</string>
+    <string name="how_will_you_use_this_app">आप इस ऐप का इस्तेमाल कैसे करेंगे?</string>
+
+    <string name="continue_action">आगे बढ़ें</string>
+
     <string name="mark_attendance">हाजिरी लगाएं</string>
+
     <string name="daily_attendance_for_all_workers">सभी वर्करों की रोज की हाजिरी</string>
-    <string name="no_workers_found_add_workers_first">कोई वर्कर नहीं मिला, पहले वर्कर जोड़ें।</string>
-    <string name="tap_to_edit_attendance_or_add_noteadvanc_msg">हाजिरी एडिट करने या नोट/एडवांस जोड़ने के लिए टैप करें।</string>
-    <string name="advance_payment">एडवांस पैसे</string>
+
+    <string name="no_workers_found_add_workers_first">कोई वर्कर नहीं मिला। पहले वर्कर जोड़ें।</string>
+
+    <string name="tap_to_edit_attendance_or_add_noteadvanc_msg">टैप करके हाजिरी या एडवांस दर्ज करें।</string>
+
+    <string name="advance_payment">एडवांस पेमेंट</string>
+
     <string name="add_note">नोट लिखें...</string>
     <string name="remove">हटाएं</string>
-    <string name="manage_workers">वर्कर मैनेज करें</string>
+
+    <string name="manage_workers">वर्कर लिस्ट</string>
+
     <string name="search_by_name_phone_or_role">नाम या फोन नंबर से खोजें...</string>
-    <string name="add_worker">वर्कर जोड़ें</string>
-    <string name="phone">फोन</string>
+
+    <string name="add_worker">नया वर्कर जोड़ें</string>
+    <string name="phone">फोन नंबर</string>
     <string name="edit">एडिट</string>
     <string name="delete">डिलीट</string>
+
     <string name="delete_worker">वर्कर हटाएं</string>
-    <string name="are_you_sure_you_want_to_permanently_del_msg">क्या इस वर्कर को डिलीट करना है? यह रिकॉर्ड वापस नहीं आएगा।</string>
+
+    <string name="are_you_sure_you_want_to_permanently_del_msg">क्या आप सच में इस वर्कर को हटाना चाहते हैं? यह डेटा वापस नहीं आएगा।</string>
+
     <string name="scan_aadhaar_qr_code">आधार QR कोड स्कैन करें</string>
     <string name="full_name_1">पूरा नाम *</string>
-    <string name="enter_valid_10digit_mobile_number">सही 10-अंकों का मोबाइल नंबर डालें</string>
-    <string name="aadhaar_number_optional">आधार नंबर (जरूरी नहीं)</string>
-    <string name="aadhaar_must_be_exactly_12_digits">आधार नंबर पूरे 12 अंकों का होना चाहिए</string>
+
+    <string name="enter_valid_10digit_mobile_number">सही 10 अंकों का मोबाइल नंबर दर्ज करें</string>
+
+    <string name="aadhaar_number_optional">आधार नंबर (Optional)</string>
+
+    <string name="aadhaar_must_be_exactly_12_digits">आधार नंबर 12 अंकों का होना चाहिए</string>
+
     <string name="daily_wage_1">रोज की दिहाड़ी *</string>
+
     <string name="age">उम्र</string>
-    <string name="must_be_14">14 साल से ज्यादा उम्र होनी चाहिए</string>
+    <string name="must_be_14">14 साल से ज्यादा</string>
+
     <string name="custom_work_type">काम का प्रकार *</string>
 
-
     <string name="premium_choose_plan">अपना प्लान चुनें</string>
-    <string name="premium_restore_purchases">पुरानी खरीदारी रिस्टोर करें</string>
+    <string name="premium_restore_purchases">खरीदारी वापस लाएं (Restore)</string>
+
     <string name="premium_manage_subscription">सब्सक्रिप्शन मैनेज करें</string>
-    <string name="premium_plans_unavailable">प्लान अभी उपलब्ध नहीं हैं</string>
-    <string name="premium_retry">फिर कोशिश करें</string>
-    <string name="premium_save_30">33% बचत करें</string>
-    <string name="premium_active_subscription">प्रीमियम एक्टिव है</string>
-    <string name="premium_plan_label">प्लान: %1$s</string>
+
+    <string name="premium_plans_unavailable">अभी प्लान उपलब्ध नहीं हैं</string>
+    <string name="premium_retry">दोबारा कोशिश करें</string>
+    <string name="premium_save_30">33% बचाएं</string>
+
+    <string name="premium_active_subscription">चालू सब्सक्रिप्शन</string>
+
+    <string name="premium_plan_label">प्ला: %1$s</string>
     <string name="premium_go_premium">प्रीमियम लें</string>
-    <string name="premium_you_are_pro">आप प्रो यूजर हैं</string>
-    <string name="premium_unlock_potential">WorkDaily के सारे फीचर्स अनलॉक करें</string>
-    <string name="premium_enjoy_features">अनलिमिटेड फीचर्स का इस्तेमाल करें</string>
-    <string name="premium_secure_payment">100% सेफ पेमेंट</string>
-    <string name="premium_cancel_anytime">कभी भी कैंसल करें</string>
-    <string name="premium_google_play_secure">Google Play से सुरक्षित पेमेंट</string>
-    <string name="premium_monthly_plan">मंथली प्लान</string>
-    <string name="premium_yearly_plan">इयरली प्लान</string>
-    <string name="premium_lifetime_access">लाइफटाइम एक्सेस</string>
-    <string name="premium_billed_monthly">हर महीने चार्ज</string>
-    <string name="premium_billed_annually">हर साल चार्ज</string>
-    <string name="premium_pay_once">एक बार पे करें, हमेशा चलाएं</string>
-    <string name="premium_best_value">सबसे बेस्ट प्लान</string>
+
+    <string name="premium_you_are_pro">आप PRO यूजर हैं</string>
+    <string name="premium_unlock_potential">WorkDaily के सभी फीचर्स इस्तेमाल करें</string>
+
+    <string name="premium_enjoy_features">सभी अनलॉक्ड फीचर्स का फायदा उठाएं</string>
+
+    <string name="premium_secure_payment">सुरक्षित पेमेंट</string>
+    <string name="premium_cancel_anytime">कभी भी कैंसिल करें</string>
+
+    <string name="premium_google_play_secure">Google Play द्वारा सुरक्षित पेमेंट</string>
+
+    <string name="premium_monthly_plan">महीने का प्लान</string>
+
+    <string name="premium_yearly_plan">साल का प्लान</string>
+    <string name="premium_lifetime_access">लाइफटाइम प्लान</string>
+
+    <string name="premium_billed_monthly">हर महीने चार्ज होगा</string>
+
+    <string name="premium_billed_annually">हर साल चार्ज होगा</string>
+    <string name="premium_pay_once">एक बार दें, हमेशा चलाएं</string>
+
+    <string name="premium_best_value">सबसे बढ़िया</string>
     <string name="premium_one_time">वन-टाइम</string>
 
-
     <string name="premium_feature_title">प्रीमियम फीचर्स अनलॉक करें</string>
-    <string name="upgrade_to_premium">प्रीमियम लें</string>
-    <string name="buy_premium_btn">प्रीमियम लें</string>
-    <string name="upgrade_to_access_all">सभी फीचर्स इस्तेमाल करने के लिए अपग्रेड करें</string>
-    <string name="worker_limit_reached_title">वर्कर जोड़ने की लिमिट पूरी हुई</string>
-    <string name="worker_limit_reached_msg">फ्री प्लान में सिर्फ 5 वर्कर जोड़ सकते हैं। अनलिमिटेड वर्कर के लिए प्रीमियम लें।</string>
-    <string name="premium_lock_badge">प्रीमियम</string>
+
+    <string name="upgrade_to_premium">प्रीमियम खरीदें</string>
+    <string name="buy_premium_btn">प्रीमियम खरीदें</string>
+
+    <string name="upgrade_to_access_all">सभी खास फीचर्स इस्तेमाल करने के लिए अपग्रेड करें</string>
+
+    <string name="worker_limit_reached_title">वर्कर की लिमिट पूरी हो गई</string>
+
+    <string name="worker_limit_reached_msg">फ्री यूजर सिर्फ 5 वर्कर जोड़ सकते हैं। अनलिमिटेड वर्कर जोड़ने के लिए प्रीमियम लें।</string>
+
+    <string name="premium_lock_badge">PREMIUM</string>
     <string name="unlock_unlimited_workers">अनलिमिटेड वर्कर जोड़ें</string>
 
-
     <string name="holiday">छुट्टी</string>
-    <string name="leave">छुट्टी</string>
+    <string name="leave">लीव</string>
     <string name="overtime">ओवरटाइम</string>
     <string name="deduction">कटौती</string>
-    <string name="salary">कमाई</string>
-    <string name="net_salary">फाइनल हिसाब</string>
+
+    <string name="salary">दिहाड़ी</string>
+
+    <string name="net_salary">अंतिम सैलरी</string>
+
     <string name="working_days">काम के दिन</string>
-    <string name="search_records">रिकॉर्ड सर्च करें...</string>
+    <string name="search_records">खोजें...</string>
+
     <string name="no_records_found_dots">कोई रिकॉर्ड नहीं मिला।</string>
-    <string name="employment_summary">काम का समरी</string>
+
+    <string name="employment_summary">काम की समरी</string>
+
     <string name="employment_since">काम शुरू किया: %1$s</string>
+
     <string name="total_present">कुल प्रेजेंट</string>
     <string name="total_absent">कुल एब्सेंट</string>
     <string name="total_half_days">कुल हाफ डे</string>
-    <string name="financial_stats">कमाई का हिसाब</string>
-    <string name="joined_date_label">%1$s से जुड़े</string>
-    <string name="worked_ratio_label">इस महीने के %2$d दिनों में से %1$s दिन काम किया</string>
-    <string name="backup_and_restore">बैकअप और रिस्टोर</string>
-    <string name="backup_now">अभी बैकअप लें</string>
-    <string name="restore_backup">बैकअप रिस्टोर करें</string>
-    <string name="auto_backup_setting">ऐप बंद होने पर ऑटो बैकअप</string>
-    <string name="offline_local_backup_path">फोन में बैकअप फोल्डर</string>
-    <string name="backup_size">बैकअप साइज</string>
-    <string name="last_backup">आखिरी बैकअप</string>
-    <string name="backup_location">बैकअप फाइल लोकेशन</string>
-    <string name="manage">मैनेज करें</string>
-    <string name="share">शेयर करें</string>
-    <string name="information_support">जानकारी और सपोर्ट</string>
-    <string name="privacy_policy">प्राइवेसी पॉलिसी</string>
-    <string name="stored_safely_offline">फोन में 100% सेफ</string>
-    <string name="terms_conditions">नियम और शर्तें</string>
-    <string name="rules_guidelines">ऐप इस्तेमाल करने के नियम</string>
-    <string name="reach_out_support">सपोर्ट के लिए मैसेज करें</string>
-    <string name="pre_delete_reminder">ऐप डिलीट करने से पहले</string>
-    <string name="pre_delete_msg">हाजिरी रिकॉर्ड सुरक्षित रखने के लिए ऐप हटाने से पहले बैकअप ले लें।</string>
-    <string name="creating_backup">बैकअप बन रहा है...</string>
-    <string name="backup_success_title">बैकअप बन गया!</string>
-    <string name="backup_success_details">बैकअप की डिटेल:</string>
-    <string name="detail_size">साइज: %1$s MB</string>
-    <string name="detail_time">समय: %1$s</string>
-    <string name="detail_location">फाइल लोकेशन: %1$s</string>
-    <string name="done">ओके</string>
-    <string name="backup_logout">बैकअप लें और लॉग आउट करें</string>
-    <string name="logout_without_backup">बिना बैकअप के लॉग आउट करें</string>
-    <string name="close">बंद करें</string>
-    <string name="edit_profile">प्रोफाइल एडिट करें</string>
-    <string name="save_changes">सेव करें</string>
-    <string name="all_time_passbook_title">ऑल टाइम पासबुक</string>
-    <string name="payout_widget_title">कुल हिसाब</string>
-    <string name="payout_increase_sub">पिछले महीने से 12% ज्यादा</string>
-    <string name="payout_manage_sub">आसानी से हिसाब मैनेज करें</string>
-    <string name="stats_present_label">प्रेजेंट (%1$d)</string>
-    <string name="stats_half_label">हाफ डे (%1$d)</string>
-    <string name="stats_absent_label">एब्सेंट (%1$d)</string>
-    <string name="copy_error_trace">एरर कोड कॉपी करें</string>
-    <string name="restart_app">ऐप रीस्टार्ट करें</string>
-    <string name="create_offline_workspace">ऑफलाइन वर्कस्पेस बनाएं</string>
-    <string name="private_offline_footer">100% सेफ और ऑफलाइन हाजिरी</string>
-    <string name="already_have_backup">क्या आपके पास बैकअप फाइल है?</string>
-    <string name="prev_backup_preview">बैकअप फाइल डिटेल</string>
-    <string name="backup_parsed_msg">बैकअप फाइल मिली, डिटेल देखें:</string>
-    <string name="device_info_line">फोन मॉडल: %1$s</string>
-    <string name="app_version_line">ऐप वर्जन: %1$s</string>
-    <string name="records_line">कुल रिकॉर्ड: %1$s</string>
-    <string name="restore_now">अभी रिस्टोर करें</string>
-    <string name="restoring_backup">डेटा रिस्टोर हो रहा है...</string>
-    <string name="restore_failed">रिस्टोर नहीं हो पाया</string>
-    <string name="restore_success">डेटा रिस्टोर हो गया!</string>
-    <string name="backup_found_dialog">बैकअप फाइल मिली</string>
-    <string name="backup_found_msg">पुराना बैकअप मिला है, क्या रिस्टोर करना है?</string>
-    <string name="skip">स्किप करें</string>
-    <string name="payouts_widget_title">कुल पेमेंट</string>
-    <string name="ready_to_export">PDF डाउनलोड के लिए तैयार</string>
-    <string name="download_pdf">PDF डाउनलोड करें</string>
-    <string name="all_records_drilldown">कुल रिकॉर्ड</string>
-    <string name="all_amount_drilldown">कुल रुपये</string>
-    <string name="all_ot_drilldown">ओवरटाइम: %1$s घंटे (₹%2$s)</string>
-    <string name="app_language">ऐप की भाषा</string>
-    <string name="apply_settings">सेटिंग्स सेव करें</string>
 
+    <string name="financial_stats">पैसों का हिसाब</string>
+
+    <string name="joined_date_label">जुड़े %1$s</string>
+    <string name="worked_ratio_label">इस महीने के %2$d दिनों में से %1$s दिन काम किया</string>
+
+    <string name="backup_and_restore">बैकअप और रिस्टोर</string>
+    <string name="backup_now">बैकअप लें</string>
+
+    <string name="restore_backup">बैकअप रिस्टोर करें</string>
+
+    <string name="auto_backup_setting">ऐप बंद करने पर ऑटो-बैकअप</string>
+
+    <string name="offline_local_backup_path">बैकअप की जगह</string>
+
+    <string name="backup_size">बैकअप साइज</string>
+
+    <string name="last_backup">आखरी बैकअप</string>
+
+    <string name="backup_location">बैकअप फोल्डर</string>
+
+    <string name="manage">मैनेज</string>
+    <string name="share">शेयर करें</string>
+
+    <string name="information_support">जानकारी और मदद</string>
+
+    <string name="privacy_policy">प्राइवेसी पॉलिसी</string>
+
+    <string name="stored_safely_offline">फोन में सुरक्षित सेव्ड</string>
+
+    <string name="terms_conditions">नियम और शर्तें (Terms)</string>
+
+    <string name="rules_guidelines">ऐप इस्तेमाल करने के नियम</string>
+
+    <string name="reach_out_support">मदद के लिए संपर्क करें</string>
+
+    <string name="pre_delete_reminder">बैकअप ध्यान रखें</string>
+
+    <string name="pre_delete_msg">ऐप हटाने से पहले बैकअप ले लें ताकि आपका डेटा गायब न हो।</string>
+
+    <string name="creating_backup">बैकअप बन रहा है...</string>
+
+    <string name="backup_success_title">बैकअप बन गया!</string>
+
+    <string name="backup_success_details">बैकअप की जानकारी:</string>
+
+    <string name="detail_size">साइज: %1$s MB</string>
+    <string name="detail_time">बनाया गया: %1$s</string>
+
+    <string name="detail_location">जगह: %1$s</string>
+
+    <string name="done">हो गया</string>
+
+    <string name="backup_logout">बैकअप लेकर लॉग आउट करें</string>
+
+    <string name="logout_without_backup">बिना बैकअप लॉग आउट करें</string>
+
+    <string name="close">बंद करें</string>
+
+    <string name="edit_profile">प्रोफाइल एडिट करें</string>
+
+    <string name="save_changes">सेव करें</string>
+
+    <string name="all_time_passbook_title">ऑल टाइम पासबुक</string>
+
+    <string name="payout_widget_title">कुल भुगतान</string>
+    <string name="payout_increase_sub">पिछले महीने से 12% ज्यादा</string>
+
+    <string name="payout_manage_sub">पैसों का हिसाब आसानी से रखें</string>
+
+    <string name="stats_present_label">प्रेजेंट (%1$d)</string>
+
+    <string name="stats_half_label">हाफ डे (%1$d)</string>
+
+    <string name="stats_absent_label">एब्सेंट (%1$d)</string>
+
+    <string name="copy_error_trace">एरर कोड कॉपी करें</string>
+
+    <string name="restart_app">ऐप दोबारा चालू करें</string>
+
+    <string name="create_offline_workspace">ऑफलाइन खाता चालू करें</string>
+
+    <string name="private_offline_footer">100% प्राइवेट और ऑफलाइन हाजिरी</string>
+
+    <string name="already_have_backup">पुराना बैकअप है?</string>
+
+    <string name="prev_backup_preview">बैकअप फाइल की जानकारी</string>
+
+    <string name="backup_parsed_msg">बैकअप फाइल मिल गई है:</string>
+
+    <string name="device_info_line">फोन: %1$s</string>
+    <string name="app_version_line">ऐप वर्जन: %1$s</string>
+
+    <string name="records_line">कुल रिकॉर्ड: %1$s</string>
+
+    <string name="restore_now">अभी रिस्टोर करें</string>
+
+    <string name="restoring_backup">डेटा रिस्टोर हो रहा है...</string>
+
+    <string name="restore_failed">रिस्टोर नहीं हो पाया</string>
+
+    <string name="restore_success">डेटा वापस आ गया!</string>
+
+    <string name="backup_found_dialog">पुराना बैकअप मिला</string>
+
+    <string name="backup_found_msg">आपके पास पुराना बैकअप मौजूद है।</string>
+
+    <string name="skip">छोड़ें</string>
+
+    <string name="payouts_widget_title">कुल पेमेंट</string>
+
+    <string name="ready_to_export">डाउनलोड के लिए तैयार</string>
+
+    <string name="download_pdf">PDF डाउनलोड</string>
+
+    <string name="all_records_drilldown">कुल रिकॉर्ड</string>
+
+    <string name="all_amount_drilldown">कुल पैसे</string>
+
+    <string name="all_ot_drilldown">ओवरटाइम: %1$s घंटे (₹%2$s)</string>
+
+    <string name="app_language">ऐप की भाषा</string>
+
+    <string name="apply_settings">सेटिंग्स सेव करें</string>
 
     <string name="pdf_daily_wage">रोज की दिहाड़ी</string>
     <string name="pdf_total_days">कुल दिन</string>
@@ -302,304 +478,509 @@
     <string name="pdf_gross_total">कुल कमाई</string>
     <string name="pdf_net_payable">फाइनल हिसाब</string>
     <string name="pdf_col_date">तारीख</string>
+
     <string name="pdf_col_status">हाजिरी स्टेटस</string>
+
     <string name="pdf_col_wage">दिहाड़ी</string>
+
     <string name="pdf_col_overtime">ओवरटाइम</string>
+
     <string name="pdf_col_advance">एडवांस</string>
+
     <string name="pdf_col_balance">बकाया</string>
+
     <string name="pdf_col_notes">नोट</string>
+
     <string name="pdf_summary_title">कमाई और हिसाब का समरी</string>
+
     <string name="pdf_ledger_title">हाजिरी और पैसों का पूरा बहीखाता</string>
+
     <string name="pdf_generated_by">WorkDaily द्वारा जनरेट किया गया | डिजिटल पासबुक</string>
+
     <string name="pdf_month_label">महीना: %1$s</string>
+
     <string name="pdf_subtitle_passbook">डिजिटल पासबुक</string>
+
     <string name="pdf_rs">₹</string>
     <string name="pdf_hrs">घंटे</string>
+
     <string name="pdf_present_half_value">%1$d प्रेजेंट / %2$d हाफ डे</string>
+
     <string name="show_more">और देखें</string>
     <string name="show_less">कम दिखाएं</string>
 
-
     <string name="pdf_all_time_passbook">ऑल टाइम पासबुक</string>
     <string name="pdf_total_records">कुल रिकॉर्ड: %1$d</string>
+
     <string name="pdf_period">तारीख: %1$s से %2$s</string>
+
     <string name="pdf_overall_summary">कुल हिसाब समरी</string>
+
     <string name="pdf_earnings">कुल कमाई</string>
+
     <string name="pdf_salary">कुल दिहाड़ी</string>
+
     <string name="pdf_overtime">कुल overtime</string>
+
     <string name="pdf_advance">कुल एडवांस</string>
+
     <string name="pdf_present">प्रेजेंट दिन</string>
+
     <string name="pdf_half">हाफ डे दिन</string>
+
     <string name="pdf_absent">एब्सेंट दिन</string>
+
     <string name="pdf_working_days">कुल काम के दिन</string>
+
     <string name="pdf_page">पेज %1$d</string>
+
     <string name="pdf_year">साल: %1$s</string>
+
     <string name="pdf_month">महीना: %1$s</string>
+
     <string name="pdf_export_preparing">PDF फाइल बन रही है...</string>
+
     <string name="pdf_export_collecting">रिकॉर्ड जुटाए जा रहे हैं...</string>
+
     <string name="pdf_export_generating">PDF फाइल जनरेट हो रही है...</string>
+
     <string name="pdf_export_finalizing">बस हो गया...</string>
+
     <string name="pdf_export_success">PDF तैयार है!</string>
+
     <string name="pdf_export_error">दिक्कत आई: %1$s</string>
+
     <string name="pdf_digital_attendance_passbook">डिजिटल हाजिरी और पासबुक</string>
+
     <string name="pdf_generated_from_offline">WorkDaily से जनरेट किया गया</string>
-<string name="htu_getting_started_title">1. शुरुआत कैसे करें</string>
-    <string name="htu_getting_started_desc">ऐप खोलें, अपनी प्रोफाइल बनाएं और रोज की दिहाड़ी व काम के घंटे सेट करें।</string>
-    <string name="htu_attendance_title">2. हाजिरी (Attendance)</string>
-    <string name="htu_attendance_desc">हर दिन अपनी हाजिरी प्रेजेंट, हाफ डे या एब्सेंट मार्क करें। आप पुरानी तारीखों का रिकॉर्ड भी बदल सकते हैं।</string>
-    <string name="htu_earnings_title">3. कमाई (Earnings)</string>
-    <string name="htu_earnings_desc">आपकी रोज की दिहाड़ी, काम के दिन, ओवरटाइम और एडवांस पैसे के हिसाब से कुल कमाई अपने आप जुड़ जाती है।</string>
-    <string name="htu_calendar_title">4. कैलेंडर (Calendar)</string>
-    <string name="htu_calendar_desc">कैलेंडर में किसी भी तारीख को चुनकर अपनी हाजिरी, एडवांस और नोट चेक या चेंज कर सकते हैं।</string>
-    <string name="htu_passbook_title">5. पासबुक (Passbook)</string>
-    <string name="htu_passbook_desc">अपनी रोज की कमाई, ओवरटाइम, लिए गए एडवांस और नोट्स का पूरा खाता देखें। महीने का फाइनल हिसाब चेक करें।</string>
+
+    <string name="htu_getting_started_title">1. शुरुआत कैसे करें</string>
+    <string name="htu_getting_started_desc">ऐप खोलें, अपनी प्रोफाइल सेट करें और अपनी रोज की दिहाड़ी दर्ज करें।</string>
+
+    <string name="htu_attendance_title">2. हाजिरी लगाना</string>
+
+    <string name="htu_attendance_desc">रोज अपनी हाजिरी प्रेजेंट, हाफ डे या एब्सेंट दर्ज करें।</string>
+
+    <string name="htu_earnings_title">3. कमाई का हिसाब</string>
+
+    <string name="htu_earnings_desc">आपकी दिहाड़ी, ओवरटाइम और हाजिरी के हिसाब से आपकी कुल कमाई अपने आप जुड़ जाएगी।</string>
+
+    <string name="htu_calendar_title">4. कैलेंडर</string>
+
+    <string name="htu_calendar_desc">कैलेंडर खोलकर किसी भी तारीख का हिसाब देखें और जरूरत पड़ने पर बदलाव करें।</string>
+
+    <string name="htu_passbook_title">5. पासबुक</string>
+
+    <string name="htu_passbook_desc">अपनी रोज की कमाई, एडवांस और नोट्स का पूरा बहीखाता देखें।</string>
+
     <string name="htu_all_time_passbook_title">6. ऑल टाइम पासबुक</string>
-    <string name="htu_all_time_passbook_desc">साल और महीने के हिसाब से अपना पुराना पूरा रिकॉर्ड देखें।</string>
-    <string name="htu_statistics_title">7. स्टैटिस्टिक्स (Stats)</string>
-    <string name="htu_statistics_desc">ग्राफ और चार्ट में देखें कि इस महीने या पूरे साल में आपने कितनी कमाई की और कितने दिन काम किया।</string>
+
+    <string name="htu_all_time_passbook_desc">अपने सभी महीनों का पुराना रिकॉर्ड एक जगह देखें।</string>
+
+    <string name="htu_statistics_title">7. आंकड़े (Statistics)</string>
+
+    <string name="htu_statistics_desc">अपनी कुल कमाई और काम के दिनों का चार्ट देखें।</string>
+
     <string name="htu_backup_restore_title">8. बैकअप और रिस्टोर</string>
-    <string name="htu_backup_restore_desc">अपने डेटा का बैकअप फाइल बनाकर रखें ताकि फोन बदलने या रीसेट करने पर रिकॉर्ड वापस मिल सके।</string>
+
+    <string name="htu_backup_restore_desc">अपने डेटा को सुरक्षित रखने के लिए बैकअप लें और नए फोन में रिस्टोर करें।</string>
+
     <string name="htu_pdf_export_title">9. PDF एक्सपोर्ट</string>
+
     <string name="htu_pdf_export_desc">अपने महीने का या ऑल टाइम पासबुक का PDF बनाएं और व्हाट्सएप पर आसानी से शेयर करें।</string>
-    <string name="htu_language_title">10. भाषा (Language)</string>
-    <string name="htu_language_desc">हिंदी और इंग्लिश में से अपनी पसंद की भाषा चुनें।</string>
+
+    <string name="htu_language_title">10. भाषा</string>
+
+    <string name="htu_language_desc">हिंदी या अंग्रेजी भाषा कभी भी बदलें।</string>
+
     <string name="htu_settings_title">11. सेटिंग्स</string>
-    <string name="htu_settings_desc">अपनी प्रोफाइल, दिहाड़ी, रिमाइंडर और ऐप सेटिंग्स चेंज करें।</string>
+
+    <string name="htu_settings_desc">अपनी प्रोफाइल और ऐप की सेटिंग्स बदलें।</string>
+
     <!-- Mandatory Login Consent & Legal Consent Strings -->
-    <string name="legal_consent_full">I confirm that I have read and agree to WorkDaily Terms of Use and Privacy Policy.</string>
-    <string name="terms_of_use_clickable">Terms of Use</string>
-    <string name="privacy_policy_clickable">Privacy Policy</string>
+    <string name="legal_consent_full">मैं पुष्टि करता हूं कि मैंने WorkDaily के नियमों और प्राइवेसी पॉलिसी को पढ़ लिया है।</string>
+    <string name="terms_of_use_clickable">उपयोग के नियम</string>
+    <string name="privacy_policy_clickable">प्राइवेसी पॉलिसी</string>
 
     <!-- Support & Contact Actions Strings -->
-    <string name="copy_email">कॉपी ईमेल</string>
+    <string name="copy_email">ईमेल कॉपी करें</string>
     <string name="email_copied">ईमेल कॉपी हो गया</string>
-    <string name="contact_support">सपोर्ट से संपर्क करें</string>
-    <string name="support_email_subject">WorkDaily Support Request</string>
+    <string name="contact_support">सपोर्ट से बात करें</string>
+    <string name="support_email_subject">WorkDaily सपोर्ट रिक्वेस्ट</string>
     <string name="support_email_address">workdaily.synfusion@gmail.com</string>
-    <string name="no_email_app_found">कोई ईमेल ऐप नहीं मिला। सपोर्ट ईमेल क्लिपबोर्ड पर कॉपी कर दिया गया है।</string>
-    <string name="support_section_title">सवाल, समस्या या सपोर्ट</string>
-    <string name="support_section_desc">अगर आपको WorkDaily में कोई समस्या आ रही है, लगता है कि कोई फीचर सही से काम नहीं कर रहा, या इन नियमों और शर्तों या प्राइवेसी पॉलिसी के बारे में कोई सवाल है, तो आप WorkDaily सपोर्ट टीम से संपर्क कर सकते हैं।\n\nईमेल:\nworkdaily.synfusion@gmail.com\n\nसपोर्ट से संपर्क करते समय अपनी समस्या का स्पष्ट रूप से वर्णन करें और समस्या को समझने व हल करने के लिए आवश्यक जानकारी प्रदान करें।\n\nकृपया पासवर्ड, लॉगइन क्रेडेंशियल, पेमेंट कार्ड की जानकारी या कोई भी अन्य अनावश्यक संवेदनशील जानकारी न भेजें।</string>
+    <string name="no_email_app_found">कोई ईमेल ऐप नहीं मिला। ईमेल कॉपी हो गया है।</string>
+    <string name="support_section_title">सवाल, शिकायत या मदद</string>
+
+    <string name="support_section_desc">अगर आपको वर्कडेली ऐप में कोई दिक्कत आ रही है या कोई सवाल है, तो आप हमारी सपोर्ट टीम से ईमेल पर संपर्क कर सकते हैं:\n\nईमेल:\nworkdaily.synfusion@gmail.com\n\nअपनी समस्या को साफ-साफ लिखें ताकि हम आपकी जल्दी मदद कर सकें।\n\nकृपया अपना पासवर्ड, पिन या बैंक की जानकारी शेयर न करें।</string>
+
     <string name="legal_footer_title">WorkDaily</string>
     <string name="last_updated_date">अंतिम अपडेट: 11 सितंबर 2026</string>
 
     <!-- Privacy Policy Strings -->
-    <string name="privacy_intro">WorkDaily आपकी प्राइवेसी का पूरा ध्यान रखता है। यह प्राइवेसी पॉलिसी बताती है कि जब आप वर्कडेली एंड्रॉइड ऐप का उपयोग करते हैं, तो आपकी लोकल जानकारी, नोटिफिकेशन, एक्सपोर्ट फाइल्स और सेटिंग्स कैसे काम करती हैं।</string>
-    <string name="privacy_local_data_title">1. फोन में सेफ डेटा स्टोरेज</string>
-    <string name="privacy_local_data_desc">आपके द्वारा दर्ज की गई सभी जानकारी—जैसे प्रोफाइल नाम, फोटो, मोबाइल नंबर, सेट की गई दिहाड़ी, हाजिरी, ओवर-टाइम, एडवांस, नोट्स और सेटिंग्स केवल आपके फोन के इंटरनल डेटाबेस (Room SQLite, DataStore) में सेफ रहती हैं। WorkDaily में कोई ऑनलाइन सर्वर, यूजर अकाउंट या ऑटोमैटिक डेटा ट्रांसफर नहीं होता है।</string>
-    <string name="privacy_notifications_title">2. लोकल नोटिफिकेशन और परमिशन</string>
-    <string name="privacy_notifications_desc">WorkDaily आपके फोन के अलार्म मैनेजर और वर्क मैनेजर से लोकल रिमाइंडर और हाजिरी/कमाई की समरी भेजता है। ये सभी नोटिफिकेशन 100% आपके फोन के अंदर बनते हैं। आप जब चाहें एंड्रॉइड सेटिंग्स से नोटिफिकेशन बंद या चालू कर सकते हैं।</string>
-    <string name="privacy_exports_title">3. PDF रिपोर्ट और बैकअप फाइल्स</string>
-    <string name="privacy_exports_desc">पासबुक PDF रिपोर्ट और बैकअप ZIP फाइल आपके फोन में ही बनती हैं। जब आप कोई PDF या बैकअप फाइल शेयर करते हैं, तो शेयरिंग का पूरा कंट्रोल आपके पास होता है। WorkDaily खुद से किसी सर्वर पर फाइल अपलोड नहीं करता है।</string>
-    <string name="privacy_sharing_title">4. दूसरी ऐप्स और नेटवर्क एक्टिविटी</string>
-    <string name="privacy_sharing_desc">WorkDaily में कोई थर्ड-पार्टी एनालिटिक्स, विज्ञापन (Ads), क्रैश रिपोर्टिंग SDK या ट्रैकिंग फ्रेमवर्क मौजूद नहीं है। इंटरनेट का उपयोग केवल तब होता है जब आप खुद कोई एक्सटर्नल लिंक या ईमेल सपोर्ट बटन दबाते हैं।</string>
-    <string name="privacy_deletion_title">5. डेटा डिलीट और यूजर कंट्रोल</string>
-    <string name="privacy_deletion_desc">आपका डेटा तब तक फोन में रहता है जब तक आप खुद रिकॉर्ड डिलीट नहीं करते या ऐप अनइन्स्टॉल नहीं करते। ऐप अनइन्स्टॉल करने पर सारा लोकल डेटाबेस डिलीट हो जाता है। आपके द्वारा फोन में सेव की गई बैकअप ZIP फाइलें आपको खुद मैनेज या डिलीट करनी होती हैं।</string>
+    <string name="privacy_intro">WorkDaily आपकी प्राइवेसी का पूरा ध्यान रखता है। आपका सारा डेटा आपके फोन में ही सुरक्षित रहता है।</string>
+
+    <string name="privacy_local_data_title">1. फोन में डेटा सुरक्षा</string>
+
+    <string name="privacy_local_data_desc">आपका नाम, फोन नंबर, दिहाड़ी, हाजिरी और एडवांस का सारा हिसाब सिर्फ आपके फोन में ही सेव होता है। वर्कडेली किसी सर्वर पर आपका डेटा नहीं भेजता।</string>
+
+    <string name="privacy_notifications_title">2. नोटिफिकेशन और परमिशन</string>
+
+    <string name="privacy_notifications_desc">ऐप आपको हाजिरी याद दिलाने के लिए लोकल नोटिफिकेशन भेजता है। आप जब चाहें सेटिंग्स से इसे बंद कर सकते हैं।</string>
+
+    <string name="privacy_exports_title">3. PDF और बैकअप फाइलें</string>
+
+    <string name="privacy_exports_desc">PDF पासबुक और बैकअप फाइल्स सिर्फ आपके फोन में बनती हैं। आप जब व्हाट्सएप या कहीं और शेयर करते हैं, तभी डेटा बाहर जाता है।</string>
+
+    <string name="privacy_sharing_title">4. कोई बाहरी ट्रैकिंग नहीं</string>
+
+    <string name="privacy_sharing_desc">वर्कडेली में कोई विज्ञापन या ट्रैकिंग कोड नहीं है।</string>
+
+    <string name="privacy_deletion_title">5. डेटा डिलीट करना</string>
+
+    <string name="privacy_deletion_desc">ऐप अनइन्स्टॉल करने पर आपका सारा डेटा अपने आप डिलीट हो जाता है।</string>
+
     <string name="privacy_children_title">6. बच्चों की प्राइवेसी</string>
-    <string name="privacy_children_desc">WorkDaily कामगारों, कर्मचारियों, ठेकेदारों और सुपरवाइजरों के लिए दैनिक दिहाड़ी का हिसाब रखने के लिए बनाया गया है। ऐप 13 वर्ष से कम उम्र के बच्चों से कोई व्यक्तिगत जानकारी एकत्र नहीं करता है।</string>
-    <string name="privacy_contact_title">7. सपोर्ट और संपर्क करें</string>
-    <string name="privacy_contact_desc">प्राइवेसी से जुड़ा कोई सवाल या सुझाव हो तो वर्कडेली टीम से workdaily.synfusion@gmail.com पर संपर्क करें।</string>
+
+    <string name="privacy_children_desc">यह ऐप काम करने वाले वयस्कों के लिए बनाया गया है।</string>
+
+    <string name="privacy_contact_title">7. सपोर्ट संपर्क</string>
+
+    <string name="privacy_contact_desc">किसी भी सवाल के लिए workdaily.synfusion@gmail.com पर ईमेल करें।</string>
 
     <!-- Terms of Use Strings -->
-    <string name="terms_acceptance_title">1. नियमों की मंजूरी</string>
-    <string name="terms_acceptance_desc">WorkDaily ऐप का उपयोग करने या लॉगइन करने पर आप इन सेवा शर्तों (Terms of Use) और प्राइवेसी पॉलिसी को स्वीकार करते हैं। यदि आप इन शर्तों से सहमत नहीं हैं, तो कृपया ऐप का उपयोग न करें।</string>
-    <string name="terms_use_title">2. ऐप का उद्देश्य और दायरा</string>
-    <string name="terms_use_desc">WorkDaily आपकी रोज की हाजिरी, काम के दिन, दिहाड़ी, ओवर-टाइम, एडवांस, नोट्स और कमाई के रिकॉर्ड का हिसाब रखने के लिए एक पर्सनल रिकॉर्ड-कीपिंग टूल है। WorkDaily केवल एक सॉफ्टवेयर टूल है और यह कोई बैंक, वित्तीय संस्थान, नियोक्ता, पेरोल प्रोसेसर, टैक्स एडवाइजर, लीगल सर्विस या सरकारी एजेंसी नहीं है।</string>
-    <string name="terms_responsibilities_title">3. आपकी जिम्मेदारी और सही रिकॉर्ड की चेतावनी</string>
-    <string name="terms_responsibilities_desc">ऐप में दर्ज की गई दिहाड़ी, हाजिरी, ओवर-टाइम, एडवांस और नोट्स की जानकारी सही दर्ज करने की पूरी जिम्मेदारी आपकी है। WorkDaily यूजर द्वारा दर्ज की गई जानकारी की जांच नहीं करता है।\n\nसत्यापन चेतावनी: किसी भी भुगतान, लेन-देन, रोजगार दावे, टैक्स या कानूनी उद्देश्य के लिए हिसाब का उपयोग करने से पहले यूजर को सभी रिकॉर्ड्स और जोड़-घटाव की खुद जांच कर लेनी चाहिए।</string>
-    <string name="terms_financial_title">4. गलत डेटा और रिकॉर्ड डिस्क्लेमर</string>
-    <string name="terms_financial_desc">कानून द्वारा दी गई अधिकतम सीमा तक, गलत, अधूरे या पुराने डेटा दर्ज करने, गलत गणना समझने, या रिकॉर्ड्स का सत्यापन किए बिना उनका उपयोग करने से होने वाले किसी भी नुकसान या विवाद के लिए WorkDaily और इसके डेवलपर जिम्मेदार नहीं होंगे।</string>
-    <string name="terms_notifications_title">5. ऐप उपलब्धता और गणना डिस्क्लेमर</string>
-    <string name="terms_notifications_desc">WorkDaily एक सॉफ्टवेयर टूल के रूप में प्रदान किया जाता है। हालांकि सटीक गणितीय गणनाएं सुनिश्चित करने के प्रयास किए गए हैं, फिर भी किसी सॉफ्टवेयर की 100% त्रुटिहीन संचालन की गारंटी नहीं दी जा सकती। महत्वपूर्ण फैसलों से पहले हिसाब को स्वयं जांच लें।</string>
-    <string name="terms_backup_title">6. ऑफ-लाइन स्टोरेज और बैकअप जिम्मेदारी</string>
-    <string name="terms_backup_desc">सब डेटा केवल आपके फोन में सेफ रहता है। फोन खोने, खराब होने या ऐप डिलीट होने पर डेवलपर के पास कोई क्लाउड बैकअप नहीं होता। इसलिए समय-समय पर ZIP बैकअप फाइल बनाकर सुरक्षित रखना यूजर की जिम्मेदारी है।</string>
-    <string name="terms_branding_title">7. बौद्धिक संपदा और अधिकार</string>
-    <string name="terms_branding_desc">WorkDaily और उससे जुड़े सभी अधिकार, कोड, डिजाइन, ट्रेडमार्क और ब्रांड एसेट्स WorkDaily और इसके डेवलपर के पास सुरक्षित हैं।</string>
-    <string name="terms_contact_title">8. सपोर्ट और संपर्क</string>
-    <string name="terms_contact_desc">इन सेवा शर्तों से जुड़े किसी भी सवाल या सहायता के लिए workdaily.synfusion@gmail.com पर संपर्क करें।</string>
-<string name="how_to_use">इस्तेमाल कैसे करें</string>
+    <string name="terms_acceptance_title">1. नियमों की स्वीकृति</string>
+
+    <string name="terms_acceptance_desc">ऐप का इस्तेमाल करके आप इन नियमों को स्वीकार करते हैं।</string>
+
+    <string name="terms_use_title">2. ऐप का उद्देश्य</string>
+
+    <string name="terms_use_desc">वर्कडेली आपकी रोज की हाजिरी और पैसों का हिसाब रखने का एक आसान टूल है।</string>
+
+    <string name="terms_responsibilities_title">3. डेटा की जिम्मेदारी</string>
+
+    <string name="terms_responsibilities_desc">आप जो भी हाजिरी या रुपये दर्ज करते हैं, उसकी सही जानकारी की जिम्मेदारी आपकी अपनी है।</string>
+
+    <string name="terms_financial_title">4. गलत एंट्री की जिम्मेदारी</string>
+
+    <string name="terms_financial_desc">गलत डेटा दर्ज करने से होने वाले नुकसान के लिए ऐप जिम्मेदार नहीं होगा।</string>
+
+    <string name="terms_notifications_title">5. कैलकुलेशन की जांच</string>
+
+    <string name="terms_notifications_desc">पैसों का बड़ा हिसाब-किताब करने से पहले खुद भी एक बार जांच लें।</string>
+
+    <string name="terms_backup_title">6. बैकअप रखना</string>
+
+    <string name="terms_backup_desc">अपने डेटा को सुरक्षित रखने के लिए समय-समय पर बैकअप लेते रहें।</string>
+
+    <string name="terms_branding_title">7. अधिकार</string>
+
+    <string name="terms_branding_desc">WorkDaily नाम और डिजाइन के सभी अधिकार सुरक्षित हैं।</string>
+
+    <string name="terms_contact_title">8. संपर्क करें</string>
+
+    <string name="terms_contact_desc">सपोर्ट ईमेल: workdaily.synfusion@gmail.com</string>
+
+    <string name="how_to_use">इस्तेमाल कैसे करें</string>
     <string name="error_opening_link">लिंक खोलने के लिए कोई ऐप नहीं मिला</string>
-    <string name="error_generic_link">लिंक नहीं खुल पा रहा है</string>
+    <string name="error_generic_link">लिंक खोलने में एरर</string>
     <string name="error_no_email_app">कोई ईमेल ऐप नहीं मिला</string>
-    <string name="error_generic_email">ईमेल खोलने में दिक्कत आई</string>
+    <string name="error_generic_email">ईमेल खोलने में एरर</string>
 
+    <!-- Notification Settings Strings -->
+    <string name="notification_settings">नोटिफिकेशन सेटिंग्स</string>
 
-    <string name="notification_settings">नोटिफिकेशन सेटिंग</string>
+    <string name="notif_permission_required">नोटिफिकेशन परमिशन चाहिए</string>
 
-    <string name="notif_permission_required">नोटिफिकेशन की परमिशन चाहिए</string>
-    <string name="notif_permission_desc">WorkDaily को रिमाइंडर भेजने के लिए नोटिफिकेशन परमिशन दें।</string>
-    <string name="allow_notifications">परमिशन दें</string>
+    <string name="notif_permission_desc">ऐप को नोटिफिकेशन भेजने की अनुमति दें।</string>
+
+    <string name="allow_notifications">अनुमति दें</string>
+
     <string name="notif_disabled">नोटिफिकेशन बंद हैं</string>
-    <string name="notif_disabled_desc">नोटिफिकेशन चालू करने के लिए फोन की सेटिंग में जाएं।</string>
-    <string name="open_notif_settings">नोटिफिकेशन सेटिंग खोलें</string>
+
+    <string name="notif_disabled_desc">नोटिफिकेशन पाने के लिए सेटिंग्स में जाकर चालू करें।</string>
+
+    <string name="open_notif_settings">सेटिंग्स खोलें</string>
+
     <string name="notif_channel_disabled">नोटिफिकेशन चैनल बंद है</string>
-    <string name="notif_channel_disabled_desc">नोटिफिकेशन चैनल बंद है, इसे सेटिंग में चालू करें।</string>
+
+    <string name="notif_channel_disabled_desc">नोटिफिकेशन चैनल बंद है। कृपया सेटिंग्स से चालू करें।</string>
+
     <string name="notif_system_status">नोटिफिकेशन सिस्टम</string>
-    <string name="notif_status_enabled">चालू</string>
+
+    <string name="notif_status_enabled">चालू है</string>
+
     <string name="notif_status_permission_required">परमिशन चाहिए</string>
-    <string name="notif_status_disabled">बंद</string>
+
+    <string name="notif_status_disabled">बंद है</string>
+
     <string name="dev_test">डेवलपर टेस्ट</string>
-    <string name="preview_notification">नोटिफिकेशन प्रीव्यू</string>
-    <string name="run_diagnostics">चेक चलाएं</string>
-    <string name="test_notif_success">टेस्ट नोटिफिकेशन भेज दिया गया!</string>
-    <string name="notif_sent_successfully">टेस्ट नोटिफिकेशन भेज दिया गया!</string>
 
-    <string name="login_notif_desc">हाजिरी रिमाइंडर और जरूरी अपडेट पाने के लिए नोटिफिकेशन ऑन करें।</string>
-    <string name="continue_word">आगे बढ़ें</string>
+    <string name="preview_notification">नोटिफिकेशन देखें</string>
 
+    <string name="run_diagnostics">जांच करें</string>
 
+    <string name="test_notif_success">टेस्ट नोटिफिकेशन भेजा गया।</string>
+
+    <string name="notif_sent_successfully">नोटिफिकेशन सफलता से भेजा गया।</string>
+
+    <string name="login_notif_desc">हाजिरी याद दिलाने और जरूरी अपडेट के लिए नोटिफिकेशन चालू रखें।</string>
+
+    <string name="continue_word">आगे बढ़ें</string>
+
+    <!-- Stay Connected / WhatsApp follow card -->
     <string name="stay_connected">जुड़े रहें</string>
     <string name="whatsapp_channel">व्हाट्सएप चैनल</string>
-    <string name="follow_workdaily_desc">नये अपडेट के लिए WorkDaily फॉलो करें</string>
+
+    <string name="follow_workdaily_desc">नए अपडेट के लिए फॉलो करें</string>
+
     <string name="follow_channel">फॉलो करें</string>
 
     <!-- Settlement Strings -->
-    <string name="amount_to_receive">पैसे मिलने हैं</string>
-    <string name="amount_to_pay_back">पैसे वापस देने हैं</string>
-    <string name="settlement_status">फाइनल हिसाब का स्टेटस</string>
-    <string name="settled_zero_pending">फाइनल हिसाब पूरा — ₹0 बकाया</string>
+    <string name="amount_to_receive">मिलने वाली रकम</string>
+
+    <string name="amount_to_pay_back">वापस देने वाली रकम</string>
+
+    <string name="settlement_status">हिसाब का स्टेटस</string>
+
+    <string name="settled_zero_pending">पूरा हिसाब हो गया — ₹0 बकाया</string>
+
     <string name="you_will_receive_msg">आपको ₹%1$s मिलेंगे</string>
+
     <string name="you_need_to_pay_back_msg">आपको ₹%1$s वापस देने हैं</string>
 
     <!-- DrillDown Category Titles -->
     <string name="drilldown_earnings">कमाई</string>
     <string name="drilldown_present">प्रेजेंट</string>
+
     <string name="drilldown_absent">एब्सेंट</string>
     <string name="drilldown_half_day">हाफ डे</string>
+
     <string name="drilldown_overtime">ओवरटाइम</string>
+
     <string name="drilldown_advance">एडवांस</string>
     <string name="drilldown_all_time_earnings">ऑल टाइम कमाई</string>
+
     <string name="drilldown_all_time_present">ऑल टाइम प्रेजेंट</string>
+
     <string name="drilldown_all_time_absent">ऑल टाइम एब्सेंट</string>
+
     <string name="drilldown_all_time_half_day">ऑल टाइम हाफ डे</string>
+
     <string name="drilldown_all_time_overtime">ऑल टाइम ओवरटाइम</string>
+
     <string name="drilldown_all_time_advance">ऑल टाइम एडवांस</string>
+
     <string name="records_count">%1$d रिकॉर्ड</string>
 
     <!-- Dashboard Strings -->
-    <string name="advance_payment_rs">एडवांस पैसे (₹)</string>
-    <string name="marked_half_day">हाफ डे लग गया</string>
-    <string name="marked_present">प्रेजेंट लग गया</string>
-    <string name="marked_absent">एब्सेंट लग गया</string>
+    <string name="advance_payment_rs">एडवांस (₹)</string>
+
+    <string name="marked_half_day">हाफ डे दर्ज हुआ</string>
+
+    <string name="marked_present">प्रेजेंट दर्ज हुआ</string>
+
+    <string name="marked_absent">छुट्टी दर्ज हुई</string>
 
     <!-- Chart Strings -->
     <string name="earning_label">कमाई: ₹%1$s</string>
+
     <string name="regular_label">दिहाड़ी: ₹%1$s</string>
+
     <string name="overtime_label_hrs">ओवरटाइम: ₹%1$s (%2$d घंटे)</string>
+
     <string name="overtime_label">ओवरटाइम: ₹%1$s</string>
+
     <string name="previous_month">पिछला</string>
+
     <string name="next_month">अगला</string>
 
     <!-- Passbook / Ledger Strings -->
     <string name="active_status">चालू</string>
+
     <string name="retry">दोबारा कोशिश करें</string>
-    <string name="hours_ot">%1$d घंटे ओवरटाइम</string>
-    <string name="ot_short">ओवरटाइम</string>
+
+    <string name="hours_ot">%1$d घंटे OT</string>
+
+    <string name="ot_short">OT</string>
 
     <!-- Settings Strings -->
     <string name="logout">लॉग आउट</string>
-    <string name="logout_title">लॉग आउट</string>
+    <string name="logout_title">लॉगआउट</string>
+
     <string name="user_profile">यूजर प्रोफाइल</string>
-    <string name="user_name">यूजर का नाम</string>
-    <string name="category_profile_settings">प्रोफाइल सेटिंग</string>
+
+    <string name="user_name">यूजर नाम</string>
+
+    <string name="category_profile_settings">प्रोफाइल सेटिंग्स</string>
+
     <string name="category_stay_connected">जुड़े रहें</string>
-    <string name="category_app_preferences">ऐप सेटिंग्स</string>
-    <string name="category_notifications">नोटिफिकेशन</string>
+
+    <string name="category_app_preferences">ऐप की पसंद</string>
+
+    <string name="category_notifications">नोटिफिकेशन्स</string>
+
     <string name="category_backup">बैकअप और रिस्टोर</string>
-    <string name="category_info_support">मदद और जानकारी</string>
-    <string name="logout_backup_question">क्या आप लॉग आउट करने से पहले बैकअप बनाना चाहते हैं?</string>
+
+    <string name="category_info_support">जानकारी और मदद</string>
+
+    <string name="logout_backup_question">लॉग आउट करने से पहले बैकअप लेना चाहते हैं?</string>
+
     <string name="profile_photo">प्रोफाइल फोटो</string>
+
     <string name="change_photo">फोटो बदलें</string>
+
     <string name="remove_photo">फोटो हटाएं</string>
+
     <string name="never">कभी नहीं</string>
-    <string name="external_files">फोन स्टोरेज</string>
+
+    <string name="external_files">एक्सटर्नल फाइल्स</string>
 
     <!-- Backup & Restore Dialog Strings -->
-    <string name="restore_data_report">रिस्टोर रिपोर्ट</string>
-    <string name="attendance_database">हाजिरी डेटाबेस</string>
+    <string name="restore_data_report">डेटा रिस्टोर रिपोर्ट</string>
+
+    <string name="attendance_database">हाजिरी का डेटाबेस</string>
+
     <string name="media_files">मीडिया फाइल्स</string>
+
     <string name="application_settings">ऐप सेटिंग्स</string>
-    <string name="replace_all">पुराना हटाकर नया डालें</string>
-    <string name="replace_all_desc">मौजूदा रिकॉर्ड हटाकर बैकअप का डेटा डाल देगा</string>
-    <string name="merge_data">डेटा मिलाएं</string>
-    <string name="merge_data_desc">बैकअप और मौजूदा रिकॉर्ड को सेफ तरीके से मिला देगा</string>
+
+    <string name="replace_all">पुराना डेटा बदलकर नया रखें</string>
+
+    <string name="replace_all_desc">मौजूदा रिकॉर्ड हटाकर बैकअप का डेटा रखेगा</string>
+
+    <string name="merge_data">डेटा मिलाएं (Merge)</string>
+
+    <string name="merge_data_desc">बैकअप का डेटा आपके मौजूदा डेटा में जोड़ देगा</string>
 
     <!-- Crop Screen Strings -->
     <string name="failed_to_load_image">फोटो लोड नहीं हो पाई</string>
+
     <string name="go_back">वापस जाएं</string>
 
     <!-- Legal & Help Screen Strings -->
     <string name="overtime_title">ओवरटाइम</string>
-    <string name="overtime_desc">अपने ओवरटाइम के घंटे और पैसे आसानी से मैनेज करें।</string>
+
+    <string name="overtime_desc">अपने ओवरटाइम के घंटे और पैसे आसानी से जोड़ें।</string>
+
     <string name="advance_title">एडवांस</string>
-    <string name="advance_desc">लिए गए एडवांस पैसे दर्ज करें और फाइनल हिसाब में से अपने आप कटवाएं।</string>
+
+    <string name="advance_desc">लिए गए एडवांस का हिसाब रखें ताकि अंतिम कमाई में से सही कटौती हो सके।</string>
 
     <!-- Additional Localized Audit Strings -->
-    <string name="empty_passbook_pdf_msg">पासबुक में अभी कोई डेटा नहीं है। पहले कोई रिकॉर्ड जोड़ो।</string>
+    <string name="empty_passbook_pdf_msg">पासबुक में कोई डेटा नहीं है।</string>
+
     <string name="backup_and_restore_title">बैकअप और रिस्टोर</string>
-    <string name="backup_subtitle">अपने डेटा का सेफ बैकअप बनाएं और सुरक्षित रखें</string>
-    <string name="backup_dont_close_msg">इस प्रोसेस के दौरान ऐप बंद या एग्जिट न करें।</string>
-    <string name="success_exclamation">सफल रहा!</string>
+
+    <string name="backup_subtitle">अपने ऐप का डेटा सुरक्षित एक्सपोर्ट करें</string>
+
+    <string name="backup_dont_close_msg">इस काम के दौरान ऐप बंद न करें।</string>
+
+    <string name="success_exclamation">हो गया!</string>
+
     <string name="failed_exclamation">नाकाम रहा!</string>
-    <string name="backup_generated_success_msg">आपके ऐप डेटा का बैकअप बन गया है और सुरक्षित सेव हो गया है।</string>
-    <string name="restore_data_success_msg">आपका डेटा पूरी तरह रिस्टोर हो गया है।</string>
-    <string name="unexpected_error_occurred">इस प्रोसेस के दौरान कोई दिक्कत आ गई।</string>
-    <string name="backup_package_preview">बैकअप पैकेज का प्रिव्यू</string>
-    <string name="restore_mode">रिस्टोर करने का तरीका</string>
+
+    <string name="backup_generated_success_msg">आपका बैकअप सुरक्षित बन गया है।</string>
+
+    <string name="restore_data_success_msg">आपका डेटा वापस आ गया है।</string>
+
+    <string name="unexpected_error_occurred">कुछ गड़बड़ हो गई।</string>
+
+    <string name="backup_package_preview">बैकअप फाइल देखें</string>
+
+    <string name="restore_mode">रिस्टोर का तरीका</string>
+
     <string name="start_restore">रिस्टोर शुरू करें</string>
+
     <string name="create_new_backup">नया बैकअप बनाएं</string>
-    <string name="create_new_backup_subtitle">आपका पूरा ऐप डेटा (प्रोफाइल, हाजिरी डेटाबेस, सेटिंग्स, फोटो) एक ZIP फाइल में सेव करता है।</string>
-    <string name="restore_from_backup">बैकअप से रिस्टोर करें</string>
-    <string name="restore_from_backup_subtitle">बैकअप पैकेज इंपोर्ट करें और अपने पुराने रिकॉर्ड्स वापस लाएं।</string>
 
-    <string name="sort_oldest_first">पुराना पहले</string>
-    <string name="sort_newest_first">नया पहले</string>
-    <string name="no_advance_records_title">एडवांस का कोई रिकॉर्ड नहीं</string>
-    <string name="no_advance_records_desc">इस समय के लिए कोई एडवांस पेमेंट दर्ज नहीं की गई है।</string>
-    <string name="no_overtime_records_title">ओवरटाइम का कोई रिकॉर्ड नहीं</string>
-    <string name="no_overtime_records_desc">इस समय के लिए कोई ओवरटाइम दर्ज नहीं किया गया है।</string>
-    <string name="no_attendance_records_title">हाजिरी का कोई रिकॉर्ड नहीं</string>
-    <string name="no_attendance_records_desc">इस समय के लिए इस स्टेटस का कोई हाजिरी रिकॉर्ड नहीं मिला।</string>
-    <string name="no_attendance_for_date_title">इस तारीख की कोई हाजिरी नहीं</string>
-    <string name="no_attendance_for_date_desc">इस तारीख के लिए कोई हाजिरी या काम दर्ज नहीं किया गया है।</string>
+    <string name="create_new_backup_subtitle">आपकी प्रोफाइल, हाजिरी और सेटिंग्स को एक ZIP फाइल में सुरक्षित सेव करता है।</string>
+
+    <string name="restore_from_backup">फाइल से रिस्टोर करें</string>
+
+    <string name="restore_from_backup_subtitle">अपनी बैकअप ZIP फाइल से सारा डेटा वापस लाएं।</string>
+
+    <string name="sort_oldest_first">पुराने पहले</string>
+    <string name="sort_newest_first">नये पहले</string>
+
+    <string name="no_advance_records_title">कोई एडवांस रिकॉर्ड नहीं है</string>
+
+    <string name="no_advance_records_desc">इस दौरान कोई एडवांस पेमेंट नहीं ली गई है।</string>
+
+    <string name="no_overtime_records_title">कोई ओवरटाइम रिकॉर्ड नहीं है</string>
+
+    <string name="no_overtime_records_desc">इस दौरान कोई ओवरटाइम दर्ज नहीं हुआ है।</string>
+
+    <string name="no_attendance_records_title">कोई हाजिरी रिकॉर्ड नहीं है</string>
+
+    <string name="no_attendance_records_desc">इस दौरान कोई हाजिरी रिकॉर्ड नहीं मिला।</string>
+
+    <string name="no_attendance_for_date_title">इस तारीख की कोई हाजिरी नहीं है</string>
+
+    <string name="no_attendance_for_date_desc">इस तारीख को कोई हाजिरी या काम दर्ज नहीं है।</string>
+
     <string name="no_records_yet_title">अभी कोई रिकॉर्ड नहीं है</string>
-    <string name="no_records_yet_desc">इस सेक्शन में अभी कोई रिकॉर्ड दर्ज नहीं है।</string>
 
-    <string name="tab_monthly">मंथली</string>
+    <string name="no_records_yet_desc">इस सेक्शन में अभी कोई रिकॉर्ड नहीं है।</string>
+
+    <string name="tab_monthly">महीने का</string>
     <string name="tab_all_time">ऑल-टाइम</string>
 
     <string name="crop_photo">फोटो क्रॉप करें</string>
-    <string name="processing_dots">प्रोसेसिंग...</string>
+
+    <string name="processing_dots">प्रोसेस हो रहा है...</string>
+
     <string name="failed_to_crop_image">फोटो क्रॉप नहीं हो पाई</string>
 
     <string name="legend">संकेत</string>
 
-    <string name="pdf_amount_to_receive">कुल मिलने वाली राशि</string>
-    <string name="pdf_amount_to_pay_back">कुल वापस देने वाली राशि</string>
+    <string name="pdf_amount_to_receive">मिलने वाली राशि</string>
+
+    <string name="pdf_amount_to_pay_back">वापस देने वाली राशि</string>
+
     <string name="pdf_month_summary_strip">कमाई: %1$s  |  दिहाड़ी: %2$s  |  ओवरटाइम: %3$s  |  एडवांस: %4$s  |  प्रेजेंट: %5$d  |  हाफ: %6$d  |  एब्सेंट: %7$d</string>
 
-    <string name="invalid_corrupt_backup">बैकअप पैकेज सही नहीं है या खराब है</string>
-    <string name="failed_to_load_backup">बैकअप लोड नहीं हो पाया: %1$s</string>
-    <string name="restore_selection_cancelled">रिस्टोर कैंसिल कर दिया गया</string>
-    <string name="restore_failed_msg">रिस्टोर वेरिफिकेशन या प्रोसेस फेल हो गया।</string>
-    <string name="internal_file_error">इंटरनल फाइल एरर आई।</string>
-    <string name="unable_to_open_settings">सेटिंग्स नहीं खुल पाई</string>
+    <string name="invalid_corrupt_backup">गलत या खराब बैकअप फाइल</string>
+
+    <string name="failed_to_load_backup">बैकअप लोड नहीं हुआ: %1$s</string>
+
+    <string name="restore_selection_cancelled">रिस्टोर कैंसिल हुआ</string>
+
+    <string name="restore_failed_msg">रिस्टोर में दिक्कत आई।</string>
+
+    <string name="internal_file_error">फाइल एरर।</string>
+
+    <string name="unable_to_open_settings">सेटिंग्स नहीं खुल सकी</string>
 
     <!-- Backup & Restore Specific Error & Dialog Strings -->
     <string name="backup_name_label">बैकअप फाइल का नाम</string>
+
     <string name="create_backup_action">बैकअप बनाएं</string>
-    <string name="backup_cancelled_msg">बैकअप कैंसिल कर दिया गया। कोई लोकेशन नहीं चुनी गई।</string>
-    <string name="restore_cancelled_msg">रिस्टोर कैंसिल कर दिया गया। कोई बैकअप फाइल नहीं चुनी गई।</string>
-    <string name="backup_write_failed_msg">बैकअप फेल हो गया क्योंकि फाइल स्टोरेज में सेव नहीं हो पाई।</string>
-    <string name="backup_storage_full_msg">बैकअप फेल हो गया क्योंकि फोन में पर्याप्त जगह नहीं है।</string>
-    <string name="restore_read_failed_msg">रिस्टोर फेल हो गया क्योंकि बैकअप फाइल पढ़ी नहीं जा सकी।</string>
-    <string name="restore_corrupt_msg">रिस्टोर फेल हो गया क्योंकि बैकअप फाइल खराब या अधूरी है।</string>
-    <string name="restore_invalid_format_msg">रिस्टोर फेल हो गया क्योंकि यह फाइल मान्य वर्कडेली बैकअप नहीं है।</string>
-    <string name="restore_unsupported_version_msg">रिस्टोर फेल हो गया क्योंकि यह बैकअप नए ऐप वर्ज़न का है। कृपया वर्कडेली ऐप अपडेट करें।</string>
-    <string name="restore_missing_data_msg">रिस्टोर फेल हो गया क्योंकि बैकअप में जरूरी डेटा या प्रोफाइल गायब है।</string>
-    <string name="restore_invalid_data_msg">रिस्टोर फेल हो गया क्योंकि बैकअप डेटा में खराबी या अमान्य रिकॉर्ड्स हैं।</string>
-    <string name="restore_storage_insufficient_msg">रिस्टोर फेल हो गया क्योंकि आपके फोन में पर्याप्त स्टोरेज स्पेस नहीं है।</string>
-    <string name="restore_checksum_mismatch_msg">रिस्टोर फेल हो गया क्योंकि फाइल की सत्यता (SHA-256) मैच नहीं हुई।</string>
-    <string name="restore_db_swap_failed_msg">रिस्टोर फेल हो गया क्योंकि डेटाबेस फाइल सेफ तरीके से बदली नहीं जा सकी।</string>
+
+    <string name="backup_cancelled_msg">बैकअप कैंसिल हो गया।</string>
+
+    <string name="restore_cancelled_msg">रिस्टोर कैंसिल हो गया।</string>
+
+    <string name="backup_write_failed_msg">बैकअप सेव नहीं हो सका।</string>
+
+    <string name="backup_storage_full_msg">फोन में जगह कम है।</string>
+
+    <string name="restore_read_failed_msg">बैकअप फाइल पढ़ी नहीं जा सकी।</string>
+
+    <string name="restore_corrupt_msg">बैकअप फाइल खराब या अधूरी है।</string>
+
+    <string name="restore_invalid_format_msg">यह वर्कडेली की बैकअप फाइल नहीं है।</string>
+
+    <string name="restore_unsupported_version_msg">यह बैकअप नए ऐप वर्जन का है। वर्कडेली अपडेट करें।</string>
+
+    <string name="restore_missing_data_msg">बैकअप में जरूरी डेटा नहीं मिला।</string>
+
+    <string name="restore_invalid_data_msg">बैकअप फाइल का डेटा सही नहीं है।</string>
+
+    <string name="restore_storage_insufficient_msg">फोन में पर्याप्त खाली जगह नहीं है।</string>
+
+    <string name="restore_checksum_mismatch_msg">फाइल की सुरक्षा जांच फेल हो गई।</string>
+
+    <string name="restore_db_swap_failed_msg">डेटाबेस रिप्लेस नहीं हो सका।</string>
 
     <!-- Built-in PDF Viewer Strings -->
     <string name="pdf_viewer_title">वर्कडेली पासबुक</string>
@@ -624,4 +1005,18 @@
     <string name="pdf_file_name">फाइल का नाम</string>
     <string name="pdf_total_pages">कुल पेज</string>
     <string name="pdf_file_size">फाइल साइज</string>
+    <string name="pdf_search">पीडीएफ में खोजें</string>
+    <string name="pdf_go_to_page">पेज पर जाएं</string>
+    <string name="pdf_thumbnails">पेज थंबनेल</string>
+    <string name="pdf_view_mode">व्यू मोड</string>
+    <string name="pdf_fit_mode">फिट मोड</string>
+    <string name="pdf_fit_width">चौड़ाई के हिसाब से (Fit Width)</string>
+    <string name="pdf_fit_page">पूरा पेज (Fit Page)</string>
+    <string name="pdf_actual_size">ओरिजिनल साइज (Actual Size)</string>
+    <string name="pdf_rotate">पेज घुमाएं</string>
+    <string name="pdf_open_with">इसमें खोलें (Open With)</string>
+    <string name="pdf_enter_page_number">पेज नंबर दर्ज करें</string>
+    <string name="pdf_invalid_page">गलत पेज नंबर</string>
+    <string name="pdf_search_placeholder">शब्द खोजें...</string>
+    <string name="pdf_no_search_text">इस पीडीएफ में टेक्स्ट सर्च उपलब्ध नहीं है।</string>
 </resources>
