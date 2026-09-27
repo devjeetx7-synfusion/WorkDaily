@@ -24,8 +24,16 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+        </activity>
 
-            <!-- PDF Document Intent Filter -->
+        <!-- Dedicated PDF Intent Alias with WorkDaily Logo + PDF Badge -->
+        <activity-alias
+            android:name=".PdfOpenActivity"
+            android:targetActivity=".ui.MainActivity"
+            android:enabled="true"
+            android:exported="true"
+            android:icon="@drawable/ic_pdf_launcher"
+            android:label="WorkDaily">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -34,7 +42,7 @@
                 <data android:scheme="content" />
                 <data android:scheme="file" />
             </intent-filter>
-        </activity>
+        </activity-alias>
 
         <activity
             android:name=".ui.LanguageSelectorActivity"
