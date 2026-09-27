@@ -14,6 +14,5 @@ data class PdfViewerState(
     val errorMessage: String? = null,
     val fileSizeStr: String = "",
     val showPageJumpDialog: Boolean = false,
-    val showThumbnailsSheet: Boolean = false,
-    val isAutoSliding: Boolean = false
+    val showThumbnailsSheet: Boolean = false
 )

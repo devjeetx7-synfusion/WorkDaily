@@ -48,7 +48,6 @@ import com.synfusion.attendance.utils.PdfLog
 import com.synfusion.attendance.utils.AmountFormatter
 import com.synfusion.attendance.utils.PdfExportManager
 import com.synfusion.attendance.utils.PdfExportState
-import com.synfusion.attendance.ui.components.PdfExportLoadingDialog
 import com.synfusion.attendance.ui.responsive.LocalWindowSizeInfo
 import com.synfusion.attendance.ui.responsive.ResponsiveContainer
 import androidx.compose.runtime.rememberCoroutineScope
@@ -67,7 +66,7 @@ fun PassbookScreen(
     viewModel: OfflinePassbookViewModel,
     onNavigateBack: () -> Unit,
     onNavigateToCalendar: () -> Unit,
-    onOpenPdfViewer: (Uri, String) -> Unit = { _, _ -> }
+    onOpenPdfViewer: (Uri, String, String, Long) -> Unit = { _, _, _, _ -> }
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle(initialValue = OfflinePassbookState(isLoading = true))
     val sdfMonth = SimpleDateFormat("MMMM yyyy", Locale.getDefault())
@@ -90,17 +89,7 @@ fun PassbookScreen(
     val isExporting = exportState != PdfExportState.Idle && exportState !is PdfExportState.Success && exportState !is PdfExportState.Error
 
     fun exportPDF() {
-        if (isExporting) return
-        scope.launch {
-            exportManager.exportMonthlyPdf(state.selectedMonthDate) { file ->
-                scope.launch {
-                    kotlinx.coroutines.delay(600)
-                    exportManager.resetState()
-                    val uri = FileProvider.getUriForFile(context, "com.synfusion.attendance.fileprovider", file)
-                    onOpenPdfViewer(uri, file.name)
-                }
-            }
-        }
+        onOpenPdfViewer(Uri.EMPTY, monthYearStr, "monthly", state.selectedMonthDate.time)
     }
 
     fun shareViaWhatsApp() {
@@ -852,12 +841,6 @@ fun PassbookScreen(
             }
         }
     }
-
-    PdfExportLoadingDialog(
-        state = exportState,
-        onCancel = { exportManager.resetState() },
-        onDismissError = { exportManager.resetState() }
-    )
 }
 
 @Composable

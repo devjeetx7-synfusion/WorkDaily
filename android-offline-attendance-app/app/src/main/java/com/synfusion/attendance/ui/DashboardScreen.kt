@@ -46,9 +46,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -452,10 +454,10 @@ fun DashboardScreen(
                         bottomNavController.navigateUp()
                         selectedTab = 1
                     },
-                    onOpenPdfViewer = { uri, title ->
+                    onOpenPdfViewer = { uri, title, exportType, monthDate ->
                         val encodedUri = URLEncoder.encode(uri.toString(), "UTF-8")
                         val encodedTitle = URLEncoder.encode(title, "UTF-8")
-                        bottomNavController.navigate("pdf_viewer?uri=$encodedUri&title=$encodedTitle")
+                        bottomNavController.navigate("pdf_viewer?uri=$encodedUri&title=$encodedTitle&exportType=$exportType&monthDate=$monthDate")
                     }
                 )
             }
@@ -464,23 +466,37 @@ fun DashboardScreen(
                 AllTimePassbookScreen(
                     viewModel = allTimeViewModel,
                     onNavigateBack = { bottomNavController.navigateUp() },
-                    onOpenPdfViewer = { uri, title ->
+                    onOpenPdfViewer = { uri, title, exportType, monthDate ->
                         val encodedUri = URLEncoder.encode(uri.toString(), "UTF-8")
                         val encodedTitle = URLEncoder.encode(title, "UTF-8")
-                        bottomNavController.navigate("pdf_viewer?uri=$encodedUri&title=$encodedTitle")
+                        bottomNavController.navigate("pdf_viewer?uri=$encodedUri&title=$encodedTitle&exportType=$exportType&monthDate=$monthDate")
                     }
                 )
             }
-            composable("pdf_viewer?uri={uri}&title={title}") { backStackEntry ->
+            composable(
+                route = "pdf_viewer?uri={uri}&title={title}&exportType={exportType}&monthDate={monthDate}",
+                arguments = listOf(
+                    navArgument("uri") { defaultValue = "" },
+                    navArgument("title") { defaultValue = "" },
+                    navArgument("exportType") { defaultValue = "" },
+                    navArgument("monthDate") { defaultValue = "0" }
+                )
+            ) { backStackEntry ->
                 val encodedUri = backStackEntry.arguments?.getString("uri") ?: ""
                 val encodedTitle = backStackEntry.arguments?.getString("title") ?: ""
-                val decodedUriStr = URLDecoder.decode(encodedUri, "UTF-8")
-                val decodedTitle = URLDecoder.decode(encodedTitle, "UTF-8")
-                val pdfUri = Uri.parse(decodedUriStr)
+                val exportType = backStackEntry.arguments?.getString("exportType") ?: ""
+                val monthDateStr = backStackEntry.arguments?.getString("monthDate") ?: "0"
+                val monthDate = monthDateStr.toLongOrNull() ?: 0L
+
+                val decodedUriStr = if (encodedUri.isNotEmpty()) URLDecoder.decode(encodedUri, "UTF-8") else ""
+                val decodedTitle = if (encodedTitle.isNotEmpty()) URLDecoder.decode(encodedTitle, "UTF-8") else ""
+                val pdfUri = if (decodedUriStr.isNotEmpty()) Uri.parse(decodedUriStr) else Uri.EMPTY
 
                 PdfViewerScreen(
                     pdfUri = pdfUri,
                     title = decodedTitle,
+                    exportType = exportType,
+                    monthDate = monthDate,
                     onNavigateBack = { bottomNavController.navigateUp() }
                 )
             }
