@@ -15,6 +15,7 @@ import android.print.PrintManager
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
@@ -22,8 +23,11 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
@@ -259,9 +263,8 @@ fun PdfViewerScreen(
 
                 else -> {
                     // Zoom & Pan State
-                    val scaleAnim = remember { Animatable(1.0f) }
-                    val offsetXAnim = remember { Animatable(0f) }
-                    val offsetYAnim = remember { Animatable(0f) }
+                    var zoomScale by remember { mutableFloatStateOf(1.0f) }
+                    var panOffset by remember { mutableStateOf(Offset.Zero) }
 
                     val configuration = LocalConfiguration.current
                     val density = LocalDensity.current
@@ -271,9 +274,19 @@ fun PdfViewerScreen(
                     // Auto-slide playback effect
                     LaunchedEffect(state.isAutoSliding, state.currentPage, state.totalPages) {
                         if (state.isAutoSliding && state.totalPages > 1) {
-                            kotlinx.coroutines.delay(3000L)
+                            kotlinx.coroutines.delay(3200L)
                             val nextPage = if (state.currentPage >= state.totalPages) 1 else state.currentPage + 1
                             viewModel.jumpToPage(nextPage)
+                        }
+                    }
+
+                    // Floating Page Indicator Auto-Fade Effect
+                    var showPageIndicator by remember { mutableStateOf(false) }
+                    LaunchedEffect(state.currentPage) {
+                        if (state.totalPages > 1) {
+                            showPageIndicator = true
+                            kotlinx.coroutines.delay(1200L)
+                            showPageIndicator = false
                         }
                     }
 
@@ -285,12 +298,11 @@ fun PdfViewerScreen(
                                     if (state.isAutoSliding) {
                                         viewModel.setAutoSlide(false)
                                     }
-                                    val oldScale = scaleAnim.value
-                                    val newScale = (oldScale * zoom).coerceIn(1.0f, 4.5f)
+                                    val oldScale = zoomScale
+                                    val newScale = (oldScale * zoom).coerceIn(1.0f, 4.0f)
                                     val scaleFactor = if (oldScale > 0.001f) newScale / oldScale else 1.0f
 
-                                    val currentOffset = Offset(offsetXAnim.value, offsetYAnim.value)
-                                    var newOffset = centroid - (centroid - currentOffset) * scaleFactor + pan
+                                    var newOffset = centroid - (centroid - panOffset) * scaleFactor + pan
 
                                     if (newScale > 1.05f) {
                                         val maxX = (screenWidthPx * (newScale - 1f)) / 2f
@@ -303,11 +315,8 @@ fun PdfViewerScreen(
                                         newOffset = Offset.Zero
                                     }
 
-                                    scope.launch {
-                                        scaleAnim.snapTo(if (newScale <= 1.05f) 1.0f else newScale)
-                                        offsetXAnim.snapTo(newOffset.x)
-                                        offsetYAnim.snapTo(newOffset.y)
-                                    }
+                                    zoomScale = if (newScale <= 1.02f) 1.0f else newScale
+                                    panOffset = newOffset
                                 }
                             }
                             .pointerInput(Unit) {
@@ -322,10 +331,9 @@ fun PdfViewerScreen(
                                         if (state.isAutoSliding) {
                                             viewModel.setAutoSlide(false)
                                         }
-                                        val currentScale = scaleAnim.value
                                         val targetScale = when {
-                                            currentScale < 1.5f -> 2.2f
-                                            currentScale < 2.8f -> 3.5f
+                                            zoomScale < 1.5f -> 2.2f
+                                            zoomScale < 2.8f -> 3.5f
                                             else -> 1.0f
                                         }
                                         val targetOffset = if (targetScale > 1.05f) {
@@ -342,9 +350,16 @@ fun PdfViewerScreen(
                                         }
 
                                         scope.launch {
-                                            launch { scaleAnim.animateTo(targetScale, tween(250)) }
-                                            launch { offsetXAnim.animateTo(targetOffset.x, tween(250)) }
-                                            launch { offsetYAnim.animateTo(targetOffset.y, tween(250)) }
+                                            val startScale = zoomScale
+                                            val startOffset = panOffset
+                                            val anim = Animatable(0f)
+                                            anim.animateTo(1f, tween(220)) {
+                                                zoomScale = startScale + (targetScale - startScale) * value
+                                                panOffset = Offset(
+                                                    startOffset.x + (targetOffset.x - startOffset.x) * value,
+                                                    startOffset.y + (targetOffset.y - startOffset.y) * value
+                                                )
+                                            }
                                         }
                                     }
                                 )
@@ -354,10 +369,10 @@ fun PdfViewerScreen(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .graphicsLayer(
-                                    scaleX = scaleAnim.value,
-                                    scaleY = scaleAnim.value,
-                                    translationX = offsetXAnim.value,
-                                    translationY = offsetYAnim.value
+                                    scaleX = zoomScale,
+                                    scaleY = zoomScale,
+                                    translationX = panOffset.x,
+                                    translationY = panOffset.y
                                 )
                         ) {
                             val listState = rememberLazyListState(
@@ -386,47 +401,95 @@ fun PdfViewerScreen(
                                 previousOffset = currOff
                             }
 
-                            val visiblePage by remember {
-                                derivedStateOf {
-                                    val firstVisible = listState.firstVisibleItemIndex
-                                    (firstVisible + 1).coerceIn(1, state.totalPages)
+                            LaunchedEffect(listState.firstVisibleItemIndex) {
+                                val visibleIdx = (listState.firstVisibleItemIndex + 1).coerceIn(1, state.totalPages)
+                                if (visibleIdx != state.currentPage) {
+                                    viewModel.updateCurrentPage(visibleIdx)
                                 }
                             }
 
-                            LaunchedEffect(visiblePage) {
-                                viewModel.updateCurrentPage(visiblePage)
-                            }
-
                             LaunchedEffect(state.currentPage) {
-                                if (listState.firstVisibleItemIndex != state.currentPage - 1) {
+                                if (!listState.isScrollInProgress && listState.firstVisibleItemIndex != state.currentPage - 1) {
                                     listState.scrollToItem((state.currentPage - 1).coerceAtLeast(0))
                                 }
                             }
 
-                            LazyColumn(
-                                state = listState,
-                                userScrollEnabled = scaleAnim.value <= 1.05f,
-                                modifier = Modifier.fillMaxSize(),
-                                contentPadding = PaddingValues(
-                                    top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 64.dp,
-                                    bottom = 80.dp,
-                                    start = 0.dp,
-                                    end = 0.dp
-                                ),
-                                verticalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
-                                itemsIndexed(
-                                    items = List(state.totalPages) { it },
-                                    key = { index, _ -> "pdf_page_$index" }
-                                ) { pageIndex, _ ->
-                                    PdfPageView(
-                                        pageIndex = pageIndex,
-                                        targetWidth = screenWidthPx.toInt(),
-                                        renderScale = scaleAnim.value,
-                                        viewModel = viewModel
-                                    )
+                            if (state.isAutoSliding) {
+                                AnimatedContent(
+                                    targetState = state.currentPage,
+                                    transitionSpec = {
+                                        (slideInHorizontally(animationSpec = tween(400)) { width -> width } + fadeIn(tween(400)))
+                                            .togetherWith(slideOutHorizontally(animationSpec = tween(400)) { width -> -width } + fadeOut(tween(400)))
+                                    },
+                                    label = "book_slide_transition"
+                                ) { pageNum ->
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .padding(
+                                                top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 64.dp,
+                                                bottom = 80.dp
+                                            ),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        PdfPageView(
+                                            pageIndex = (pageNum - 1).coerceIn(0, (state.totalPages - 1).coerceAtLeast(0)),
+                                            targetWidth = screenWidthPx.toInt(),
+                                            renderScale = zoomScale,
+                                            viewModel = viewModel
+                                        )
+                                    }
+                                }
+                            } else {
+                                LazyColumn(
+                                    state = listState,
+                                    userScrollEnabled = zoomScale <= 1.05f,
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentPadding = PaddingValues(
+                                        top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 64.dp,
+                                        bottom = 80.dp,
+                                        start = 0.dp,
+                                        end = 0.dp
+                                    ),
+                                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    itemsIndexed(
+                                        items = List(state.totalPages) { it },
+                                        key = { index, _ -> "pdf_page_$index" }
+                                    ) { pageIndex, _ ->
+                                        PdfPageView(
+                                            pageIndex = pageIndex,
+                                            targetWidth = screenWidthPx.toInt(),
+                                            renderScale = zoomScale,
+                                            viewModel = viewModel
+                                        )
+                                    }
                                 }
                             }
+                        }
+                    }
+
+                    // Floating Page Indicator Overlay
+                    AnimatedVisibility(
+                        visible = showPageIndicator && state.totalPages > 0,
+                        enter = fadeIn(animationSpec = tween(180)),
+                        exit = fadeOut(animationSpec = tween(300)),
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = 32.dp)
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = Color.Black.copy(alpha = 0.7f),
+                            shadowElevation = 0.dp
+                        ) {
+                            Text(
+                                text = String.format("%02d / %02d", state.currentPage, state.totalPages),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White,
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
+                            )
                         }
                     }
 
@@ -561,6 +624,8 @@ fun PdfViewerScreen(
 
     // Page Thumbnails Bottom Sheet
     if (state.showThumbnailsSheet) {
+        var selectedThumbnailPage by remember { mutableIntStateOf(-1) }
+
         ModalBottomSheet(
             onDismissRequest = { viewModel.setShowThumbnailsSheet(false) },
             sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
@@ -585,11 +650,11 @@ fun PdfViewerScreen(
                     contentPadding = PaddingValues(8.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.fillMaxHeight(0.6f)
+                    modifier = Modifier.fillMaxHeight(0.55f)
                 ) {
                     items(state.totalPages) { index ->
                         val pageNum = index + 1
-                        val isSelected = pageNum == state.currentPage
+                        val isSelected = pageNum == selectedThumbnailPage
 
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
@@ -601,8 +666,7 @@ fun PdfViewerScreen(
                                     shape = RoundedCornerShape(8.dp)
                                 )
                                 .clickable {
-                                    viewModel.jumpToPage(pageNum)
-                                    viewModel.setShowThumbnailsSheet(false)
+                                    selectedThumbnailPage = pageNum
                                 }
                                 .padding(6.dp)
                         ) {
@@ -620,6 +684,24 @@ fun PdfViewerScreen(
                         }
                     }
                 }
+
+                if (selectedThumbnailPage in 1..state.totalPages) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(
+                        onClick = {
+                            viewModel.jumpToPage(selectedThumbnailPage)
+                            viewModel.setShowThumbnailsSheet(false)
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(
+                            text = "View",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.sp
+                        )
+                    }
+                }
             }
         }
     }
@@ -635,11 +717,19 @@ private fun PdfPageView(
     var bitmap by remember { mutableStateOf<Bitmap?>(null) }
     var isLoadingPage by remember { mutableStateOf(true) }
 
-    LaunchedEffect(pageIndex, targetWidth, renderScale) {
+    val discreteScale = when {
+        renderScale > 3.2f -> 4.0f
+        renderScale > 2.2f -> 3.0f
+        renderScale > 1.4f -> 2.0f
+        renderScale > 1.1f -> 1.5f
+        else -> 1.0f
+    }
+
+    LaunchedEffect(pageIndex, targetWidth, discreteScale) {
         val newBitmap = viewModel.renderPageBitmap(
             pageIndex = pageIndex,
             targetWidth = targetWidth,
-            renderScale = renderScale
+            renderScale = discreteScale
         )
         if (newBitmap != null) {
             bitmap = newBitmap
