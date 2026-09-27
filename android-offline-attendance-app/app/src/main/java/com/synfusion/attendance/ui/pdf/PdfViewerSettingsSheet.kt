@@ -15,8 +15,6 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.Pin
 import androidx.compose.material.icons.filled.Print
-import androidx.compose.material.icons.filled.RotateRight
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material.icons.filled.TouchApp
@@ -42,12 +40,10 @@ fun PdfViewerSettingsSheet(
     fitMode: PdfFitMode,
     showTouchIndicators: Boolean,
     onToggleTouchIndicators: () -> Unit,
-    onOpenSearch: () -> Unit,
     onOpenGoToPage: () -> Unit,
     onOpenThumbnails: () -> Unit,
     onToggleViewMode: () -> Unit,
     onSelectFitMode: (PdfFitMode) -> Unit,
-    onRotate: () -> Unit,
     onPrint: () -> Unit,
     onOpenWith: () -> Unit,
     onDismiss: () -> Unit,
@@ -77,16 +73,6 @@ fun PdfViewerSettingsSheet(
 
             HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
 
-            // Search Action
-            MenuSheetRow(
-                icon = Icons.Default.Search,
-                label = stringResource(R.string.pdf_search),
-                onClick = {
-                    onDismiss()
-                    onOpenSearch()
-                }
-            )
-
             // Page Jump Action
             MenuSheetRow(
                 icon = Icons.Default.Pin,
@@ -113,15 +99,6 @@ fun PdfViewerSettingsSheet(
                 label = stringResource(R.string.pdf_view_mode) + ": " + if (viewMode == PdfViewMode.VERTICAL) stringResource(R.string.pdf_vertical) else stringResource(R.string.pdf_horizontal),
                 onClick = {
                     onToggleViewMode()
-                }
-            )
-
-            // Rotate Action
-            MenuSheetRow(
-                icon = Icons.Default.RotateRight,
-                label = stringResource(R.string.pdf_rotate),
-                onClick = {
-                    onRotate()
                 }
             )
 
