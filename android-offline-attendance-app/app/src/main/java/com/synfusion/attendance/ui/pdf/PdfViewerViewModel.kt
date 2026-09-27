@@ -112,14 +112,15 @@ class PdfViewerViewModel(application: Application) : AndroidViewModel(applicatio
     suspend fun renderPageBitmap(
         pageIndex: Int,
         targetWidth: Int,
-        scale: Float = 1.0f,
         renderScale: Float = 1.0f
     ): Bitmap? = withContext(Dispatchers.IO) {
         val renderer = pdfRenderer ?: return@withContext null
         if (pageIndex < 0 || pageIndex >= renderer.pageCount) return@withContext null
 
-        val clampedRenderScale = renderScale.coerceIn(1.0f, 5.0f)
-        val cacheKey = "${pageIndex}_${targetWidth}_${scale}_${clampedRenderScale}"
+        val clampedRenderScale = renderScale.coerceIn(1.0f, 4.5f)
+        // Quantize scale to 0.5f steps for memory efficiency and smooth bitmap reuse
+        val roundedScale = (clampedRenderScale * 2f).toInt() / 2f
+        val cacheKey = "${pageIndex}_${targetWidth}_${roundedScale}"
         bitmapCache.get(cacheKey)?.let { cachedBitmap ->
             if (!cachedBitmap.isRecycled) return@withContext cachedBitmap
         }
@@ -130,9 +131,9 @@ class PdfViewerViewModel(application: Application) : AndroidViewModel(applicatio
             val origHeight = page.height
 
             val screenDensityScale = targetWidth.toFloat() / origWidth.toFloat()
-            val effectiveScale = screenDensityScale * scale.coerceIn(0.5f, 5.0f) * clampedRenderScale
+            val effectiveScale = screenDensityScale * roundedScale
 
-            // Bound maximum dimension to 4096px to prevent OOM and Canvas overflow while ensuring crispness
+            // Bound maximum dimension to 4096px to prevent OOM while maintaining crisp text
             val renderWidth = (origWidth * effectiveScale).toInt().coerceIn(1, 4096)
             val renderHeight = (origHeight * effectiveScale).toInt().coerceIn(1, 4096)
 
@@ -195,20 +196,6 @@ class PdfViewerViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
-    fun toggleViewMode() {
-        val nextMode = if (_uiState.value.viewMode == PdfViewMode.VERTICAL) PdfViewMode.HORIZONTAL else PdfViewMode.VERTICAL
-        _uiState.update { it.copy(viewMode = nextMode) }
-    }
-
-    fun setViewMode(mode: PdfViewMode) {
-        _uiState.update { it.copy(viewMode = mode) }
-    }
-
-    fun setFitMode(fitMode: PdfFitMode) {
-        _uiState.update { it.copy(fitMode = fitMode) }
-    }
-
-
     fun toggleControlsVisibility() {
         _uiState.update { it.copy(isControlsVisible = !it.isControlsVisible) }
     }
@@ -225,10 +212,6 @@ class PdfViewerViewModel(application: Application) : AndroidViewModel(applicatio
         _uiState.update { it.copy(fabExpanded = expanded) }
     }
 
-    fun toggleTouchIndicators() {
-        _uiState.update { it.copy(showTouchIndicators = !it.showTouchIndicators) }
-    }
-
     fun setShowPageJumpDialog(show: Boolean) {
         _uiState.update { it.copy(showPageJumpDialog = show) }
     }
@@ -237,23 +220,14 @@ class PdfViewerViewModel(application: Application) : AndroidViewModel(applicatio
         _uiState.update { it.copy(showThumbnailsSheet = show) }
     }
 
-
     fun toggleAutoSlide() {
         _uiState.update {
-            val nextState = !it.isAutoSliding
-            it.copy(
-                isAutoSliding = nextState,
-                viewMode = if (nextState) PdfViewMode.HORIZONTAL else it.viewMode
-            )
+            it.copy(isAutoSliding = !it.isAutoSliding)
         }
     }
 
     fun setAutoSlide(enabled: Boolean) {
         _uiState.update { it.copy(isAutoSliding = enabled) }
-    }
-
-    fun updateZoom(zoom: Float) {
-        _uiState.update { it.copy(zoom = zoom.coerceIn(1.0f, 5.0f)) }
     }
 
     private fun closeRenderer() {

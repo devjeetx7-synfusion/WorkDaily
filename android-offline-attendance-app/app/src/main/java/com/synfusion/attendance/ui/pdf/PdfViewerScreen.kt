@@ -16,16 +16,16 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -36,15 +36,9 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -53,6 +47,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -60,7 +55,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -71,7 +65,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.synfusion.attendance.R
 import com.synfusion.attendance.utils.collectAsStateWithLifecycle
 import com.synfusion.attendance.utils.pdf.PdfFileManager
-import com.synfusion.attendance.utils.pdf.PdfShareManager
 import kotlinx.coroutines.launch
 import java.io.FileOutputStream
 import java.io.InputStream
@@ -95,10 +88,6 @@ fun PdfViewerScreen(
 
     var showShareSheet by remember { mutableStateOf(false) }
     var showMoreSheet by remember { mutableStateOf(false) }
-
-    // Touch Indicator positions
-    var touchPoint1 by remember { mutableStateOf<Offset?>(null) }
-    var touchPoint2 by remember { mutableStateOf<Offset?>(null) }
 
     // SAF Save Launcher
     val saveLauncher = rememberLauncherForActivityResult(
@@ -269,28 +258,17 @@ fun PdfViewerScreen(
                 }
 
                 else -> {
-                    // Zoom and Touch state
-                    var scale by remember { mutableStateOf(1.0f) }
-                    var offset by remember { mutableStateOf(Offset.Zero) }
+                    // Zoom & Pan State
+                    val scaleAnim = remember { Animatable(1.0f) }
+                    val offsetXAnim = remember { Animatable(0f) }
+                    val offsetYAnim = remember { Animatable(0f) }
 
                     val configuration = LocalConfiguration.current
-                    val screenWidthPx = with(LocalDensity.current) { configuration.screenWidthDp.dp.toPx() }.toInt()
+                    val density = LocalDensity.current
+                    val screenWidthPx = with(density) { configuration.screenWidthDp.dp.toPx() }
+                    val screenHeightPx = with(density) { configuration.screenHeightDp.dp.toPx() }
 
-                    val fitScaleMultiplier = when (state.fitMode) {
-                        PdfFitMode.FIT_WIDTH -> 1.0f
-                        PdfFitMode.FIT_PAGE -> 0.85f
-                        PdfFitMode.ACTUAL_SIZE -> 1.25f
-                    }
-
-                    val renderScale = when {
-                        scale < 1.3f -> 1.0f
-                        scale < 2.3f -> 2.0f
-                        scale < 3.3f -> 3.0f
-                        else -> 4.0f
-                    }
-
-                    val screenHeightPx = with(LocalDensity.current) { configuration.screenHeightDp.dp.toPx() }
-
+                    // Auto-slide playback effect
                     LaunchedEffect(state.isAutoSliding, state.currentPage, state.totalPages) {
                         if (state.isAutoSliding && state.totalPages > 1) {
                             kotlinx.coroutines.delay(3000L)
@@ -307,15 +285,14 @@ fun PdfViewerScreen(
                                     if (state.isAutoSliding) {
                                         viewModel.setAutoSlide(false)
                                     }
-                                    val oldScale = scale
-                                    val newScale = (scale * zoom).coerceIn(1.0f, 5.0f)
+                                    val oldScale = scaleAnim.value
+                                    val newScale = (oldScale * zoom).coerceIn(1.0f, 4.5f)
                                     val scaleFactor = if (oldScale > 0.001f) newScale / oldScale else 1.0f
 
-                                    // Scale around touch centroid focal point
-                                    var newOffset = centroid - (centroid - offset) * scaleFactor + pan
+                                    val currentOffset = Offset(offsetXAnim.value, offsetYAnim.value)
+                                    var newOffset = centroid - (centroid - currentOffset) * scaleFactor + pan
 
-                                    // Clamp pan offsets within PDF page bounds
-                                    if (newScale > 1.0f) {
+                                    if (newScale > 1.05f) {
                                         val maxX = (screenWidthPx * (newScale - 1f)) / 2f
                                         val maxY = (screenHeightPx * (newScale - 1f)) / 2f
                                         newOffset = Offset(
@@ -326,45 +303,49 @@ fun PdfViewerScreen(
                                         newOffset = Offset.Zero
                                     }
 
-                                    scale = newScale
-                                    offset = newOffset
-
-                                    if (state.showTouchIndicators) {
-                                        touchPoint1 = centroid
-                                        touchPoint2 = centroid + Offset(30f, 30f)
+                                    scope.launch {
+                                        scaleAnim.snapTo(if (newScale <= 1.05f) 1.0f else newScale)
+                                        offsetXAnim.snapTo(newOffset.x)
+                                        offsetYAnim.snapTo(newOffset.y)
                                     }
                                 }
                             }
                             .pointerInput(Unit) {
                                 detectTapGestures(
                                     onTap = {
+                                        if (state.isAutoSliding) {
+                                            viewModel.setAutoSlide(false)
+                                        }
                                         viewModel.toggleControlsVisibility()
                                     },
                                     onDoubleTap = { tapOffset ->
-                                        if (scale > 1.2f) {
-                                            scale = 1.0f
-                                            offset = Offset.Zero
-                                        } else {
-                                            val targetScale = 2.5f
+                                        if (state.isAutoSliding) {
+                                            viewModel.setAutoSlide(false)
+                                        }
+                                        val currentScale = scaleAnim.value
+                                        val targetScale = when {
+                                            currentScale < 1.5f -> 2.2f
+                                            currentScale < 2.8f -> 3.5f
+                                            else -> 1.0f
+                                        }
+                                        val targetOffset = if (targetScale > 1.05f) {
                                             val center = Offset(screenWidthPx / 2f, screenHeightPx / 2f)
-                                            var targetOffset = (center - tapOffset) * targetScale
+                                            val rawOffset = (center - tapOffset) * (targetScale - 1f)
                                             val maxX = (screenWidthPx * (targetScale - 1f)) / 2f
                                             val maxY = (screenHeightPx * (targetScale - 1f)) / 2f
-                                            targetOffset = Offset(
-                                                x = targetOffset.x.coerceIn(-maxX, maxX),
-                                                y = targetOffset.y.coerceIn(-maxY, maxY)
+                                            Offset(
+                                                x = rawOffset.x.coerceIn(-maxX, maxX),
+                                                y = rawOffset.y.coerceIn(-maxY, maxY)
                                             )
-                                            scale = targetScale
-                                            offset = targetOffset
+                                        } else {
+                                            Offset.Zero
                                         }
-                                    },
-                                    onPress = { tapOffset ->
-                                        if (state.showTouchIndicators) {
-                                            touchPoint1 = tapOffset
+
+                                        scope.launch {
+                                            launch { scaleAnim.animateTo(targetScale, tween(250)) }
+                                            launch { offsetXAnim.animateTo(targetOffset.x, tween(250)) }
+                                            launch { offsetYAnim.animateTo(targetOffset.y, tween(250)) }
                                         }
-                                        tryAwaitRelease()
-                                        touchPoint1 = null
-                                        touchPoint2 = null
                                     }
                                 )
                             }
@@ -373,140 +354,76 @@ fun PdfViewerScreen(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .graphicsLayer(
-                                    scaleX = scale,
-                                    scaleY = scale,
-                                    translationX = offset.x,
-                                    translationY = offset.y
+                                    scaleX = scaleAnim.value,
+                                    scaleY = scaleAnim.value,
+                                    translationX = offsetXAnim.value,
+                                    translationY = offsetYAnim.value
                                 )
                         ) {
-                            if (state.viewMode == PdfViewMode.VERTICAL) {
-                                val listState = rememberLazyListState(
-                                    initialFirstVisibleItemIndex = (state.currentPage - 1).coerceAtLeast(0)
-                                )
+                            val listState = rememberLazyListState(
+                                initialFirstVisibleItemIndex = (state.currentPage - 1).coerceAtLeast(0)
+                            )
 
-                                var previousIndex by remember { mutableIntStateOf(0) }
-                                var previousOffset by remember { mutableIntStateOf(0) }
+                            var previousIndex by remember { mutableIntStateOf(0) }
+                            var previousOffset by remember { mutableIntStateOf(0) }
 
-                                LaunchedEffect(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset) {
-                                    val currIdx = listState.firstVisibleItemIndex
-                                    val currOff = listState.firstVisibleItemScrollOffset
+                            LaunchedEffect(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset) {
+                                val currIdx = listState.firstVisibleItemIndex
+                                val currOff = listState.firstVisibleItemScrollOffset
 
-                                    if (currIdx == 0 && currOff == 0) {
+                                if (currIdx == 0 && currOff == 0) {
+                                    viewModel.setControlsVisible(true)
+                                } else {
+                                    val delta = if (currIdx != previousIndex) (currIdx - previousIndex) * 500 + (currOff - previousOffset) else (currOff - previousOffset)
+                                    if (delta > 20 && state.isControlsVisible) {
+                                        viewModel.setControlsVisible(false)
+                                    } else if (delta < -20 && !state.isControlsVisible) {
                                         viewModel.setControlsVisible(true)
-                                    } else {
-                                        val isScrollingDown = if (currIdx != previousIndex) currIdx > previousIndex else (currOff - previousOffset) > 15
-                                        val isScrollingUp = if (currIdx != previousIndex) currIdx < previousIndex else (previousOffset - currOff) > 15
-
-                                        if (isScrollingDown && state.isControlsVisible) {
-                                            viewModel.setControlsVisible(false)
-                                        } else if (isScrollingUp && !state.isControlsVisible) {
-                                            viewModel.setControlsVisible(true)
-                                        }
-                                    }
-
-                                    previousIndex = currIdx
-                                    previousOffset = currOff
-                                }
-
-                                val visiblePage by remember {
-                                    derivedStateOf {
-                                        val firstVisible = listState.firstVisibleItemIndex
-                                        (firstVisible + 1).coerceIn(1, state.totalPages)
                                     }
                                 }
 
-                                LaunchedEffect(visiblePage) {
-                                    viewModel.updateCurrentPage(visiblePage)
-                                }
+                                previousIndex = currIdx
+                                previousOffset = currOff
+                            }
 
-                                LaunchedEffect(state.currentPage) {
-                                    if (listState.firstVisibleItemIndex != state.currentPage - 1) {
-                                        listState.scrollToItem((state.currentPage - 1).coerceAtLeast(0))
-                                    }
-                                }
-
-                                LazyColumn(
-                                    state = listState,
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentPadding = PaddingValues(
-                                        top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 64.dp,
-                                        bottom = 80.dp,
-                                        start = 8.dp,
-                                        end = 8.dp
-                                    ),
-                                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                                ) {
-                                    itemsIndexed(
-                                        items = List(state.totalPages) { it },
-                                        key = { index, _ -> "pdf_page_$index" }
-                                    ) { pageIndex, _ ->
-                                        PdfPageView(
-                                            pageIndex = pageIndex,
-                                            targetWidth = screenWidthPx,
-                                            fitScaleMultiplier = fitScaleMultiplier,
-                                            renderScale = renderScale,
-                                            viewModel = viewModel
-                                        )
-                                    }
-                                }
-                            } else {
-                                val pagerState = rememberPagerState(
-                                    initialPage = (state.currentPage - 1).coerceAtLeast(0),
-                                    pageCount = { state.totalPages }
-                                )
-
-                                LaunchedEffect(pagerState.currentPage) {
-                                    viewModel.updateCurrentPage(pagerState.currentPage + 1)
-                                }
-
-                                LaunchedEffect(state.currentPage) {
-                                    if (pagerState.currentPage != state.currentPage - 1) {
-                                        pagerState.scrollToPage((state.currentPage - 1).coerceAtLeast(0))
-                                    }
-                                }
-
-                                HorizontalPager(
-                                    state = pagerState,
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 16.dp),
-                                    pageSpacing = 12.dp
-                                ) { pageIndex ->
-                                    PdfPageView(
-                                        pageIndex = pageIndex,
-                                        targetWidth = screenWidthPx,
-                                        fitScaleMultiplier = fitScaleMultiplier,
-                                        renderScale = renderScale,
-                                        viewModel = viewModel
-                                    )
+                            val visiblePage by remember {
+                                derivedStateOf {
+                                    val firstVisible = listState.firstVisibleItemIndex
+                                    (firstVisible + 1).coerceIn(1, state.totalPages)
                                 }
                             }
-                        }
 
-                        // Touch Indicators Overlay
-                        if (state.showTouchIndicators && (touchPoint1 != null || touchPoint2 != null)) {
-                            Canvas(modifier = Modifier.fillMaxSize()) {
-                                touchPoint1?.let { p1 ->
-                                    drawCircle(
-                                        color = Color(0x662196F3),
-                                        radius = 28.dp.toPx(),
-                                        center = p1
-                                    )
-                                    drawCircle(
-                                        color = Color(0xAA2196F3),
-                                        radius = 8.dp.toPx(),
-                                        center = p1
-                                    )
+                            LaunchedEffect(visiblePage) {
+                                viewModel.updateCurrentPage(visiblePage)
+                            }
+
+                            LaunchedEffect(state.currentPage) {
+                                if (listState.firstVisibleItemIndex != state.currentPage - 1) {
+                                    listState.scrollToItem((state.currentPage - 1).coerceAtLeast(0))
                                 }
-                                touchPoint2?.let { p2 ->
-                                    drawCircle(
-                                        color = Color(0x662196F3),
-                                        radius = 28.dp.toPx(),
-                                        center = p2
-                                    )
-                                    drawCircle(
-                                        color = Color(0xAA2196F3),
-                                        radius = 8.dp.toPx(),
-                                        center = p2
+                            }
+
+                            LazyColumn(
+                                state = listState,
+                                userScrollEnabled = scaleAnim.value <= 1.05f,
+                                modifier = Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(
+                                    top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 64.dp,
+                                    bottom = 80.dp,
+                                    start = 0.dp,
+                                    end = 0.dp
+                                ),
+                                verticalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                itemsIndexed(
+                                    items = List(state.totalPages) { it },
+                                    key = { index, _ -> "pdf_page_$index" }
+                                ) { pageIndex, _ ->
+                                    PdfPageView(
+                                        pageIndex = pageIndex,
+                                        targetWidth = screenWidthPx.toInt(),
+                                        renderScale = scaleAnim.value,
+                                        viewModel = viewModel
                                     )
                                 }
                             }
@@ -516,12 +433,12 @@ fun PdfViewerScreen(
                     // Overlay Top Bar
                     AnimatedVisibility(
                         visible = state.isControlsVisible,
-                        enter = fadeIn() + slideInVertically { -it },
-                        exit = fadeOut() + slideOutVertically { -it },
+                        enter = fadeIn(animationSpec = tween(180)) + slideInVertically(animationSpec = tween(180)) { -it },
+                        exit = fadeOut(animationSpec = tween(180)) + slideOutVertically(animationSpec = tween(180)) { -it },
                         modifier = Modifier.align(Alignment.TopCenter)
                     ) {
                         Surface(
-                            shadowElevation = 4.dp,
+                            shadowElevation = 2.dp,
                             color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
                             modifier = Modifier.fillMaxWidth()
                         ) {
@@ -529,10 +446,8 @@ fun PdfViewerScreen(
                                 title = state.fileName,
                                 currentPage = state.currentPage,
                                 totalPages = state.totalPages,
-                                viewMode = state.viewMode,
                                 isAutoSliding = state.isAutoSliding,
                                 onNavigateBack = onNavigateBack,
-                                onToggleViewMode = { viewModel.toggleViewMode() },
                                 onToggleAutoSlide = { viewModel.toggleAutoSlide() },
                                 onOpenMore = { showMoreSheet = true }
                             )
@@ -542,8 +457,8 @@ fun PdfViewerScreen(
                     // Overlay FAB
                     AnimatedVisibility(
                         visible = state.isControlsVisible && !state.isLoading && state.errorMessage == null && state.totalPages > 0,
-                        enter = fadeIn() + scaleIn(),
-                        exit = fadeOut() + scaleOut(),
+                        enter = fadeIn(animationSpec = tween(180)) + scaleIn(animationSpec = tween(180)),
+                        exit = fadeOut(animationSpec = tween(180)) + scaleOut(animationSpec = tween(180)),
                         modifier = Modifier
                             .align(Alignment.BottomEnd)
                             .padding(bottom = 24.dp, end = 24.dp)
@@ -562,26 +477,8 @@ fun PdfViewerScreen(
     }
 
     if (showShareSheet) {
-        val isWa = PdfShareManager.isWhatsAppInstalled(context)
-        val isTg = PdfShareManager.isTelegramInstalled(context)
-        val isGm = PdfShareManager.isGmailInstalled(context)
-
         PdfViewerShareSheet(
-            isWhatsAppInstalled = isWa,
-            isTelegramInstalled = isTg,
-            isGmailInstalled = isGm,
-            onShareToApp = { pkg ->
-                val shared = PdfShareManager.shareToApp(context, pdfUri, pkg)
-                if (!shared) {
-                    Toast.makeText(context, context.getString(R.string.pdf_could_not_share), Toast.LENGTH_SHORT).show()
-                }
-            },
-            onShareMore = {
-                val shared = PdfShareManager.shareToSystemChooser(context, pdfUri, context.getString(R.string.pdf_share))
-                if (!shared) {
-                    Toast.makeText(context, context.getString(R.string.pdf_no_share_app), Toast.LENGTH_SHORT).show()
-                }
-            },
+            pdfUri = pdfUri,
             onDismiss = { showShareSheet = false }
         )
     }
@@ -591,14 +488,8 @@ fun PdfViewerScreen(
             fileName = state.fileName,
             totalPages = state.totalPages,
             fileSizeStr = state.fileSizeStr,
-            viewMode = state.viewMode,
-            fitMode = state.fitMode,
-            showTouchIndicators = state.showTouchIndicators,
-            onToggleTouchIndicators = { viewModel.toggleTouchIndicators() },
             onOpenGoToPage = { viewModel.setShowPageJumpDialog(true) },
             onOpenThumbnails = { viewModel.setShowThumbnailsSheet(true) },
-            onToggleViewMode = { viewModel.toggleViewMode() },
-            onSelectFitMode = { viewModel.setFitMode(it) },
             onPrint = { printPdf() },
             onOpenWith = { openWithExternalApp() },
             onDismiss = { showMoreSheet = false },
@@ -732,26 +623,22 @@ fun PdfViewerScreen(
             }
         }
     }
-
 }
 
 @Composable
 private fun PdfPageView(
     pageIndex: Int,
     targetWidth: Int,
-    fitScaleMultiplier: Float,
     renderScale: Float = 1.0f,
     viewModel: PdfViewerViewModel
 ) {
     var bitmap by remember { mutableStateOf<Bitmap?>(null) }
     var isLoadingPage by remember { mutableStateOf(true) }
 
-    LaunchedEffect(pageIndex, targetWidth, fitScaleMultiplier, renderScale) {
-        isLoadingPage = (bitmap == null)
+    LaunchedEffect(pageIndex, targetWidth, renderScale) {
         val newBitmap = viewModel.renderPageBitmap(
             pageIndex = pageIndex,
             targetWidth = targetWidth,
-            scale = fitScaleMultiplier,
             renderScale = renderScale
         )
         if (newBitmap != null) {
@@ -764,7 +651,7 @@ private fun PdfPageView(
         modifier = Modifier
             .fillMaxWidth()
             .wrapContentHeight(),
-        shape = androidx.compose.ui.graphics.RectangleShape,
+        shape = RectangleShape,
         color = Color.White,
         shadowElevation = 0.dp,
         tonalElevation = 0.dp

@@ -1,23 +1,15 @@
 package com.synfusion.attendance.ui.pdf
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.SwapHoriz
-import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -31,30 +23,33 @@ fun PdfViewerTopBar(
     title: String,
     currentPage: Int,
     totalPages: Int,
-    viewMode: PdfViewMode,
     isAutoSliding: Boolean = false,
     onNavigateBack: () -> Unit,
-    onToggleViewMode: () -> Unit,
     onToggleAutoSlide: () -> Unit = {},
     onOpenMore: () -> Unit
 ) {
     TopAppBar(
         title = {
-            Column {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 Text(
                     text = title.ifEmpty { stringResource(R.string.pdf_viewer_title) },
-                    fontSize = 16.sp,
+                    fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    color = MaterialTheme.colorScheme.onBackground
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.weight(1f, fill = false)
                 )
                 if (totalPages > 0) {
                     Text(
                         text = "$currentPage / $totalPages",
-                        fontSize = 12.sp,
+                        fontSize = 13.sp,
                         fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.primary
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -62,47 +57,18 @@ fun PdfViewerTopBar(
         navigationIcon = {
             IconButton(onClick = onNavigateBack) {
                 Icon(
-                    imageVector = Icons.Default.ArrowBack,
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = stringResource(R.string.pdf_go_back),
                     tint = MaterialTheme.colorScheme.onBackground
                 )
             }
         },
         actions = {
-            if (totalPages > 0) {
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)),
-                    modifier = Modifier
-                        .padding(end = 4.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .clickable(onClick = onToggleViewMode)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Icon(
-                            imageVector = if (viewMode == PdfViewMode.VERTICAL) Icons.Default.SwapVert else Icons.Default.SwapHoriz,
-                            contentDescription = if (viewMode == PdfViewMode.VERTICAL) stringResource(R.string.pdf_vertical) else stringResource(R.string.pdf_horizontal),
-                            modifier = Modifier.size(16.dp),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                        Text(
-                            text = if (viewMode == PdfViewMode.VERTICAL) stringResource(R.string.pdf_vertical) else stringResource(R.string.pdf_horizontal),
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
-
+            if (totalPages > 1) {
                 IconButton(onClick = onToggleAutoSlide) {
                     Icon(
                         imageVector = if (isAutoSliding) Icons.Default.Pause else Icons.Default.PlayArrow,
-                        contentDescription = if (isAutoSliding) "Pause Auto-Slide" else "Play Auto-Slide",
+                        contentDescription = if (isAutoSliding) "Pause" else "Play",
                         tint = if (isAutoSliding) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground
                     )
                 }
@@ -117,7 +83,7 @@ fun PdfViewerTopBar(
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.background
+            containerColor = MaterialTheme.colorScheme.background.copy(alpha = 0.95f)
         ),
         windowInsets = TopAppBarDefaults.windowInsets
     )
