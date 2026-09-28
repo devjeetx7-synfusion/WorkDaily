@@ -636,7 +636,7 @@ fun DashboardScreen(
                     } else {
                         dashboardState.selectedLogs.sumOf { it.baseEarnings + it.overtimeAmount }
                     }
-                    AmountFormatter.format(total)
+                    AmountFormatter.formatWithSymbol(total, dashboardState.currencyCode)
                 } else null
             )
         }
@@ -826,7 +826,7 @@ fun PersonalStatsGrid(state: OfflineDashboardState, onNavigatePassbook: () -> Un
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "₹${AmountFormatter.format(state.todayEarned)}",
+                        text = AmountFormatter.formatWithSymbol(state.todayEarned, state.currencyCode),
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Bold,
                         color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent(),
@@ -855,7 +855,7 @@ fun PersonalStatsGrid(state: OfflineDashboardState, onNavigatePassbook: () -> Un
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "₹${AmountFormatter.format(state.monthEarned)}",
+                        text = AmountFormatter.formatWithSymbol(state.monthEarned, state.currencyCode),
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Bold,
                         color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent(),
@@ -955,7 +955,7 @@ fun PersonalQuickActions(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = "₹${AmountFormatter.format(todayAdvanceAmount)}",
+                            text = AmountFormatter.formatWithSymbol(todayAdvanceAmount, state.currencyCode),
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onBackground

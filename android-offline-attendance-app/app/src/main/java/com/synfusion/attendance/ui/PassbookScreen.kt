@@ -426,8 +426,8 @@ fun PassbookScreen(
 
                                             Spacer(modifier = Modifier.height(8.dp))
                                             val msg = when (settlementState) {
-                                                com.synfusion.attendance.utils.SettlementState.RECEIVE -> androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.you_will_receive_msg, AmountFormatter.format(settlement?.amountToReceive ?: state.finalBalance))
-                                                com.synfusion.attendance.utils.SettlementState.PAY_BACK -> androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.you_need_to_pay_back_msg, AmountFormatter.format(settlement?.amountToPayBack ?: kotlin.math.abs(state.finalBalance)))
+                                                com.synfusion.attendance.utils.SettlementState.RECEIVE -> androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.you_will_receive_msg, AmountFormatter.formatWithSymbol(settlement?.amountToReceive ?: state.finalBalance, state.currencyCode))
+                                                com.synfusion.attendance.utils.SettlementState.PAY_BACK -> androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.you_need_to_pay_back_msg, AmountFormatter.formatWithSymbol(settlement?.amountToPayBack ?: kotlin.math.abs(state.finalBalance), state.currencyCode))
                                                 com.synfusion.attendance.utils.SettlementState.SETTLED -> androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.settled_zero_pending)
                                             }
                                             Text(
@@ -741,8 +741,8 @@ fun PassbookScreen(
 
                                                     Spacer(modifier = Modifier.height(8.dp))
                                                     val msg = when (settlementState) {
-                                                        com.synfusion.attendance.utils.SettlementState.RECEIVE -> androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.you_will_receive_msg, AmountFormatter.format(settlement?.amountToReceive ?: state.finalBalance))
-                                                        com.synfusion.attendance.utils.SettlementState.PAY_BACK -> androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.you_need_to_pay_back_msg, AmountFormatter.format(settlement?.amountToPayBack ?: kotlin.math.abs(state.finalBalance)))
+                                                        com.synfusion.attendance.utils.SettlementState.RECEIVE -> androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.you_will_receive_msg, AmountFormatter.formatWithSymbol(settlement?.amountToReceive ?: state.finalBalance, state.currencyCode))
+                                                        com.synfusion.attendance.utils.SettlementState.PAY_BACK -> androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.you_need_to_pay_back_msg, AmountFormatter.formatWithSymbol(settlement?.amountToPayBack ?: kotlin.math.abs(state.finalBalance), state.currencyCode))
                                                         com.synfusion.attendance.utils.SettlementState.SETTLED -> androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.settled_zero_pending)
                                                     }
                                                     Text(

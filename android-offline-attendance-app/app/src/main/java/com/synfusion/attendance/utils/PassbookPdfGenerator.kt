@@ -384,7 +384,7 @@ object PassbookPdfGenerator {
         // Month Summary Section
         val rsStr = data.currencySymbol
         val baseSalary = data.grossEarned - data.totalOvertimeEarnings
-        val settlementMsg = data.settlement?.settlementMessage ?: if (data.netPayable > 0) "YOU WILL RECEIVE $rsStr${AmountFormatter.format(data.netPayable, data.currencyCode)}" else if (data.netPayable < 0) "YOU NEED TO PAY BACK $rsStr${AmountFormatter.format(kotlin.math.abs(data.netPayable), data.currencyCode)}" else "SETTLED — ${rsStr}0 PENDING"
+        val settlementMsg = data.settlement?.settlementMessage ?: if (data.netPayable > 0) "YOU WILL RECEIVE " + AmountFormatter.formatWithSymbol(data.netPayable, data.currencyCode) else if (data.netPayable < 0) "YOU NEED TO PAY BACK " + AmountFormatter.formatWithSymbol(kotlin.math.abs(data.netPayable), data.currencyCode) else context.getString(R.string.settled_zero_pending, rsStr)
 
         val settlementLabel = when (data.settlement?.settlementState) {
             SettlementState.PAY_BACK -> context.getString(R.string.pdf_amount_to_pay_back)
@@ -393,17 +393,17 @@ object PassbookPdfGenerator {
         }
 
         val settlementVal = when (data.settlement?.settlementState) {
-            SettlementState.PAY_BACK -> "$rsStr ${AmountFormatter.format(data.settlement.amountToPayBack, data.currencyCode)}"
-            SettlementState.RECEIVE -> "$rsStr ${AmountFormatter.format(data.settlement.amountToReceive, data.currencyCode)}"
+            SettlementState.PAY_BACK -> AmountFormatter.formatWithSymbol(data.settlement.amountToPayBack, data.currencyCode)
+            SettlementState.RECEIVE -> AmountFormatter.formatWithSymbol(data.settlement.amountToReceive, data.currencyCode)
             SettlementState.SETTLED -> "$rsStr 0"
-            else -> if (data.netPayable < 0) "$rsStr ${AmountFormatter.format(kotlin.math.abs(data.netPayable), data.currencyCode)}" else "$rsStr ${AmountFormatter.format(data.netPayable, data.currencyCode)}"
+            else -> if (data.netPayable < 0) AmountFormatter.formatWithSymbol(kotlin.math.abs(data.netPayable), data.currencyCode) else AmountFormatter.formatWithSymbol(data.netPayable, data.currencyCode)
         }
 
         val summaryItems = listOf(
-            Pair(context.getString(R.string.pdf_earnings), "$rsStr ${AmountFormatter.format(data.grossEarned, data.currencyCode)}"),
-            Pair(context.getString(R.string.salary), "$rsStr ${AmountFormatter.format(baseSalary, data.currencyCode)}"),
-            Pair(context.getString(R.string.overtime), "$rsStr ${AmountFormatter.format(data.totalOvertimeEarnings, data.currencyCode)}"),
-            Pair(context.getString(R.string.pdf_advance), "$rsStr ${AmountFormatter.format(data.advanceDeducted, data.currencyCode)}"),
+            Pair(context.getString(R.string.pdf_earnings), AmountFormatter.formatWithSymbol(data.grossEarned, data.currencyCode)),
+            Pair(context.getString(R.string.salary), AmountFormatter.formatWithSymbol(baseSalary, data.currencyCode)),
+            Pair(context.getString(R.string.overtime), AmountFormatter.formatWithSymbol(data.totalOvertimeEarnings, data.currencyCode)),
+            Pair(context.getString(R.string.pdf_advance), AmountFormatter.formatWithSymbol(data.advanceDeducted, data.currencyCode)),
             Pair(settlementLabel, settlementVal),
             Pair(context.getString(R.string.present_1), data.totalPresent.toString()),
             Pair(context.getString(R.string.half_day), data.totalHalfDays.toString()),
@@ -574,14 +574,14 @@ object PassbookPdfGenerator {
         val hrsStr = context.getString(R.string.pdf_hrs)
 
         val summaryItems = listOf(
-            Pair(context.getString(R.string.pdf_earnings), "$rsStr ${AmountFormatter.format(data.totalEarnings, data.currencyCode)}"),
-            Pair(context.getString(R.string.pdf_salary), "$rsStr ${AmountFormatter.format(data.totalSalary, data.currencyCode)}"),
-            Pair(context.getString(R.string.pdf_overtime), "$rsStr ${AmountFormatter.format(data.totalOvertime, data.currencyCode)}"),
-            Pair(context.getString(R.string.pdf_advance), "$rsStr ${AmountFormatter.format(data.totalAdvance, data.currencyCode)}"),
+            Pair(context.getString(R.string.pdf_earnings), AmountFormatter.formatWithSymbol(data.totalEarnings, data.currencyCode)),
+            Pair(context.getString(R.string.pdf_salary), AmountFormatter.formatWithSymbol(data.totalSalary, data.currencyCode)),
+            Pair(context.getString(R.string.pdf_overtime), AmountFormatter.formatWithSymbol(data.totalOvertime, data.currencyCode)),
+            Pair(context.getString(R.string.pdf_advance), AmountFormatter.formatWithSymbol(data.totalAdvance, data.currencyCode)),
             Pair(context.getString(R.string.pdf_present), data.totalPresent.toString()),
             Pair(context.getString(R.string.pdf_half), data.totalHalfDays.toString()),
             Pair(context.getString(R.string.pdf_absent), data.totalAbsent.toString()),
-            Pair(context.getString(R.string.pdf_amount_to_receive), "$rsStr ${AmountFormatter.format(data.amountToReceive, data.currencyCode)}")
+            Pair(context.getString(R.string.pdf_amount_to_receive), AmountFormatter.formatWithSymbol(data.amountToReceive, data.currencyCode))
         )
 
         drawOverallSummary(renderContext, summaryItems)
@@ -622,10 +622,10 @@ object PassbookPdfGenerator {
                 // Monthly Summary bar
                 val mSumStr = context.getString(
                     R.string.pdf_month_summary_strip,
-                    "$rsStr${AmountFormatter.format(monthGroup.totalEarnings, data.currencyCode)}",
-                    "$rsStr${AmountFormatter.format(monthGroup.totalSalary, data.currencyCode)}",
-                    "$rsStr${AmountFormatter.format(monthGroup.totalOvertime, data.currencyCode)}",
-                    "$rsStr${AmountFormatter.format(monthGroup.totalAdvance, data.currencyCode)}",
+                    AmountFormatter.formatWithSymbol(monthGroup.totalEarnings, data.currencyCode),
+                    AmountFormatter.formatWithSymbol(monthGroup.totalSalary, data.currencyCode),
+                    AmountFormatter.formatWithSymbol(monthGroup.totalOvertime, data.currencyCode),
+                    AmountFormatter.formatWithSymbol(monthGroup.totalAdvance, data.currencyCode),
                     monthGroup.presentCount,
                     monthGroup.halfCount,
                     monthGroup.absentCount
@@ -655,16 +655,16 @@ object PassbookPdfGenerator {
                     rowCanvas.drawRect(MARGIN, renderContext.yPos, PAGE_WIDTH - MARGIN, renderContext.yPos + rowHeight, renderContext.paintRectFill)
 
                     val otText = if (record.overtimeAmount > 0) {
-                        if (record.overtimeHours > 0) "${record.overtimeHours} $hrsStr / $rsStr ${AmountFormatter.format(record.overtimeAmount, data.currencyCode)}"
-                        else "$rsStr ${AmountFormatter.format(record.overtimeAmount, data.currencyCode)}"
+                        if (record.overtimeHours > 0) "${record.overtimeHours} $hrsStr / " + AmountFormatter.formatWithSymbol(record.overtimeAmount, data.currencyCode)
+                        else AmountFormatter.formatWithSymbol(record.overtimeAmount, data.currencyCode)
                     } else "-"
 
                     val rVals = arrayOf(
                         record.dateStr,
                         record.statusStr,
-                        "$rsStr ${AmountFormatter.format(record.baseEarnings, data.currencyCode)}",
+                        AmountFormatter.formatWithSymbol(record.baseEarnings, data.currencyCode),
                         otText,
-                        if (record.advanceAmount > 0) "$rsStr ${AmountFormatter.format(record.advanceAmount, data.currencyCode)}" else "-"
+                        if (record.advanceAmount > 0) AmountFormatter.formatWithSymbol(record.advanceAmount, data.currencyCode) else "-"
                     )
 
                     var curX = MARGIN

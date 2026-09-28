@@ -237,7 +237,7 @@ fun AllTimePassbookScreen(
                         } else {
                             state.selectedLogs.sumOf { it.baseEarnings + it.overtimeAmount }
                         }
-                        AmountFormatter.format(total)
+                        AmountFormatter.formatWithSymbol(total, state.currencyCode)
                     } else null
                 )
             }
@@ -535,8 +535,8 @@ fun EmploymentSummarySection(state: com.synfusion.attendance.viewmodel.OfflineAl
 
                 Spacer(modifier = Modifier.height(10.dp))
                 val msg = when (settlementState) {
-                    com.synfusion.attendance.utils.SettlementState.RECEIVE -> androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.you_will_receive_msg, AmountFormatter.format(settlement?.amountToReceive ?: state.totalNetEarnings))
-                    com.synfusion.attendance.utils.SettlementState.PAY_BACK -> androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.you_need_to_pay_back_msg, AmountFormatter.format(settlement?.amountToPayBack ?: kotlin.math.abs(state.totalNetEarnings)))
+                    com.synfusion.attendance.utils.SettlementState.RECEIVE -> androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.you_will_receive_msg, AmountFormatter.formatWithSymbol(settlement?.amountToReceive ?: state.totalNetEarnings, state.currencyCode))
+                    com.synfusion.attendance.utils.SettlementState.PAY_BACK -> androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.you_need_to_pay_back_msg, AmountFormatter.formatWithSymbol(settlement?.amountToPayBack ?: kotlin.math.abs(state.totalNetEarnings), state.currencyCode))
                     com.synfusion.attendance.utils.SettlementState.SETTLED -> androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.settled_zero_pending)
                 }
                 Surface(
