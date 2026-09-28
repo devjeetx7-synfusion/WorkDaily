@@ -911,29 +911,29 @@ fun EarningsLineChart(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.earning_label, AmountFormatter.format(record.earnings)),
+                                text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.earning_label, AmountFormatter.formatWithSymbol(record.earnings, currencyCode)),
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = primaryColor
                             )
                             if (record.baseEarnings > 0 && record.baseEarnings != record.earnings) {
                                 Text(
-                                    text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.regular_label, AmountFormatter.format(record.baseEarnings)),
+                                    text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.regular_label, AmountFormatter.formatWithSymbol(record.baseEarnings, currencyCode)),
                                     fontSize = 12.sp,
                                     color = onSurfaceVariantColor
                                 )
                             } else if (record.earnings > 0 && record.overtimeAmount > 0) {
                                 Text(
-                                    text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.regular_label, AmountFormatter.format(record.baseEarnings)),
+                                    text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.regular_label, AmountFormatter.formatWithSymbol(record.baseEarnings, currencyCode)),
                                     fontSize = 12.sp,
                                     color = onSurfaceVariantColor
                                 )
                             }
                             if (record.overtimeAmount > 0 || record.overtimeHours > 0) {
                                 val otText = if (record.overtimeHours > 0) {
-                                    androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.overtime_label_hrs, AmountFormatter.format(record.overtimeAmount), record.overtimeHours)
+                                    androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.overtime_label_hrs, AmountFormatter.formatWithSymbol(record.overtimeAmount, currencyCode), record.overtimeHours)
                                 } else {
-                                    androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.overtime_label, AmountFormatter.format(record.overtimeAmount))
+                                    androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.overtime_label, AmountFormatter.formatWithSymbol(record.overtimeAmount, currencyCode))
                                 }
                                 Text(
                                     text = otText,

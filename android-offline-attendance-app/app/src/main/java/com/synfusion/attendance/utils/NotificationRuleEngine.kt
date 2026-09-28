@@ -533,13 +533,13 @@ object NotificationRuleEngine {
             "halfDays" to halfDaysCount.toString(),
             "absentDays" to absentCount.toString(),
             "workingDays" to AmountFormatter.format(workingDays),
-            "totalEarnings" to AmountFormatter.format(totalEarnings),
+            "totalEarnings" to AmountFormatter.formatWithSymbol(totalEarnings, user?.currencyCode ?: "INR"),
             "overtime" to overtimeHours.toString(),
-            "advance" to AmountFormatter.format(advanceAmount),
-            "netPayable" to AmountFormatter.format(netPayable),
+            "advance" to AmountFormatter.formatWithSymbol(advanceAmount, user?.currencyCode ?: "INR"),
+            "netPayable" to AmountFormatter.formatWithSymbol(netPayable, user?.currencyCode ?: "INR"),
             "attendancePercentage" to attendancePercentage,
             "streak" to streak.toString(),
-            "amount" to AmountFormatter.format(amountVal),
+            "amount" to AmountFormatter.formatWithSymbol(amountVal, user?.currencyCode ?: "INR"),
             "hours" to hoursVal,
             "time" to SimpleDateFormat("hh:mm a", Locale.getDefault()).format(Date())
         )

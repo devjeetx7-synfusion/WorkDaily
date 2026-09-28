@@ -80,8 +80,8 @@ class PdfExportManager(
                 val advanceAmt = log.advanceAmount ?: 0.0
 
                 val otPdfText = if (log.overtimeAmount > 0) {
-                    if (log.overtimeHours > 0) "${log.overtimeHours} $hrsStr / $rsStr ${AmountFormatter.format(log.overtimeAmount, userCurrency)}"
-                    else "$rsStr ${AmountFormatter.format(log.overtimeAmount, userCurrency)}"
+                    if (log.overtimeHours > 0) "${log.overtimeHours} $hrsStr / " + AmountFormatter.formatWithSymbol(log.overtimeAmount, userCurrency)
+                    else AmountFormatter.formatWithSymbol(log.overtimeAmount, userCurrency)
                 } else "-"
 
                 val statusText = if (log.status == "present") {
@@ -94,9 +94,9 @@ class PdfExportManager(
                     date = log.date.split("-").asReversed().joinToString("/"),
                     status = statusText,
                     workType = workType,
-                    dailyWage = "$rsStr ${AmountFormatter.format(cachedDefaultWage, userCurrency)}",
+                    dailyWage = AmountFormatter.formatWithSymbol(cachedDefaultWage, userCurrency),
                     overtime = otPdfText,
-                    advanceAmount = if (log.status == "advance" || advanceAmt > 0) "$rsStr ${AmountFormatter.format(advanceAmt, userCurrency)}" else "-",
+                    advanceAmount = if (log.status == "advance" || advanceAmt > 0) AmountFormatter.formatWithSymbol(advanceAmt, userCurrency) else "-",
                     runningBalance = "", // populated below
                     note = log.note ?: ""
                 )
@@ -111,7 +111,7 @@ class PdfExportManager(
                 currentRunningBalanceBd = currentRunningBalanceBd.add(dailyEarnedBd).add(otAmtBd).subtract(advanceAmtBd)
 
                 val origPdfLog = sortedLogs[idx]
-                origPdfLog.copy(runningBalance = "$rsStr ${AmountFormatter.format(currentRunningBalanceBd.toDouble(), userCurrency)}")
+                origPdfLog.copy(runningBalance = AmountFormatter.formatWithSymbol(currentRunningBalanceBd.toDouble(), userCurrency))
             }
 
             val calendar = java.util.Calendar.getInstance()

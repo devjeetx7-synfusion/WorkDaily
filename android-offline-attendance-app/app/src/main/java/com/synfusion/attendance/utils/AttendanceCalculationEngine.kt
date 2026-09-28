@@ -80,7 +80,7 @@ object AttendanceCalculationEngine {
                     amountToReceive = amtReceive,
                     amountToPayBack = 0.0,
                     settlementState = SettlementState.RECEIVE,
-                    settlementMessage = "YOU WILL RECEIVE ₹${AmountFormatter.format(amtReceive)}"
+                    settlementMessage = "YOU WILL RECEIVE " + AmountFormatter.formatWithSymbol(amtReceive, userCurrency)
                 )
             }
             netSettlementBd.compareTo(zeroBd) < 0 -> {
@@ -95,7 +95,7 @@ object AttendanceCalculationEngine {
                     amountToReceive = 0.0,
                     amountToPayBack = amtPayBack,
                     settlementState = SettlementState.PAY_BACK,
-                    settlementMessage = "YOU NEED TO PAY BACK ₹${AmountFormatter.format(amtPayBack)}"
+                    settlementMessage = "YOU NEED TO PAY BACK " + AmountFormatter.formatWithSymbol(amtPayBack, userCurrency)
                 )
             }
             else -> {

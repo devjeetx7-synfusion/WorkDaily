@@ -194,7 +194,7 @@
     <string name="edit_advance_payment">एडवांस बदलें</string>
 
     <string name="edit_advance">एडवांस एडिट</string>
-    <string name="amount">रकम (₹)</string>
+    <string name="amount">रकम</string>
     <string name="save">सेव करें</string>
 
     <string name="no_internet_connection">इंटरनेट कनेक्ट नहीं है</string>
@@ -216,7 +216,7 @@
     <string name="daily_log">आज का काम दर्ज करें</string>
 
     <string name="overtime_hours">ओवरटाइम (घंटे)</string>
-    <string name="ot_amount">ओवरटाइम के पैसे (₹)</string>
+    <string name="ot_amount">ओवरटाइम के पैसे</string>
 
     <string name="add_note_optional">कोई नोट लिखें (Optional)</string>
 
@@ -464,7 +464,7 @@
 
     <string name="all_amount_drilldown">कुल पैसे</string>
 
-    <string name="all_ot_drilldown">ओवरटाइम: %1$s घंटे (₹%2$s)</string>
+    <string name="all_ot_drilldown">ओवरटाइम: %1$s घंटे (%2$s)</string>
 
     <string name="app_language">ऐप की भाषा</string>
 
@@ -501,7 +501,7 @@
 
     <string name="pdf_subtitle_passbook">डिजिटल पासबुक</string>
 
-    <string name="pdf_rs">₹</string>
+    <string name="pdf_rs"></string>
     <string name="pdf_hrs">घंटे</string>
 
     <string name="pdf_present_half_value">%1$d प्रेजेंट / %2$d हाफ डे</string>
@@ -742,11 +742,11 @@
 
     <string name="settlement_status">हिसाब का स्टेटस</string>
 
-    <string name="settled_zero_pending">पूरा हिसाब हो गया — ₹0 बकाया</string>
+    <string name="settled_zero_pending">पूरा हिसाब हो गया — %1$s0 बकाया</string>
 
-    <string name="you_will_receive_msg">आपको ₹%1$s मिलेंगे</string>
+    <string name="you_will_receive_msg">आपको %1$s मिलेंगे</string>
 
-    <string name="you_need_to_pay_back_msg">आपको ₹%1$s वापस देने हैं</string>
+    <string name="you_need_to_pay_back_msg">आपको %1$s वापस देने हैं</string>
 
     <!-- DrillDown Category Titles -->
     <string name="drilldown_earnings">कमाई</string>
@@ -773,7 +773,7 @@
     <string name="records_count">%1$d रिकॉर्ड</string>
 
     <!-- Dashboard Strings -->
-    <string name="advance_payment_rs">एडवांस (₹)</string>
+    <string name="advance_payment_rs">एडवांस</string>
 
     <string name="marked_half_day">हाफ डे दर्ज हुआ</string>
 
@@ -782,13 +782,13 @@
     <string name="marked_absent">छुट्टी दर्ज हुई</string>
 
     <!-- Chart Strings -->
-    <string name="earning_label">कमाई: ₹%1$s</string>
+    <string name="earning_label">कमाई: %1$s</string>
 
-    <string name="regular_label">दिहाड़ी: ₹%1$s</string>
+    <string name="regular_label">दिहाड़ी: %1$s</string>
 
-    <string name="overtime_label_hrs">ओवरटाइम: ₹%1$s (%2$d घंटे)</string>
+    <string name="overtime_label_hrs">ओवरटाइम: %1$s (%2$d घंटे)</string>
 
-    <string name="overtime_label">ओवरटाइम: ₹%1$s</string>
+    <string name="overtime_label">ओवरटाइम: %1$s</string>
 
     <string name="previous_month">पिछला</string>
 

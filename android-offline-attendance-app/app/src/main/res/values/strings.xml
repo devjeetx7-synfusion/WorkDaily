@@ -145,7 +145,7 @@
     <string name="view_my_passbook">View My Passbook</string>
     <string name="daily_log">DAILY LOG</string>
     <string name="overtime_hours">Overtime (Hours)</string>
-    <string name="ot_amount">OT Amount (₹)</string>
+    <string name="ot_amount">OT Amount</string>
     <string name="add_note_optional">Add Note (Optional)</string>
     <string name="mark_absent">Mark Absent</string>
     <string name="remove_attendance">Remove Attendance</string>
@@ -290,7 +290,7 @@
     <string name="download_pdf">Download PDF</string>
     <string name="all_records_drilldown">Total Records</string>
     <string name="all_amount_drilldown">Total Amount</string>
-    <string name="all_ot_drilldown">OT: %1$s hrs (₹%2$s)</string>
+    <string name="all_ot_drilldown">OT: %1$s hrs (%2$s)</string>
     <string name="app_language">App Language</string>
     <string name="apply_settings">Apply Settings</string>
 
@@ -457,9 +457,9 @@
     <string name="amount_to_receive">Amount To Receive</string>
     <string name="amount_to_pay_back">Amount To Pay Back</string>
     <string name="settlement_status">Settlement Status</string>
-    <string name="settled_zero_pending">SETTLED — ₹0 PENDING</string>
-    <string name="you_will_receive_msg">YOU WILL RECEIVE ₹%1$s</string>
-    <string name="you_need_to_pay_back_msg">YOU NEED TO PAY BACK ₹%1$s</string>
+    <string name="settled_zero_pending">SETTLED — %1$s0 PENDING</string>
+    <string name="you_will_receive_msg">YOU WILL RECEIVE %1$s</string>
+    <string name="you_need_to_pay_back_msg">YOU NEED TO PAY BACK %1$s</string>
 
     <!-- DrillDown Category Titles -->
     <string name="drilldown_earnings">Earnings</string>
@@ -477,16 +477,16 @@
     <string name="records_count">%1$d records</string>
 
     <!-- Dashboard Strings -->
-    <string name="advance_payment_rs">Advance Payment (₹)</string>
+    <string name="advance_payment_rs">Advance Payment</string>
     <string name="marked_half_day">Marked Half Day</string>
     <string name="marked_present">Marked Present</string>
     <string name="marked_absent">Marked Absent</string>
 
     <!-- Chart Strings -->
-    <string name="earning_label">Earning: ₹%1$s</string>
-    <string name="regular_label">Regular: ₹%1$s</string>
-    <string name="overtime_label_hrs">Overtime: ₹%1$s (%2$dh)</string>
-    <string name="overtime_label">Overtime: ₹%1$s</string>
+    <string name="earning_label">Earning: %1$s</string>
+    <string name="regular_label">Regular: %1$s</string>
+    <string name="overtime_label_hrs">Overtime: %1$s (%2$dh)</string>
+    <string name="overtime_label">Overtime: %1$s</string>
     <string name="previous_month">Previous</string>
     <string name="next_month">Next</string>
 

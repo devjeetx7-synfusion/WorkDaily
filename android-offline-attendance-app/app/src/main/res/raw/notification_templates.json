@@ -419,7 +419,7 @@
     {
       "id": "overtime_003",
       "title": "Paisa hi paisa hoga! 💰",
-      "message": "Overtime ka ₹{amount} passbook me jud gaya hai! Ab toh party banti hai bhai! 💵",
+      "message": "Overtime ka {amount} passbook me jud gaya hai! Ab toh party banti hai bhai! 💵",
       "priority": "normal",
       "action": "home",
       "category": "overtime"
@@ -435,7 +435,7 @@
     {
       "id": "overtime_005",
       "title": "Zyada mehnat, zyada paisa! 💵",
-      "message": "Zyada mehnat = zyada paisa! Aaj ke {hours} ghante overtime ke ₹{amount} pakke!",
+      "message": "Zyada mehnat = zyada paisa! Aaj ke {hours} ghante overtime ke {amount} pakke!",
       "priority": "normal",
       "action": "home",
       "category": "overtime"
@@ -467,7 +467,7 @@
     {
       "id": "overtime_009",
       "title": "Overtime ka meetha paisa! 🍯",
-      "message": "Mehnat ka phal meetha hota hai, aur overtime ka paisa aur bhi meetha! ₹{amount} extra! 💰",
+      "message": "Mehnat ka phal meetha hota hai, aur overtime ka paisa aur bhi meetha! {amount} extra! 💰",
       "priority": "normal",
       "action": "home",
       "category": "overtime"
@@ -499,7 +499,7 @@
     {
       "id": "overtime_threshold_003",
       "title": "Overtime blast! 💰",
-      "message": "{userName}, aapki is mahine ki overtime kamai ₹{amount} paar kar chuki hai! 💰",
+      "message": "{userName}, aapki is mahine ki overtime kamai {amount} paar kar chuki hai! 💰",
       "priority": "normal",
       "action": "home",
       "category": "overtime_threshold"
@@ -523,7 +523,7 @@
     {
       "id": "overtime_threshold_006",
       "title": "Passbook bhar gayi bhai! 📖",
-      "message": "Overtime se passbook bhar gayi hai bhai! ₹{amount} ki extra kamai record hui.",
+      "message": "Overtime se passbook bhar gayi hai bhai! {amount} ki extra kamai record hui.",
       "priority": "normal",
       "action": "home",
       "category": "overtime_threshold"
@@ -571,7 +571,7 @@
     {
       "id": "daily_summary_002",
       "title": "Din bhar ka lekha-jokha! 📑",
-      "message": "{userName}, aaj ki shift poori. Aaj ki kul dihadi kamai: ₹{amount}.",
+      "message": "{userName}, aaj ki shift poori. Aaj ki kul dihadi kamai: {amount}.",
       "priority": "normal",
       "action": "passbook",
       "category": "daily_summary"
@@ -579,7 +579,7 @@
     {
       "id": "daily_summary_003",
       "title": "Aaj kitni kamai hui? 💰",
-      "message": "Aaj ki summary ready: {hours} hrs kaam kiya aur ₹{amount} ki shuddh kamai hui. 📊",
+      "message": "Aaj ki summary ready: {hours} hrs kaam kiya aur {amount} ki shuddh kamai hui. 📊",
       "priority": "normal",
       "action": "passbook",
       "category": "daily_summary"
@@ -587,7 +587,7 @@
     {
       "id": "daily_summary_004",
       "title": "Daily summary aa gayi! ⚡",
-      "message": "{date} ka poora hisaab record ho gaya. Aaj ka kul amount: ₹{amount}! 👍",
+      "message": "{date} ka poora hisaab record ho gaya. Aaj ka kul amount: {amount}! 👍",
       "priority": "normal",
       "action": "passbook",
       "category": "daily_summary"
@@ -595,7 +595,7 @@
     {
       "id": "daily_summary_005",
       "title": "Aaj ki dihadi lock! 🔒",
-      "message": "Din bhar ka hisaab: attendance mark, aaj ki kul dihadi ₹{amount}.",
+      "message": "Din bhar ka hisaab: attendance mark, aaj ki kul dihadi {amount}.",
       "priority": "normal",
       "action": "passbook",
       "category": "daily_summary"
@@ -603,7 +603,7 @@
     {
       "id": "daily_summary_006",
       "title": "Tijori me hisaab safe! 🔐",
-      "message": "{userName}, aaj ki attendance aur ₹{amount} ka hisaab tijori me safe hai.",
+      "message": "{userName}, aaj ki attendance aur {amount} ka hisaab tijori me safe hai.",
       "priority": "normal",
       "action": "passbook",
       "category": "daily_summary"
@@ -611,7 +611,7 @@
     {
       "id": "daily_summary_007",
       "title": "Duty samapt, hisaab ready! 🏁",
-      "message": "Aaj ki duty samapt! {hours} hrs kaam, ₹{amount} kul kamai. Passbook dekho!",
+      "message": "Aaj ki duty samapt! {hours} hrs kaam, {amount} kul kamai. Passbook dekho!",
       "priority": "normal",
       "action": "passbook",
       "category": "daily_summary"
@@ -627,7 +627,7 @@
     {
       "id": "daily_summary_009",
       "title": "Net kamai calculate! 💰",
-      "message": "WorkDaily summary: Aaj ki net payable rashi ₹{netPayable} calculate ho gayi hai. 💰",
+      "message": "WorkDaily summary: Aaj ki net payable rashi {netPayable} calculate ho gayi hai. 💰",
       "priority": "normal",
       "action": "passbook",
       "category": "daily_summary"
@@ -651,7 +651,7 @@
     {
       "id": "weekly_summary_002",
       "title": "Ravivar ka maha-hisaab! 💰",
-      "message": "Weekly report: {presentDays} din kaam kiya, kul kamai ₹{totalEarnings} hui hai! 📊",
+      "message": "Weekly report: {presentDays} din kaam kiya, kul kamai {totalEarnings} hui hai! 📊",
       "priority": "normal",
       "action": "passbook",
       "category": "weekly_summary"
@@ -659,7 +659,7 @@
     {
       "id": "weekly_summary_003",
       "title": "Weekly report card! 📑",
-      "message": "{userName}, is hafte aapne {workingDays} working days poore kiye. Net payable: ₹{netPayable}.",
+      "message": "{userName}, is hafte aapne {workingDays} working days poore kiye. Net payable: {netPayable}.",
       "priority": "normal",
       "action": "passbook",
       "category": "weekly_summary"
@@ -667,7 +667,7 @@
     {
       "id": "weekly_summary_004",
       "title": "Hafta khatam, hisaab shuru! 🏆",
-      "message": "Hafta khatam! Kul kamai ₹{totalEarnings}, jisme se ₹{advance} advance liya tha. 💰",
+      "message": "Hafta khatam! Kul kamai {totalEarnings}, jisme se {advance} advance liya tha. 💰",
       "priority": "normal",
       "action": "passbook",
       "category": "weekly_summary"
@@ -683,7 +683,7 @@
     {
       "id": "weekly_summary_006",
       "title": "Net payment ki summary! 💵",
-      "message": "Is hafte ka net payment: ₹{netPayable} ({presentDays} din present, {absentDays} din absent).",
+      "message": "Is hafte ka net payment: {netPayable} ({presentDays} din present, {absentDays} din absent).",
       "priority": "normal",
       "action": "passbook",
       "category": "weekly_summary"
@@ -691,7 +691,7 @@
     {
       "id": "weekly_summary_007",
       "title": "Shandar hafta raha! 🌟",
-      "message": "Shandar hafta raha {userName}! Aapne {workingDays} dino me ₹{totalEarnings} kamaye.",
+      "message": "Shandar hafta raha {userName}! Aapne {workingDays} dino me {totalEarnings} kamaye.",
       "priority": "normal",
       "action": "passbook",
       "category": "weekly_summary"
@@ -699,7 +699,7 @@
     {
       "id": "weekly_summary_008",
       "title": "Register close ho gaya! 🔒",
-      "message": "Hafte ka register close! Net payable rashi ₹{netPayable} bani hai, passbook dekho!",
+      "message": "Hafte ka register close! Net payable rashi {netPayable} bani hai, passbook dekho!",
       "priority": "normal",
       "action": "passbook",
       "category": "weekly_summary"
@@ -707,7 +707,7 @@
     {
       "id": "weekly_summary_009",
       "title": "Weekly breakdown ready! 📊",
-      "message": "Weekly breakdown: Present: {presentDays} days, OT: {overtime} hrs, Kamai: ₹{totalEarnings}.",
+      "message": "Weekly breakdown: Present: {presentDays} days, OT: {overtime} hrs, Kamai: {totalEarnings}.",
       "priority": "normal",
       "action": "passbook",
       "category": "weekly_summary"
@@ -731,7 +731,7 @@
     {
       "id": "monthly_summary_002",
       "title": "Mahina poora, salary time! 💰",
-      "message": "Mahina khatam! Kul kamai: ₹{totalEarnings}, Advance: ₹{advance}, Net Payable: ₹{netPayable}! 💰",
+      "message": "Mahina khatam! Kul kamai: {totalEarnings}, Advance: {advance}, Net Payable: {netPayable}! 💰",
       "priority": "normal",
       "action": "passbook",
       "category": "monthly_summary"
@@ -747,7 +747,7 @@
     {
       "id": "monthly_summary_004",
       "title": "Mahine ka report card! 📑",
-      "message": "Mahine bhar ka hisaab: {presentDays} din present, {absentDays} din absent. Net payable: ₹{netPayable}!",
+      "message": "Mahine bhar ka hisaab: {presentDays} din present, {absentDays} din absent. Net payable: {netPayable}!",
       "priority": "normal",
       "action": "passbook",
       "category": "monthly_summary"
@@ -755,7 +755,7 @@
     {
       "id": "monthly_summary_005",
       "title": "Closing balance ready! 🏆",
-      "message": "Mahine ka closing balance: Kul OT {overtime} hrs, kul kamai ₹{totalEarnings}.",
+      "message": "Mahine ka closing balance: Kul OT {overtime} hrs, kul kamai {totalEarnings}.",
       "priority": "normal",
       "action": "passbook",
       "category": "monthly_summary"
@@ -771,7 +771,7 @@
     {
       "id": "monthly_summary_007",
       "title": "Masik kamai summary! 💵",
-      "message": "Mahine ki kamai summary: ₹{totalEarnings} gross, ₹{netPayable} net haath me aane wali rashi.",
+      "message": "Mahine ki kamai summary: {totalEarnings} gross, {netPayable} net haath me aane wali rashi.",
       "priority": "normal",
       "action": "passbook",
       "category": "monthly_summary"
@@ -779,7 +779,7 @@
     {
       "id": "monthly_summary_008",
       "title": "Net payable check karo! 💰",
-      "message": "Is mahine {workingDays} din duty ki. Net ghar le jaane wali rashi: ₹{netPayable}.",
+      "message": "Is mahine {workingDays} din duty ki. Net ghar le jaane wali rashi: {netPayable}.",
       "priority": "normal",
       "action": "passbook",
       "category": "monthly_summary"
@@ -787,7 +787,7 @@
     {
       "id": "monthly_summary_009",
       "title": "Mahine bhar ki duty! 🌟",
-      "message": "{userName}, aapne is mahine {presentDays} dino ki duty karke ₹{totalEarnings} kamaye!",
+      "message": "{userName}, aapne is mahine {presentDays} dino ki duty karke {totalEarnings} kamaye!",
       "priority": "normal",
       "action": "passbook",
       "category": "monthly_summary"
@@ -811,7 +811,7 @@
     {
       "id": "earnings_002",
       "title": "Kamai ka naya update! 💵",
-      "message": "Kamai update! {userName}, aapki aaj ki dihadi rate ₹{amount}/day record hai. 💵",
+      "message": "Kamai update! {userName}, aapki aaj ki dihadi rate {amount}/day record hai. 💵",
       "priority": "normal",
       "action": "passbook",
       "category": "earnings"
@@ -819,7 +819,7 @@
     {
       "id": "earnings_003",
       "title": "Advance deduction record! 📉",
-      "message": "Advance entry: ₹{advance} advance liya tha ({date}). Shesh payable: ₹{netPayable}.",
+      "message": "Advance entry: {advance} advance liya tha ({date}). Shesh payable: {netPayable}.",
       "priority": "normal",
       "action": "passbook",
       "category": "earnings"
@@ -827,7 +827,7 @@
     {
       "id": "earnings_004",
       "title": "Shuddh kamai ka hisaab! 📊",
-      "message": "Aapki bachi hui net payable rashi ₹{netPayable} hai. Apni passbook check karo bhai! 💰",
+      "message": "Aapki bachi hui net payable rashi {netPayable} hai. Apni passbook check karo bhai! 💰",
       "priority": "normal",
       "action": "passbook",
       "category": "earnings"
@@ -835,7 +835,7 @@
     {
       "id": "earnings_005",
       "title": "Kamai ka naya mukam! 🏆",
-      "message": "{userName}, is cycle ki aapki kul kamai ₹{totalEarnings} tak pahunch gayi hai!",
+      "message": "{userName}, is cycle ki aapki kul kamai {totalEarnings} tak pahunch gayi hai!",
       "priority": "normal",
       "action": "passbook",
       "category": "earnings"
@@ -843,7 +843,7 @@
     {
       "id": "earnings_006",
       "title": "Advance ghata diya gaya! ✂️",
-      "message": "Advance deduction: Kul kamai ₹{totalEarnings} me se ₹{advance} advance ghata diya gaya hai.",
+      "message": "Advance deduction: Kul kamai {totalEarnings} me se {advance} advance ghata diya gaya hai.",
       "priority": "normal",
       "action": "passbook",
       "category": "earnings"
@@ -851,7 +851,7 @@
     {
       "id": "earnings_007",
       "title": "Financial details ready! 📑",
-      "message": "Financial report: Kul kamai ₹{totalEarnings}, Advance ₹{advance}, Bakaya ₹{netPayable}.",
+      "message": "Financial report: Kul kamai {totalEarnings}, Advance {advance}, Bakaya {netPayable}.",
       "priority": "normal",
       "action": "passbook",
       "category": "earnings"
@@ -859,7 +859,7 @@
     {
       "id": "earnings_008",
       "title": "Total net payable amount! 💰",
-      "message": "Naya attendance aur wage entry record! Kul net payable rashi ₹{netPayable} ho gayi hai.",
+      "message": "Naya attendance aur wage entry record! Kul net payable rashi {netPayable} ho gayi hai.",
       "priority": "normal",
       "action": "passbook",
       "category": "earnings"
@@ -867,7 +867,7 @@
     {
       "id": "earnings_009",
       "title": "Kamai ka chhakka! 🏏",
-      "message": "{userName}, aapne is mahine kul ₹{totalEarnings} ki kamai ka mukam chhoo liya hai! 💪",
+      "message": "{userName}, aapne is mahine kul {totalEarnings} ki kamai ka mukam chhoo liya hai! 💪",
       "priority": "normal",
       "action": "passbook",
       "category": "earnings"
@@ -875,7 +875,7 @@
     {
       "id": "earnings_010",
       "title": "Pai-pai ka hisaab! 👍",
-      "message": "Mehnat ka pai-pai ka hisaab! Aapki net payable rashi ₹{netPayable} record hai! 👍",
+      "message": "Mehnat ka pai-pai ka hisaab! Aapki net payable rashi {netPayable} record hai! 👍",
       "priority": "normal",
       "action": "passbook",
       "category": "earnings"
@@ -883,7 +883,7 @@
     {
       "id": "advance_001",
       "title": "Advance ka hisaab yaad hai na? 😆",
-      "message": "Bhai ₹{advance} advance liya tha! Kharch ho gaya ya bachaya hai? Passbook me entry pakki hai! 😂",
+      "message": "Bhai {advance} advance liya tha! Kharch ho gaya ya bachaya hai? Passbook me entry pakki hai! 😂",
       "priority": "normal",
       "action": "passbook",
       "category": "advance"
@@ -891,7 +891,7 @@
     {
       "id": "advance_002",
       "title": "Advance entry locked! 💸",
-      "message": "{userName}, aapka ₹{advance} ka advance record ho gaya hai. Balance salary: ₹{netPayable}.",
+      "message": "{userName}, aapka {advance} ka advance record ho gaya hai. Balance salary: {netPayable}.",
       "priority": "normal",
       "action": "passbook",
       "category": "advance"
@@ -899,7 +899,7 @@
     {
       "id": "advance_003",
       "title": "Paisa pehle, kaam baad me? 😂",
-      "message": "Seth ji se advance le liya ₹{advance}? Chalo badhiya hai, ab kaam bhi dhang se kar lo! 😆",
+      "message": "Seth ji se advance le liya {advance}? Chalo badhiya hai, ab kaam bhi dhang se kar lo! 😆",
       "priority": "normal",
       "action": "passbook",
       "category": "advance"
@@ -907,7 +907,7 @@
     {
       "id": "advance_004",
       "title": "Advance deduction updated! ✂️",
-      "message": "Dihadi me se ₹{advance} advance cut-off ho gaya hai. Net payable balance: ₹{netPayable}.",
+      "message": "Dihadi me se {advance} advance cut-off ho gaya hai. Net payable balance: {netPayable}.",
       "priority": "normal",
       "action": "passbook",
       "category": "advance"
@@ -915,7 +915,7 @@
     {
       "id": "advance_005",
       "title": "Pocket money ya advance? 😜",
-      "message": "Arre {userName}, ₹{advance} ka advance entry mar liya! Passbook me check kar le.",
+      "message": "Arre {userName}, {advance} ka advance entry mar liya! Passbook me check kar le.",
       "priority": "normal",
       "action": "passbook",
       "category": "advance"
@@ -931,7 +931,7 @@
     {
       "id": "advance_007",
       "title": "Udhari nahi, advance hai! 💡",
-      "message": "Yeh udhari nahi, mehnat ka advance hai! ₹{advance} passbook me safely added.",
+      "message": "Yeh udhari nahi, mehnat ka advance hai! {advance} passbook me safely added.",
       "priority": "normal",
       "action": "passbook",
       "category": "advance"
@@ -939,7 +939,7 @@
     {
       "id": "advance_008",
       "title": "Advance ka meter chalu! ⏱️",
-      "message": "Kul advance ₹{advance} pahunch gaya hai {userName}. Net bachi kamai: ₹{netPayable}.",
+      "message": "Kul advance {advance} pahunch gaya hai {userName}. Net bachi kamai: {netPayable}.",
       "priority": "normal",
       "action": "passbook",
       "category": "advance"
@@ -947,7 +947,7 @@
     {
       "id": "advance_009",
       "title": "Seth ji ne de diya advance! 💵",
-      "message": "Seth ji ne advance de diya? Badhiya hai bhai, ₹{advance} entry passbook me ho gayi!",
+      "message": "Seth ji ne advance de diya? Badhiya hai bhai, {advance} entry passbook me ho gayi!",
       "priority": "normal",
       "action": "passbook",
       "category": "advance"
@@ -955,7 +955,7 @@
     {
       "id": "advance_010",
       "title": "Passbook balance check! 📊",
-      "message": "Advance: ₹{advance}, Gross: ₹{totalEarnings}, Net Handout: ₹{netPayable}. Check karo!",
+      "message": "Advance: {advance}, Gross: {totalEarnings}, Net Handout: {netPayable}. Check karo!",
       "priority": "normal",
       "action": "passbook",
       "category": "advance"
@@ -971,7 +971,7 @@
     {
       "id": "passbook_002",
       "title": "Digital passbook update! 📄",
-      "message": "Aapki digital passbook update ho gayi hai! Kul net bakaya rashi: ₹{netPayable}.",
+      "message": "Aapki digital passbook update ho gayi hai! Kul net bakaya rashi: {netPayable}.",
       "priority": "normal",
       "action": "passbook",
       "category": "passbook"
@@ -1211,7 +1211,7 @@
     {
       "id": "milestone_002",
       "title": "Kamai ka naya shikhar! 💰",
-      "message": "Badhai ho {userName}! Aapne kul kamai me ₹{totalEarnings} ka mukam paar kar liya! 💰",
+      "message": "Badhai ho {userName}! Aapne kul kamai me {totalEarnings} ka mukam paar kar liya! 💰",
       "priority": "normal",
       "action": "home",
       "category": "milestone"
@@ -1267,7 +1267,7 @@
     {
       "id": "milestone_009",
       "title": "Passbook milestone! 💵",
-      "message": "Passbook milestone: Kul net payable rashi ₹{netPayable} calculate ho chuki hai!",
+      "message": "Passbook milestone: Kul net payable rashi {netPayable} calculate ho chuki hai!",
       "priority": "normal",
       "action": "home",
       "category": "milestone"
@@ -1547,7 +1547,7 @@
     {
       "id": "weekend_004",
       "title": "Weekend wage summary! 💰",
-      "message": "Weekend recap: Is hafte ki kul kamai ₹{totalEarnings} par pahunch gayi hai! 💰",
+      "message": "Weekend recap: Is hafte ki kul kamai {totalEarnings} par pahunch gayi hai! 💰",
       "priority": "normal",
       "action": "home",
       "category": "weekend"
@@ -1563,7 +1563,7 @@
     {
       "id": "weekend_006",
       "title": "Ravivar ki summary! ☕",
-      "message": "Sunday summary ready: {workingDays} days kaam kiya, net payable ₹{netPayable}.",
+      "message": "Sunday summary ready: {workingDays} days kaam kiya, net payable {netPayable}.",
       "priority": "normal",
       "action": "home",
       "category": "weekend"
