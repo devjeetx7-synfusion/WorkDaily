@@ -46,5 +46,7 @@ data class AllTimePassbookPdfModel(
     val totalAbsent: Int,
     val totalWorkingDays: Double,
     val amountToReceive: Double,
+    val currencyCode: String = "INR",
+    val currencySymbol: String = "₹",
     val years: List<AllTimePdfYearGroup>
 )

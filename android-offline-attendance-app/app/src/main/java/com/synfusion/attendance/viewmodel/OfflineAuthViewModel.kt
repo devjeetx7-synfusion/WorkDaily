@@ -37,6 +37,7 @@ class OfflineAuthViewModel(
             val user = localAttendanceRepository.getUser()
             if (user != null) {
                 repository.saveAuthToken(user.id)
+                repository.saveCountryAndCurrency(user.countryCode, user.currencyCode)
                 _loginState.value = OfflineLoginState.Success(user.id)
             }
         }
@@ -63,12 +64,19 @@ class OfflineAuthViewModel(
             val user = localAttendanceRepository.getUser()
             if (user != null) {
                 repository.saveAuthToken(user.id)
+                repository.saveCountryAndCurrency(user.countryCode, user.currencyCode)
                 _loginState.value = OfflineLoginState.Success(user.id)
             }
         }
     }
 
-    fun login(name: String, email: String, phoneNumber: String) {
+    fun login(
+        name: String,
+        email: String,
+        phoneNumber: String,
+        countryCode: String = "IN",
+        currencyCode: String = "INR"
+    ) {
         viewModelScope.launch {
             _loginState.value = OfflineLoginState.Loading
             try {
@@ -78,9 +86,12 @@ class OfflineAuthViewModel(
                     name = name,
                     email = email,
                     phoneNumber = phoneNumber,
-                    role = "personal"
+                    role = "personal",
+                    countryCode = countryCode,
+                    currencyCode = currencyCode
                 )
                 localAttendanceRepository.saveUser(user)
+                repository.saveCountryAndCurrency(countryCode, currencyCode)
                 repository.saveAuthToken(userId)
                 repository.saveUserRole("personal")
                 _loginState.value = OfflineLoginState.Success(userId)

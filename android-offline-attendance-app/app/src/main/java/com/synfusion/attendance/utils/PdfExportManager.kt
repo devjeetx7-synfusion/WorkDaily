@@ -2,6 +2,7 @@ package com.synfusion.attendance.utils
 
 import android.content.Context
 import com.synfusion.attendance.data.LocalAttendanceRepository
+import com.synfusion.attendance.data.model.CountryRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -39,6 +40,8 @@ class PdfExportManager(
             val cachedDefaultWage = user?.dailyWage ?: 500.0
             val name = user?.name ?: "User"
             val workType = user?.role ?: "Worker"
+            val userCurrency = user?.currencyCode ?: "INR"
+            val userSymbol = CountryRepository.getCurrencySymbol(userCurrency)
 
             val records = withContext(Dispatchers.IO) { localAttendanceRepository.getPersonalAttendance() }
 
@@ -67,7 +70,7 @@ class PdfExportManager(
             }
 
             // Map logs to PdfLog
-            val rsStr = context.getString(com.synfusion.attendance.R.string.pdf_rs)
+            val rsStr = userSymbol
             val hrsStr = context.getString(com.synfusion.attendance.R.string.pdf_hrs)
             val halfDayStr = context.getString(com.synfusion.attendance.R.string.half_day)
             val presentStr = context.getString(com.synfusion.attendance.R.string.present_1)
@@ -77,8 +80,8 @@ class PdfExportManager(
                 val advanceAmt = log.advanceAmount ?: 0.0
 
                 val otPdfText = if (log.overtimeAmount > 0) {
-                    if (log.overtimeHours > 0) "${log.overtimeHours} $hrsStr / $rsStr ${AmountFormatter.format(log.overtimeAmount)}"
-                    else "$rsStr ${AmountFormatter.format(log.overtimeAmount)}"
+                    if (log.overtimeHours > 0) "${log.overtimeHours} $hrsStr / $rsStr ${AmountFormatter.format(log.overtimeAmount, userCurrency)}"
+                    else "$rsStr ${AmountFormatter.format(log.overtimeAmount, userCurrency)}"
                 } else "-"
 
                 val statusText = if (log.status == "present") {
@@ -91,9 +94,9 @@ class PdfExportManager(
                     date = log.date.split("-").asReversed().joinToString("/"),
                     status = statusText,
                     workType = workType,
-                    dailyWage = "$rsStr ${AmountFormatter.format(cachedDefaultWage)}",
+                    dailyWage = "$rsStr ${AmountFormatter.format(cachedDefaultWage, userCurrency)}",
                     overtime = otPdfText,
-                    advanceAmount = if (log.status == "advance" || advanceAmt > 0) "$rsStr ${AmountFormatter.format(advanceAmt)}" else "-",
+                    advanceAmount = if (log.status == "advance" || advanceAmt > 0) "$rsStr ${AmountFormatter.format(advanceAmt, userCurrency)}" else "-",
                     runningBalance = "", // populated below
                     note = log.note ?: ""
                 )
@@ -108,7 +111,7 @@ class PdfExportManager(
                 currentRunningBalanceBd = currentRunningBalanceBd.add(dailyEarnedBd).add(otAmtBd).subtract(advanceAmtBd)
 
                 val origPdfLog = sortedLogs[idx]
-                origPdfLog.copy(runningBalance = "$rsStr ${AmountFormatter.format(currentRunningBalanceBd.toDouble())}")
+                origPdfLog.copy(runningBalance = "$rsStr ${AmountFormatter.format(currentRunningBalanceBd.toDouble(), userCurrency)}")
             }
 
             val calendar = java.util.Calendar.getInstance()
@@ -145,6 +148,8 @@ class PdfExportManager(
                 periodStr = periodStr,
                 generatedAtStr = generatedAtStr,
                 settlement = calcResult.settlement,
+                currencyCode = userCurrency,
+                currencySymbol = userSymbol,
                 logs = sortedLogsWithBalance
             )
 
@@ -183,6 +188,8 @@ class PdfExportManager(
             val user = withContext(Dispatchers.IO) { localAttendanceRepository.getUser() }
             val cachedDefaultWage = user?.dailyWage ?: 500.0
             val name = user?.name ?: "User"
+            val userCurrency = user?.currencyCode ?: "INR"
+            val userSymbol = CountryRepository.getCurrencySymbol(userCurrency)
 
             val records = withContext(Dispatchers.IO) { localAttendanceRepository.getPersonalAttendance() }
 
@@ -297,6 +304,8 @@ class PdfExportManager(
                 totalAbsent = totalAbsent,
                 totalWorkingDays = totalWorkingDays,
                 amountToReceive = calcResult.settlement.amountToReceive,
+                currencyCode = userCurrency,
+                currencySymbol = userSymbol,
                 years = yearGroups
             )
 

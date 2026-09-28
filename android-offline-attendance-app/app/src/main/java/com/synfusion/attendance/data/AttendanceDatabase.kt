@@ -17,7 +17,7 @@ import com.synfusion.attendance.data.entities.UserEntity
         AttendanceEntity::class,
         SummaryEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = true
 )
 abstract class AttendanceDatabase : RoomDatabase() {
@@ -41,6 +41,14 @@ abstract class AttendanceDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE users ADD COLUMN countryCode TEXT NOT NULL DEFAULT 'IN'")
+                db.execSQL("ALTER TABLE users ADD COLUMN currencyCode TEXT NOT NULL DEFAULT 'INR'")
+                db.execSQL("ALTER TABLE attendance ADD COLUMN currencyCode TEXT NOT NULL DEFAULT 'INR'")
+            }
+        }
+
         fun getInstance(context: android.content.Context): AttendanceDatabase {
             synchronized(dbLock) {
                 if (isSwapping) {
@@ -53,7 +61,7 @@ abstract class AttendanceDatabase : RoomDatabase() {
                         "synfusion_offline_attendance_db"
                     )
                     .setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING)
-                    .addMigrations(MIGRATION_1_2)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                     .fallbackToDestructiveMigration()
                     .build()
                     INSTANCE = instance
