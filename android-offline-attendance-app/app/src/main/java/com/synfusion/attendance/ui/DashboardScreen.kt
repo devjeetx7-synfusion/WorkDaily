@@ -428,6 +428,7 @@ fun DashboardScreen(
                         2 -> {
                             StatsScreen(
                                 viewModel = statsViewModel,
+                                currencyCode = settingsState.currencyCode,
                                 onNavigatePassbook = {
                                     bottomNavController.navigate("passbook")
                                 },

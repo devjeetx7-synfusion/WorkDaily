@@ -35,6 +35,7 @@ data class OfflinePassbookState(
     val isRefreshing: Boolean = false,
     val selectedMonthDate: Date = Date(),
     val name: String = "",
+    val currencyCode: String = "INR",
     val workType: String = "Worker",
     val dailyWage: Double = 500.0,
     val joinedDate: String = "",
@@ -128,6 +129,7 @@ class OfflinePassbookViewModel(
                 if (user != null) {
                     _state.update { it.copy(
                         name = user.name,
+                        currencyCode = user.currencyCode,
                         dailyWage = user.dailyWage,
                         joinedDate = sdf.format(Date(user.createdAt)),
                         phone = user.phoneNumber,

@@ -34,7 +34,8 @@ fun DrillDownBottomSheet(
     logs: List<OfflinePassbookLog>,
     onDismiss: () -> Unit,
     totalRecordsText: String,
-    totalAmountText: String? = null
+    totalAmountText: String? = null,
+    currencyCode: String = "INR"
 ) {
     var searchQuery by remember { mutableStateOf("") }
     var sortAscending by remember { mutableStateOf(false) }
@@ -158,7 +159,7 @@ fun DrillDownBottomSheet(
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                         Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.all_amount_drilldown), fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent())
-                                        Text("₹$totalAmountText", fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent())
+                                        Text(totalAmountText, fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent())
                                     }
                                 }
                             }
@@ -182,7 +183,7 @@ fun DrillDownBottomSheet(
                                 contentPadding = PaddingValues(bottom = 16.dp)
                             ) {
                                 items(filteredLogs, key = { it.date }) { log ->
-                                    DrillDownRecordItem(log)
+                                    DrillDownRecordItem(log, currencyCode)
                                 }
                             }
                         }
@@ -230,7 +231,7 @@ fun DrillDownBottomSheet(
                         contentPadding = PaddingValues(bottom = 16.dp)
                     ) {
                         items(filteredLogs, key = { it.date }) { log ->
-                            DrillDownRecordItem(log)
+                            DrillDownRecordItem(log, currencyCode)
                         }
                     }
                 }
@@ -253,7 +254,7 @@ fun DrillDownBottomSheet(
                             Spacer(modifier = Modifier.height(8.dp))
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                 Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.all_amount_drilldown), fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent())
-                                Text("₹$totalAmountText", fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent())
+                                Text(totalAmountText, fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent())
                             }
                         }
                     }
@@ -398,7 +399,7 @@ private data class EmptyStateDetails(
 )
 
 @Composable
-fun DrillDownRecordItem(log: OfflinePassbookLog) {
+fun DrillDownRecordItem(log: OfflinePassbookLog, currencyCode: String = "INR") {
     val dateParts = log.date.split("-")
     val formattedDate = if (dateParts.size == 3) "${dateParts[2]} ${getMonthName(dateParts[1].toInt())} ${dateParts[0]}" else log.date
 
@@ -425,15 +426,15 @@ fun DrillDownRecordItem(log: OfflinePassbookLog) {
                 )
             }
             if (log.overtimeHours > 0) {
-                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.all_ot_drilldown, log.overtimeHours.toString(), AmountFormatter.format(log.overtimeAmount)), fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
+                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.all_ot_drilldown, log.overtimeHours.toString(), AmountFormatter.formatWithSymbol(log.overtimeAmount, currencyCode)), fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
             }
         }
 
         Column(horizontalAlignment = Alignment.End) {
             val amount = if (log.status == "advance" && log.advanceAmount != null) {
-                "-₹${AmountFormatter.format(log.advanceAmount)}"
+                "-${AmountFormatter.formatWithSymbol(log.advanceAmount, currencyCode)}"
             } else if (log.baseEarnings > 0 || log.overtimeAmount > 0) {
-                "+₹${AmountFormatter.format(log.baseEarnings + log.overtimeAmount)}"
+                "+${AmountFormatter.formatWithSymbol(log.baseEarnings + log.overtimeAmount, currencyCode)}"
             } else ""
 
             val color = if (log.status == "advance") com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent() else com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent()

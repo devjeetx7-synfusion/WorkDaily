@@ -36,6 +36,7 @@ data class AllTimeYearGroup(
 
 data class OfflineAllTimePassbookState(
     val isLoading: Boolean = true,
+    val currencyCode: String = "INR",
 
     // Top Section Employment Summary
     val employmentSince: String = "",
@@ -185,6 +186,7 @@ class OfflineAllTimePassbookViewModel(
 
                 _state.update { current ->
                     current.copy(
+                        currencyCode = user?.currencyCode ?: "INR",
                         employmentSince = joinedDate,
                         totalWorkingDays = calcResult.totalWorks,
                         totalPresent = calcResult.present,

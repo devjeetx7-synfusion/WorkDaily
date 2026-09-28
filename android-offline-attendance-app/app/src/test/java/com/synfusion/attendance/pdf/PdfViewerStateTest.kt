@@ -21,7 +21,6 @@ class PdfViewerStateTest {
         assertTrue(state.isLoading)
         assertNull(state.errorMessage)
         assertEquals("", state.fileSizeStr)
-        assertFalse(state.isAutoSliding)
     }
 
     @Test
@@ -34,8 +33,7 @@ class PdfViewerStateTest {
             fabExpanded = true,
             isLoading = false,
             errorMessage = null,
-            fileSizeStr = "1.2 MB",
-            isAutoSliding = true
+            fileSizeStr = "1.2 MB"
         )
 
         assertEquals("Passbook_2026.pdf", state.fileName)
@@ -45,6 +43,5 @@ class PdfViewerStateTest {
         assertTrue(state.fabExpanded)
         assertFalse(state.isLoading)
         assertEquals("1.2 MB", state.fileSizeStr)
-        assertTrue(state.isAutoSliding)
     }
 }
