@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.synfusion.attendance.data.LocalAttendanceRepository
 import com.synfusion.attendance.data.OfflinePreferencesRepository
 import com.synfusion.attendance.data.entities.UserEntity
+import com.synfusion.attendance.data.model.CountryRepository
 import com.synfusion.attendance.utils.NotificationScheduler
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,6 +25,10 @@ data class OfflineSettingsState(
     val originalRole: String = "personal",
     val phone: String = "",
     val originalPhone: String = "",
+    val countryCode: String = "IN",
+    val originalCountryCode: String = "IN",
+    val currencyCode: String = "INR",
+    val originalCurrencyCode: String = "INR",
     val profileImageUrl: String = "",
     val originalProfileImageUrl: String = "",
     val profileImageUri: Uri? = null,
@@ -79,6 +84,16 @@ class OfflineSettingsViewModel(
         viewModelScope.launch {
             repository.languageFlow.collect { lang ->
                 _state.update { it.copy(language = lang ?: "en") }
+            }
+        }
+        viewModelScope.launch {
+            repository.countryFlow.collect { country ->
+                _state.update { it.copy(countryCode = country) }
+            }
+        }
+        viewModelScope.launch {
+            repository.currencyFlow.collect { currency ->
+                _state.update { it.copy(currencyCode = currency) }
             }
         }
         viewModelScope.launch {
@@ -166,7 +181,11 @@ class OfflineSettingsViewModel(
                     role = "personal",
                     originalRole = "personal",
                     phone = user.phoneNumber,
-                    originalPhone = user.phoneNumber
+                    originalPhone = user.phoneNumber,
+                    countryCode = user.countryCode,
+                    originalCountryCode = user.countryCode,
+                    currencyCode = user.currencyCode,
+                    originalCurrencyCode = user.currencyCode
                 ) }
             }
         }
@@ -209,6 +228,18 @@ class OfflineSettingsViewModel(
         _state.update { it.copy(phone = newPhone) }
     }
 
+    fun onCountryChange(newCountryCode: String) {
+        val defaultCurrency = CountryRepository.getDefaultCurrencyForCountry(newCountryCode)
+        _state.update { it.copy(
+            countryCode = newCountryCode,
+            currencyCode = defaultCurrency
+        ) }
+    }
+
+    fun onCurrencyChange(newCurrencyCode: String) {
+        _state.update { it.copy(currencyCode = newCurrencyCode) }
+    }
+
     fun onProfileImageSelected(uri: Uri?) {
         _state.update { it.copy(profileImageUri = uri) }
     }
@@ -222,6 +253,8 @@ class OfflineSettingsViewModel(
             name = it.originalName,
             dailyWage = it.originalWage,
             phone = it.originalPhone,
+            countryCode = it.originalCountryCode,
+            currencyCode = it.originalCurrencyCode,
             profileImageUrl = it.originalProfileImageUrl,
             profileImageUri = null
         ) }
@@ -274,17 +307,22 @@ class OfflineSettingsViewModel(
                         name = currentState.name,
                         dailyWage = currentState.dailyWage,
                         role = "personal",
-                        phoneNumber = currentState.phone
+                        phoneNumber = currentState.phone,
+                        countryCode = currentState.countryCode,
+                        currencyCode = currentState.currencyCode
                     )
                     withContext(Dispatchers.IO) {
                         localAttendanceRepository.saveUser(updated)
                     }
+                    repository.saveCountryAndCurrency(currentState.countryCode, currentState.currencyCode)
 
                     _state.update { it.copy(
                         originalName = it.name,
                         originalWage = it.dailyWage,
                         originalRole = "personal",
                         originalPhone = it.phone,
+                        originalCountryCode = it.countryCode,
+                        originalCurrencyCode = it.currencyCode,
                         profileImageUri = null,
                         savedMessage = "Profile updated successfully!",
                         isSaving = false

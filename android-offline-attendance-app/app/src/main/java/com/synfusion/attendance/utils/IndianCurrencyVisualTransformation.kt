@@ -5,7 +5,7 @@ import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
 
-class IndianCurrencyVisualTransformation : VisualTransformation {
+class CurrencyVisualTransformation(val currencyCode: String = "INR") : VisualTransformation {
     override fun filter(text: AnnotatedString): TransformedText {
         val originalText = text.text
         if (originalText.isEmpty()) {
@@ -21,9 +21,17 @@ class IndianCurrencyVisualTransformation : VisualTransformation {
         val transToOrig = ArrayList<Int>()
 
         val intLen = intPart.length
+        val isIndian = currencyCode.equals("INR", ignoreCase = true)
+
         for (i in 0 until intLen) {
             val distanceFromRight = intLen - i
-            if (i > 0 && distanceFromRight >= 3 && (distanceFromRight - 3) % 2 == 0) {
+            val needComma = if (isIndian) {
+                i > 0 && distanceFromRight >= 3 && (distanceFromRight - 3) % 2 == 0
+            } else {
+                i > 0 && distanceFromRight % 3 == 0
+            }
+
+            if (needComma) {
                 transformed.append(",")
                 transToOrig.add(i)
             }
@@ -64,5 +72,12 @@ class IndianCurrencyVisualTransformation : VisualTransformation {
         }
 
         return TransformedText(transformedText, offsetMapping)
+    }
+}
+
+class IndianCurrencyVisualTransformation : VisualTransformation {
+    private val delegate = CurrencyVisualTransformation("INR")
+    override fun filter(text: AnnotatedString): TransformedText {
+        return delegate.filter(text)
     }
 }

@@ -22,5 +22,6 @@ data class AttendanceEntity(
     val note: String = "",
     val advanceAmount: Double = 0.0,
     val wage: Double = 500.0,
+    val currencyCode: String = "INR",
     val createdAt: Long = System.currentTimeMillis()
 )

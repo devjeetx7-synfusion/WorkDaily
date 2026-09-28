@@ -17,6 +17,8 @@ class OfflinePreferencesRepository(val context: Context) {
         val THEME_KEY = booleanPreferencesKey("dark_mode")
         val REMINDERS_KEY = booleanPreferencesKey("reminders_enabled")
         val LANGUAGE_KEY = stringPreferencesKey("app_language")
+        val COUNTRY_KEY = stringPreferencesKey("user_country")
+        val CURRENCY_KEY = stringPreferencesKey("user_currency")
 
         val ONBOARDING_COMPLETED_KEY = booleanPreferencesKey("onboarding_completed")
         val SPLASH_ENABLED_KEY = booleanPreferencesKey("splash_enabled")
@@ -35,6 +37,14 @@ class OfflinePreferencesRepository(val context: Context) {
 
     val userRoleFlow: Flow<String?> = context.offlineDataStore.data.map { preferences ->
         preferences[ROLE_KEY]
+    }
+
+    val countryFlow: Flow<String> = context.offlineDataStore.data.map { preferences ->
+        preferences[COUNTRY_KEY] ?: "IN"
+    }
+
+    val currencyFlow: Flow<String> = context.offlineDataStore.data.map { preferences ->
+        preferences[CURRENCY_KEY] ?: "INR"
     }
 
     val lastBackupTimeFlow: Flow<Long?> = context.offlineDataStore.data.map { preferences ->
@@ -99,6 +109,13 @@ class OfflinePreferencesRepository(val context: Context) {
 
     val lastActiveScreenFlow: Flow<String> = context.offlineDataStore.data.map { preferences ->
         preferences[LAST_ACTIVE_SCREEN_KEY] ?: "dashboard"
+    }
+
+    suspend fun saveCountryAndCurrency(countryCode: String, currencyCode: String) {
+        context.offlineDataStore.edit { preferences ->
+            preferences[COUNTRY_KEY] = countryCode
+            preferences[CURRENCY_KEY] = currencyCode
+        }
     }
 
     suspend fun saveUserRole(role: String) {

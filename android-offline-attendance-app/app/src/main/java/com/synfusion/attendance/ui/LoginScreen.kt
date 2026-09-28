@@ -22,6 +22,8 @@ import androidx.compose.animation.core.*
 import com.synfusion.attendance.backup.RestoreManager
 import com.synfusion.attendance.backup.ProgressTracker
 import com.synfusion.attendance.backup.BackupManifest
+import com.synfusion.attendance.data.model.CountryConfig
+import com.synfusion.attendance.data.model.CountryRepository
 import java.io.File
 import java.io.FileOutputStream
 import kotlinx.coroutines.withContext
@@ -107,6 +109,9 @@ fun LoginScreen(
     var name by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
+
+    var selectedCountry by remember { mutableStateOf(CountryRepository.DEFAULT_COUNTRY) }
+    var showCountryDropdown by remember { mutableStateOf(false) }
 
     var isConsentChecked by rememberSaveable { mutableStateOf(false) }
     var showTermsSheet by rememberSaveable { mutableStateOf(false) }
@@ -449,6 +454,7 @@ fun LoginScreen(
     }
 
     val windowSizeInfo = LocalWindowSizeInfo.current
+    val isPhoneValid = if (selectedCountry.countryCode == "IN") phone.length >= 10 else phone.length >= 7
 
     Box(
         modifier = Modifier
@@ -512,16 +518,77 @@ fun LoginScreen(
                         )
                         Spacer(modifier = Modifier.height(12.dp))
 
+                        // Country Selector Field
+                        Box(modifier = Modifier.fillMaxWidth()) {
+                            OutlinedTextField(
+                                value = "${selectedCountry.flagEmoji} ${selectedCountry.displayName}",
+                                onValueChange = {},
+                                readOnly = true,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .clickable { showCountryDropdown = true },
+                                shape = RoundedCornerShape(12.dp),
+                                leadingIcon = { Icon(Icons.Default.Public, null, tint = MaterialTheme.colorScheme.primary) },
+                                trailingIcon = { Icon(Icons.Default.ArrowDropDown, null) },
+                                enabled = false,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                                    disabledBorderColor = MaterialTheme.colorScheme.outline,
+                                    disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    disabledLeadingIconColor = MaterialTheme.colorScheme.primary,
+                                    disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .matchParentSize()
+                                    .clickable { showCountryDropdown = true }
+                            )
+                            DropdownMenu(
+                                expanded = showCountryDropdown,
+                                onDismissRequest = { showCountryDropdown = false },
+                                modifier = Modifier.heightIn(max = 280.dp)
+                            ) {
+                                CountryRepository.SUPPORTED_COUNTRIES.forEach { country ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text("${country.flagEmoji} ${country.displayName} (${country.callingCode})", fontSize = 14.sp)
+                                        },
+                                        onClick = {
+                                            selectedCountry = country
+                                            showCountryDropdown = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(12.dp))
+
                         OutlinedTextField(
                             value = phone,
                             onValueChange = { newValue ->
-                                val digits = newValue.filter { it.isDigit() }.take(10)
+                                val digits = newValue.filter { it.isDigit() }.take(15)
                                 phone = digits
                             },
-                            placeholder = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.enter_valid_10digit_mobile_number)) },
+                            placeholder = {
+                                Text(
+                                    if (selectedCountry.countryCode == "IN")
+                                        androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.enter_valid_10digit_mobile_number)
+                                    else
+                                        "Enter mobile number"
+                                )
+                            },
                             modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)),
                             shape = RoundedCornerShape(12.dp),
-                            leadingIcon = { Icon(Icons.Default.Phone, null, tint = MaterialTheme.colorScheme.primary) },
+                            leadingIcon = {
+                                Text(
+                                    text = "${selectedCountry.callingCode} ",
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.padding(start = 12.dp)
+                                )
+                            },
                             singleLine = true,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                         )
@@ -538,8 +605,8 @@ fun LoginScreen(
 
                         Button(
                             onClick = {
-                                if (name.isNotBlank() && phone.length >= 10 && isConsentChecked) {
-                                    authViewModel.login(name, email, phone)
+                                if (name.isNotBlank() && isPhoneValid && isConsentChecked) {
+                                    authViewModel.login(name, email, phone, selectedCountry.countryCode, selectedCountry.currencyCode)
                                 }
                             },
                             modifier = Modifier
@@ -547,7 +614,7 @@ fun LoginScreen(
                                 .height(58.dp)
                                 .pressScaleEffect(),
                             shape = RoundedCornerShape(20.dp),
-                            enabled = name.isNotBlank() && phone.length >= 10 && isConsentChecked && !isProcessing
+                            enabled = name.isNotBlank() && isPhoneValid && isConsentChecked && !isProcessing
                         ) {
                             if (isProcessing) {
                                 CircularProgressIndicator(
@@ -647,16 +714,77 @@ fun LoginScreen(
                         )
                         Spacer(modifier = Modifier.height(12.dp))
 
+                        // Country Selector Field
+                        Box(modifier = Modifier.fillMaxWidth()) {
+                            OutlinedTextField(
+                                value = "${selectedCountry.flagEmoji} ${selectedCountry.displayName}",
+                                onValueChange = {},
+                                readOnly = true,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .clickable { showCountryDropdown = true },
+                                shape = RoundedCornerShape(12.dp),
+                                leadingIcon = { Icon(Icons.Default.Public, null, tint = MaterialTheme.colorScheme.primary) },
+                                trailingIcon = { Icon(Icons.Default.ArrowDropDown, null) },
+                                enabled = false,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                                    disabledBorderColor = MaterialTheme.colorScheme.outline,
+                                    disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    disabledLeadingIconColor = MaterialTheme.colorScheme.primary,
+                                    disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .matchParentSize()
+                                    .clickable { showCountryDropdown = true }
+                            )
+                            DropdownMenu(
+                                expanded = showCountryDropdown,
+                                onDismissRequest = { showCountryDropdown = false },
+                                modifier = Modifier.heightIn(max = 280.dp)
+                            ) {
+                                CountryRepository.SUPPORTED_COUNTRIES.forEach { country ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text("${country.flagEmoji} ${country.displayName} (${country.callingCode})", fontSize = 14.sp)
+                                        },
+                                        onClick = {
+                                            selectedCountry = country
+                                            showCountryDropdown = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(12.dp))
+
                         OutlinedTextField(
                             value = phone,
                             onValueChange = { newValue ->
-                                val digits = newValue.filter { it.isDigit() }.take(10)
+                                val digits = newValue.filter { it.isDigit() }.take(15)
                                 phone = digits
                             },
-                            placeholder = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.enter_valid_10digit_mobile_number)) },
+                            placeholder = {
+                                Text(
+                                    if (selectedCountry.countryCode == "IN")
+                                        androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.enter_valid_10digit_mobile_number)
+                                    else
+                                        "Enter mobile number"
+                                )
+                            },
                             modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)),
                             shape = RoundedCornerShape(12.dp),
-                            leadingIcon = { Icon(Icons.Default.Phone, null, tint = MaterialTheme.colorScheme.primary) },
+                            leadingIcon = {
+                                Text(
+                                    text = "${selectedCountry.callingCode} ",
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.padding(start = 12.dp)
+                                )
+                            },
                             singleLine = true,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                         )
@@ -673,8 +801,8 @@ fun LoginScreen(
 
                         Button(
                             onClick = {
-                                if (name.isNotBlank() && phone.length >= 10 && isConsentChecked) {
-                                    authViewModel.login(name, email, phone)
+                                if (name.isNotBlank() && isPhoneValid && isConsentChecked) {
+                                    authViewModel.login(name, email, phone, selectedCountry.countryCode, selectedCountry.currencyCode)
                                 }
                             },
                             modifier = Modifier
@@ -682,7 +810,7 @@ fun LoginScreen(
                                 .height(58.dp)
                                 .pressScaleEffect(),
                             shape = RoundedCornerShape(20.dp),
-                            enabled = name.isNotBlank() && phone.length >= 10 && isConsentChecked && !isProcessing
+                            enabled = name.isNotBlank() && isPhoneValid && isConsentChecked && !isProcessing
                         ) {
                             if (isProcessing) {
                                 CircularProgressIndicator(

@@ -32,11 +32,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.synfusion.attendance.data.model.CountryRepository
 import com.synfusion.attendance.ui.components.CropScreenDialog
 import com.synfusion.attendance.ui.responsive.LocalWindowSizeInfo
 import com.synfusion.attendance.ui.responsive.ResponsiveContainer
 import com.synfusion.attendance.utils.AmountFormatter
-import com.synfusion.attendance.utils.IndianCurrencyVisualTransformation
+import com.synfusion.attendance.utils.CurrencyVisualTransformation
 import com.synfusion.attendance.utils.collectAsStateWithLifecycle
 import com.synfusion.attendance.viewmodel.OfflineSettingsState
 import com.synfusion.attendance.viewmodel.OfflineSettingsViewModel
@@ -53,6 +54,7 @@ fun ProfileScreen(
 
     var selectedUriForCrop by remember { mutableStateOf<Uri?>(null) }
     var showPhotoActionSheet by remember { mutableStateOf(false) }
+    var showCountryDropdown by remember { mutableStateOf(false) }
 
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -66,8 +68,13 @@ fun ProfileScreen(
             state.dailyWage != state.originalWage ||
             state.role != state.originalRole ||
             state.phone != state.originalPhone ||
+            state.countryCode != state.originalCountryCode ||
+            state.currencyCode != state.originalCurrencyCode ||
             state.profileImageUri != null ||
             state.profileImageUrl != state.originalProfileImageUrl
+
+    val activeCountry = remember(state.countryCode) { CountryRepository.getCountry(state.countryCode) }
+    val currencySymbol = remember(state.currencyCode) { CountryRepository.getCurrencySymbol(state.currencyCode) }
 
     val displayUri = state.profileImageUri
     val currentPhotoPath = state.profileImageUrl
@@ -239,7 +246,7 @@ fun ProfileScreen(
                                 )
                                 if (state.phone.isNotEmpty()) {
                                     Text(
-                                        text = "+91 ${state.phone}",
+                                        text = "${activeCountry.callingCode} ${state.phone}",
                                         fontSize = 14.sp,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -320,27 +327,73 @@ fun ProfileScreen(
                                         singleLine = true
                                     )
 
+                                    // Country Selector Dropdown
+                                    Box(modifier = Modifier.fillMaxWidth()) {
+                                        OutlinedTextField(
+                                            value = "${activeCountry.flagEmoji} ${activeCountry.displayName}",
+                                            onValueChange = {},
+                                            readOnly = true,
+                                            label = { Text("Country / Region") },
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clickable { showCountryDropdown = true },
+                                            shape = RoundedCornerShape(14.dp),
+                                            leadingIcon = { Icon(Icons.Default.Public, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                                            trailingIcon = { Icon(Icons.Default.ArrowDropDown, contentDescription = null) },
+                                            enabled = false,
+                                            colors = OutlinedTextFieldDefaults.colors(
+                                                disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                                                disabledBorderColor = MaterialTheme.colorScheme.outline,
+                                                disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                disabledLeadingIconColor = MaterialTheme.colorScheme.primary,
+                                                disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        )
+                                        Box(
+                                            modifier = Modifier
+                                                .matchParentSize()
+                                                .clickable { showCountryDropdown = true }
+                                        )
+                                        DropdownMenu(
+                                            expanded = showCountryDropdown,
+                                            onDismissRequest = { showCountryDropdown = false },
+                                            modifier = Modifier.heightIn(max = 280.dp)
+                                        ) {
+                                            CountryRepository.SUPPORTED_COUNTRIES.forEach { country ->
+                                                DropdownMenuItem(
+                                                    text = {
+                                                        Text("${country.flagEmoji} ${country.displayName} (${country.callingCode})", fontSize = 14.sp)
+                                                    },
+                                                    onClick = {
+                                                        viewModel.onCountryChange(country.countryCode)
+                                                        showCountryDropdown = false
+                                                    }
+                                                )
+                                            }
+                                        }
+                                    }
+
                                     OutlinedTextField(
                                         value = if (state.dailyWage > 0) state.dailyWage.toInt().toString() else "",
                                         onValueChange = { viewModel.onWageChange(it.filter { ch -> ch.isDigit() }) },
                                         modifier = Modifier.fillMaxWidth(),
                                         label = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.daily_wage)) },
-                                        leadingIcon = { Icon(Icons.Default.CurrencyRupee, contentDescription = null) },
+                                        leadingIcon = { Text(currencySymbol, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 12.dp)) },
                                         shape = RoundedCornerShape(14.dp),
                                         singleLine = true,
                                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                        visualTransformation = IndianCurrencyVisualTransformation()
+                                        visualTransformation = CurrencyVisualTransformation(state.currencyCode)
                                     )
 
                                     OutlinedTextField(
                                         value = state.phone,
                                         onValueChange = { newValue ->
-                                            val digits = newValue.filter { it.isDigit() }.take(10)
+                                            val digits = newValue.filter { it.isDigit() }.take(15)
                                             viewModel.onPhoneChange(digits)
                                         },
                                         modifier = Modifier.fillMaxWidth(),
                                         label = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.phone_number)) },
-                                        leadingIcon = { Text("+91 ", fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 12.dp)) },
+                                        leadingIcon = { Text("${activeCountry.callingCode} ", fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 12.dp)) },
                                         shape = RoundedCornerShape(14.dp),
                                         singleLine = true,
                                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
@@ -486,7 +539,7 @@ fun ProfileScreen(
                             )
                             if (state.phone.isNotEmpty()) {
                                 Text(
-                                    text = "+91 ${state.phone}",
+                                    text = "${activeCountry.callingCode} ${state.phone}",
                                     fontSize = 14.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -521,27 +574,73 @@ fun ProfileScreen(
                                     singleLine = true
                                 )
 
+                                // Country Selector Dropdown
+                                Box(modifier = Modifier.fillMaxWidth()) {
+                                    OutlinedTextField(
+                                        value = "${activeCountry.flagEmoji} ${activeCountry.displayName}",
+                                        onValueChange = {},
+                                        readOnly = true,
+                                        label = { Text("Country / Region") },
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable { showCountryDropdown = true },
+                                        shape = RoundedCornerShape(14.dp),
+                                        leadingIcon = { Icon(Icons.Default.Public, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                                        trailingIcon = { Icon(Icons.Default.ArrowDropDown, contentDescription = null) },
+                                        enabled = false,
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                                            disabledBorderColor = MaterialTheme.colorScheme.outline,
+                                            disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            disabledLeadingIconColor = MaterialTheme.colorScheme.primary,
+                                            disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    )
+                                    Box(
+                                        modifier = Modifier
+                                            .matchParentSize()
+                                            .clickable { showCountryDropdown = true }
+                                    )
+                                    DropdownMenu(
+                                        expanded = showCountryDropdown,
+                                        onDismissRequest = { showCountryDropdown = false },
+                                        modifier = Modifier.heightIn(max = 280.dp)
+                                    ) {
+                                        CountryRepository.SUPPORTED_COUNTRIES.forEach { country ->
+                                            DropdownMenuItem(
+                                                text = {
+                                                    Text("${country.flagEmoji} ${country.displayName} (${country.callingCode})", fontSize = 14.sp)
+                                                },
+                                                onClick = {
+                                                    viewModel.onCountryChange(country.countryCode)
+                                                    showCountryDropdown = false
+                                                }
+                                            )
+                                        }
+                                    }
+                                }
+
                                 OutlinedTextField(
                                     value = if (state.dailyWage > 0) state.dailyWage.toInt().toString() else "",
                                     onValueChange = { viewModel.onWageChange(it.filter { ch -> ch.isDigit() }) },
                                     modifier = Modifier.fillMaxWidth(),
                                     label = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.daily_wage)) },
-                                    leadingIcon = { Icon(Icons.Default.CurrencyRupee, contentDescription = null) },
+                                    leadingIcon = { Text(currencySymbol, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 12.dp)) },
                                     shape = RoundedCornerShape(14.dp),
                                     singleLine = true,
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                    visualTransformation = IndianCurrencyVisualTransformation()
+                                    visualTransformation = CurrencyVisualTransformation(state.currencyCode)
                                 )
 
                                 OutlinedTextField(
                                     value = state.phone,
                                     onValueChange = { newValue ->
-                                        val digits = newValue.filter { it.isDigit() }.take(10)
+                                        val digits = newValue.filter { it.isDigit() }.take(15)
                                         viewModel.onPhoneChange(digits)
                                     },
                                     modifier = Modifier.fillMaxWidth(),
                                     label = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.phone_number)) },
-                                    leadingIcon = { Text("+91 ", fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 12.dp)) },
+                                    leadingIcon = { Text("${activeCountry.callingCode} ", fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 12.dp)) },
                                     shape = RoundedCornerShape(14.dp),
                                     singleLine = true,
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
@@ -696,7 +795,7 @@ fun ProfileScreen(
                                         viewModel.onRemoveProfilePhoto()
                                     }
                                     .padding(vertical = 12.dp, horizontal = 16.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Delete,

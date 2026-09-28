@@ -12,5 +12,7 @@ data class UserEntity(
     val email: String,
     val role: String, // "contractor" or "personal"
     val dailyWage: Double = 500.0,
+    val countryCode: String = "IN",
+    val currencyCode: String = "INR",
     val createdAt: Long = System.currentTimeMillis()
 )
