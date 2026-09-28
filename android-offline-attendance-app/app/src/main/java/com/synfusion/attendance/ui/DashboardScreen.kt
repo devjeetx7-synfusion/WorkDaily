@@ -636,7 +636,7 @@ fun DashboardScreen(
                     } else {
                         dashboardState.selectedLogs.sumOf { it.baseEarnings + it.overtimeAmount }
                     }
-                    AmountFormatter.formatWithSymbol(total, dashboardState.currencyCode)
+                    AmountFormatter.formatWithSymbol(total, settingsState.currencyCode)
                 } else null
             )
         }
@@ -803,7 +803,7 @@ fun HeaderSection(state: OfflineDashboardState, onProfileClick: () -> Unit = {})
 }
 
 @Composable
-fun PersonalStatsGrid(state: OfflineDashboardState, onNavigatePassbook: () -> Unit, onEarningsClick: () -> Unit) {
+fun PersonalStatsGrid(state: OfflineDashboardState, currencyCode: String, onNavigatePassbook: () -> Unit, onEarningsClick: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             Surface(
@@ -826,7 +826,7 @@ fun PersonalStatsGrid(state: OfflineDashboardState, onNavigatePassbook: () -> Un
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = AmountFormatter.formatWithSymbol(state.todayEarned, state.currencyCode),
+                        text = AmountFormatter.formatWithSymbol(state.todayEarned, currencyCode),
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Bold,
                         color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent(),
@@ -855,7 +855,7 @@ fun PersonalStatsGrid(state: OfflineDashboardState, onNavigatePassbook: () -> Un
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = AmountFormatter.formatWithSymbol(state.monthEarned, state.currencyCode),
+                        text = AmountFormatter.formatWithSymbol(state.monthEarned, currencyCode),
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Bold,
                         color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent(),
@@ -913,6 +913,7 @@ fun AllTimePassbookButton(onNavigate: () -> Unit) {
 @Composable
 fun PersonalQuickActions(
     todayAdvanceAmount: Double?,
+    currencyCode: String,
     onAddAdvance: () -> Unit
 ) {
     Column {
@@ -955,7 +956,7 @@ fun PersonalQuickActions(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = AmountFormatter.formatWithSymbol(todayAdvanceAmount, state.currencyCode),
+                            text = AmountFormatter.formatWithSymbol(todayAdvanceAmount, currencyCode),
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onBackground
