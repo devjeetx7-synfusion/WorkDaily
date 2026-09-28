@@ -54,7 +54,8 @@ object AttendanceCalculationEngine {
         regularEarnings: Double,
         overtimeEarnings: Double,
         totalAdvanceReceived: Double,
-        totalDeductions: Double = 0.0
+        totalDeductions: Double = 0.0,
+        userCurrency: String = "INR"
     ): FinancialSettlementResult {
         val regBd = toMoney(regularEarnings)
         val otBd = toMoney(overtimeEarnings)
