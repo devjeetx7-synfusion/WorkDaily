@@ -176,7 +176,8 @@ class OfflineDashboardViewModel(
                     type = type,
                     overtimeHours = overtimeHours,
                     note = note,
-                    wage = cachedDefaultWage
+                    wage = cachedDefaultWage,
+                    currencyCode = user?.currencyCode ?: "INR"
                 )
 
                 _dashboardState.update { it.copy(
@@ -216,7 +217,8 @@ class OfflineDashboardViewModel(
                     type = "full",
                     reason = reason,
                     note = note,
-                    wage = cachedDefaultWage
+                    wage = cachedDefaultWage,
+                    currencyCode = user?.currencyCode ?: "INR"
                 )
 
                 _dashboardState.update { it.copy(
@@ -241,6 +243,7 @@ class OfflineDashboardViewModel(
     fun addAdvance(amount: Double) {
         viewModelScope.launch {
             try {
+                val user = withContext(Dispatchers.IO) { localAttendanceRepository.getUser() }
                 val todayStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
                 val docId = "personal_${todayStr}_advance"
 
@@ -251,7 +254,8 @@ class OfflineDashboardViewModel(
                     status = "advance",
                     type = "full",
                     advanceAmount = amount,
-                    wage = 0.0
+                    wage = 0.0,
+                    currencyCode = user?.currencyCode ?: "INR"
                 )
 
                 withContext(Dispatchers.IO) {

@@ -115,7 +115,7 @@ fun PassbookScreen(
                     val netPayableLabel = context.getString(com.synfusion.attendance.R.string.net_payable)
                     val appName = context.getString(com.synfusion.attendance.R.string.app_name)
 
-                    val settlementMsg = state.settlement?.settlementMessage ?: if (state.finalBalance >= 0) "YOU WILL RECEIVE ₹${AmountFormatter.format(state.finalBalance)}" else "YOU NEED TO PAY BACK ₹${AmountFormatter.format(kotlin.math.abs(state.finalBalance))}"
+                    val settlementMsg = state.settlement?.settlementMessage ?: if (state.finalBalance >= 0) "YOU WILL RECEIVE ${AmountFormatter.formatWithSymbol(state.finalBalance, state.currencyCode)}" else "YOU NEED TO PAY BACK ${AmountFormatter.formatWithSymbol(kotlin.math.abs(state.finalBalance), state.currencyCode)}"
 
                     val text = """
                         👷 *$officialPassbookLabel*
@@ -129,9 +129,9 @@ fun PassbookScreen(
                         📈 *$totalDaysWorkedLabel:* ${state.totalDailyWorks}
 
                         💰 *$financialSummaryLabel:*
-                        💵 $dailyWageLabel: ₹${AmountFormatter.format(state.dailyWage)}
-                        💸 $grossEarnedLabel: ₹${AmountFormatter.format(state.grossEarned)}
-                        📉 $advanceDeductedLabel: ₹${AmountFormatter.format(state.totalAdvance)}
+                        💵 $dailyWageLabel: ${AmountFormatter.formatWithSymbol(state.dailyWage, state.currencyCode)}
+                        💸 $grossEarnedLabel: ${AmountFormatter.formatWithSymbol(state.grossEarned, state.currencyCode)}
+                        📉 $advanceDeductedLabel: ${AmountFormatter.formatWithSymbol(state.totalAdvance, state.currencyCode)}
                         ━━━━━━━━━━━━━━━━━━
                         🏆 *$settlementMsg*
                         ━━━━━━━━━━━━━━━━━━
@@ -226,9 +226,7 @@ fun PassbookScreen(
                                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                                    Icon(Icons.Default.CurrencyRupee, contentDescription = null, tint = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent(), modifier = Modifier.size(16.dp))
-                                                    Spacer(modifier = Modifier.width(8.dp))
-                                                    Text("₹${AmountFormatter.format(state.dailyWage)} / " + androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.day_singular), fontWeight = FontWeight.Bold, fontSize = 14.sp, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent())
+                                                    Text(AmountFormatter.formatWithSymbol(state.dailyWage, state.currencyCode) + " / " + androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.day_singular), fontWeight = FontWeight.Bold, fontSize = 14.sp, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent())
                                                 }
                                             }
                                             Column(verticalArrangement = Arrangement.spacedBy(8.dp), horizontalAlignment = Alignment.End) {
@@ -388,12 +386,12 @@ fun PassbookScreen(
 
                                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                                 Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.gross_earned), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
-                                                Text("₹${AmountFormatter.format(state.grossEarned)}", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                                Text(AmountFormatter.formatWithSymbol(state.grossEarned, state.currencyCode), fontSize = 14.sp, fontWeight = FontWeight.Bold)
                                             }
                                             Spacer(modifier = Modifier.height(12.dp))
                                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                                 Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.total_advance), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
-                                                Text("- ₹${AmountFormatter.format(state.totalAdvance)}", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay())
+                                                Text("- " + AmountFormatter.formatWithSymbol(state.totalAdvance, state.currencyCode), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay())
                                             }
                                             Spacer(modifier = Modifier.height(12.dp))
                                             HorizontalDivider(color = MaterialTheme.colorScheme.outline)
@@ -409,13 +407,13 @@ fun PassbookScreen(
                                                 com.synfusion.attendance.utils.SettlementState.RECEIVE -> {
                                                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                                         Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.amount_to_receive), fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                                        Text("₹${AmountFormatter.format(settlement?.amountToReceive ?: state.finalBalance)}", fontSize = 18.sp, fontWeight = FontWeight.Black, color = statusColor)
+                                                        Text(AmountFormatter.formatWithSymbol(settlement?.amountToReceive ?: state.finalBalance, state.currencyCode), fontSize = 18.sp, fontWeight = FontWeight.Black, color = statusColor)
                                                     }
                                                 }
                                                 com.synfusion.attendance.utils.SettlementState.PAY_BACK -> {
                                                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                                         Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.amount_to_pay_back), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent())
-                                                        Text("₹${AmountFormatter.format(settlement?.amountToPayBack ?: kotlin.math.abs(state.finalBalance))}", fontSize = 18.sp, fontWeight = FontWeight.Black, color = statusColor)
+                                                        Text(AmountFormatter.formatWithSymbol(settlement?.amountToPayBack ?: kotlin.math.abs(state.finalBalance), state.currencyCode), fontSize = 18.sp, fontWeight = FontWeight.Black, color = statusColor)
                                                     }
                                                 }
                                                 com.synfusion.attendance.utils.SettlementState.SETTLED -> {
@@ -475,7 +473,7 @@ fun PassbookScreen(
                                                     Text(displayDate, fontSize = 14.sp, fontWeight = FontWeight.Bold)
 
                                                     if (log.overtimeAmount > 0) {
-                                                        val otText = if (log.overtimeHours > 0) "+ ₹${AmountFormatter.format(log.overtimeAmount)} (${log.overtimeHours} hrs OT)" else "+ ₹${AmountFormatter.format(log.overtimeAmount)} (OT)"
+                                                        val otText = if (log.overtimeHours > 0) "+ ${AmountFormatter.formatWithSymbol(log.overtimeAmount, state.currencyCode)} (${log.overtimeHours} hrs OT)" else "+ ${AmountFormatter.formatWithSymbol(log.overtimeAmount, state.currencyCode)} (OT)"
                                                         Spacer(modifier = Modifier.height(4.dp))
                                                         Text(otText, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getLeave())
                                                     }
@@ -497,7 +495,7 @@ fun PassbookScreen(
                                                         }
 
                                                         if (log.advanceAmount != null && log.advanceAmount > 0) {
-                                                            Text("₹${AmountFormatter.format(log.advanceAmount)} " + androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.advance), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay())
+                                                            Text(AmountFormatter.formatWithSymbol(log.advanceAmount, state.currencyCode) + " " + androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.advance), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay())
                                                         }
                                                     }
                                                 }
@@ -549,9 +547,7 @@ fun PassbookScreen(
                                                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                                         Row(verticalAlignment = Alignment.CenterVertically) {
-                                                            Icon(Icons.Default.CurrencyRupee, contentDescription = null, tint = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent(), modifier = Modifier.size(16.dp))
-                                                            Spacer(modifier = Modifier.width(8.dp))
-                                                            Text("₹${AmountFormatter.format(state.dailyWage)} / " + androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.day_singular), fontWeight = FontWeight.Bold, fontSize = 14.sp, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent())
+                                                                Text(AmountFormatter.formatWithSymbol(state.dailyWage, state.currencyCode) + " / " + androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.day_singular), fontWeight = FontWeight.Bold, fontSize = 14.sp, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent())
                                                         }
                                                     }
                                                     Column(verticalArrangement = Arrangement.spacedBy(8.dp), horizontalAlignment = Alignment.End) {
@@ -705,12 +701,12 @@ fun PassbookScreen(
 
                                                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                                         Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.gross_earned), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
-                                                        Text("₹${AmountFormatter.format(state.grossEarned)}", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                                            Text(AmountFormatter.formatWithSymbol(state.grossEarned, state.currencyCode), fontSize = 14.sp, fontWeight = FontWeight.Bold)
                                                     }
                                                     Spacer(modifier = Modifier.height(12.dp))
                                                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                                         Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.total_advance), fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Medium)
-                                                        Text("- ₹${AmountFormatter.format(state.totalAdvance)}", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay())
+                                                            Text("- " + AmountFormatter.formatWithSymbol(state.totalAdvance, state.currencyCode), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay())
                                                     }
                                                     Spacer(modifier = Modifier.height(12.dp))
                                                     HorizontalDivider(color = MaterialTheme.colorScheme.outline)
@@ -726,13 +722,13 @@ fun PassbookScreen(
                                                         com.synfusion.attendance.utils.SettlementState.RECEIVE -> {
                                                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                                                 Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.amount_to_receive), fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                                                Text("₹${AmountFormatter.format(settlement?.amountToReceive ?: state.finalBalance)}", fontSize = 18.sp, fontWeight = FontWeight.Black, color = statusColor)
+                                                                    Text(AmountFormatter.formatWithSymbol(settlement?.amountToReceive ?: state.finalBalance, state.currencyCode), fontSize = 18.sp, fontWeight = FontWeight.Black, color = statusColor)
                                                             }
                                                         }
                                                         com.synfusion.attendance.utils.SettlementState.PAY_BACK -> {
                                                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                                                                 Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.amount_to_pay_back), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent())
-                                                                Text("₹${AmountFormatter.format(settlement?.amountToPayBack ?: kotlin.math.abs(state.finalBalance))}", fontSize = 18.sp, fontWeight = FontWeight.Black, color = statusColor)
+                                                                    Text(AmountFormatter.formatWithSymbol(settlement?.amountToPayBack ?: kotlin.math.abs(state.finalBalance), state.currencyCode), fontSize = 18.sp, fontWeight = FontWeight.Black, color = statusColor)
                                                             }
                                                         }
                                                         com.synfusion.attendance.utils.SettlementState.SETTLED -> {
@@ -794,7 +790,7 @@ fun PassbookScreen(
                                                     Text(displayDate, fontSize = 14.sp, fontWeight = FontWeight.Bold)
 
                                                     if (log.overtimeAmount > 0) {
-                                                        val otText = if (log.overtimeHours > 0) "+ ₹${AmountFormatter.format(log.overtimeAmount)} (${log.overtimeHours} hrs OT)" else "+ ₹${AmountFormatter.format(log.overtimeAmount)} (OT)"
+                                                                    val otText = if (log.overtimeHours > 0) "+ ${AmountFormatter.formatWithSymbol(log.overtimeAmount, state.currencyCode)} (${log.overtimeHours} hrs OT)" else "+ ${AmountFormatter.formatWithSymbol(log.overtimeAmount, state.currencyCode)} (OT)"
                                                         Spacer(modifier = Modifier.height(4.dp))
                                                         Text(otText, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getLeave())
                                                     }
@@ -816,7 +812,7 @@ fun PassbookScreen(
                                                         }
 
                                                         if (log.advanceAmount != null && log.advanceAmount > 0) {
-                                                            Text("₹${AmountFormatter.format(log.advanceAmount)} " + androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.advance), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay())
+                                                                        Text(AmountFormatter.formatWithSymbol(log.advanceAmount, state.currencyCode) + " " + androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.advance), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay())
                                                         }
                                                     }
                                                 }

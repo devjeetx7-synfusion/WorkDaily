@@ -29,6 +29,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import com.synfusion.attendance.data.model.CountryRepository
 import com.synfusion.attendance.utils.AmountFormatter
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
@@ -69,7 +70,9 @@ import com.synfusion.attendance.ui.components.WorkDailyPullToRefreshBox
 fun AnimatedCounter(
     targetValue: Int,
     prefix: String = "",
-    suffix: String = ""
+    suffix: String = "",
+    isCurrency: Boolean = false,
+    currencyCode: String = "INR"
 ) {
     var hasCompletedAnimation by rememberSaveable { mutableStateOf(false) }
     var animatedValue by remember { mutableStateOf(if (hasCompletedAnimation) targetValue else 0) }
@@ -86,13 +89,15 @@ fun AnimatedCounter(
             hasCompletedAnimation = true
         }
     )
-    val formattedCount = if (prefix == "₹" || prefix == "Rs.") {
-        AmountFormatter.format(count)
+    val formattedCount = if (isCurrency || prefix == "₹" || prefix == "Rs.") {
+        AmountFormatter.formatWithSymbol(count.toDouble(), currencyCode)
+    } else if (prefix.isNotEmpty()) {
+        "$prefix$count"
     } else {
         count.toString()
     }
     Text(
-        text = if (prefix == "₹" || prefix == "Rs.") "₹$formattedCount$suffix" else "$prefix$count$suffix",
+        text = "$formattedCount$suffix",
         fontSize = 24.sp,
         fontWeight = FontWeight.Bold,
         color = MaterialTheme.colorScheme.primary,
@@ -105,6 +110,7 @@ fun AnimatedCounter(
 @Composable
 fun StatsScreen(
     viewModel: OfflineStatsViewModel,
+    currencyCode: String = "INR",
     onNavigatePassbook: () -> Unit = {},
     scrollState: androidx.compose.foundation.lazy.LazyListState = androidx.compose.foundation.lazy.rememberLazyListState()
 ) {
@@ -169,7 +175,7 @@ fun StatsScreen(
                                 )
                             }
 
-                            PersonalStatsView(viewModel = viewModel, state = state, isAllTime = selectedTabIndex == 1, onNavigatePassbook = onNavigatePassbook, scrollState = scrollState)
+                            PersonalStatsView(viewModel = viewModel, state = state, isAllTime = selectedTabIndex == 1, currencyCode = currencyCode, onNavigatePassbook = onNavigatePassbook, scrollState = scrollState)
                         }
                     }
                 }
@@ -198,8 +204,9 @@ fun StatsScreen(
                     } else {
                         state.selectedLogs.sumOf { it.baseEarnings + it.overtimeAmount }
                     }
-                    AmountFormatter.format(total)
-                } else null
+                    AmountFormatter.formatWithSymbol(total, currencyCode)
+                } else null,
+                currencyCode = currencyCode
             )
         }
     }
@@ -245,6 +252,7 @@ fun PersonalStatsView(
     viewModel: OfflineStatsViewModel,
     state: OfflineStatsState,
     isAllTime: Boolean,
+    currencyCode: String = "INR",
     onNavigatePassbook: () -> Unit = {},
     scrollState: androidx.compose.foundation.lazy.LazyListState
 ) {
@@ -314,7 +322,7 @@ fun PersonalStatsView(
                                     Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.earnings), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                                 Spacer(modifier = Modifier.height(4.dp))
-                                AnimatedCounter(targetValue = currentEarnings.toInt(), prefix = "₹")
+                                AnimatedCounter(targetValue = currentEarnings.toInt(), isCurrency = true, currencyCode = currencyCode)
                             }
                         }
                         Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).clickable { viewModel.openDrillDown(DrillDownType.PRESENT, isAllTime) }.padding(16.dp)) {
@@ -342,7 +350,7 @@ fun PersonalStatsView(
                             Column {
                                 Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.advance_deductions), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 Spacer(modifier = Modifier.height(4.dp))
-                                AnimatedCounter(targetValue = currentAdvance.toInt(), prefix = "₹")
+                                AnimatedCounter(targetValue = currentAdvance.toInt(), isCurrency = true, currencyCode = currencyCode)
                             }
                         }
                     }
@@ -360,7 +368,8 @@ fun PersonalStatsView(
                             EarningsLineChart(
                                 dailyRecords = currentDailyRecords,
                                 hasRecords = currentHasRecords,
-                                isAllTime = isAllTime
+                                isAllTime = isAllTime,
+                                currencyCode = currencyCode
                             )
                         }
                     }
@@ -475,7 +484,7 @@ fun PersonalStatsView(
                                 Column {
                                     Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.total_earnings), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     Spacer(modifier = Modifier.height(4.dp))
-                                AnimatedCounter(targetValue = state.personalStats.allTimeEarnings.toInt(), prefix = "₹")
+                                AnimatedCounter(targetValue = state.personalStats.allTimeEarnings.toInt(), isCurrency = true, currencyCode = currencyCode)
                                 }
                             }
                             Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).clickable { viewModel.openDrillDown(DrillDownType.PRESENT, true) }.padding(16.dp)) {
@@ -546,7 +555,7 @@ fun PersonalStatsView(
                                     Column {
                                         Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.earnings), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         Spacer(modifier = Modifier.height(4.dp))
-                                        AnimatedCounter(targetValue = currentEarnings.toInt(), prefix = "₹")
+                                        AnimatedCounter(targetValue = currentEarnings.toInt(), isCurrency = true, currencyCode = currencyCode)
                                     }
                                 }
                                 Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).clickable { viewModel.openDrillDown(DrillDownType.PRESENT, isAllTime) }.padding(16.dp)) {
@@ -570,7 +579,7 @@ fun PersonalStatsView(
                                     Column {
                                         Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.advance_deductions), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         Spacer(modifier = Modifier.height(4.dp))
-                                        AnimatedCounter(targetValue = currentAdvance.toInt(), prefix = "₹")
+                                        AnimatedCounter(targetValue = currentAdvance.toInt(), isCurrency = true, currencyCode = currencyCode)
                                     }
                                 }
                             }
@@ -582,7 +591,7 @@ fun PersonalStatsView(
                                         Column {
                                             Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.total_earnings), fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                             Spacer(modifier = Modifier.height(4.dp))
-                                            AnimatedCounter(targetValue = state.personalStats.allTimeEarnings.toInt(), prefix = "₹")
+                                            AnimatedCounter(targetValue = state.personalStats.allTimeEarnings.toInt(), isCurrency = true, currencyCode = currencyCode)
                                         }
                                     }
                                     Box(modifier = Modifier.weight(1f).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface).border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)).clickable { viewModel.openDrillDown(DrillDownType.PRESENT, true) }.padding(16.dp)) {
@@ -612,7 +621,8 @@ fun PersonalStatsView(
                                     EarningsLineChart(
                                         dailyRecords = currentDailyRecords,
                                         hasRecords = currentHasRecords,
-                                        isAllTime = isAllTime
+                                        isAllTime = isAllTime,
+                                        currencyCode = currencyCode
                                     )
                                 }
                             }
@@ -763,13 +773,14 @@ fun calculateNiceScale(maxDataValue: Double): ChartNiceScale {
     return ChartNiceScale(maxVal = niceMax, ticks = ticks)
 }
 
-fun formatYAxisLabel(value: Double): String {
-    if (value == 0.0) return "₹0"
+fun formatYAxisLabel(value: Double, currencyCode: String = "INR"): String {
+    val sym = CountryRepository.getCurrencySymbol(currencyCode)
+    if (value == 0.0) return "${sym}0"
     return if (value >= 1000) {
         val kVal = value / 1000.0
-        if (kVal % 1.0 == 0.0) "₹${kVal.toInt()}K" else "₹${"%.1f".format(Locale.US, kVal)}K"
+        if (kVal % 1.0 == 0.0) "${sym}${kVal.toInt()}K" else "${sym}${"%.1f".format(Locale.US, kVal)}K"
     } else {
-        "₹${value.toInt()}"
+        "${sym}${value.toInt()}"
     }
 }
 
@@ -777,7 +788,8 @@ fun formatYAxisLabel(value: Double): String {
 fun EarningsLineChart(
     dailyRecords: List<OfflineDailyRecord>,
     hasRecords: Boolean = true,
-    isAllTime: Boolean = false
+    isAllTime: Boolean = false,
+    currencyCode: String = "INR"
 ) {
     if (!hasRecords || dailyRecords.isEmpty()) {
         Box(
@@ -948,7 +960,7 @@ fun EarningsLineChart(
             ) {
                 niceScale.ticks.forEach { tickVal ->
                     Text(
-                        text = formatYAxisLabel(tickVal),
+                        text = formatYAxisLabel(tickVal, currencyCode),
                         fontSize = 9.sp,
                         fontWeight = FontWeight.Medium,
                         color = labelTextColor,
@@ -1150,7 +1162,7 @@ fun EarningsLineChart(
                             dailyRecords.forEachIndexed { index, record ->
                                 val isSelected = selectedIndex == index
                                 val recordDateLabel = formatDateForXAxis(record.dateStr)
-                                val accessibleText = "${formatDateForTooltip(record.dateStr)}, earning ₹${AmountFormatter.format(record.earnings)}${if (isSelected) ", selected" else ""}"
+                                val accessibleText = "${formatDateForTooltip(record.dateStr)}, earning ${AmountFormatter.formatWithSymbol(record.earnings, currencyCode)}${if (isSelected) ", selected" else ""}"
 
                                 if (index % step == 0 || index == count - 1 || isSelected) {
                                     Text(

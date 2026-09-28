@@ -203,6 +203,7 @@ fun AllTimePassbookScreen(
                             items(state.yearGroups, key = { it.year }) { yearGroup ->
                                 YearGroupItem(
                                     yearGroup = yearGroup,
+                                    currencyCode = state.currencyCode,
                                     expandedMonths = expandedMonths,
                                     onToggleMonth = { monthKey ->
                                         expandedMonths[monthKey] = !(expandedMonths[monthKey] ?: false)
@@ -458,7 +459,7 @@ fun EmploymentSummarySection(state: com.synfusion.attendance.viewmodel.OfflineAl
                         fontWeight = FontWeight.Medium
                     )
                     Text(
-                        text = "₹${AmountFormatter.format(state.totalSalaryEarned)}",
+                        text = AmountFormatter.formatWithSymbol(state.totalSalaryEarned, state.currencyCode),
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground
@@ -475,7 +476,7 @@ fun EmploymentSummarySection(state: com.synfusion.attendance.viewmodel.OfflineAl
                         fontWeight = FontWeight.Medium
                     )
                     Text(
-                        text = "₹${AmountFormatter.format(state.totalOtEarned)}",
+                        text = AmountFormatter.formatWithSymbol(state.totalOtEarned, state.currencyCode),
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
                         color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getLeave()
@@ -492,7 +493,7 @@ fun EmploymentSummarySection(state: com.synfusion.attendance.viewmodel.OfflineAl
                         fontWeight = FontWeight.Medium
                     )
                     Text(
-                        text = "₹${AmountFormatter.format(state.totalAdvance)}",
+                        text = AmountFormatter.formatWithSymbol(state.totalAdvance, state.currencyCode),
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
                         color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay()
@@ -515,13 +516,13 @@ fun EmploymentSummarySection(state: com.synfusion.attendance.viewmodel.OfflineAl
                     com.synfusion.attendance.utils.SettlementState.RECEIVE -> {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                             Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.amount_to_receive), fontSize = 15.sp, fontWeight = FontWeight.Bold)
-                            Text("₹${AmountFormatter.format(settlement?.amountToReceive ?: state.totalNetEarnings)}", fontSize = 18.sp, fontWeight = FontWeight.Black, color = statusColor)
+                            Text(AmountFormatter.formatWithSymbol(settlement?.amountToReceive ?: state.totalNetEarnings, state.currencyCode), fontSize = 18.sp, fontWeight = FontWeight.Black, color = statusColor)
                         }
                     }
                     com.synfusion.attendance.utils.SettlementState.PAY_BACK -> {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                             Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.amount_to_pay_back), fontSize = 15.sp, fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent())
-                            Text("₹${AmountFormatter.format(settlement?.amountToPayBack ?: kotlin.math.abs(state.totalNetEarnings))}", fontSize = 18.sp, fontWeight = FontWeight.Black, color = statusColor)
+                            Text(AmountFormatter.formatWithSymbol(settlement?.amountToPayBack ?: kotlin.math.abs(state.totalNetEarnings), state.currencyCode), fontSize = 18.sp, fontWeight = FontWeight.Black, color = statusColor)
                         }
                     }
                     com.synfusion.attendance.utils.SettlementState.SETTLED -> {
@@ -581,6 +582,7 @@ fun EmploymentSummarySection(state: com.synfusion.attendance.viewmodel.OfflineAl
 @Composable
 fun YearGroupItem(
     yearGroup: com.synfusion.attendance.viewmodel.AllTimeYearGroup,
+    currencyCode: String = "INR",
     expandedMonths: Map<String, Boolean>,
     onToggleMonth: (String) -> Unit
 ) {
@@ -591,6 +593,7 @@ fun YearGroupItem(
             val monthKey = "${yearGroup.year}_${monthGroup.month}"
             MonthGroupItem(
                 monthGroup = monthGroup,
+                currencyCode = currencyCode,
                 expanded = expandedMonths[monthKey] ?: false,
                 onToggle = { onToggleMonth(monthKey) }
             )
@@ -602,6 +605,7 @@ fun YearGroupItem(
 @Composable
 fun MonthGroupItem(
     monthGroup: com.synfusion.attendance.viewmodel.AllTimeGroup,
+    currencyCode: String = "INR",
     expanded: Boolean,
     onToggle: () -> Unit
 ) {
@@ -641,7 +645,7 @@ fun MonthGroupItem(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Earnings: ₹${AmountFormatter.format(monthGroup.totalEarnings + monthGroup.totalOvertime)}",
+                            text = "Earnings: ${AmountFormatter.formatWithSymbol(monthGroup.totalEarnings + monthGroup.totalOvertime, currencyCode)}",
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent()
@@ -683,11 +687,11 @@ fun MonthGroupItem(
                     ) {
                         Column {
                             Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.salary), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text("₹${AmountFormatter.format(monthGroup.totalEarnings)}", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                            Text(AmountFormatter.formatWithSymbol(monthGroup.totalEarnings, currencyCode), fontSize = 13.sp, fontWeight = FontWeight.Bold)
                         }
                         Column {
                             Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.overtime), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text("₹${AmountFormatter.format(monthGroup.totalOvertime)}", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getLeave())
+                            Text(AmountFormatter.formatWithSymbol(monthGroup.totalOvertime, currencyCode), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getLeave())
                         }
                         Column {
                             Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.total_present), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)

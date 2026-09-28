@@ -62,8 +62,10 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import com.synfusion.attendance.utils.getActivity
 import com.synfusion.attendance.viewmodel.OfflineSettingsViewModel
 import com.synfusion.attendance.viewmodel.OfflineSettingsState
+import com.synfusion.attendance.data.model.CountryRepository
 import com.synfusion.attendance.utils.AmountFormatter
 import com.synfusion.attendance.utils.collectAsStateWithLifecycle
+import com.synfusion.attendance.utils.CurrencyVisualTransformation
 import com.synfusion.attendance.utils.IndianCurrencyVisualTransformation
 import com.synfusion.attendance.ui.responsive.LocalWindowSizeInfo
 import com.synfusion.attendance.ui.responsive.ResponsiveContainer
@@ -732,13 +734,14 @@ fun ProfileCardSection(
                 }
             }
 
+            val activeCountry = remember(state.countryCode) { CountryRepository.getCountry(state.countryCode) }
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(text = state.name.ifEmpty { androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.user_name) }, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                 if (state.phone.isNotEmpty()) {
-                    Text(text = "+91 ${state.phone}", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(text = "${activeCountry.callingCode} ${state.phone}", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 if (state.dailyWage > 0) {
-                    Text(text = "₹${AmountFormatter.format(state.dailyWage)} / day", fontSize = 14.sp, color = Color(0xFF16A34A), fontWeight = FontWeight.Bold)
+                    Text(text = AmountFormatter.formatWithSymbol(state.dailyWage, state.currencyCode) + " / " + androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.day_singular), fontSize = 14.sp, color = Color(0xFF16A34A), fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -2007,27 +2010,28 @@ fun OfflineProfileEditBottomSheet(
                 singleLine = true
             )
 
+            val activeCountry = remember(state.countryCode) { CountryRepository.getCountry(state.countryCode) }
             OutlinedTextField(
                 value = if (state.dailyWage > 0) state.dailyWage.toInt().toString() else "",
                 onValueChange = { viewModel.onWageChange(it.filter { ch -> ch.isDigit() }) },
                 modifier = Modifier.fillMaxWidth(),
                 label = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.daily_wage)) },
-                leadingIcon = { Icon(Icons.Default.CurrencyRupee, null) },
+                leadingIcon = { Text(CountryRepository.getCurrencySymbol(state.currencyCode), fontWeight = FontWeight.Bold) },
                 shape = RoundedCornerShape(12.dp),
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                visualTransformation = IndianCurrencyVisualTransformation()
+                visualTransformation = CurrencyVisualTransformation(state.currencyCode)
             )
 
             OutlinedTextField(
                 value = state.phone,
                 onValueChange = { newValue ->
-                    val digits = newValue.filter { it.isDigit() }.take(10)
+                    val digits = newValue.filter { it.isDigit() }.take(15)
                     viewModel.onPhoneChange(digits)
                 },
                 modifier = Modifier.fillMaxWidth(),
                 label = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.phone_number)) },
-                leadingIcon = { Text("+91 ", fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 12.dp)) },
+                leadingIcon = { Text("${activeCountry.callingCode} ", fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 12.dp)) },
                 shape = RoundedCornerShape(12.dp),
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
