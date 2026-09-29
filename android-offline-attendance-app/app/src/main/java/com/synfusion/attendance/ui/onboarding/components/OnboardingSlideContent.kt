@@ -8,6 +8,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -32,7 +33,7 @@ fun OnboardingSlideContent(
             visualContent()
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
         Text(
             text = title,
@@ -41,10 +42,14 @@ fun OnboardingSlideContent(
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onBackground,
             lineHeight = 34.sp,
-            modifier = Modifier.padding(horizontal = 8.dp)
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 6.dp)
         )
 
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(9.dp))
 
         Text(
             text = description,
@@ -52,9 +57,13 @@ fun OnboardingSlideContent(
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             lineHeight = 21.sp,
-            modifier = Modifier.padding(horizontal = 14.dp)
+            maxLines = 3,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 10.dp)
         )
 
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(8.dp))
     }
 }
