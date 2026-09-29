@@ -233,13 +233,13 @@ private fun WelcomeFeatureTile(
     Surface(
         modifier = modifier.height(60.dp),
         shape = RoundedCornerShape(17.dp),
-        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f)
+        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f),
+        contentColor = MaterialTheme.colorScheme.primary
     ) {
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier.padding(8.dp)
         ) {
-            androidx.compose.material3.LocalContentColor provides MaterialTheme.colorScheme.primary
             icon()
         }
     }
