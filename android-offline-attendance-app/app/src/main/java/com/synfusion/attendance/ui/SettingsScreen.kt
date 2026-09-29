@@ -1113,43 +1113,6 @@ fun AppPreferencesCardSection(
                 }
             }
 
-            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
-
-            // 5. Customize Navigation — Navigation item
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onNavigate("customize_navigation") }
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(androidx.compose.foundation.shape.CircleShape)
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            Icons.Default.Tune,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column {
-                        Text("Customize Navigation", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                        Text("Customize your bottom navigation", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
-                Icon(
-                    Icons.Default.ChevronRight,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
 
         }
     }
