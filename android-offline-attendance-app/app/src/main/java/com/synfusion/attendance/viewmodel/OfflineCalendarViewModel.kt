@@ -36,6 +36,7 @@ data class OfflineCalendarState(
     // Personal State
     val currentMonthDate: Date = Date(), // Determines the month/year displayed
     val personalAttendance: List<OfflineAttendanceRecord> = emptyList(),
+    val currencyCode: String = "INR",
     val errorMessage: String? = null
 )
 
@@ -95,6 +96,9 @@ class OfflineCalendarViewModel(
                 val sdfMonth = SimpleDateFormat("yyyy-MM", Locale.getDefault())
                 val monthPrefix = sdfMonth.format(cal.time)
 
+                val user = withContext(Dispatchers.IO) { localAttendanceRepository.getUser() }
+                val currencyCode = user?.currencyCode ?: "INR"
+
                 val personal = withContext(Dispatchers.IO) {
                     localAttendanceRepository.getPersonalAttendance()
                 }
@@ -121,6 +125,7 @@ class OfflineCalendarViewModel(
 
                 _calendarState.update { it.copy(
                     personalAttendance = mappedRecords,
+                    currencyCode = currencyCode,
                     errorMessage = null
                 ) }
             } catch (e: Exception) {

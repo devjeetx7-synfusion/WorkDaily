@@ -66,7 +66,8 @@ import com.synfusion.attendance.data.DrillDownType
 import com.synfusion.attendance.ui.components.DrillDownBottomSheet
 import com.synfusion.attendance.ui.components.FloatingBottomNavigation
 import com.synfusion.attendance.utils.AmountFormatter
-import com.synfusion.attendance.utils.IndianCurrencyVisualTransformation
+import com.synfusion.attendance.utils.CurrencyVisualTransformation
+import com.synfusion.attendance.data.model.CountryRepository
 import com.synfusion.attendance.viewmodel.OfflineViewModelFactory
 import com.synfusion.attendance.utils.collectAsStateWithLifecycle
 import com.synfusion.attendance.ui.responsive.LocalWindowSizeInfo
@@ -370,7 +371,7 @@ fun DashboardScreen(
                                                                     todayAdvanceAmount = dashboardState.todayAdvanceAmount,
                                                                     onAddAdvance = { showAdvanceDialog = true }
                                                                 )
-                                                                PersonalDailyLog(dashboardState, dashboardViewModel)
+                                                                PersonalDailyLog(dashboardState, settingsState.currencyCode, dashboardViewModel)
                                                             }
                                                         }
                                                     }
@@ -410,7 +411,7 @@ fun DashboardScreen(
                                                                     modifier = Modifier.weight(1f),
                                                                     verticalArrangement = Arrangement.spacedBy(16.dp)
                                                                 ) {
-                                                                    PersonalDailyLog(dashboardState, dashboardViewModel)
+                                                                    PersonalDailyLog(dashboardState, settingsState.currencyCode, dashboardViewModel)
                                                                 }
                                                             }
                                                         }
@@ -577,9 +578,12 @@ fun DashboardScreen(
                             placeholder = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.amount)) },
                             modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)),
                             shape = RoundedCornerShape(12.dp),
-                            leadingIcon = { Text("₹", modifier = Modifier.padding(start = 8.dp), fontWeight = FontWeight.Bold) },
+                            leadingIcon = {
+                                val symbol = CountryRepository.getCountry(settingsState.countryCode).currencySymbol
+                                Text(symbol, modifier = Modifier.padding(start = 8.dp), fontWeight = FontWeight.Bold)
+                            },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            visualTransformation = IndianCurrencyVisualTransformation()
+                            visualTransformation = CurrencyVisualTransformation(settingsState.currencyCode)
                         )
                     }
                 },
@@ -1000,7 +1004,7 @@ fun PersonalQuickActions(
 }
 
 @Composable
-fun PersonalDailyLog(state: OfflineDashboardState, dashboardViewModel: OfflineDashboardViewModel) {
+fun PersonalDailyLog(state: OfflineDashboardState, currencyCode: String, dashboardViewModel: OfflineDashboardViewModel) {
     var overtimeHours by remember { mutableStateOf(state.overtimeHours) }
     var otAmount by remember {
         mutableStateOf(state.todayNote?.let { OvertimeCalculator.extractCustomAmount(it)?.toInt()?.toString() } ?: "")
@@ -1039,7 +1043,7 @@ fun PersonalDailyLog(state: OfflineDashboardState, dashboardViewModel: OfflineDa
                 shape = RoundedCornerShape(12.dp),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true,
-                visualTransformation = IndianCurrencyVisualTransformation()
+                visualTransformation = CurrencyVisualTransformation(currencyCode)
             )
             Spacer(modifier = Modifier.height(12.dp))
 
