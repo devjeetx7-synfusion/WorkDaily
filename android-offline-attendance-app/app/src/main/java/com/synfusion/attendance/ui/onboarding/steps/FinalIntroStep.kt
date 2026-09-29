@@ -1,6 +1,11 @@
 package com.synfusion.attendance.ui.onboarding.steps
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -23,11 +28,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.synfusion.attendance.R
 import com.synfusion.attendance.ui.onboarding.components.FloatingWorker
 import com.synfusion.attendance.ui.onboarding.components.OnboardingSlideContent
+import com.synfusion.attendance.ui.onboarding.components.WorkerRole
+import com.synfusion.attendance.ui.theme.MintPrimary
 
 @Composable
 fun FinalIntroStep() {
@@ -40,6 +48,17 @@ fun FinalIntroStep() {
         label = "finalSettle"
     )
 
+    val accentMotion = rememberInfiniteTransition(label = "finalAccentMotion")
+    val accentY by accentMotion.animateFloat(
+        initialValue = -4f,
+        targetValue = 4f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(3200, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "finalAccentY"
+    )
+
     OnboardingSlideContent(
         title = stringResource(R.string.onboarding_final_title),
         description = stringResource(R.string.onboarding_final_desc)
@@ -47,29 +66,32 @@ fun FinalIntroStep() {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(min = 250.dp, max = 360.dp),
+                .heightIn(min = 280.dp, max = 370.dp),
             contentAlignment = Alignment.Center
         ) {
             FloatingWorker(
-                size = 45.dp,
-                xOffset = (-132).dp,
-                yOffset = (-82).dp,
+                role = WorkerRole.CONTRACTOR,
+                size = 52.dp,
+                xOffset = (-136).dp,
+                yOffset = (-92).dp,
                 animationDelay = 120,
                 floatRange = 5.dp,
                 horizontalRange = 3.dp
             )
             FloatingWorker(
+                role = WorkerRole.PLUMBER,
                 size = 58.dp,
-                xOffset = 132.dp,
-                yOffset = (-70).dp,
+                xOffset = 138.dp,
+                yOffset = (-82).dp,
                 animationDelay = 360,
                 floatRange = 6.dp,
-                horizontalRange = 4.dp
+                horizontalRange = 3.dp
             )
             FloatingWorker(
-                size = 50.dp,
-                xOffset = (-122).dp,
-                yOffset = 98.dp,
+                role = WorkerRole.MASON,
+                size = 54.dp,
+                xOffset = (-132).dp,
+                yOffset = 112.dp,
                 animationDelay = 640,
                 floatRange = 5.dp,
                 horizontalRange = 3.dp
@@ -77,61 +99,49 @@ fun FinalIntroStep() {
 
             Surface(
                 modifier = Modifier
-                    .widthIn(max = 246.dp)
-                    .fillMaxWidth(0.70f)
-                    .height(226.dp)
+                    .widthIn(max = 292.dp)
+                    .fillMaxWidth(0.84f)
+                    .height(230.dp)
                     .shadow(
-                        elevation = 24.dp,
+                        elevation = 20.dp,
                         shape = RoundedCornerShape(34.dp),
-                        ambientColor = Color.Black.copy(alpha = 0.05f),
-                        spotColor = Color.Black.copy(alpha = 0.09f)
+                        ambientColor = Color.Black.copy(alpha = 0.04f),
+                        spotColor = Color.Black.copy(alpha = 0.08f)
                     )
                     .graphicsLayer {
-                        scaleX = 0.92f + (settle * 0.08f)
-                        scaleY = 0.92f + (settle * 0.08f)
+                        scaleX = 0.94f + (settle * 0.06f)
+                        scaleY = 0.94f + (settle * 0.06f)
                     },
                 shape = RoundedCornerShape(34.dp),
                 color = MaterialTheme.colorScheme.surface
             ) {
                 Column(
-                    modifier = Modifier.padding(18.dp),
+                    modifier = Modifier.padding(horizontal = 18.dp, vertical = 17.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.SpaceBetween
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier = Modifier
-                                    .size(40.dp)
-                                    .background(
-                                        MaterialTheme.colorScheme.primaryContainer,
-                                        RoundedCornerShape(13.dp)
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.CheckCircle,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(23.dp)
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Text(
-                                text = stringResource(R.string.app_name),
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.ExtraBold
-                            )
-                        }
-
                         Box(
                             modifier = Modifier
-                                .size(8.dp)
-                                .background(MaterialTheme.colorScheme.primary, CircleShape)
+                                .size(40.dp)
+                                .background(MintPrimary.copy(alpha = 0.11f), RoundedCornerShape(13.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Default.CheckCircle, null, tint = MintPrimary, modifier = Modifier.size(23.dp))
+                        }
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            text = stringResource(R.string.app_name),
+                            fontSize = 21.sp,
+                            lineHeight = 24.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Clip,
+                            modifier = Modifier.weight(1f)
                         )
                     }
 
@@ -139,9 +149,9 @@ fun FinalIntroStep() {
                         modifier = Modifier.fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(9.dp)
                     ) {
-                        FinalFeatureRow(Icons.Default.DateRange, 0.74f)
-                        FinalFeatureRow(Icons.Default.AccountBalanceWallet, 0.88f)
-                        FinalFeatureRow(Icons.Default.ListAlt, 0.66f)
+                        FinalFeatureRow(Icons.Default.DateRange, 0.66f)
+                        FinalFeatureRow(Icons.Default.AccountBalanceWallet, 0.79f)
+                        FinalFeatureRow(Icons.Default.ListAlt, 0.58f)
                     }
 
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -150,8 +160,7 @@ fun FinalIntroStep() {
                                 modifier = Modifier
                                     .size(if (index == 1) 8.dp else 6.dp)
                                     .background(
-                                        if (index == 1) MaterialTheme.colorScheme.primary
-                                        else MaterialTheme.colorScheme.primary.copy(alpha = 0.24f),
+                                        if (index == 1) MintPrimary else MintPrimary.copy(alpha = 0.24f),
                                         CircleShape
                                     )
                             )
@@ -162,22 +171,15 @@ fun FinalIntroStep() {
 
             Surface(
                 modifier = Modifier
-                    .offset(x = 110.dp, y = 92.dp)
-                    .size(54.dp)
-                    .shadow(9.dp, RoundedCornerShape(18.dp))
-                    .graphicsLayer {
-                        rotationZ = -8f + (settle * 4f)
-                    },
-                shape = RoundedCornerShape(18.dp),
-                color = MaterialTheme.colorScheme.secondaryContainer
+                    .offset(x = 118.dp, y = (104 + accentY).dp)
+                    .size(50.dp)
+                    .shadow(7.dp, RoundedCornerShape(17.dp))
+                    .graphicsLayer { rotationZ = -4f },
+                shape = RoundedCornerShape(17.dp),
+                color = MintPrimary.copy(alpha = 0.10f)
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = Icons.Default.CheckCircle,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                        modifier = Modifier.size(25.dp)
-                    )
+                    Icon(Icons.Default.CheckCircle, null, tint = MintPrimary, modifier = Modifier.size(24.dp))
                 }
             }
         }
@@ -192,7 +194,7 @@ private fun FinalFeatureRow(
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(17.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.50f)
+        color = MintPrimary.copy(alpha = 0.055f)
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
@@ -201,28 +203,17 @@ private fun FinalFeatureRow(
             Box(
                 modifier = Modifier
                     .size(32.dp)
-                    .background(
-                        MaterialTheme.colorScheme.primaryContainer,
-                        RoundedCornerShape(10.dp)
-                    ),
+                    .background(MintPrimary.copy(alpha = 0.11f), RoundedCornerShape(10.dp)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(18.dp)
-                )
+                Icon(imageVector = icon, contentDescription = null, tint = MintPrimary, modifier = Modifier.size(18.dp))
             }
             Spacer(modifier = Modifier.width(10.dp))
             Box(
                 modifier = Modifier
                     .fillMaxWidth(widthFraction)
                     .height(6.dp)
-                    .background(
-                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.14f),
-                        RoundedCornerShape(99.dp)
-                    )
+                    .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.13f), RoundedCornerShape(99.dp))
             )
         }
     }
