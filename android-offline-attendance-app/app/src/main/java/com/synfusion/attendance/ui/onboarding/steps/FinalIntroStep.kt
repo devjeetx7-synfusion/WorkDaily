@@ -1,7 +1,10 @@
 package com.synfusion.attendance.ui.onboarding.steps
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalanceWallet
@@ -12,11 +15,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -26,108 +30,154 @@ import com.synfusion.attendance.ui.onboarding.components.FloatingWorker
 import com.synfusion.attendance.ui.onboarding.components.OnboardingSlideContent
 
 @Composable
-fun FinalIntroStep(
-    onBack: () -> Unit,
-    onComplete: () -> Unit
-) {
+fun FinalIntroStep() {
+    var entered by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { entered = true }
+
+    val settle by animateFloatAsState(
+        targetValue = if (entered) 1f else 0f,
+        animationSpec = tween(620),
+        label = "finalSettle"
+    )
+
     OnboardingSlideContent(
         title = stringResource(R.string.onboarding_final_title),
-        description = stringResource(R.string.onboarding_final_desc),
-        ctaText = stringResource(R.string.onboarding_get_started),
-        backText = stringResource(R.string.onboarding_back),
-        showBack = true,
-        onBackClick = onBack,
-        onCtaClick = onComplete
+        description = stringResource(R.string.onboarding_final_desc)
     ) {
         Box(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 250.dp, max = 360.dp),
             contentAlignment = Alignment.Center
         ) {
-            FloatingWorker(size = 42.dp, xOffset = (-126).dp, yOffset = (-88).dp, animationDelay = 120)
-            FloatingWorker(size = 54.dp, xOffset = 120.dp, yOffset = (-76).dp, animationDelay = 340)
-            FloatingWorker(size = 46.dp, xOffset = (-112).dp, yOffset = 98.dp, animationDelay = 580)
-            FloatingWorker(size = 58.dp, xOffset = 122.dp, yOffset = 92.dp, animationDelay = 820)
+            FloatingWorker(
+                size = 45.dp,
+                xOffset = (-132).dp,
+                yOffset = (-82).dp,
+                animationDelay = 120,
+                floatRange = 5.dp,
+                horizontalRange = 3.dp
+            )
+            FloatingWorker(
+                size = 58.dp,
+                xOffset = 132.dp,
+                yOffset = (-70).dp,
+                animationDelay = 360,
+                floatRange = 6.dp,
+                horizontalRange = 4.dp
+            )
+            FloatingWorker(
+                size = 50.dp,
+                xOffset = (-122).dp,
+                yOffset = 98.dp,
+                animationDelay = 640,
+                floatRange = 5.dp,
+                horizontalRange = 3.dp
+            )
 
             Surface(
                 modifier = Modifier
-                    .widthIn(max = 286.dp)
-                    .fillMaxWidth(0.82f)
-                    .height(202.dp)
+                    .widthIn(max = 246.dp)
+                    .fillMaxWidth(0.70f)
+                    .height(226.dp)
                     .shadow(
-                        elevation = 22.dp,
-                        shape = RoundedCornerShape(30.dp),
+                        elevation = 24.dp,
+                        shape = RoundedCornerShape(34.dp),
                         ambientColor = Color.Black.copy(alpha = 0.05f),
                         spotColor = Color.Black.copy(alpha = 0.09f)
-                    ),
-                shape = RoundedCornerShape(30.dp),
+                    )
+                    .graphicsLayer {
+                        scaleX = 0.92f + (settle * 0.08f)
+                        scaleY = 0.92f + (settle * 0.08f)
+                    },
+                shape = RoundedCornerShape(34.dp),
                 color = MaterialTheme.colorScheme.surface
             ) {
                 Column(
                     modifier = Modifier.padding(18.dp),
-                    verticalArrangement = Arrangement.SpaceBetween,
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.SpaceBetween
                 ) {
                     Row(
+                        modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(42.dp)
-                                .background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(14.dp)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.CheckCircle,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(24.dp)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .background(
+                                        MaterialTheme.colorScheme.primaryContainer,
+                                        RoundedCornerShape(13.dp)
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.CheckCircle,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(23.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text(
+                                text = stringResource(R.string.app_name),
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.ExtraBold
                             )
                         }
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text(
-                            text = "WorkDaily",
-                            fontSize = 23.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = MaterialTheme.colorScheme.onSurface
+
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .background(MaterialTheme.colorScheme.primary, CircleShape)
                         )
                     }
 
-                    Row(
+                    Column(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        verticalArrangement = Arrangement.spacedBy(9.dp)
                     ) {
-                        FinalFeatureTile(
-                            modifier = Modifier.weight(1f),
-                            icon = { Icon(Icons.Default.DateRange, null, tint = MaterialTheme.colorScheme.primary) }
-                        )
-                        FinalFeatureTile(
-                            modifier = Modifier.weight(1f),
-                            icon = { Icon(Icons.Default.AccountBalanceWallet, null, tint = MaterialTheme.colorScheme.primary) }
-                        )
-                        FinalFeatureTile(
-                            modifier = Modifier.weight(1f),
-                            icon = { Icon(Icons.Default.ListAlt, null, tint = MaterialTheme.colorScheme.primary) }
-                        )
+                        FinalFeatureRow(Icons.Default.DateRange, 0.74f)
+                        FinalFeatureRow(Icons.Default.AccountBalanceWallet, 0.88f)
+                        FinalFeatureRow(Icons.Default.ListAlt, 0.66f)
                     }
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center
-                    ) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         repeat(3) { index ->
                             Box(
                                 modifier = Modifier
-                                    .padding(horizontal = 4.dp)
                                     .size(if (index == 1) 8.dp else 6.dp)
                                     .background(
                                         if (index == 1) MaterialTheme.colorScheme.primary
-                                        else MaterialTheme.colorScheme.primary.copy(alpha = 0.28f),
-                                        RoundedCornerShape(99.dp)
+                                        else MaterialTheme.colorScheme.primary.copy(alpha = 0.24f),
+                                        CircleShape
                                     )
                             )
                         }
                     }
+                }
+            }
+
+            Surface(
+                modifier = Modifier
+                    .offset(x = 110.dp, y = 92.dp)
+                    .size(54.dp)
+                    .shadow(9.dp, RoundedCornerShape(18.dp))
+                    .graphicsLayer {
+                        rotationZ = -8f + (settle * 4f)
+                    },
+                shape = RoundedCornerShape(18.dp),
+                color = MaterialTheme.colorScheme.secondaryContainer
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Default.CheckCircle,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                        modifier = Modifier.size(25.dp)
+                    )
                 }
             }
         }
@@ -135,17 +185,45 @@ fun FinalIntroStep(
 }
 
 @Composable
-private fun FinalFeatureTile(
-    modifier: Modifier,
-    icon: @Composable () -> Unit
+private fun FinalFeatureRow(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    widthFraction: Float
 ) {
     Surface(
-        modifier = modifier.height(66.dp),
-        shape = RoundedCornerShape(18.dp),
-        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f)
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(17.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.50f)
     ) {
-        Box(contentAlignment = Alignment.Center) {
-            icon()
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .background(
+                        MaterialTheme.colorScheme.primaryContainer,
+                        RoundedCornerShape(10.dp)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(10.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(widthFraction)
+                    .height(6.dp)
+                    .background(
+                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.14f),
+                        RoundedCornerShape(99.dp)
+                    )
+            )
         }
     }
 }
