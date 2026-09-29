@@ -46,7 +46,7 @@ class OfflineViewModelFactory(
         }
         if (modelClass.isAssignableFrom(OfflineOnboardingViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return OfflineOnboardingViewModel(repository, localAttendanceRepository) as T
+            return OfflineOnboardingViewModel(repository) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

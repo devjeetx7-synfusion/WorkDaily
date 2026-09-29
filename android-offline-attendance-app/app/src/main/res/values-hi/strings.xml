@@ -1023,11 +1023,36 @@
     <!-- Onboarding Flow Strings -->
     <string name="onboarding_welcome_title">WorkDaily में आपका स्वागत है</string>
     <string name="onboarding_welcome_sub">अपनी डेली हाजिरी, काम और कमाई आसानी से मैनेज करें।</string>
+    <string name="onboarding_welcome_desc">काम, हाजिरी और कमाई को ट्रैक करने का सबसे आसान तरीका।</string>
     <string name="onboarding_get_started">शुरू करें</string>
+    <string name="onboarding_next">आगे बढ़ें</string>
     <string name="onboarding_profile_title">अपनी प्रोफाइल सेट करें</string>
     <string name="onboarding_profile_sub">अपना नाम दर्ज करें और चाहें तो फोटो लगाएं।</string>
     <string name="onboarding_add_photo">प्रोफाइल फोटो जोड़ें</string>
     <string name="onboarding_skip_photo">अभी के लिए स्किप करें</string>
+
+    <!-- New Onboarding Strings -->
+    <string name="onboarding_attendance_title">अपनी हाजिरी ट्रैक करें</string>
+    <string name="onboarding_attendance_desc">अपना रोज़ का काम और हाजिरी एक ही जगह ऑर्गनाइज़ रखें।</string>
+    <string name="onboarding_earnings_title">जानिए आप कितना कमाते हैं</string>
+    <string name="onboarding_earnings_desc">अपनी रोज़ाना और महीने की कमाई बिलकुल साफ़-साफ़ देखें।</string>
+    <string name="onboarding_passbook_title">हर रिकॉर्ड साथ रखें</string>
+    <string name="onboarding_passbook_desc">हाजिरी, कमाई, एडवांस और हिस्ट्री — सब कुछ एक जगह।</string>
+    <string name="onboarding_final_title">जरूरत की हर चीज़, एक ही जगह</string>
+    <string name="onboarding_final_desc">WorkDaily के साथ अपना काम, हाजिरी और कमाई ट्रैक करें।</string>
+
+    <!-- Onboarding Mock/Illustrative Data -->
+    <string name="onboarding_mock_today">आज</string>
+    <string name="onboarding_mock_present">प्रेजेंट</string>
+    <string name="onboarding_mock_pending">पेंडिंग...</string>
+    <string name="onboarding_mock_monthly_earnings">महीने की कमाई</string>
+    <string name="onboarding_mock_daily_earnings">रोज़ का: %1$s</string>
+    <string name="onboarding_mock_passbook">पासबुक</string>
+    <string name="onboarding_mock_attendance">हाजिरी</string>
+    <string name="onboarding_mock_26_days">26 दिन</string>
+    <string name="onboarding_mock_advances">एडवांस</string>
+    <string name="onboarding_mock_balance">अंतिम हिसाब</string>
+
     <string name="onboarding_your_name">आपका नाम</string>
     <string name="onboarding_country_title">अपना देश चुनें</string>
     <string name="onboarding_country_sub">अपनी करेंसी और फॉर्मेट के लिए अपना देश चुनें।</string>
