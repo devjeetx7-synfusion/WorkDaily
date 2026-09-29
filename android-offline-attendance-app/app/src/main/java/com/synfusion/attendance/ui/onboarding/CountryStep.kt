@@ -83,8 +83,8 @@ fun CountryStep(
                 modifier = Modifier
                     .fillMaxWidth()
                     .graphicsLayer {
-                        this.rotationY = rotateY
-                        rotationX = 6f
+                        this.rotationY = 0f
+                        rotationX = 0f
                         cameraDistance = 14f
                     }
                     .shadow(16.dp, RoundedCornerShape(24.dp))

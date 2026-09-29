@@ -113,7 +113,7 @@ fun ProfileStep(
                     .graphicsLayer {
                         scaleX = animatedScale
                         scaleY = animatedScale
-                        rotationY = if (name.length > 3) 5f else 0f
+                        rotationY = 0f
                         cameraDistance = 12f
                     }
                     .size(130.dp)

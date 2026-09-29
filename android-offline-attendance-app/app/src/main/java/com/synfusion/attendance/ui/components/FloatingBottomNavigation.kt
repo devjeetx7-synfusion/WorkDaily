@@ -66,51 +66,66 @@ fun FloatingBottomNavigation(
             .windowInsetsPadding(WindowInsets.navigationBars),
         contentAlignment = Alignment.BottomCenter
     ) {
-        // Single Floating Capsule with Soft Transparent/Translucent Shadow
-        Surface(
-            modifier = Modifier
-                .shadow(
-                    elevation = 10.dp,
-                    shape = CircleShape,
-                    clip = false,
-                    ambientColor = Color.Black.copy(alpha = 0.08f),
-                    spotColor = Color.Black.copy(alpha = 0.08f)
-                ),
-            shape = CircleShape,
-            color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 0.dp
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalAlignment = Alignment.CenterVertically
+            // First Capsule: Main Tabs (Home, Calendar, Stats)
+            Surface(
+                modifier = Modifier
+                    .shadow(
+                        elevation = 10.dp,
+                        shape = CircleShape,
+                        clip = false,
+                        ambientColor = Color.Black.copy(alpha = 0.08f),
+                        spotColor = Color.Black.copy(alpha = 0.08f)
+                    ),
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 0.dp
             ) {
-                // Dynamic 3 Main Tabs (Home, Calendar, Stats)
-                mainTabs.forEach { item ->
-                    val isSelected = currentRoute == item.route
-                    DynamicNavItemButton(
-                        item = item,
-                        isSelected = isSelected,
+                Row(
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    mainTabs.forEach { item ->
+                        val isSelected = currentRoute == item.route
+                        DynamicNavItemButton(
+                            item = item,
+                            isSelected = isSelected,
+                            onNavigate = onNavigate
+                        )
+                    }
+                }
+            }
+
+            // Second Capsule: Settings Tab
+            Surface(
+                modifier = Modifier
+                    .shadow(
+                        elevation = 10.dp,
+                        shape = CircleShape,
+                        clip = false,
+                        ambientColor = Color.Black.copy(alpha = 0.08f),
+                        spotColor = Color.Black.copy(alpha = 0.08f)
+                    ),
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 0.dp
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    val isSettingsSelected = currentRoute == WorkDailyNavItem.SETTINGS.route
+                    SettingsNavItemButton(
+                        item = WorkDailyNavItem.SETTINGS,
+                        isSelected = isSettingsSelected,
                         onNavigate = onNavigate
                     )
                 }
-
-                // Subtle visual separator between Stats and Settings
-                Box(
-                    modifier = Modifier
-                        .height(20.dp)
-                        .width(1.dp)
-                        .padding(horizontal = 2.dp)
-                        .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
-                )
-
-                // Settings Tab (4th item, Icon-only, always on the same horizontal row)
-                val isSettingsSelected = currentRoute == WorkDailyNavItem.SETTINGS.route
-                SettingsNavItemButton(
-                    item = WorkDailyNavItem.SETTINGS,
-                    isSelected = isSettingsSelected,
-                    onNavigate = onNavigate
-                )
             }
         }
     }
