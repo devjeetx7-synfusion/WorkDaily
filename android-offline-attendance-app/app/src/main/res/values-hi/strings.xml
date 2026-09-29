@@ -1019,4 +1019,30 @@
     <string name="pdf_invalid_page">गलत पेज नंबर</string>
     <string name="pdf_search_placeholder">शब्द खोजें...</string>
     <string name="pdf_no_search_text">इस पीडीएफ में टेक्स्ट सर्च उपलब्ध नहीं है।</string>
+
+    <!-- Onboarding Flow Strings -->
+    <string name="onboarding_welcome_title">WorkDaily में आपका स्वागत है</string>
+    <string name="onboarding_welcome_sub">अपनी डेली हाजिरी, काम और कमाई आसानी से मैनेज करें।</string>
+    <string name="onboarding_get_started">शुरू करें</string>
+    <string name="onboarding_profile_title">अपनी प्रोफाइल सेट करें</string>
+    <string name="onboarding_profile_sub">अपना नाम दर्ज करें और चाहें तो फोटो लगाएं।</string>
+    <string name="onboarding_add_photo">प्रोफाइल फोटो जोड़ें</string>
+    <string name="onboarding_skip_photo">अभी के लिए स्किप करें</string>
+    <string name="onboarding_your_name">आपका नाम</string>
+    <string name="onboarding_country_title">अपना देश चुनें</string>
+    <string name="onboarding_country_sub">अपनी करेंसी और फॉर्मेट के लिए अपना देश चुनें।</string>
+    <string name="onboarding_your_country">आपका देश</string>
+    <string name="onboarding_change_country">देश बदलें</string>
+    <string name="onboarding_select_country_title">अपना देश चुनें</string>
+    <string name="onboarding_search_country">देश खोजें</string>
+    <string name="onboarding_wage_title">आपकी रोजाना कमाई (Daily Wage) क्या है?</string>
+    <string name="onboarding_wage_sub">अपनी एक दिन की तय दिहाड़ी लिखें।</string>
+    <string name="onboarding_daily_wage">रोजाना कमाई</string>
+    <string name="onboarding_mobile_title">अपना मोबाइल नंबर दर्ज करें</string>
+    <string name="onboarding_mobile_sub">आपके ऑफलाइन खाते की सुरक्षा के लिए।</string>
+    <string name="onboarding_mobile_number">मोबाइल नंबर</string>
+    <string name="onboarding_setting_up">सेटअप हो रहा है...</string>
+    <string name="onboarding_welcome_final">WorkDaily में आपका स्वागत है</string>
+    <string name="onboarding_continue">आगे बढ़ें</string>
+    <string name="onboarding_back">पीछे</string>
 </resources>

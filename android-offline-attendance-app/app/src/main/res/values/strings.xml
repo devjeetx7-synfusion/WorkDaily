@@ -639,4 +639,30 @@
     <string name="pdf_invalid_page">Invalid page number</string>
     <string name="pdf_search_placeholder">Search text...</string>
     <string name="pdf_no_search_text">No searchable text found in this PDF.</string>
+
+    <!-- Onboarding Flow Strings -->
+    <string name="onboarding_welcome_title">Welcome to WorkDaily</string>
+    <string name="onboarding_welcome_sub">Manage your daily work, attendance and earnings simply.</string>
+    <string name="onboarding_get_started">Get Started</string>
+    <string name="onboarding_profile_title">Let\'s set up your profile</string>
+    <string name="onboarding_profile_sub">Enter your name and optional profile photo.</string>
+    <string name="onboarding_add_photo">Add Profile Photo</string>
+    <string name="onboarding_skip_photo">Skip for now</string>
+    <string name="onboarding_your_name">Your name</string>
+    <string name="onboarding_country_title">Choose your country</string>
+    <string name="onboarding_country_sub">Select your country for local currency and formatting.</string>
+    <string name="onboarding_your_country">Your country</string>
+    <string name="onboarding_change_country">Change country</string>
+    <string name="onboarding_select_country_title">Select your country</string>
+    <string name="onboarding_search_country">Search country</string>
+    <string name="onboarding_wage_title">What\'s your daily wage?</string>
+    <string name="onboarding_wage_sub">Set your standard daily earning rate.</string>
+    <string name="onboarding_daily_wage">Daily wage</string>
+    <string name="onboarding_mobile_title">Enter your mobile number</string>
+    <string name="onboarding_mobile_sub">Used to keep your local workspace secure.</string>
+    <string name="onboarding_mobile_number">Mobile number</string>
+    <string name="onboarding_setting_up">Setting things up...</string>
+    <string name="onboarding_welcome_final">Welcome to WorkDaily</string>
+    <string name="onboarding_continue">Continue</string>
+    <string name="onboarding_back">Back</string>
 </resources>

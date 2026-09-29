@@ -44,6 +44,10 @@ class OfflineViewModelFactory(
             @Suppress("UNCHECKED_CAST")
             return OfflineAllTimePassbookViewModel(repository, localAttendanceRepository, drillDownRepository) as T
         }
+        if (modelClass.isAssignableFrom(OfflineOnboardingViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return OfflineOnboardingViewModel(repository, localAttendanceRepository) as T
+        }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
 }
