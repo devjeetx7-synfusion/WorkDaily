@@ -1,7 +1,10 @@
 package com.synfusion.attendance.ui.onboarding.steps
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalanceWallet
@@ -9,11 +12,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -25,43 +29,59 @@ import com.synfusion.attendance.ui.onboarding.components.OnboardingSlideContent
 import com.synfusion.attendance.utils.AmountFormatter
 
 @Composable
-fun EarningsStep(
-    onBack: () -> Unit,
-    onNext: () -> Unit
-) {
+fun EarningsStep() {
     val defaultCurrency = CountryRepository.DEFAULT_COUNTRY.currencyCode
+    var entered by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { entered = true }
+
+    val reveal by animateFloatAsState(
+        targetValue = if (entered) 1f else 0f,
+        animationSpec = tween(durationMillis = 620),
+        label = "earningsReveal"
+    )
 
     OnboardingSlideContent(
         title = stringResource(R.string.onboarding_earnings_title),
-        description = stringResource(R.string.onboarding_earnings_desc),
-        ctaText = stringResource(R.string.onboarding_next),
-        backText = stringResource(R.string.onboarding_back),
-        showBack = true,
-        onBackClick = onBack,
-        onCtaClick = onNext
+        description = stringResource(R.string.onboarding_earnings_desc)
     ) {
         Box(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 250.dp, max = 360.dp),
             contentAlignment = Alignment.Center
         ) {
-            FloatingWorker(size = 46.dp, xOffset = (-122).dp, yOffset = 92.dp, animationDelay = 160)
-            FloatingWorker(size = 58.dp, xOffset = 116.dp, yOffset = (-72).dp, animationDelay = 520)
-            FloatingWorker(size = 38.dp, xOffset = (-112).dp, yOffset = (-88).dp, animationDelay = 760)
+            FloatingWorker(
+                size = 46.dp,
+                xOffset = (-132).dp,
+                yOffset = 84.dp,
+                animationDelay = 160,
+                floatRange = 5.dp,
+                horizontalRange = 3.dp
+            )
+            FloatingWorker(
+                size = 58.dp,
+                xOffset = 128.dp,
+                yOffset = (-82).dp,
+                animationDelay = 560,
+                floatRange = 6.dp,
+                horizontalRange = 4.dp
+            )
 
             Surface(
                 modifier = Modifier
-                    .offset(y = (-22).dp)
-                    .widthIn(max = 248.dp)
-                    .fillMaxWidth(0.72f)
-                    .height(86.dp)
-                    .shadow(
-                        elevation = 10.dp,
-                        shape = RoundedCornerShape(22.dp),
-                        ambientColor = Color.Black.copy(alpha = 0.04f),
-                        spotColor = Color.Black.copy(alpha = 0.06f)
-                    ),
+                    .offset(y = (-58).dp)
+                    .widthIn(max = 238.dp)
+                    .fillMaxWidth(0.70f)
+                    .height(82.dp)
+                    .shadow(9.dp, RoundedCornerShape(22.dp))
+                    .graphicsLayer {
+                        rotationZ = -4f
+                        alpha = 0.72f + (reveal * 0.28f)
+                        scaleX = 0.96f + (reveal * 0.04f)
+                        scaleY = 0.96f + (reveal * 0.04f)
+                    },
                 shape = RoundedCornerShape(22.dp),
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.78f)
+                color = MaterialTheme.colorScheme.secondaryContainer
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
@@ -70,30 +90,39 @@ fun EarningsStep(
                     Box(
                         modifier = Modifier
                             .size(40.dp)
-                            .background(MaterialTheme.colorScheme.secondaryContainer, RoundedCornerShape(13.dp)),
+                            .background(
+                                MaterialTheme.colorScheme.surface.copy(alpha = 0.76f),
+                                RoundedCornerShape(13.dp)
+                            ),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.AccountBalanceWallet,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                            tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(21.dp)
                         )
                     }
-                    Spacer(modifier = Modifier.width(12.dp))
+                    Spacer(modifier = Modifier.width(11.dp))
                     Column {
                         Text(
-                            text = stringResource(R.string.onboarding_mock_daily_earnings, AmountFormatter.formatWithSymbol(700.0, defaultCurrency)),
+                            text = stringResource(
+                                R.string.onboarding_mock_daily_earnings,
+                                AmountFormatter.formatWithSymbol(700.0, defaultCurrency)
+                            ),
                             fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontWeight = FontWeight.SemiBold
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer
                         )
-                        Spacer(modifier = Modifier.height(5.dp))
+                        Spacer(modifier = Modifier.height(7.dp))
                         Box(
                             modifier = Modifier
-                                .width(74.dp)
-                                .height(6.dp)
-                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.35f), RoundedCornerShape(99.dp))
+                                .width(82.dp)
+                                .height(5.dp)
+                                .background(
+                                    MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.16f),
+                                    RoundedCornerShape(99.dp)
+                                )
                         )
                     }
                 }
@@ -101,17 +130,22 @@ fun EarningsStep(
 
             Surface(
                 modifier = Modifier
-                    .offset(y = 38.dp)
-                    .widthIn(max = 284.dp)
-                    .fillMaxWidth(0.82f)
-                    .height(152.dp)
+                    .offset(y = 31.dp)
+                    .widthIn(max = 292.dp)
+                    .fillMaxWidth(0.84f)
+                    .height(176.dp)
                     .shadow(
-                        elevation = 20.dp,
-                        shape = RoundedCornerShape(28.dp),
+                        elevation = 22.dp,
+                        shape = RoundedCornerShape(30.dp),
                         ambientColor = Color.Black.copy(alpha = 0.05f),
                         spotColor = Color.Black.copy(alpha = 0.08f)
-                    ),
-                shape = RoundedCornerShape(28.dp),
+                    )
+                    .graphicsLayer {
+                        rotationZ = 1.1f
+                        scaleX = 0.94f + (reveal * 0.06f)
+                        scaleY = 0.94f + (reveal * 0.06f)
+                    },
+                shape = RoundedCornerShape(30.dp),
                 color = MaterialTheme.colorScheme.surface
             ) {
                 Column(
@@ -126,20 +160,13 @@ fun EarningsStep(
                         Text(
                             text = stringResource(R.string.onboarding_mock_monthly_earnings),
                             fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
+                            fontWeight = FontWeight.ExtraBold
                         )
-                        Surface(
-                            shape = RoundedCornerShape(999.dp),
-                            color = MaterialTheme.colorScheme.primaryContainer
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .padding(horizontal = 10.dp, vertical = 6.dp)
-                                    .size(6.dp)
-                                    .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(99.dp))
-                            )
-                        }
+                        Box(
+                            modifier = Modifier
+                                .size(9.dp)
+                                .background(MaterialTheme.colorScheme.primary, CircleShape)
+                        )
                     }
 
                     Text(
@@ -150,22 +177,45 @@ fun EarningsStep(
                     )
 
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp),
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                         verticalAlignment = Alignment.Bottom
                     ) {
-                        listOf(0.34f, 0.52f, 0.45f, 0.72f, 0.64f, 0.88f, 0.76f).forEach { fraction ->
+                        listOf(0.30f, 0.48f, 0.40f, 0.67f, 0.58f, 0.86f, 0.73f).forEachIndexed { index, fraction ->
+                            val barHeight = 42f * fraction * reveal.coerceAtLeast(0.12f)
                             Box(
                                 modifier = Modifier
                                     .weight(1f)
-                                    .height((34 * fraction).dp)
+                                    .height(barHeight.dp)
                                     .background(
-                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.28f + (fraction * 0.35f)),
-                                        RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp)
+                                        MaterialTheme.colorScheme.primary.copy(
+                                            alpha = 0.20f + (index * 0.055f)
+                                        ),
+                                        RoundedCornerShape(topStart = 7.dp, topEnd = 7.dp)
                                     )
                             )
                         }
                     }
+                }
+            }
+
+            Surface(
+                modifier = Modifier
+                    .offset(x = 112.dp, y = 95.dp)
+                    .size(50.dp)
+                    .shadow(8.dp, RoundedCornerShape(17.dp)),
+                shape = RoundedCornerShape(17.dp),
+                color = MaterialTheme.colorScheme.primaryContainer
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Default.AccountBalanceWallet,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(23.dp)
+                    )
                 }
             }
         }
