@@ -532,7 +532,7 @@ object NotificationRuleEngine {
             "presentDays" to presentCount.toString(),
             "halfDays" to halfDaysCount.toString(),
             "absentDays" to absentCount.toString(),
-            "workingDays" to AmountFormatter.format(workingDays),
+            "workingDays" to (if (workingDays % 1.0 == 0.0) workingDays.toInt().toString() else workingDays.toString()),
             "totalEarnings" to AmountFormatter.formatWithSymbol(totalEarnings, user?.currencyCode ?: "INR"),
             "overtime" to overtimeHours.toString(),
             "advance" to AmountFormatter.formatWithSymbol(advanceAmount, user?.currencyCode ?: "INR"),

@@ -23,13 +23,11 @@ class CountryCurrencyCoverageTest {
                 formatted.contains(symbol)
             )
 
-            // Verify numeric value 2,700 or 2700 is present in output
             assertTrue(
-                "Formatted amount '$formatted' for ${country.displayName} should contain numeric string '2,700' or '2700'",
-                formatted.contains("2,700") || formatted.contains("2700")
+                "Formatted amount '$formatted' for ${country.displayName} should contain numeric string '2,700', '2.700', '2700', or '2 700'",
+                formatted.contains("2,700") || formatted.contains("2.700") || formatted.contains("2700") || formatted.contains("2 700") || formatted.contains("2 700")
             )
 
-            // Verify currency code (e.g. INR, USD) is not appended as a plain string word unless the currency symbol itself is equal to the currency code
             if (symbol != country.currencyCode) {
                 assertFalse(
                     "Formatted amount '$formatted' should use symbol '$symbol' rather than text currency name/code '${country.currencyCode}'",

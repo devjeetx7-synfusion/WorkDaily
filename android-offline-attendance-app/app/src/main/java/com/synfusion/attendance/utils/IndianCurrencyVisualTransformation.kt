@@ -4,6 +4,9 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
+import com.synfusion.attendance.data.model.CountryRepository
+import com.synfusion.attendance.data.model.NumberingSystem
+import java.text.DecimalFormatSymbols
 
 class CurrencyVisualTransformation(val currencyCode: String = "INR") : VisualTransformation {
     override fun filter(text: AnnotatedString): TransformedText {
@@ -12,7 +15,12 @@ class CurrencyVisualTransformation(val currencyCode: String = "INR") : VisualTra
             return TransformedText(AnnotatedString(""), OffsetMapping.Identity)
         }
 
-        val parts = originalText.split(".")
+        val country = CountryRepository.getCountryByCurrency(currencyCode)
+        val symbols = DecimalFormatSymbols(country.locale)
+        val groupingSepStr = symbols.groupingSeparator.toString()
+        val decimalSepStr = symbols.decimalSeparator.toString()
+
+        val parts = originalText.split(".", ",")
         val intPart = parts[0]
 
         val transformed = StringBuilder()
@@ -21,18 +29,18 @@ class CurrencyVisualTransformation(val currencyCode: String = "INR") : VisualTra
         val transToOrig = ArrayList<Int>()
 
         val intLen = intPart.length
-        val isIndian = currencyCode.equals("INR", ignoreCase = true)
+        val isIndian = country.numberingSystem == NumberingSystem.INDIAN
 
         for (i in 0 until intLen) {
             val distanceFromRight = intLen - i
-            val needComma = if (isIndian) {
+            val needGroup = if (isIndian) {
                 i > 0 && distanceFromRight >= 3 && (distanceFromRight - 3) % 2 == 0
             } else {
                 i > 0 && distanceFromRight % 3 == 0
             }
 
-            if (needComma) {
-                transformed.append(",")
+            if (needGroup) {
+                transformed.append(groupingSepStr)
                 transToOrig.add(i)
             }
             origToTrans[i] = transformed.length
@@ -43,7 +51,7 @@ class CurrencyVisualTransformation(val currencyCode: String = "INR") : VisualTra
 
         if (parts.size > 1) {
             origToTrans[intLen] = transformed.length
-            transformed.append(".")
+            transformed.append(decimalSepStr)
             transToOrig.add(intLen)
 
             val decPartStr = parts[1]

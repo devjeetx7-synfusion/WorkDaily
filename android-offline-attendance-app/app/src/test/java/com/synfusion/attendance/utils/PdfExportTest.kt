@@ -13,19 +13,19 @@ class PdfExportTest {
     @Test
     fun testAmountFormatterCurrencyFormatting() {
         // Indian currency grouping rules
-        assertEquals("750", AmountFormatter.format(750.0))
-        assertEquals("1,250", AmountFormatter.format(1250.0))
-        assertEquals("12,500", AmountFormatter.format(12500.0))
-        assertEquals("1,25,000", AmountFormatter.format(125000.0))
-        assertEquals("9,86,85,68,68,918", AmountFormatter.format(986856868918.0))
+        assertEquals("750.00", AmountFormatter.format(750.0))
+        assertEquals("1,250.00", AmountFormatter.format(1250.0))
+        assertEquals("12,500.00", AmountFormatter.format(12500.0))
+        assertEquals("1,25,000.00", AmountFormatter.format(125000.0))
+        assertEquals("9,86,85,68,68,918.00", AmountFormatter.format(986856868918.0))
 
         // Decimal support
-        assertEquals("12,500.5", AmountFormatter.format(12500.5))
+        assertEquals("12,500.50", AmountFormatter.format(12500.5))
         assertEquals("20.25", AmountFormatter.format(20.25))
 
         // Negative amounts
-        assertEquals("-1,250", AmountFormatter.format(-1250.0))
-        assertEquals("-20.5", AmountFormatter.format(-20.5))
+        assertEquals("-1,250.00", AmountFormatter.format(-1250.0))
+        assertEquals("-20.50", AmountFormatter.format(-20.5))
     }
 
     @Test
