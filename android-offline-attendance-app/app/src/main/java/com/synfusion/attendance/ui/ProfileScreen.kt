@@ -330,7 +330,7 @@ fun ProfileScreen(
                                     // Country Selector Dropdown
                                     Box(modifier = Modifier.fillMaxWidth()) {
                                         OutlinedTextField(
-                                            value = "${activeCountry.flagEmoji} ${activeCountry.displayName}",
+                                            value = "${activeCountry.flagEmoji} ${activeCountry.displayName} — ${activeCountry.currencySymbol}",
                                             onValueChange = {},
                                             readOnly = true,
                                             label = { Text("Country / Region") },
@@ -362,7 +362,7 @@ fun ProfileScreen(
                                             CountryRepository.SUPPORTED_COUNTRIES.forEach { country ->
                                                 DropdownMenuItem(
                                                     text = {
-                                                        Text("${country.flagEmoji} ${country.displayName} (${country.callingCode})", fontSize = 14.sp)
+                                                        Text("${country.flagEmoji} ${country.displayName} — ${country.currencySymbol}", fontSize = 14.sp)
                                                     },
                                                     onClick = {
                                                         viewModel.onCountryChange(country.countryCode)
@@ -577,7 +577,7 @@ fun ProfileScreen(
                                 // Country Selector Dropdown
                                 Box(modifier = Modifier.fillMaxWidth()) {
                                     OutlinedTextField(
-                                        value = "${activeCountry.flagEmoji} ${activeCountry.displayName}",
+                                        value = "${activeCountry.flagEmoji} ${activeCountry.displayName} — ${activeCountry.currencySymbol}",
                                         onValueChange = {},
                                         readOnly = true,
                                         label = { Text("Country / Region") },
@@ -609,7 +609,7 @@ fun ProfileScreen(
                                         CountryRepository.SUPPORTED_COUNTRIES.forEach { country ->
                                             DropdownMenuItem(
                                                 text = {
-                                                    Text("${country.flagEmoji} ${country.displayName} (${country.callingCode})", fontSize = 14.sp)
+                                                    Text("${country.flagEmoji} ${country.displayName} — ${country.currencySymbol}", fontSize = 14.sp)
                                                 },
                                                 onClick = {
                                                     viewModel.onCountryChange(country.countryCode)

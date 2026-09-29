@@ -521,7 +521,7 @@ fun LoginScreen(
                         // Country Selector Field
                         Box(modifier = Modifier.fillMaxWidth()) {
                             OutlinedTextField(
-                                value = "${selectedCountry.flagEmoji} ${selectedCountry.displayName}",
+                                value = "${selectedCountry.flagEmoji} ${selectedCountry.displayName} — ${selectedCountry.currencySymbol}",
                                 onValueChange = {},
                                 readOnly = true,
                                 modifier = Modifier
@@ -553,7 +553,7 @@ fun LoginScreen(
                                 CountryRepository.SUPPORTED_COUNTRIES.forEach { country ->
                                     DropdownMenuItem(
                                         text = {
-                                            Text("${country.flagEmoji} ${country.displayName} (${country.callingCode})", fontSize = 14.sp)
+                                            Text("${country.flagEmoji} ${country.displayName} — ${country.currencySymbol}", fontSize = 14.sp)
                                         },
                                         onClick = {
                                             selectedCountry = country
@@ -717,7 +717,7 @@ fun LoginScreen(
                         // Country Selector Field
                         Box(modifier = Modifier.fillMaxWidth()) {
                             OutlinedTextField(
-                                value = "${selectedCountry.flagEmoji} ${selectedCountry.displayName}",
+                                value = "${selectedCountry.flagEmoji} ${selectedCountry.displayName} — ${selectedCountry.currencySymbol}",
                                 onValueChange = {},
                                 readOnly = true,
                                 modifier = Modifier
@@ -749,7 +749,7 @@ fun LoginScreen(
                                 CountryRepository.SUPPORTED_COUNTRIES.forEach { country ->
                                     DropdownMenuItem(
                                         text = {
-                                            Text("${country.flagEmoji} ${country.displayName} (${country.callingCode})", fontSize = 14.sp)
+                                            Text("${country.flagEmoji} ${country.displayName} — ${country.currencySymbol}", fontSize = 14.sp)
                                         },
                                         onClick = {
                                             selectedCountry = country

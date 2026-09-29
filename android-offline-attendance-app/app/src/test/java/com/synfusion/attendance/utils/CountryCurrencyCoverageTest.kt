@@ -29,7 +29,7 @@ class CountryCurrencyCoverageTest {
                 formatted.contains("2,700") || formatted.contains("2700")
             )
 
-            // Verify currency code (e.g. INR, USD) is not appended as a plain string word unless the currency symbol itself is equal to the currency code (like AED)
+            // Verify currency code (e.g. INR, USD) is not appended as a plain string word unless the currency symbol itself is equal to the currency code
             if (symbol != country.currencyCode) {
                 assertFalse(
                     "Formatted amount '$formatted' should use symbol '$symbol' rather than text currency name/code '${country.currencyCode}'",
@@ -48,6 +48,6 @@ class CountryCurrencyCoverageTest {
         assertTrue("Zero formatted USD should contain symbol $", zeroFormattedUsd.contains("$"))
 
         val zeroFormattedAed = AmountFormatter.formatWithSymbol(0.0, "AED")
-        assertTrue("Zero formatted AED should contain symbol AED", zeroFormattedAed.contains("AED"))
+        assertTrue("Zero formatted AED should contain symbol د.إ", zeroFormattedAed.contains("د.إ"))
     }
 }

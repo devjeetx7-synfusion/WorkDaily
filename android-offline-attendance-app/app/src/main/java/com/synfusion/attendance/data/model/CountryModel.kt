@@ -7,7 +7,10 @@ data class CountryConfig(
     val currencySymbol: String,
     val callingCode: String,
     val flagEmoji: String
-)
+) {
+    val countryName: String get() = displayName
+    val flag: String get() = flagEmoji
+}
 
 object CountryRepository {
 
@@ -22,15 +25,15 @@ object CountryRepository {
 
     val SUPPORTED_COUNTRIES = listOf(
         DEFAULT_COUNTRY,
-        CountryConfig("AE", "United Arab Emirates", "AED", "AED", "+971", "🇦🇪"),
-        CountryConfig("SA", "Saudi Arabia", "SAR", "SAR", "+966", "🇸🇦"),
-        CountryConfig("QA", "Qatar", "QAR", "QAR", "+974", "🇶🇦"),
-        CountryConfig("KW", "Kuwait", "KWD", "KWD", "+965", "🇰🇼"),
-        CountryConfig("OM", "Oman", "OMR", "OMR", "+968", "🇴🇲"),
-        CountryConfig("BH", "Bahrain", "BHD", "BHD", "+973", "🇧🇭"),
+        CountryConfig("AE", "United Arab Emirates", "AED", "د.إ", "+971", "🇦🇪"),
+        CountryConfig("SA", "Saudi Arabia", "SAR", "ر.س", "+966", "🇸🇦"),
+        CountryConfig("QA", "Qatar", "QAR", "ر.ق", "+974", "🇶🇦"),
+        CountryConfig("KW", "Kuwait", "KWD", "د.ك", "+965", "🇰🇼"),
+        CountryConfig("OM", "Oman", "OMR", "ر.ع.", "+968", "🇴🇲"),
+        CountryConfig("BH", "Bahrain", "BHD", ".د.ب", "+973", "🇧🇭"),
         CountryConfig("BD", "Bangladesh", "BDT", "৳", "+880", "🇧🇩"),
-        CountryConfig("NP", "Nepal", "NPR", "रु", "+977", "🇳🇵"),
-        CountryConfig("PK", "Pakistan", "PKR", "Rs", "+92", "🇵🇰"),
+        CountryConfig("NP", "Nepal", "NPR", "रू", "+977", "🇳🇵"),
+        CountryConfig("PK", "Pakistan", "PKR", "₨", "+92", "🇵🇰"),
         CountryConfig("LK", "Sri Lanka", "LKR", "Rs", "+94", "🇱🇰"),
         CountryConfig("ID", "Indonesia", "IDR", "Rp", "+62", "🇮🇩"),
         CountryConfig("MY", "Malaysia", "MYR", "RM", "+60", "🇲🇾"),
@@ -48,7 +51,9 @@ object CountryRepository {
         CountryConfig("CO", "Colombia", "COP", "$", "+57", "🇨🇴"),
         CountryConfig("PE", "Peru", "PEN", "S/", "+51", "🇵🇪"),
         CountryConfig("US", "United States", "USD", "$", "+1", "🇺🇸"),
-        CountryConfig("GB", "United Kingdom", "GBP", "£", "+44", "🇬🇧")
+        CountryConfig("GB", "United Kingdom", "GBP", "£", "+44", "🇬🇧"),
+        CountryConfig("EU", "European Union", "EUR", "€", "+32", "🇪🇺"),
+        CountryConfig("JP", "Japan", "JPY", "¥", "+81", "🇯🇵")
     )
 
     private val countryMap: Map<String, CountryConfig> = SUPPORTED_COUNTRIES.associateBy { it.countryCode.uppercase() }
