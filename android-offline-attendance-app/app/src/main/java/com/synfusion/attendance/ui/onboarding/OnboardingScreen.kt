@@ -2,16 +2,19 @@
 package com.synfusion.attendance.ui.onboarding
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.synfusion.attendance.R
+import com.synfusion.attendance.ui.onboarding.components.OnboardingBottomControls
+import com.synfusion.attendance.ui.onboarding.components.OnboardingProgress
 import com.synfusion.attendance.ui.onboarding.steps.AttendanceStep
 import com.synfusion.attendance.ui.onboarding.steps.EarningsStep
 import com.synfusion.attendance.ui.onboarding.steps.FinalIntroStep
@@ -21,6 +24,10 @@ import com.synfusion.attendance.ui.responsive.ProvideWindowSizeInfo
 import com.synfusion.attendance.ui.responsive.ResponsiveContainer
 import com.synfusion.attendance.utils.collectAsStateWithLifecycle
 import com.synfusion.attendance.viewmodel.OfflineOnboardingViewModel
+import kotlinx.coroutines.launch
+import kotlin.math.absoluteValue
+
+private const val ONBOARDING_PAGE_COUNT = 5
 
 @Composable
 fun OnboardingScreen(
@@ -28,103 +35,111 @@ fun OnboardingScreen(
     onOnboardingComplete: () -> Unit
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle(initialValue = viewModel.state.value)
+    val pagerState = rememberPagerState(
+        initialPage = state.currentStep.coerceIn(0, ONBOARDING_PAGE_COUNT - 1),
+        pageCount = { ONBOARDING_PAGE_COUNT }
+    )
+    val scope = rememberCoroutineScope()
+    val currentPage = pagerState.currentPage
 
-    BackHandler(enabled = state.currentStep in 1..4) {
-        viewModel.onPreviousStep()
+    fun animateToPage(targetPage: Int) {
+        val safeTarget = targetPage.coerceIn(0, ONBOARDING_PAGE_COUNT - 1)
+        if (safeTarget == pagerState.currentPage || pagerState.isScrollInProgress) return
+        scope.launch {
+            pagerState.animateScrollToPage(safeTarget)
+        }
+    }
+
+    BackHandler(enabled = currentPage > 0) {
+        animateToPage(currentPage - 1)
+    }
+
+    LaunchedEffect(state.currentStep) {
+        val target = state.currentStep.coerceIn(0, ONBOARDING_PAGE_COUNT - 1)
+        if (!pagerState.isScrollInProgress && pagerState.currentPage != target) {
+            pagerState.animateScrollToPage(target)
+        }
+    }
+
+    LaunchedEffect(pagerState.isScrollInProgress, pagerState.currentPage) {
+        if (!pagerState.isScrollInProgress && pagerState.currentPage != state.currentStep) {
+            viewModel.goToStep(pagerState.currentPage)
+        }
     }
 
     ProvideWindowSizeInfo {
         Scaffold(
+            containerColor = MaterialTheme.colorScheme.background,
             topBar = {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .statusBarsPadding()
-                        .padding(horizontal = 22.dp, vertical = 14.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(7.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        repeat(5) { index ->
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(4.dp)
-                                    .clip(RoundedCornerShape(999.dp))
-                                    .background(
-                                        if (index <= state.currentStep) {
-                                            MaterialTheme.colorScheme.primary
-                                        } else {
-                                            MaterialTheme.colorScheme.surfaceVariant
-                                        }
-                                    )
-                            )
-                        }
-                    }
-                }
+                OnboardingProgress(
+                    currentPage = currentPage,
+                    pageCount = ONBOARDING_PAGE_COUNT
+                )
             },
             contentWindowInsets = WindowInsets(0.dp)
         ) { innerPadding ->
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .navigationBarsPadding()
-            ) {
-                ResponsiveContainer {
-                    val pagerState = androidx.compose.foundation.pager.rememberPagerState(
-                        initialPage = state.currentStep,
-                        pageCount = { 5 }
-                    )
-
-                    LaunchedEffect(state.currentStep) {
-                        if (pagerState.currentPage != state.currentStep && !pagerState.isScrollInProgress) {
-                            pagerState.animateScrollToPage(state.currentStep)
-                        }
-                    }
-
-                    LaunchedEffect(pagerState.isScrollInProgress) {
-                        if (!pagerState.isScrollInProgress && pagerState.currentPage != state.currentStep) {
-                            viewModel.goToStep(pagerState.currentPage)
-                        }
-                    }
-
-                    androidx.compose.foundation.pager.HorizontalPager(
+            ResponsiveContainer {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                ) {
+                    HorizontalPager(
                         state = pagerState,
-                        userScrollEnabled = true
-                    ) { step ->
-                        when (step) {
-                            0 -> WelcomeStep(
-                                onNext = { viewModel.onNextStep() }
-                            )
+                        userScrollEnabled = true,
+                        beyondViewportPageCount = 1,
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                    ) { page ->
+                        val rawOffset = ((pagerState.currentPage - page) + pagerState.currentPageOffsetFraction)
+                            .coerceIn(-1f, 1f)
+                        val distance = rawOffset.absoluteValue
 
-                            1 -> AttendanceStep(
-                                onBack = { viewModel.onPreviousStep() },
-                                onNext = { viewModel.onNextStep() }
-                            )
-
-                            2 -> EarningsStep(
-                                onBack = { viewModel.onPreviousStep() },
-                                onNext = { viewModel.onNextStep() }
-                            )
-
-                            3 -> PassbookStep(
-                                onBack = { viewModel.onPreviousStep() },
-                                onNext = { viewModel.onNextStep() }
-                            )
-
-                            4 -> FinalIntroStep(
-                                onBack = { viewModel.onPreviousStep() },
-                                onComplete = {
-                                    viewModel.completeOnboarding {
-                                        onOnboardingComplete()
-                                    }
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .offset(x = (rawOffset * 18f).dp)
+                                .graphicsLayer {
+                                    val scale = 1f - (0.055f * distance)
+                                    scaleX = scale
+                                    scaleY = scale
+                                    alpha = 1f - (0.30f * distance)
+                                    rotationZ = rawOffset * 1.1f
+                                    translationY = distance * 10f
                                 }
-                            )
+                        ) {
+                            when (page) {
+                                0 -> WelcomeStep()
+                                1 -> AttendanceStep()
+                                2 -> EarningsStep()
+                                3 -> PassbookStep()
+                                4 -> FinalIntroStep()
+                            }
                         }
                     }
+
+                    OnboardingBottomControls(
+                        showBack = currentPage > 0,
+                        backText = stringResource(R.string.onboarding_back),
+                        nextText = if (currentPage == ONBOARDING_PAGE_COUNT - 1) {
+                            stringResource(R.string.onboarding_get_started)
+                        } else {
+                            stringResource(R.string.onboarding_next)
+                        },
+                        onBack = {
+                            animateToPage(currentPage - 1)
+                        },
+                        onNext = {
+                            if (currentPage == ONBOARDING_PAGE_COUNT - 1) {
+                                viewModel.completeOnboarding {
+                                    onOnboardingComplete()
+                                }
+                            } else {
+                                animateToPage(currentPage + 1)
+                            }
+                        }
+                    )
                 }
             }
         }
