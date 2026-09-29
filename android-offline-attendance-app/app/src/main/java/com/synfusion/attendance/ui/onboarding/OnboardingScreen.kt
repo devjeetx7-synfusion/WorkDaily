@@ -93,8 +93,7 @@ fun OnboardingScreen(
 
                     androidx.compose.foundation.pager.HorizontalPager(
                         state = pagerState,
-                        userScrollEnabled = true,
-                        beyondViewportPageCount = 1
+                        userScrollEnabled = true
                     ) { step ->
                         when (step) {
                             0 -> WelcomeStep(
