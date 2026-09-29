@@ -641,13 +641,37 @@
     <string name="pdf_no_search_text">No searchable text found in this PDF.</string>
 
     <!-- Onboarding Flow Strings -->
-    <string name="onboarding_welcome_title">Welcome to WorkDaily</string>
     <string name="onboarding_welcome_sub">Manage your daily work, attendance and earnings simply.</string>
-    <string name="onboarding_get_started">Get Started</string>
+    <string name="onboarding_next">Next</string>
     <string name="onboarding_profile_title">Let\'s set up your profile</string>
     <string name="onboarding_profile_sub">Enter your name and optional profile photo.</string>
     <string name="onboarding_add_photo">Add Profile Photo</string>
     <string name="onboarding_skip_photo">Skip for now</string>
+
+    <!-- New Onboarding Strings -->
+    <string name="onboarding_welcome_title">Welcome to WorkDaily</string>
+    <string name="onboarding_welcome_desc">Your simple way to track work, attendance and earnings.</string>
+    <string name="onboarding_attendance_title">Track Your Attendance</string>
+    <string name="onboarding_attendance_desc">Keep your daily work and attendance organized in one place.</string>
+    <string name="onboarding_earnings_title">Know What You Earn</string>
+    <string name="onboarding_earnings_desc">See your daily and monthly earnings clearly.</string>
+    <string name="onboarding_passbook_title">Keep Every Record Handy</string>
+    <string name="onboarding_passbook_desc">Attendance, earnings, advances and history — all in one place.</string>
+    <string name="onboarding_final_title">Everything You Need, In One Place</string>
+    <string name="onboarding_final_desc">Track your work, attendance and earnings with WorkDaily.</string>
+    <string name="onboarding_get_started">Get Started</string>
+
+    <!-- Onboarding Mock/Illustrative Data -->
+    <string name="onboarding_mock_today">Today</string>
+    <string name="onboarding_mock_present">Present</string>
+    <string name="onboarding_mock_pending">Pending...</string>
+    <string name="onboarding_mock_monthly_earnings">Monthly Earnings</string>
+    <string name="onboarding_mock_daily_earnings">Daily: %1$s</string>
+    <string name="onboarding_mock_passbook">Passbook</string>
+    <string name="onboarding_mock_attendance">Attendance</string>
+    <string name="onboarding_mock_26_days">26 Days</string>
+    <string name="onboarding_mock_advances">Advances</string>
+    <string name="onboarding_mock_balance">Balance</string>
     <string name="onboarding_your_name">Your name</string>
     <string name="onboarding_country_title">Choose your country</string>
     <string name="onboarding_country_sub">Select your country for local currency and formatting.</string>

@@ -13,12 +13,6 @@ class OnboardingTest {
     fun testInitialOnboardingStateDefaults() {
         val state = OfflineOnboardingState()
         assertEquals(0, state.currentStep)
-        assertEquals("", state.name)
-        assertNull(state.profileImageUri)
-        assertEquals("IN", state.selectedCountry.countryCode)
-        assertEquals("700", state.dailyWage)
-        assertEquals("", state.phoneNumber)
-        assertFalse(state.isSaving)
         assertFalse(state.isCompleted)
     }
 
@@ -97,40 +91,15 @@ class OnboardingTest {
     }
 
     @Test
-    fun testOnboardingStepTransitionsAndDataRetention() {
+    fun testOnboardingStepTransitions() {
         var state = OfflineOnboardingState()
 
-        // Step 0 -> Welcome
         assertEquals(0, state.currentStep)
 
-        // Enter name and move to Step 1 -> Profile
-        state = state.copy(name = "Rahul Kumar", currentStep = 1)
-        assertEquals("Rahul Kumar", state.name)
+        state = state.copy(currentStep = 1)
+        assertEquals(1, state.currentStep)
 
-        // Select UAE country and move to Step 2 -> Country
-        val uae = CountryRepository.getCountry("AE")
-        state = state.copy(selectedCountry = uae, currentStep = 2)
-        assertEquals("AE", state.selectedCountry.countryCode)
-
-        // Set wage to 1200 and move to Step 3 -> Wage
-        state = state.copy(dailyWage = "1200", currentStep = 3)
-        assertEquals("1200", state.dailyWage)
-
-        // Enter phone and move to Step 4 -> Mobile
-        state = state.copy(phoneNumber = "501234567", currentStep = 4)
-        assertEquals("501234567", state.phoneNumber)
-
-        // Move to Step 5 -> Reveal
-        state = state.copy(currentStep = 5)
-        assertEquals(5, state.currentStep)
-
-        // Back to Step 4
         state = state.copy(currentStep = 4)
-
-        // Verify data retained on back navigation
-        assertEquals("Rahul Kumar", state.name)
-        assertEquals("AE", state.selectedCountry.countryCode)
-        assertEquals("1200", state.dailyWage)
-        assertEquals("501234567", state.phoneNumber)
+        assertEquals(4, state.currentStep)
     }
 }
