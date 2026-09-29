@@ -33,24 +33,24 @@ fun FloatingWorker(
     xOffset: Dp = 0.dp,
     yOffset: Dp = 0.dp,
     animationDelay: Int = 0,
-    floatRange: Dp = 9.dp,
-    horizontalRange: Dp = 6.dp,
-    depthRange: Float = 0.05f
+    floatRange: Dp = 6.dp,
+    horizontalRange: Dp = 4.dp,
+    depthRange: Float = 0.035f
 ) {
-    val transition = rememberInfiniteTransition(label = "floatingWorkerTransition")
+    val transition = rememberInfiniteTransition(label = "workerAvatarMotion")
 
     val animatedY by transition.animateFloat(
         initialValue = -floatRange.value,
         targetValue = floatRange.value,
         animationSpec = infiniteRepeatable(
             animation = tween(
-                durationMillis = 2600 + animationDelay,
+                durationMillis = 3400 + animationDelay,
                 delayMillis = animationDelay,
                 easing = FastOutSlowInEasing
             ),
             repeatMode = RepeatMode.Reverse
         ),
-        label = "floatingWorkerY"
+        label = "workerAvatarY"
     )
 
     val animatedX by transition.animateFloat(
@@ -58,13 +58,13 @@ fun FloatingWorker(
         targetValue = horizontalRange.value,
         animationSpec = infiniteRepeatable(
             animation = tween(
-                durationMillis = 3200 + animationDelay,
+                durationMillis = 4100 + animationDelay,
                 delayMillis = animationDelay / 2,
                 easing = FastOutSlowInEasing
             ),
             repeatMode = RepeatMode.Reverse
         ),
-        label = "floatingWorkerX"
+        label = "workerAvatarX"
     )
 
     val depth by transition.animateFloat(
@@ -72,13 +72,13 @@ fun FloatingWorker(
         targetValue = 1f + depthRange,
         animationSpec = infiniteRepeatable(
             animation = tween(
-                durationMillis = 3600 + animationDelay,
+                durationMillis = 4600 + animationDelay,
                 delayMillis = animationDelay / 3,
                 easing = FastOutSlowInEasing
             ),
             repeatMode = RepeatMode.Reverse
         ),
-        label = "floatingWorkerDepth"
+        label = "workerAvatarDepth"
     )
 
     Box(
@@ -87,25 +87,37 @@ fun FloatingWorker(
             .graphicsLayer {
                 scaleX = depth
                 scaleY = depth
-                rotationZ = (depth - 1f) * 12f
+                rotationZ = (depth - 1f) * 6f
             }
             .size(size)
             .shadow(
                 elevation = 10.dp,
                 shape = CircleShape,
-                ambientColor = Color.Black.copy(alpha = 0.10f),
-                spotColor = Color.Black.copy(alpha = 0.12f)
+                ambientColor = Color.Black.copy(alpha = 0.08f),
+                spotColor = Color.Black.copy(alpha = 0.10f)
             )
             .clip(CircleShape)
             .background(MaterialTheme.colorScheme.surface)
-            .border(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.22f), CircleShape),
+            .border(
+                width = 2.dp,
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.20f),
+                shape = CircleShape
+            ),
         contentAlignment = Alignment.Center
     ) {
-        Icon(
-            imageVector = Icons.Default.Person,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(size * 0.58f)
-        )
+        Box(
+            modifier = Modifier
+                .size(size * 0.78f)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.58f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.Person,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(size * 0.46f)
+            )
+        }
     }
 }
