@@ -40,7 +40,8 @@ fun OnboardingScreen(
         pageCount = { ONBOARDING_PAGE_COUNT }
     )
     val scope = rememberCoroutineScope()
-    val currentPage = pagerState.currentPage
+    val pagerPage = pagerState.currentPage
+    val controlPage = state.currentStep.coerceIn(0, ONBOARDING_PAGE_COUNT - 1)
 
     fun animateToPage(targetPage: Int) {
         val safeTarget = targetPage.coerceIn(0, ONBOARDING_PAGE_COUNT - 1)
@@ -50,8 +51,8 @@ fun OnboardingScreen(
         }
     }
 
-    BackHandler(enabled = currentPage > 0) {
-        animateToPage(currentPage - 1)
+    BackHandler(enabled = pagerPage > 0) {
+        animateToPage(pagerPage - 1)
     }
 
     LaunchedEffect(state.currentStep) {
@@ -72,7 +73,7 @@ fun OnboardingScreen(
             containerColor = MaterialTheme.colorScheme.background,
             topBar = {
                 OnboardingProgress(
-                    currentPage = currentPage,
+                    currentPage = controlPage,
                     pageCount = ONBOARDING_PAGE_COUNT
                 )
             },
@@ -87,7 +88,6 @@ fun OnboardingScreen(
                     HorizontalPager(
                         state = pagerState,
                         userScrollEnabled = true,
-                        beyondViewportPageCount = 1,
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxWidth()
@@ -120,23 +120,23 @@ fun OnboardingScreen(
                     }
 
                     OnboardingBottomControls(
-                        showBack = currentPage > 0,
+                        showBack = controlPage > 0,
                         backText = stringResource(R.string.onboarding_back),
-                        nextText = if (currentPage == ONBOARDING_PAGE_COUNT - 1) {
+                        nextText = if (controlPage == ONBOARDING_PAGE_COUNT - 1) {
                             stringResource(R.string.onboarding_get_started)
                         } else {
                             stringResource(R.string.onboarding_next)
                         },
                         onBack = {
-                            animateToPage(currentPage - 1)
+                            animateToPage(controlPage - 1)
                         },
                         onNext = {
-                            if (currentPage == ONBOARDING_PAGE_COUNT - 1) {
+                            if (controlPage == ONBOARDING_PAGE_COUNT - 1) {
                                 viewModel.completeOnboarding {
                                     onOnboardingComplete()
                                 }
                             } else {
-                                animateToPage(currentPage + 1)
+                                animateToPage(controlPage + 1)
                             }
                         }
                     )
