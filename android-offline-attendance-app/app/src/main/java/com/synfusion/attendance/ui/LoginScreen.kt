@@ -472,14 +472,34 @@ fun LoginScreen(
                 ) {
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    // CENTER AREA: SaaS Feature Showcase
+                    // CENTER AREA: App Branding
                     Box(
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxWidth(),
                         contentAlignment = Alignment.Center
                     ) {
-                        SaaSFeatureShowcase()
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(
+                                imageVector = Icons.Default.CheckCircle,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(64.dp)
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = "WorkDaily",
+                                fontSize = 28.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Welcome back",
+                                fontSize = 16.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
 
                     // BOTTOM AREA: Local Workspace Setup
@@ -675,7 +695,27 @@ fun LoginScreen(
                             .fillMaxHeight(),
                         contentAlignment = Alignment.Center
                     ) {
-                        SaaSFeatureShowcase()
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(
+                                imageVector = Icons.Default.CheckCircle,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(80.dp)
+                            )
+                            Spacer(modifier = Modifier.height(24.dp))
+                            Text(
+                                text = "WorkDaily",
+                                fontSize = 36.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Welcome back",
+                                fontSize = 18.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
 
                     Column(
@@ -959,199 +999,3 @@ fun LegalConsentRow(
     }
 }
 
-@Composable
-fun SaaSFeatureShowcase() {
-    var currentState by remember { mutableIntStateOf(0) }
-    val totalStates = 4
-
-    LaunchedEffect(Unit) {
-        while (true) {
-            delay(3500)
-            currentState = (currentState + 1) % totalStates
-        }
-    }
-
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(max = 450.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        val glowColor = MaterialTheme.colorScheme.primary
-        Box(
-            modifier = Modifier
-                .size(300.dp)
-                .alpha(0.2f)
-                .blur(100.dp)
-                .background(glowColor.copy(alpha = 0.15f), CircleShape)
-        )
-
-        AnimatedContent(
-            targetState = currentState,
-            transitionSpec = {
-                (fadeIn(animationSpec = tween(700, easing = LinearOutSlowInEasing)) + scaleIn(initialScale = 0.95f, animationSpec = tween(700)))
-                    .togetherWith(fadeOut(animationSpec = tween(500)) + scaleOut(targetScale = 1.02f, animationSpec = tween(500)))
-            },
-            label = "saas_feature_transition"
-        ) { state ->
-            when (state) {
-                0 -> PayoutsWidget()
-                1 -> AttendanceStatsWidget()
-                2 -> PdfReportWidget()
-                3 -> AdvanceTrackWidget()
-            }
-        }
-    }
-}
-
-@Composable
-fun SaaSWidget(
-    modifier: Modifier = Modifier,
-    content: @Composable () -> Unit
-) {
-    val infiniteTransition = rememberInfiniteTransition(label = "floating")
-    val translationY by infiniteTransition.animateFloat(
-        initialValue = -8f,
-        targetValue = 8f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(4000, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "y"
-    )
-
-    Surface(
-        modifier = modifier
-            .graphicsLayer { this.translationY = translationY }
-            .width(280.dp),
-        shape = RoundedCornerShape(28.dp),
-        color = MaterialTheme.colorScheme.surface,
-        shadowElevation = 0.dp
-    ) {
-        Box(
-            modifier = Modifier
-                .background(MaterialTheme.colorScheme.surface)
-                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f), RoundedCornerShape(28.dp))
-                .shadow(
-                    elevation = if (MaterialTheme.colorScheme.background.luminance() > 0.5f) 20.dp else 0.dp,
-                    shape = RoundedCornerShape(28.dp),
-                    clip = false,
-                    spotColor = Color.Black.copy(alpha = 0.05f),
-                    ambientColor = Color.Black.copy(alpha = 0.05f)
-                )
-                .padding(24.dp)
-        ) {
-            content()
-        }
-    }
-}
-
-@Composable
-fun PayoutsWidget() {
-    SaaSWidget {
-        Column {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(modifier = Modifier.size(40.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
-                    Icon(Icons.Default.Payments, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
-                }
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.payouts_widget_title), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
-            }
-            Spacer(modifier = Modifier.height(24.dp))
-            CountingText(com.synfusion.attendance.utils.AmountFormatter.formatWithSymbol(128450.0, "INR"), MaterialTheme.typography.headlineMedium, MaterialTheme.colorScheme.onSurface)
-            Spacer(modifier = Modifier.height(16.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(modifier = Modifier.size(16.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
-                    Icon(Icons.Default.TrendingUp, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(10.dp))
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.payout_increase_sub), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-            }
-        }
-    }
-}
-
-@Composable
-fun AttendanceStatsWidget() {
-    SaaSWidget {
-        Column {
-            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.attendance_breakdown), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
-            Spacer(modifier = Modifier.height(24.dp))
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
-                val heights = listOf(0.4f, 0.7f, 0.5f, 0.9f, 0.6f, 0.8f, 0.75f)
-                heights.forEachIndexed { i, h ->
-                    val animatedHeight = animateFloatAsState(targetValue = h, animationSpec = tween(1000, delayMillis = i * 100), label = "bar").value
-                    Box(modifier = Modifier.width(18.dp).fillMaxHeight(animatedHeight * 0.5f).clip(RoundedCornerShape(6.dp)).background(if (i == 3) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant))
-                }
-            }
-            Spacer(modifier = Modifier.height(20.dp))
-            Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                Column {
-                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.present_1), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text("94%", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onSurface)
-                }
-                Column(horizontalAlignment = Alignment.End) {
-                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.absent_1), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text("6%", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.error)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun PdfReportWidget() {
-    SaaSWidget {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Box(modifier = Modifier.size(64.dp).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.error.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
-                Icon(Icons.Default.PictureAsPdf, null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(32.dp))
-            }
-            Spacer(modifier = Modifier.height(20.dp))
-            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.view_my_passbook), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
-            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.ready_to_export), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(modifier = Modifier.height(24.dp))
-            Button(
-                onClick = {},
-                modifier = Modifier.fillMaxWidth().height(44.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.onSurface, contentColor = MaterialTheme.colorScheme.surface)
-            ) {
-                Icon(Icons.Default.Download, null, modifier = Modifier.size(16.dp))
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.download_pdf), fontSize = 13.sp, fontWeight = FontWeight.Bold)
-            }
-        }
-    }
-}
-
-@Composable
-fun AdvanceTrackWidget() {
-    SaaSWidget {
-        Column {
-            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.advance_payment), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
-            Spacer(modifier = Modifier.height(24.dp))
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f)).padding(12.dp)) {
-                Box(modifier = Modifier.size(32.dp).clip(CircleShape).background(MaterialTheme.colorScheme.secondary), contentAlignment = Alignment.Center) {
-                    Text("R", color = MaterialTheme.colorScheme.onSecondary, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                }
-                Spacer(modifier = Modifier.width(12.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text("Rahul Kumar", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.advance), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                Text(com.synfusion.attendance.utils.AmountFormatter.formatWithSymbol(2400.0, "INR"), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.secondary)
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.payout_manage_sub), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
-        }
-    }
-}
-
-@Composable
-fun CountingText(text: String, style: androidx.compose.ui.text.TextStyle, color: Color) {
-    Text(text = text, style = style, color = color, fontWeight = FontWeight.Black)
-}
-
-private fun Color.luminance(): Float {
-    return 0.2126f * red + 0.7152f * green + 0.0722f * blue
-}

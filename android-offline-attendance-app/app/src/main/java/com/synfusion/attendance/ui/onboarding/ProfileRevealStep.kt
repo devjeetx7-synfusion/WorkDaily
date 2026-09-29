@@ -78,7 +78,7 @@ fun ProfileRevealStep(
         }
     }
 
-    // 3D Card Scale & Tilt Animations
+    // Card Scale Animation
     val cardScale by animateFloatAsState(
         targetValue = if (animationStarted) 1f else 0.85f,
         animationSpec = spring(
@@ -86,18 +86,6 @@ fun ProfileRevealStep(
             stiffness = Spring.StiffnessLow
         ),
         label = "card_scale"
-    )
-
-    val cardRotY by animateFloatAsState(
-        targetValue = if (animationStarted) 0f else -15f,
-        animationSpec = tween(1000, easing = FastOutSlowInEasing),
-        label = "card_rot_y"
-    )
-
-    val cardRotX by animateFloatAsState(
-        targetValue = if (animationStarted) 0f else 12f,
-        animationSpec = tween(1000, easing = FastOutSlowInEasing),
-        label = "card_rot_x"
     )
 
     Column(
@@ -109,7 +97,7 @@ fun ProfileRevealStep(
     ) {
         Spacer(modifier = Modifier.height(16.dp))
 
-        // 3D Animated Profile Card
+        // 2D Animated Profile Card
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -123,36 +111,17 @@ fun ProfileRevealStep(
                     .graphicsLayer {
                         scaleX = cardScale
                         scaleY = cardScale
-                        rotationY = cardRotY
-                        rotationX = cardRotX
-                        cameraDistance = 16f * density
                     }
-                    .shadow(28.dp, RoundedCornerShape(28.dp)),
-                shape = RoundedCornerShape(28.dp),
+                    .shadow(12.dp, RoundedCornerShape(24.dp)),
+                shape = RoundedCornerShape(24.dp),
                 color = MaterialTheme.colorScheme.surface,
-                tonalElevation = 8.dp
+                tonalElevation = 2.dp
             ) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(
-                            Brush.linearGradient(
-                                colors = listOf(
-                                    MaterialTheme.colorScheme.surface,
-                                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f)
-                                )
-                            )
-                        )
-                        .border(
-                            width = 2.dp,
-                            brush = Brush.linearGradient(
-                                colors = listOf(
-                                    MaterialTheme.colorScheme.primary,
-                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
-                                )
-                            ),
-                            shape = RoundedCornerShape(28.dp)
-                        )
+                        .background(MaterialTheme.colorScheme.surface)
+                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(24.dp))
                         .padding(24.dp)
                 ) {
                     Column(

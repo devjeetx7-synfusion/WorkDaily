@@ -86,7 +86,7 @@ fun WageStep(
                     .size(220.dp, 120.dp)
                     .graphicsLayer {
                         translationY = floatY
-                        rotationX = 8f
+                        rotationX = 0f
                         cameraDistance = 12f
                     }
                     .shadow(16.dp, RoundedCornerShape(20.dp)),

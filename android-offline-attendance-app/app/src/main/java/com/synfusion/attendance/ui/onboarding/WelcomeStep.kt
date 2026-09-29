@@ -115,7 +115,7 @@ fun WelcomeStep(
 
 @Composable
 fun WorkDaily3DScene() {
-    val infiniteTransition = rememberInfiniteTransition(label = "3d_float")
+    val infiniteTransition = rememberInfiniteTransition(label = "2d_float")
 
     val floatY by infiniteTransition.animateFloat(
         initialValue = -12f,
@@ -127,63 +127,30 @@ fun WorkDaily3DScene() {
         label = "y_float"
     )
 
-    val rotateY by infiniteTransition.animateFloat(
-        initialValue = -8f,
-        targetValue = 8f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(4000, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "rot_y"
-    )
-
-    val density = LocalDensity.current.density
-
     Box(
         modifier = Modifier
             .size(280.dp)
             .graphicsLayer {
                 translationY = floatY
-                this.rotationY = rotateY
-                rotationX = 10f
-                cameraDistance = 16f * density
             },
         contentAlignment = Alignment.Center
     ) {
-        // Base 3D Glass Card
+        // Base 2D Clean Card
         Surface(
             modifier = Modifier
                 .size(240.dp, 200.dp)
                 .shadow(
-                    elevation = 24.dp,
-                    shape = RoundedCornerShape(28.dp),
-                    spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)
+                    elevation = 8.dp,
+                    shape = RoundedCornerShape(24.dp),
+                    spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
                 ),
-            shape = RoundedCornerShape(28.dp),
+            shape = RoundedCornerShape(24.dp),
             color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 6.dp
+            tonalElevation = 2.dp
         ) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(
-                        Brush.linearGradient(
-                            colors = listOf(
-                                MaterialTheme.colorScheme.surface,
-                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
-                            )
-                        )
-                    )
-                    .border(
-                        width = 1.dp,
-                        brush = Brush.linearGradient(
-                            colors = listOf(
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                                Color.Transparent
-                            )
-                        ),
-                        shape = RoundedCornerShape(28.dp)
-                    )
                     .padding(20.dp)
             ) {
                 Column(
@@ -205,7 +172,7 @@ fun WorkDaily3DScene() {
                             modifier = Modifier
                                 .size(32.dp)
                                 .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
@@ -225,22 +192,22 @@ fun WorkDaily3DScene() {
                         Box(
                             modifier = Modifier
                                 .weight(1f)
-                                .height(48.dp)
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)),
+                                .height(64.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(MaterialTheme.colorScheme.primaryContainer),
                             contentAlignment = Alignment.Center
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Icon(
                                     imageVector = Icons.Default.DateRange,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(20.dp)
                                 )
-                                Spacer(modifier = Modifier.width(6.dp))
+                                Spacer(modifier = Modifier.height(4.dp))
                                 Text(
                                     text = "Attendance",
-                                    fontSize = 12.sp,
+                                    fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer
                                 )
@@ -250,22 +217,22 @@ fun WorkDaily3DScene() {
                         Box(
                             modifier = Modifier
                                 .weight(1f)
-                                .height(48.dp)
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)),
+                                .height(64.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(MaterialTheme.colorScheme.secondaryContainer),
                             contentAlignment = Alignment.Center
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Icon(
                                     imageVector = Icons.Default.Payments,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.secondary,
                                     modifier = Modifier.size(20.dp)
                                 )
-                                Spacer(modifier = Modifier.width(6.dp))
+                                Spacer(modifier = Modifier.height(4.dp))
                                 Text(
                                     text = "Earnings",
-                                    fontSize = 12.sp,
+                                    fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSecondaryContainer
                                 )
@@ -276,18 +243,17 @@ fun WorkDaily3DScene() {
             }
         }
 
-        // Floating 3D Badge 1 (Top Right)
+        // Floating Badge (Top Right)
         Surface(
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .offset(x = 12.dp, y = (-12).dp)
                 .graphicsLayer {
-                    translationY = -floatY * 0.8f
-                    rotationZ = 12f
+                    translationY = -floatY * 0.5f
                 }
-                .shadow(12.dp, CircleShape),
+                .shadow(8.dp, CircleShape),
             shape = CircleShape,
-            color = MaterialTheme.colorScheme.primary
+            color = MaterialTheme.colorScheme.primaryContainer
         ) {
             Box(
                 modifier = Modifier
@@ -298,41 +264,8 @@ fun WorkDaily3DScene() {
                 Icon(
                     imageVector = Icons.Default.CheckCircle,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
-        }
-
-        // Floating 3D Badge 2 (Bottom Left)
-        Surface(
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .offset(x = (-16).dp, y = 16.dp)
-                .graphicsLayer {
-                    translationY = floatY * 0.6f
-                    rotationZ = -8f
-                }
-                .shadow(12.dp, RoundedCornerShape(16.dp)),
-            shape = RoundedCornerShape(16.dp),
-            color = MaterialTheme.colorScheme.surfaceVariant
-        ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Payments,
-                    contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "100% Private",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    modifier = Modifier.fillMaxSize()
                 )
             }
         }

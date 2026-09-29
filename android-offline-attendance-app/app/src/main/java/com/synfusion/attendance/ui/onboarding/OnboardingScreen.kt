@@ -1,3 +1,4 @@
+@file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 package com.synfusion.attendance.ui.onboarding
 
 import androidx.activity.compose.BackHandler
@@ -91,32 +92,23 @@ fun OnboardingScreen(
                     .imePadding()
             ) {
                 ResponsiveContainer {
-                    AnimatedContent(
-                        targetState = state.currentStep,
-                        transitionSpec = {
-                            if (targetState > initialState) {
-                                (slideInHorizontally(
-                                    initialOffsetX = { width -> width },
-                                    animationSpec = tween(350)
-                                ) + fadeIn(animationSpec = tween(350))).togetherWith(
-                                    slideOutHorizontally(
-                                        targetOffsetX = { width -> -width },
-                                        animationSpec = tween(350)
-                                    ) + fadeOut(animationSpec = tween(350))
-                                )
-                            } else {
-                                (slideInHorizontally(
-                                    initialOffsetX = { width -> -width },
-                                    animationSpec = tween(350)
-                                ) + fadeIn(animationSpec = tween(350))).togetherWith(
-                                    slideOutHorizontally(
-                                        targetOffsetX = { width -> width },
-                                        animationSpec = tween(350)
-                                    ) + fadeOut(animationSpec = tween(350))
-                                )
-                            }
-                        },
-                        label = "onboarding_step_transition"
+                    val pagerState = androidx.compose.foundation.pager.rememberPagerState(pageCount = { 6 })
+
+                    // Sync pager state with view model state
+                    LaunchedEffect(state.currentStep) {
+                        if (pagerState.currentPage != state.currentStep) {
+                            pagerState.animateScrollToPage(state.currentStep)
+                        }
+                    }
+                    LaunchedEffect(pagerState.currentPage) {
+                        if (pagerState.currentPage != state.currentStep && !pagerState.isScrollInProgress) {
+                            viewModel.goToStep(pagerState.currentPage)
+                        }
+                    }
+
+                    androidx.compose.foundation.pager.HorizontalPager(
+                        state = pagerState,
+                        userScrollEnabled = state.currentStep < 5 // disable swipe on the reveal step
                     ) { step ->
                         when (step) {
                             0 -> WelcomeStep(
