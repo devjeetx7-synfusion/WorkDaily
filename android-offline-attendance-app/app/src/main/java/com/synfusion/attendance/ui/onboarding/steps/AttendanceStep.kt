@@ -1,10 +1,10 @@
 package com.synfusion.attendance.ui.onboarding.steps
 
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -26,59 +26,67 @@ import androidx.compose.ui.unit.sp
 import com.synfusion.attendance.R
 import com.synfusion.attendance.ui.onboarding.components.FloatingWorker
 import com.synfusion.attendance.ui.onboarding.components.OnboardingSlideContent
-import kotlinx.coroutines.delay
 
 @Composable
-fun AttendanceStep(
-    onBack: () -> Unit,
-    onNext: () -> Unit
-) {
-    var checkVisible by remember { mutableStateOf(false) }
-
-    LaunchedEffect(Unit) {
-        while (true) {
-            checkVisible = false
-            delay(650)
-            checkVisible = true
-            delay(2200)
-        }
-    }
+fun AttendanceStep() {
+    var entered by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { entered = true }
 
     val checkScale by animateFloatAsState(
-        targetValue = if (checkVisible) 1f else 0.72f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+        targetValue = if (entered) 1f else 0.35f,
+        animationSpec = tween(durationMillis = 520, delayMillis = 180),
         label = "attendanceCheckScale"
+    )
+    val cardScale by animateFloatAsState(
+        targetValue = if (entered) 1f else 0.94f,
+        animationSpec = tween(480),
+        label = "attendanceCardScale"
     )
 
     OnboardingSlideContent(
         title = stringResource(R.string.onboarding_attendance_title),
-        description = stringResource(R.string.onboarding_attendance_desc),
-        ctaText = stringResource(R.string.onboarding_next),
-        backText = stringResource(R.string.onboarding_back),
-        showBack = true,
-        onBackClick = onBack,
-        onCtaClick = onNext
+        description = stringResource(R.string.onboarding_attendance_desc)
     ) {
         Box(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 250.dp, max = 360.dp),
             contentAlignment = Alignment.Center
         ) {
-            FloatingWorker(size = 50.dp, xOffset = (-124).dp, yOffset = (-68).dp, animationDelay = 120)
-            FloatingWorker(size = 44.dp, xOffset = 118.dp, yOffset = 80.dp, animationDelay = 520)
-            FloatingWorker(size = 38.dp, xOffset = 118.dp, yOffset = (-96).dp, animationDelay = 760)
+            FloatingWorker(
+                size = 48.dp,
+                xOffset = (-130).dp,
+                yOffset = 80.dp,
+                animationDelay = 180,
+                floatRange = 5.dp,
+                horizontalRange = 3.dp
+            )
+            FloatingWorker(
+                size = 56.dp,
+                xOffset = 126.dp,
+                yOffset = (-78).dp,
+                animationDelay = 620,
+                floatRange = 6.dp,
+                horizontalRange = 4.dp
+            )
 
             Surface(
                 modifier = Modifier
-                    .widthIn(max = 278.dp)
-                    .fillMaxWidth(0.80f)
-                    .height(188.dp)
+                    .widthIn(max = 288.dp)
+                    .fillMaxWidth(0.83f)
+                    .height(206.dp)
                     .shadow(
-                        elevation = 18.dp,
-                        shape = RoundedCornerShape(28.dp),
+                        elevation = 20.dp,
+                        shape = RoundedCornerShape(30.dp),
                         ambientColor = Color.Black.copy(alpha = 0.05f),
                         spotColor = Color.Black.copy(alpha = 0.08f)
-                    ),
-                shape = RoundedCornerShape(28.dp),
+                    )
+                    .graphicsLayer {
+                        scaleX = cardScale
+                        scaleY = cardScale
+                        rotationZ = 0.8f
+                    },
+                shape = RoundedCornerShape(30.dp),
                 color = MaterialTheme.colorScheme.surface
             ) {
                 Column(
@@ -87,28 +95,31 @@ fun AttendanceStep(
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Box(
                                 modifier = Modifier
-                                    .size(38.dp)
-                                    .background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(12.dp)),
+                                    .size(40.dp)
+                                    .background(
+                                        MaterialTheme.colorScheme.primaryContainer,
+                                        RoundedCornerShape(13.dp)
+                                    ),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.DateRange,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(21.dp)
+                                    modifier = Modifier.size(22.dp)
                                 )
                             }
                             Spacer(modifier = Modifier.width(10.dp))
                             Text(
                                 text = stringResource(R.string.onboarding_mock_today),
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.ExtraBold,
+                                fontSize = 17.sp
                             )
                         }
 
@@ -119,62 +130,10 @@ fun AttendanceStep(
                             Text(
                                 text = stringResource(R.string.onboarding_mock_26_days),
                                 fontSize = 11.sp,
-                                fontWeight = FontWeight.SemiBold,
+                                fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSecondaryContainer,
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
                             )
-                        }
-                    }
-
-                    Surface(
-                        shape = RoundedCornerShape(20.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 13.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(38.dp)
-                                    .background(
-                                        if (checkVisible) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
-                                        RoundedCornerShape(12.dp)
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Check,
-                                    contentDescription = null,
-                                    tint = if (checkVisible) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.outline,
-                                    modifier = Modifier
-                                        .size(21.dp)
-                                        .graphicsLayer {
-                                            scaleX = checkScale
-                                            scaleY = checkScale
-                                        }
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column {
-                                Text(
-                                    text = if (checkVisible) {
-                                        stringResource(R.string.onboarding_mock_present)
-                                    } else {
-                                        stringResource(R.string.onboarding_mock_pending)
-                                    },
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Spacer(modifier = Modifier.height(3.dp))
-                                Box(
-                                    modifier = Modifier
-                                        .width(92.dp)
-                                        .height(5.dp)
-                                        .background(MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(99.dp))
-                                )
-                            }
                         }
                     }
 
@@ -182,20 +141,91 @@ fun AttendanceStep(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(7.dp)
                     ) {
-                        repeat(5) { index ->
-                            Box(
+                        repeat(7) { index ->
+                            Surface(
                                 modifier = Modifier
                                     .weight(1f)
-                                    .height(7.dp)
-                                    .background(
-                                        if (index < 4) MaterialTheme.colorScheme.primary.copy(alpha = 0.75f)
-                                        else MaterialTheme.colorScheme.surfaceVariant,
-                                        RoundedCornerShape(99.dp)
-                                    )
+                                    .aspectRatio(1f),
+                                shape = RoundedCornerShape(10.dp),
+                                color = when {
+                                    index == 4 -> MaterialTheme.colorScheme.primary
+                                    index < 4 -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.72f)
+                                    else -> MaterialTheme.colorScheme.surfaceVariant
+                                }
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    if (index == 4) {
+                                        Icon(
+                                            imageVector = Icons.Default.Check,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.onPrimary,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    } else {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(5.dp)
+                                                .background(
+                                                    if (index < 4) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                                                    CircleShape
+                                                )
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(20.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(38.dp)
+                                    .graphicsLayer {
+                                        scaleX = checkScale
+                                        scaleY = checkScale
+                                    }
+                                    .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(12.dp)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onPrimary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = stringResource(R.string.onboarding_mock_present),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp
                             )
                         }
                     }
                 }
+            }
+
+            Surface(
+                modifier = Modifier
+                    .offset(x = (-110).dp, y = (-90).dp)
+                    .shadow(8.dp, RoundedCornerShape(16.dp)),
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.primaryContainer
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(12.dp).size(21.dp)
+                )
             }
         }
     }
