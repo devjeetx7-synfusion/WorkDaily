@@ -103,9 +103,9 @@ class NotificationSystemTest {
         assertEquals("1", placeholders["halfDays"])
         assertEquals("1", placeholders["absentDays"])
         assertEquals("4.5", placeholders["workingDays"])
-        assertEquals("2,700", placeholders["totalEarnings"])
-        assertEquals("500", placeholders["advance"])
-        assertEquals("2,200", placeholders["netPayable"])
+        assertEquals("₹2,700", placeholders["totalEarnings"])
+        assertEquals("₹500", placeholders["advance"])
+        assertEquals("₹2,200", placeholders["netPayable"])
     }
 
     @Test
@@ -122,7 +122,7 @@ class NotificationSystemTest {
             val expectedOt = wage / 8.0 * 2.0
             val expectedTotal = wage + expectedOt
 
-            assertEquals(AmountFormatter.format(expectedTotal), placeholders["amount"])
+            assertEquals("₹" + AmountFormatter.format(expectedTotal), placeholders["amount"])
             assertEquals("2", placeholders["hours"])
         }
     }
@@ -144,10 +144,10 @@ class NotificationSystemTest {
         assertEquals("1", placeholders["halfDays"])
         assertEquals("1", placeholders["absentDays"])
         assertEquals("2.5", placeholders["workingDays"])
-        assertEquals("2,000", placeholders["totalEarnings"])
-        assertEquals("400", placeholders["advance"])
-        assertEquals("1,600", placeholders["netPayable"])
-        assertEquals("2,000", placeholders["amount"])
+        assertEquals("₹2,000", placeholders["totalEarnings"])
+        assertEquals("₹400", placeholders["advance"])
+        assertEquals("₹1,600", placeholders["netPayable"])
+        assertEquals("₹2,000", placeholders["amount"])
     }
 
     @Test

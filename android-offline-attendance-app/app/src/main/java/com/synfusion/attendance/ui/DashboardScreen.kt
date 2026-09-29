@@ -360,13 +360,13 @@ fun DashboardScreen(
                                                                 modifier = Modifier.fillMaxWidth(),
                                                                 verticalArrangement = Arrangement.spacedBy(16.dp)
                                                             ) {
-                                                                PersonalStatsGrid(
+                                                                PersonalStatsGrid(currencyCode = settingsState.currencyCode,
                                                                     state = dashboardState,
                                                                     onNavigatePassbook = { bottomNavController.navigate("passbook") },
                                                                     onEarningsClick = { dashboardViewModel.openDrillDown(DrillDownType.EARNINGS) }
                                                                 )
                                                                 AllTimePassbookButton(onNavigate = { bottomNavController.navigate("all_time_passbook") })
-                                                                PersonalQuickActions(
+                                                                PersonalQuickActions(currencyCode = settingsState.currencyCode,
                                                                     todayAdvanceAmount = dashboardState.todayAdvanceAmount,
                                                                     onAddAdvance = { showAdvanceDialog = true }
                                                                 )
@@ -395,13 +395,13 @@ fun DashboardScreen(
                                                                     modifier = Modifier.weight(1f),
                                                                     verticalArrangement = Arrangement.spacedBy(16.dp)
                                                                 ) {
-                                                                    PersonalStatsGrid(
+                                                                    PersonalStatsGrid(currencyCode = settingsState.currencyCode,
                                                                         state = dashboardState,
                                                                         onNavigatePassbook = { bottomNavController.navigate("passbook") },
                                                                         onEarningsClick = { dashboardViewModel.openDrillDown(DrillDownType.EARNINGS) }
                                                                     )
                                                                     AllTimePassbookButton(onNavigate = { bottomNavController.navigate("all_time_passbook") })
-                                                                    PersonalQuickActions(
+                                                                    PersonalQuickActions(currencyCode = settingsState.currencyCode,
                                                                         todayAdvanceAmount = dashboardState.todayAdvanceAmount,
                                                                         onAddAdvance = { showAdvanceDialog = true }
                                                                     )
