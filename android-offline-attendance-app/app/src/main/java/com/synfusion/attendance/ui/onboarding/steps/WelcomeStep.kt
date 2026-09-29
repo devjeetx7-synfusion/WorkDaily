@@ -24,11 +24,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.synfusion.attendance.R
 import com.synfusion.attendance.ui.onboarding.components.FloatingWorker
 import com.synfusion.attendance.ui.onboarding.components.OnboardingSlideContent
+import com.synfusion.attendance.ui.onboarding.components.WorkerRole
+import com.synfusion.attendance.ui.theme.MintPrimary
 
 @Composable
 fun WelcomeStep() {
@@ -36,13 +39,13 @@ fun WelcomeStep() {
     LaunchedEffect(Unit) { entered = true }
 
     val scale by animateFloatAsState(
-        targetValue = if (entered) 1f else 0.93f,
-        animationSpec = tween(520),
+        targetValue = if (entered) 1f else 0.94f,
+        animationSpec = tween(500),
         label = "welcomeStageScale"
     )
     val alpha by animateFloatAsState(
         targetValue = if (entered) 1f else 0f,
-        animationSpec = tween(420),
+        animationSpec = tween(380),
         label = "welcomeStageAlpha"
     )
 
@@ -53,7 +56,7 @@ fun WelcomeStep() {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(min = 250.dp, max = 360.dp)
+                .heightIn(min = 260.dp, max = 350.dp)
                 .graphicsLayer {
                     scaleX = scale
                     scaleY = scale
@@ -63,43 +66,40 @@ fun WelcomeStep() {
         ) {
             Box(
                 modifier = Modifier
-                    .size(285.dp, 215.dp)
-                    .border(
-                        width = 1.dp,
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f),
-                        shape = CircleShape
-                    )
+                    .size(286.dp, 216.dp)
+                    .border(1.dp, MintPrimary.copy(alpha = 0.10f), CircleShape)
             )
 
             FloatingWorker(
-                size = 48.dp,
+                role = WorkerRole.CONTRACTOR,
+                size = 54.dp,
                 xOffset = (-128).dp,
                 yOffset = (-76).dp,
                 animationDelay = 120,
                 floatRange = 5.dp,
-                horizontalRange = 4.dp
+                horizontalRange = 3.dp
             )
             FloatingWorker(
+                role = WorkerRole.PLUMBER,
                 size = 58.dp,
                 xOffset = 126.dp,
-                yOffset = 72.dp,
+                yOffset = 82.dp,
                 animationDelay = 520,
                 floatRange = 6.dp,
-                horizontalRange = 4.dp
+                horizontalRange = 3.dp
             )
 
             Surface(
                 modifier = Modifier
-                    .widthIn(max = 286.dp)
-                    .fillMaxWidth(0.82f)
+                    .widthIn(max = 294.dp)
+                    .fillMaxWidth(0.84f)
                     .height(198.dp)
                     .shadow(
-                        elevation = 22.dp,
+                        elevation = 18.dp,
                         shape = RoundedCornerShape(30.dp),
-                        ambientColor = Color.Black.copy(alpha = 0.05f),
-                        spotColor = Color.Black.copy(alpha = 0.08f)
-                    )
-                    .graphicsLayer { rotationZ = -1.2f },
+                        ambientColor = Color.Black.copy(alpha = 0.04f),
+                        spotColor = Color.Black.copy(alpha = 0.07f)
+                    ),
                 shape = RoundedCornerShape(30.dp),
                 color = MaterialTheme.colorScheme.surface
             ) {
@@ -109,38 +109,30 @@ fun WelcomeStep() {
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier = Modifier
-                                    .size(40.dp)
-                                    .background(
-                                        MaterialTheme.colorScheme.primaryContainer,
-                                        RoundedCornerShape(13.dp)
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.CheckCircle,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(23.dp)
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Text(
-                                text = stringResource(R.string.app_name),
-                                fontSize = 21.sp,
-                                fontWeight = FontWeight.ExtraBold
-                            )
-                        }
-
                         Box(
                             modifier = Modifier
-                                .size(8.dp)
-                                .background(MaterialTheme.colorScheme.primary, CircleShape)
+                                .size(40.dp)
+                                .background(MintPrimary.copy(alpha = 0.11f), RoundedCornerShape(13.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CheckCircle,
+                                contentDescription = null,
+                                tint = MintPrimary,
+                                modifier = Modifier.size(23.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            text = stringResource(R.string.app_name),
+                            fontSize = 21.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Clip,
+                            modifier = Modifier.weight(1f)
                         )
                     }
 
@@ -148,54 +140,31 @@ fun WelcomeStep() {
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        WelcomeFeatureTile(
-                            modifier = Modifier.weight(1f),
-                            icon = { Icon(Icons.Default.DateRange, null) }
-                        )
-                        WelcomeFeatureTile(
-                            modifier = Modifier.weight(1f),
-                            icon = { Icon(Icons.Default.AccountBalanceWallet, null) }
-                        )
-                        WelcomeFeatureTile(
-                            modifier = Modifier.weight(1f),
-                            icon = { Icon(Icons.Default.ListAlt, null) }
-                        )
+                        WelcomeFeatureTile(Modifier.weight(1f)) { Icon(Icons.Default.DateRange, null) }
+                        WelcomeFeatureTile(Modifier.weight(1f)) { Icon(Icons.Default.AccountBalanceWallet, null) }
+                        WelcomeFeatureTile(Modifier.weight(1f)) { Icon(Icons.Default.ListAlt, null) }
                     }
 
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.58f),
+                        color = MintPrimary.copy(alpha = 0.065f),
                         shape = RoundedCornerShape(18.dp)
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 13.dp, vertical = 11.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(9.dp)
-                                    .background(MaterialTheme.colorScheme.primary, CircleShape)
-                            )
+                            Box(Modifier.size(9.dp).background(MintPrimary, CircleShape))
                             Spacer(modifier = Modifier.width(9.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Box(
-                                    modifier = Modifier
-                                        .width(92.dp)
-                                        .height(6.dp)
-                                        .background(
-                                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.16f),
-                                            RoundedCornerShape(99.dp)
-                                        )
+                                    Modifier.width(92.dp).height(6.dp)
+                                        .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.13f), RoundedCornerShape(99.dp))
                                 )
                                 Spacer(modifier = Modifier.height(6.dp))
                                 Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth(0.66f)
-                                        .height(5.dp)
-                                        .background(
-                                            MaterialTheme.colorScheme.primary.copy(alpha = 0.28f),
-                                            RoundedCornerShape(99.dp)
-                                        )
+                                    Modifier.fillMaxWidth(0.66f).height(5.dp)
+                                        .background(MintPrimary.copy(alpha = 0.30f), RoundedCornerShape(99.dp))
                                 )
                             }
                         }
@@ -205,20 +174,15 @@ fun WelcomeStep() {
 
             Surface(
                 modifier = Modifier
-                    .offset(x = 104.dp, y = (-91).dp)
-                    .size(54.dp)
-                    .shadow(8.dp, RoundedCornerShape(18.dp))
-                    .graphicsLayer { rotationZ = 7f },
-                shape = RoundedCornerShape(18.dp),
-                color = MaterialTheme.colorScheme.secondaryContainer
+                    .offset(x = 111.dp, y = (-91).dp)
+                    .size(50.dp)
+                    .shadow(7.dp, RoundedCornerShape(17.dp))
+                    .graphicsLayer { rotationZ = 5f },
+                shape = RoundedCornerShape(17.dp),
+                color = MintPrimary.copy(alpha = 0.10f)
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = Icons.Default.DateRange,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                        modifier = Modifier.size(24.dp)
-                    )
+                    Icon(Icons.Default.DateRange, null, tint = MintPrimary, modifier = Modifier.size(23.dp))
                 }
             }
         }
@@ -233,14 +197,9 @@ private fun WelcomeFeatureTile(
     Surface(
         modifier = modifier.height(60.dp),
         shape = RoundedCornerShape(17.dp),
-        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f),
-        contentColor = MaterialTheme.colorScheme.primary
+        color = MintPrimary.copy(alpha = 0.09f),
+        contentColor = MintPrimary
     ) {
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier.padding(8.dp)
-        ) {
-            icon()
-        }
+        Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(8.dp)) { icon() }
     }
 }

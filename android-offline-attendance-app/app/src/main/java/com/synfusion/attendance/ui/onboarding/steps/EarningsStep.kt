@@ -1,6 +1,11 @@
 package com.synfusion.attendance.ui.onboarding.steps
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -26,6 +31,8 @@ import com.synfusion.attendance.R
 import com.synfusion.attendance.data.model.CountryRepository
 import com.synfusion.attendance.ui.onboarding.components.FloatingWorker
 import com.synfusion.attendance.ui.onboarding.components.OnboardingSlideContent
+import com.synfusion.attendance.ui.onboarding.components.WorkerRole
+import com.synfusion.attendance.ui.theme.MintPrimary
 import com.synfusion.attendance.utils.AmountFormatter
 
 @Composable
@@ -40,6 +47,17 @@ fun EarningsStep() {
         label = "earningsReveal"
     )
 
+    val chipMotion = rememberInfiniteTransition(label = "earningsChipMotion")
+    val chipY by chipMotion.animateFloat(
+        initialValue = -4f,
+        targetValue = 4f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(3000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "earningsChipY"
+    )
+
     OnboardingSlideContent(
         title = stringResource(R.string.onboarding_earnings_title),
         description = stringResource(R.string.onboarding_earnings_desc)
@@ -47,41 +65,41 @@ fun EarningsStep() {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(min = 250.dp, max = 360.dp),
+                .heightIn(min = 270.dp, max = 360.dp),
             contentAlignment = Alignment.Center
         ) {
             FloatingWorker(
-                size = 46.dp,
-                xOffset = (-132).dp,
-                yOffset = 84.dp,
+                role = WorkerRole.PLUMBER,
+                size = 52.dp,
+                xOffset = (-134).dp,
+                yOffset = 102.dp,
                 animationDelay = 160,
                 floatRange = 5.dp,
                 horizontalRange = 3.dp
             )
             FloatingWorker(
+                role = WorkerRole.ELECTRICIAN,
                 size = 58.dp,
-                xOffset = 128.dp,
-                yOffset = (-82).dp,
+                xOffset = 132.dp,
+                yOffset = (-94).dp,
                 animationDelay = 560,
                 floatRange = 6.dp,
-                horizontalRange = 4.dp
+                horizontalRange = 3.dp
             )
 
             Surface(
                 modifier = Modifier
-                    .offset(y = (-58).dp)
-                    .widthIn(max = 238.dp)
+                    .offset(y = (-72 + chipY).dp)
+                    .widthIn(max = 240.dp)
                     .fillMaxWidth(0.70f)
-                    .height(82.dp)
-                    .shadow(9.dp, RoundedCornerShape(22.dp))
+                    .height(80.dp)
+                    .shadow(8.dp, RoundedCornerShape(22.dp))
                     .graphicsLayer {
-                        rotationZ = -4f
-                        alpha = 0.72f + (reveal * 0.28f)
-                        scaleX = 0.96f + (reveal * 0.04f)
-                        scaleY = 0.96f + (reveal * 0.04f)
+                        rotationZ = -3f
+                        alpha = 0.76f + (reveal * 0.24f)
                     },
                 shape = RoundedCornerShape(22.dp),
-                color = MaterialTheme.colorScheme.secondaryContainer
+                color = MintPrimary.copy(alpha = 0.085f)
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
@@ -90,66 +108,50 @@ fun EarningsStep() {
                     Box(
                         modifier = Modifier
                             .size(40.dp)
-                            .background(
-                                MaterialTheme.colorScheme.surface.copy(alpha = 0.76f),
-                                RoundedCornerShape(13.dp)
-                            ),
+                            .background(Color.White.copy(alpha = 0.78f), RoundedCornerShape(13.dp)),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.AccountBalanceWallet,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
+                            tint = MintPrimary,
                             modifier = Modifier.size(21.dp)
                         )
                     }
                     Spacer(modifier = Modifier.width(11.dp))
-                    Column {
-                        Text(
-                            text = stringResource(
-                                R.string.onboarding_mock_daily_earnings,
-                                AmountFormatter.formatWithSymbol(700.0, defaultCurrency)
-                            ),
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer
-                        )
-                        Spacer(modifier = Modifier.height(7.dp))
-                        Box(
-                            modifier = Modifier
-                                .width(82.dp)
-                                .height(5.dp)
-                                .background(
-                                    MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.16f),
-                                    RoundedCornerShape(99.dp)
-                                )
-                        )
-                    }
+                    Text(
+                        text = stringResource(
+                            R.string.onboarding_mock_daily_earnings,
+                            AmountFormatter.formatWithSymbol(700.0, defaultCurrency)
+                        ),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
                 }
             }
 
             Surface(
                 modifier = Modifier
-                    .offset(y = 31.dp)
-                    .widthIn(max = 292.dp)
-                    .fillMaxWidth(0.84f)
-                    .height(176.dp)
+                    .offset(y = 30.dp)
+                    .widthIn(max = 298.dp)
+                    .fillMaxWidth(0.86f)
+                    .height(182.dp)
                     .shadow(
-                        elevation = 22.dp,
+                        elevation = 19.dp,
                         shape = RoundedCornerShape(30.dp),
-                        ambientColor = Color.Black.copy(alpha = 0.05f),
-                        spotColor = Color.Black.copy(alpha = 0.08f)
+                        ambientColor = Color.Black.copy(alpha = 0.04f),
+                        spotColor = Color.Black.copy(alpha = 0.07f)
                     )
                     .graphicsLayer {
-                        rotationZ = 1.1f
-                        scaleX = 0.94f + (reveal * 0.06f)
-                        scaleY = 0.94f + (reveal * 0.06f)
+                        scaleX = 0.95f + (reveal * 0.05f)
+                        scaleY = 0.95f + (reveal * 0.05f)
                     },
                 shape = RoundedCornerShape(30.dp),
                 color = MaterialTheme.colorScheme.surface
             ) {
                 Column(
-                    modifier = Modifier.padding(18.dp),
+                    modifier = Modifier.padding(horizontal = 19.dp, vertical = 18.dp),
                     verticalArrangement = Arrangement.SpaceBetween
                 ) {
                     Row(
@@ -162,24 +164,21 @@ fun EarningsStep() {
                             fontSize = 14.sp,
                             fontWeight = FontWeight.ExtraBold
                         )
-                        Box(
-                            modifier = Modifier
-                                .size(9.dp)
-                                .background(MaterialTheme.colorScheme.primary, CircleShape)
-                        )
+                        Box(Modifier.size(9.dp).background(MintPrimary, CircleShape))
                     }
 
                     Text(
                         text = AmountFormatter.formatWithSymbol(18200.0, defaultCurrency),
-                        fontSize = 30.sp,
+                        fontSize = 29.sp,
+                        lineHeight = 34.sp,
+                        maxLines = 1,
+                        softWrap = false,
                         fontWeight = FontWeight.ExtraBold,
-                        color = MaterialTheme.colorScheme.primary
+                        color = MintPrimary
                     )
 
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp),
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                         verticalAlignment = Alignment.Bottom
                     ) {
@@ -190,9 +189,7 @@ fun EarningsStep() {
                                     .weight(1f)
                                     .height(barHeight.dp)
                                     .background(
-                                        MaterialTheme.colorScheme.primary.copy(
-                                            alpha = 0.20f + (index * 0.055f)
-                                        ),
+                                        MintPrimary.copy(alpha = 0.18f + (index * 0.055f)),
                                         RoundedCornerShape(topStart = 7.dp, topEnd = 7.dp)
                                     )
                             )
@@ -203,19 +200,14 @@ fun EarningsStep() {
 
             Surface(
                 modifier = Modifier
-                    .offset(x = 112.dp, y = 95.dp)
-                    .size(50.dp)
-                    .shadow(8.dp, RoundedCornerShape(17.dp)),
-                shape = RoundedCornerShape(17.dp),
-                color = MaterialTheme.colorScheme.primaryContainer
+                    .offset(x = 118.dp, y = (104 + chipY).dp)
+                    .size(48.dp)
+                    .shadow(7.dp, RoundedCornerShape(16.dp)),
+                shape = RoundedCornerShape(16.dp),
+                color = MintPrimary.copy(alpha = 0.10f)
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = Icons.Default.AccountBalanceWallet,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(23.dp)
-                    )
+                    Icon(Icons.Default.AccountBalanceWallet, null, tint = MintPrimary, modifier = Modifier.size(22.dp))
                 }
             }
         }
