@@ -42,7 +42,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.synfusion.attendance.viewmodel.OfflineAttendanceRecord
 import com.synfusion.attendance.viewmodel.OfflineCalendarViewModel
-import com.synfusion.attendance.utils.IndianCurrencyVisualTransformation
+import com.synfusion.attendance.utils.CurrencyVisualTransformation
+import com.synfusion.attendance.data.model.CountryRepository
 import com.synfusion.attendance.utils.collectAsStateWithLifecycle
 import androidx.compose.ui.platform.LocalContext
 import com.synfusion.attendance.ui.responsive.LocalWindowSizeInfo
@@ -560,6 +561,7 @@ fun PersonalCalendarView(
         PersonalAttendanceDialog(
             displayDate = "$selectedDay ${SimpleDateFormat("MMMM", Locale.getDefault()).format(currentMonthDate)} $year",
             existingRecord = existingRecord,
+            currencyCode = state.currencyCode,
 
             onDismiss = { showDialog = false },
             onSave = { status, type, reason, overtime, note, advance ->
@@ -578,6 +580,7 @@ fun PersonalCalendarView(
 fun PersonalAttendanceDialog(
     displayDate: String,
     existingRecord: OfflineAttendanceRecord?,
+    currencyCode: String = "INR",
     onDismiss: () -> Unit,
     onSave: (String, String, String, Int, String, Double) -> Unit,
     onDelete: () -> Unit
@@ -711,7 +714,7 @@ fun PersonalAttendanceDialog(
                         shape = RoundedCornerShape(12.dp),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true,
-                        visualTransformation = IndianCurrencyVisualTransformation()
+                        visualTransformation = CurrencyVisualTransformation(currencyCode)
                     )
                 } else if (editStatus == "absent") {
                     LazyVerticalGrid(
@@ -746,9 +749,12 @@ fun PersonalAttendanceDialog(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
-                    leadingIcon = { Text("₹", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                    leadingIcon = {
+                        val symbol = CountryRepository.getCurrencySymbol(currencyCode)
+                        Text(symbol, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    },
                     singleLine = true,
-                    visualTransformation = IndianCurrencyVisualTransformation()
+                    visualTransformation = CurrencyVisualTransformation(currencyCode)
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))

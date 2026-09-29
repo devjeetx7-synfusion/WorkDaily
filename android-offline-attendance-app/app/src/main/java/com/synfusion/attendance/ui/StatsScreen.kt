@@ -89,7 +89,7 @@ fun AnimatedCounter(
             hasCompletedAnimation = true
         }
     )
-    val formattedCount = if (isCurrency || prefix == "₹" || prefix == "Rs.") {
+    val formattedCount = if (isCurrency) {
         AmountFormatter.formatWithSymbol(count.toDouble(), currencyCode)
     } else if (prefix.isNotEmpty()) {
         "$prefix$count"

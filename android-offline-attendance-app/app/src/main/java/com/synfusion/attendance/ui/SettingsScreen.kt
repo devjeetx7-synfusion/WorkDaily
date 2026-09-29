@@ -66,7 +66,6 @@ import com.synfusion.attendance.data.model.CountryRepository
 import com.synfusion.attendance.utils.AmountFormatter
 import com.synfusion.attendance.utils.collectAsStateWithLifecycle
 import com.synfusion.attendance.utils.CurrencyVisualTransformation
-import com.synfusion.attendance.utils.IndianCurrencyVisualTransformation
 import com.synfusion.attendance.ui.responsive.LocalWindowSizeInfo
 import com.synfusion.attendance.ui.responsive.ResponsiveContainer
 import androidx.compose.runtime.saveable.rememberSaveable

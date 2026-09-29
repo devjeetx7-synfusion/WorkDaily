@@ -110,7 +110,7 @@ object AttendanceCalculationEngine {
                     amountToReceive = 0.0,
                     amountToPayBack = 0.0,
                     settlementState = SettlementState.SETTLED,
-                    settlementMessage = "SETTLED — ₹0 PENDING"
+                    settlementMessage = "SETTLED — " + AmountFormatter.formatWithSymbol(0.0, userCurrency) + " PENDING"
                 )
             }
         }
