@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
@@ -32,41 +33,79 @@ fun FloatingWorker(
     xOffset: Dp = 0.dp,
     yOffset: Dp = 0.dp,
     animationDelay: Int = 0,
-    floatRange: Dp = 10.dp
+    floatRange: Dp = 9.dp,
+    horizontalRange: Dp = 6.dp,
+    depthRange: Float = 0.05f
 ) {
-    val infiniteTransition = rememberInfiniteTransition(label = "floatingWorkerTransition")
+    val transition = rememberInfiniteTransition(label = "floatingWorkerTransition")
 
-    val animatedY by infiniteTransition.animateFloat(
+    val animatedY by transition.animateFloat(
         initialValue = -floatRange.value,
         targetValue = floatRange.value,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 2000 + animationDelay, easing = FastOutSlowInEasing),
+            animation = tween(
+                durationMillis = 2600 + animationDelay,
+                delayMillis = animationDelay,
+                easing = FastOutSlowInEasing
+            ),
             repeatMode = RepeatMode.Reverse
         ),
         label = "floatingWorkerY"
     )
 
+    val animatedX by transition.animateFloat(
+        initialValue = -horizontalRange.value,
+        targetValue = horizontalRange.value,
+        animationSpec = infiniteRepeatable(
+            animation = tween(
+                durationMillis = 3200 + animationDelay,
+                delayMillis = animationDelay / 2,
+                easing = FastOutSlowInEasing
+            ),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "floatingWorkerX"
+    )
+
+    val depth by transition.animateFloat(
+        initialValue = 1f - depthRange,
+        targetValue = 1f + depthRange,
+        animationSpec = infiniteRepeatable(
+            animation = tween(
+                durationMillis = 3600 + animationDelay,
+                delayMillis = animationDelay / 3,
+                easing = FastOutSlowInEasing
+            ),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "floatingWorkerDepth"
+    )
+
     Box(
         modifier = Modifier
-            .offset(x = xOffset, y = yOffset + animatedY.dp)
+            .offset(x = xOffset + animatedX.dp, y = yOffset + animatedY.dp)
+            .graphicsLayer {
+                scaleX = depth
+                scaleY = depth
+                rotationZ = (depth - 1f) * 12f
+            }
             .size(size)
             .shadow(
-                elevation = 12.dp,
+                elevation = 10.dp,
                 shape = CircleShape,
-                ambientColor = Color.Black.copy(alpha = 0.15f),
-                spotColor = Color.Black.copy(alpha = 0.15f)
+                ambientColor = Color.Black.copy(alpha = 0.10f),
+                spotColor = Color.Black.copy(alpha = 0.12f)
             )
             .clip(CircleShape)
             .background(MaterialTheme.colorScheme.surface)
-            .border(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f), CircleShape),
+            .border(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.22f), CircleShape),
         contentAlignment = Alignment.Center
     ) {
-        // Placeholder for worker image. Can easily be swapped with Image() later.
         Icon(
             imageVector = Icons.Default.Person,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(size * 0.6f)
+            modifier = Modifier.size(size * 0.58f)
         )
     }
 }
