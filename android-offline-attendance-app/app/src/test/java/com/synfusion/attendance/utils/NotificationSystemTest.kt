@@ -103,9 +103,9 @@ class NotificationSystemTest {
         assertEquals("1", placeholders["halfDays"])
         assertEquals("1", placeholders["absentDays"])
         assertEquals("4.5", placeholders["workingDays"])
-        assertEquals("₹2,700", placeholders["totalEarnings"])
-        assertEquals("₹500", placeholders["advance"])
-        assertEquals("₹2,200", placeholders["netPayable"])
+        assertEquals("₹2,700.00", placeholders["totalEarnings"])
+        assertEquals("₹500.00", placeholders["advance"])
+        assertEquals("₹2,200.00", placeholders["netPayable"])
     }
 
     @Test
@@ -144,10 +144,10 @@ class NotificationSystemTest {
         assertEquals("1", placeholders["halfDays"])
         assertEquals("1", placeholders["absentDays"])
         assertEquals("2.5", placeholders["workingDays"])
-        assertEquals("₹2,000", placeholders["totalEarnings"])
-        assertEquals("₹400", placeholders["advance"])
-        assertEquals("₹1,600", placeholders["netPayable"])
-        assertEquals("₹2,000", placeholders["amount"])
+        assertEquals("₹2,000.00", placeholders["totalEarnings"])
+        assertEquals("₹400.00", placeholders["advance"])
+        assertEquals("₹1,600.00", placeholders["netPayable"])
+        assertEquals("₹2,000.00", placeholders["amount"])
     }
 
     @Test

@@ -7,6 +7,7 @@ import com.synfusion.attendance.data.LocalAttendanceRepository
 import com.synfusion.attendance.data.OfflinePreferencesRepository
 import com.synfusion.attendance.data.entities.UserEntity
 import com.synfusion.attendance.data.model.CountryRepository
+import com.synfusion.attendance.utils.AmountFormatter
 import com.synfusion.attendance.utils.NotificationScheduler
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -220,7 +221,7 @@ class OfflineSettingsViewModel(
     }
 
     fun onWageChange(newWage: String) {
-        val wageDouble = newWage.toDoubleOrNull() ?: 0.0
+        val wageDouble = AmountFormatter.parseToDoubleOrNull(newWage, _state.value.currencyCode) ?: 0.0
         _state.update { it.copy(dailyWage = wageDouble) }
     }
 

@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.synfusion.attendance.viewmodel.OfflineAttendanceRecord
 import com.synfusion.attendance.viewmodel.OfflineCalendarViewModel
+import com.synfusion.attendance.utils.AmountFormatter
 import com.synfusion.attendance.utils.CurrencyVisualTransformation
 import com.synfusion.attendance.data.model.CountryRepository
 import com.synfusion.attendance.utils.collectAsStateWithLifecycle
@@ -771,7 +772,7 @@ fun PersonalAttendanceDialog(
         confirmButton = {
             Button(
                 onClick = {
-                    val advanceVal = editAdvance.toDoubleOrNull() ?: 0.0
+                    val advanceVal = AmountFormatter.parseToDoubleOrNull(editAdvance, currencyCode) ?: 0.0
                     val finalNote = if (editOTAmount.isNotBlank() && editStatus == "present") {
                         val otStr = "[OT_WAGE_${editOTAmount.trim()}]"
                         if (editNote.isNotBlank()) "$otStr $editNote" else otStr

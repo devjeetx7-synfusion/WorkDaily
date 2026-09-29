@@ -407,7 +407,7 @@ object PassbookPdfGenerator {
             Pair(settlementLabel, settlementVal),
             Pair(context.getString(R.string.present_1), data.totalPresent.toString()),
             Pair(context.getString(R.string.half_day), data.totalHalfDays.toString()),
-            Pair(context.getString(R.string.pdf_working_days), AmountFormatter.format(data.totalManDays))
+            Pair(context.getString(R.string.pdf_working_days), if (data.totalManDays % 1.0 == 0.0) data.totalManDays.toInt().toString() else data.totalManDays.toString())
         )
 
         drawOverallSummary(renderContext, summaryItems)

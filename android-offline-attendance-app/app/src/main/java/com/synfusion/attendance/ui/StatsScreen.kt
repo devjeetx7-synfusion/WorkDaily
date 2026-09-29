@@ -774,7 +774,8 @@ fun calculateNiceScale(maxDataValue: Double): ChartNiceScale {
 }
 
 fun formatYAxisLabel(value: Double, currencyCode: String = "INR"): String {
-    val sym = CountryRepository.getCurrencySymbol(currencyCode)
+    val country = CountryRepository.getCountryByCurrency(currencyCode)
+    val sym = country.currencySymbol
     if (value == 0.0) return "${sym}0"
     return if (value >= 1000) {
         val kVal = value / 1000.0

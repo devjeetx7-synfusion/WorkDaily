@@ -1058,7 +1058,7 @@ fun PayoutsWidget() {
                 Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.payouts_widget_title), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
             }
             Spacer(modifier = Modifier.height(24.dp))
-            CountingText("₹ 1,28,450", MaterialTheme.typography.headlineMedium, MaterialTheme.colorScheme.onSurface)
+            CountingText(com.synfusion.attendance.utils.AmountFormatter.formatWithSymbol(128450.0, "INR"), MaterialTheme.typography.headlineMedium, MaterialTheme.colorScheme.onSurface)
             Spacer(modifier = Modifier.height(16.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(modifier = Modifier.size(16.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)), contentAlignment = Alignment.Center) {
@@ -1139,7 +1139,7 @@ fun AdvanceTrackWidget() {
                     Text("Rahul Kumar", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                     Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.advance), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                Text("₹ 2,400", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.secondary)
+                Text(com.synfusion.attendance.utils.AmountFormatter.formatWithSymbol(2400.0, "INR"), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.secondary)
             }
             Spacer(modifier = Modifier.height(16.dp))
             Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.payout_manage_sub), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())

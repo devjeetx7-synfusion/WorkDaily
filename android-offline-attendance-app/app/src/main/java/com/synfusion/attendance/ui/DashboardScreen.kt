@@ -578,13 +578,13 @@ fun DashboardScreen(
                     }
                 },
                 confirmButton = {
-                    val isValidAmount = remember(advanceAmount) {
-                        val parsed = advanceAmount.toDoubleOrNull()
+                    val isValidAmount = remember(advanceAmount, settingsState.currencyCode) {
+                        val parsed = AmountFormatter.parseToDoubleOrNull(advanceAmount, settingsState.currencyCode)
                         parsed != null && parsed > 0.0 && advanceAmount.trim().isNotEmpty()
                     }
                     Button(
                         onClick = {
-                            val amount = advanceAmount.toDoubleOrNull()
+                            val amount = AmountFormatter.parseToDoubleOrNull(advanceAmount, settingsState.currencyCode)
                             if (amount != null && amount > 0.0) {
                                 dashboardViewModel.addAdvance(amount)
                                 showAdvanceDialog = false

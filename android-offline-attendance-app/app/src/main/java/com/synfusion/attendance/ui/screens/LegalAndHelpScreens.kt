@@ -983,7 +983,7 @@ fun GettingStartedIllustration() {
         ) {
             Row(modifier = Modifier.padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Text(stringResource(R.string.daily_wage), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("₹ 500", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                Text(com.synfusion.attendance.utils.AmountFormatter.formatWithSymbol(500.0, "INR"), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
             }
         }
     }
@@ -1052,17 +1052,17 @@ fun EarningsIllustration() {
     ) {
         Text(stringResource(R.string.gross_earned), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(
-            text = "₹ ${value.toInt()}",
+            text = com.synfusion.attendance.utils.AmountFormatter.formatWithSymbol(value.toDouble(), "INR"),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary
         )
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Box(modifier = Modifier.background(Color(0xFF4CAF50).copy(alpha = 0.2f), androidx.compose.foundation.shape.RoundedCornerShape(4.dp)).padding(horizontal = 6.dp, vertical = 2.dp)) {
-                Text("+ ₹500 OT", style = MaterialTheme.typography.labelSmall, color = Color(0xFF4CAF50))
+                Text("+ " + com.synfusion.attendance.utils.AmountFormatter.formatWithSymbol(500.0, "INR") + " OT", style = MaterialTheme.typography.labelSmall, color = Color(0xFF4CAF50))
             }
             Box(modifier = Modifier.background(Color(0xFFF44336).copy(alpha = 0.2f), androidx.compose.foundation.shape.RoundedCornerShape(4.dp)).padding(horizontal = 6.dp, vertical = 2.dp)) {
-                Text("- ₹200 Adv", style = MaterialTheme.typography.labelSmall, color = Color(0xFFF44336))
+                Text("- " + com.synfusion.attendance.utils.AmountFormatter.formatWithSymbol(200.0, "INR") + " Adv", style = MaterialTheme.typography.labelSmall, color = Color(0xFFF44336))
             }
         }
     }
@@ -1090,7 +1090,7 @@ fun OvertimeIllustration() {
             Text("2 " + stringResource(R.string.overtime_hours), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
         }
         Text(
-            text = "+ ₹ ${value.toInt()}",
+            text = "+ " + com.synfusion.attendance.utils.AmountFormatter.formatWithSymbol(value.toDouble(), "INR"),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
             color = Color(0xFF4CAF50)
@@ -1120,7 +1120,7 @@ fun AdvanceIllustration() {
             Text(stringResource(R.string.advance), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
         }
         Text(
-            text = "- ₹ ${value.toInt()}",
+            text = "- " + com.synfusion.attendance.utils.AmountFormatter.formatWithSymbol(value.toDouble(), "INR"),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
             color = Color(0xFFF44336)
@@ -1192,7 +1192,7 @@ fun PassbookIllustration() {
                         Text(if (i==0) "15 Oct" else "14 Oct", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
                         Text(if (i==0) stringResource(R.string.present_1) else stringResource(R.string.half_day), style = MaterialTheme.typography.labelSmall, color = if(i==0) Color(0xFF4CAF50) else Color(0xFFFF9800))
                     }
-                    Text(if (i==0) "₹ 500" else "₹ 250", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    Text(com.synfusion.attendance.utils.AmountFormatter.formatWithSymbol(if (i==0) 500.0 else 250.0, "INR"), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                 }
             }
         }
@@ -1226,7 +1226,7 @@ fun AllTimePassbookIllustration() {
                         Spacer(modifier = Modifier.height(8.dp))
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text("Total:", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onPrimaryContainer)
-                            Text("₹ 12,500", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                            Text(com.synfusion.attendance.utils.AmountFormatter.formatWithSymbol(12500.0, "INR"), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
                         }
                     }
                 }
