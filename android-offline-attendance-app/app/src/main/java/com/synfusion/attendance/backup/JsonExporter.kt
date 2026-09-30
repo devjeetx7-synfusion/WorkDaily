@@ -1,11 +1,7 @@
 package com.synfusion.attendance.backup
 
 import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 import com.synfusion.attendance.data.AttendanceDatabase
-import com.synfusion.attendance.data.entities.AttendanceEntity
-import com.synfusion.attendance.data.entities.SummaryEntity
-import com.synfusion.attendance.data.entities.UserEntity
 import java.io.File
 import java.nio.charset.StandardCharsets
 
@@ -58,9 +54,9 @@ object JsonExporter {
         val gson = Gson()
         val dataFile = File(outputDir, "data.json")
 
-        var existingUsers = emptyList<UserEntity>()
-        var existingAttendance = emptyList<AttendanceEntity>()
-        var existingSummaries = emptyList<SummaryEntity>()
+        var existingUsers = emptyList<com.synfusion.attendance.data.entities.UserEntity>()
+        var existingAttendance = emptyList<com.synfusion.attendance.data.entities.AttendanceEntity>()
+        var existingSummaries = emptyList<com.synfusion.attendance.data.entities.SummaryEntity>()
 
         if (dataFile.exists()) {
             try {
