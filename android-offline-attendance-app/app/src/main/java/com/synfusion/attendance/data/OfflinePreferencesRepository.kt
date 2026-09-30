@@ -204,9 +204,15 @@ class OfflinePreferencesRepository(val context: Context) {
         }
     }
 
+    /**
+     * Clears only the active user session. First-run choices such as language and
+     * onboarding completion intentionally survive logout so they are not shown again.
+     * App preferences and backup metadata are also preserved.
+     */
     suspend fun clearSession() {
         context.offlineDataStore.edit { preferences ->
-            preferences.clear()
+            preferences.remove(TOKEN_KEY)
+            preferences.remove(ROLE_KEY)
         }
     }
 }
