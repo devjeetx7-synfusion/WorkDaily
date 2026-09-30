@@ -396,10 +396,7 @@ class OfflineSettingsViewModel(
 
     fun logout() {
         viewModelScope.launch {
-            withContext(Dispatchers.IO) {
-                localAttendanceRepository.clearSession()
-            }
-            repository.clearSession()
+            repository.clearAuthSession()
             NotificationScheduler.cancelAllSchedules(repository.context)
         }
     }

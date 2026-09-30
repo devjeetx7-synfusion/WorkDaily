@@ -7,6 +7,7 @@ import com.synfusion.attendance.data.OfflinePreferencesRepository
 import com.synfusion.attendance.data.entities.UserEntity
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.util.UUID
 
@@ -33,14 +34,7 @@ class OfflineAuthViewModel(
 
     init {
         com.synfusion.attendance.backup.DatabaseLifecycleCoordinator.registerViewModel(this)
-        checkJob = viewModelScope.launch {
-            val user = localAttendanceRepository.getUser()
-            if (user != null) {
-                repository.saveAuthToken(user.id)
-                repository.saveCountryAndCurrency(user.countryCode, user.currencyCode)
-                _loginState.value = OfflineLoginState.Success(user.id)
-            }
-        }
+        checkForUserAndLogin()
     }
 
     override fun onCleared() {
@@ -62,10 +56,14 @@ class OfflineAuthViewModel(
         checkJob?.cancel()
         checkJob = viewModelScope.launch {
             val user = localAttendanceRepository.getUser()
+            val currentToken = repository.authTokenFlow.first()
             if (user != null) {
-                repository.saveAuthToken(user.id)
-                repository.saveCountryAndCurrency(user.countryCode, user.currencyCode)
-                _loginState.value = OfflineLoginState.Success(user.id)
+                // Legacy user migration: preserve onboarding completed state for existing users
+                repository.saveOnboardingCompleted(true)
+                if (currentToken != null) {
+                    repository.saveCountryAndCurrency(user.countryCode, user.currencyCode)
+                    _loginState.value = OfflineLoginState.Success(user.id)
+                }
             }
         }
     }
@@ -75,18 +73,21 @@ class OfflineAuthViewModel(
         email: String,
         phoneNumber: String,
         countryCode: String = "IN",
-        currencyCode: String = "INR"
+        currencyCode: String = "INR",
+        dailyWage: Double = 500.0
     ) {
         viewModelScope.launch {
             _loginState.value = OfflineLoginState.Loading
             try {
-                val userId = UUID.randomUUID().toString()
+                val existingUser = localAttendanceRepository.getUser()
+                val userId = existingUser?.id ?: UUID.randomUUID().toString()
                 val user = UserEntity(
                     id = userId,
                     name = name,
                     email = email,
                     phoneNumber = phoneNumber,
                     role = "personal",
+                    dailyWage = dailyWage,
                     countryCode = countryCode,
                     currencyCode = currencyCode
                 )
@@ -104,8 +105,7 @@ class OfflineAuthViewModel(
     fun logout() {
         _loginState.value = OfflineLoginState.Idle
         viewModelScope.launch {
-            localAttendanceRepository.clearSession()
-            repository.clearSession()
+            repository.clearAuthSession()
         }
     }
 }

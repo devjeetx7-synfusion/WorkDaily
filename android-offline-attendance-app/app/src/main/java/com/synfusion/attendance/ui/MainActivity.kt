@@ -246,7 +246,7 @@ fun OfflineDailyWorkApp(
 
     val startDest = if (splashEnabled == false) {
         if (languageState == null) "language_selection"
-        else if (!onboardingCompleted && tokenState == null) "onboarding"
+        else if (!onboardingCompleted) "onboarding"
         else if (tokenState == null) "login"
         else "dashboard"
     } else {
@@ -288,7 +288,7 @@ fun OfflineDailyWorkApp(
                         navController.navigate("language_selection") {
                             popUpTo("splash") { inclusive = true }
                         }
-                    } else if (!onboardingCompleted && tokenState == null) {
+                    } else if (!onboardingCompleted) {
                         navController.navigate("onboarding") {
                             popUpTo("splash") { inclusive = true }
                         }
@@ -308,7 +308,7 @@ fun OfflineDailyWorkApp(
             LanguageSelectionScreen(
                 repository = authViewModel.repository,
                 onLanguageSelected = {
-                    if (!onboardingCompleted && tokenState == null) {
+                    if (!onboardingCompleted) {
                         navController.navigate("onboarding") {
                             popUpTo("language_selection") { inclusive = true }
                         }
@@ -329,7 +329,7 @@ fun OfflineDailyWorkApp(
             com.synfusion.attendance.ui.onboarding.OnboardingScreen(
                 viewModel = onboardingViewModel,
                 onOnboardingComplete = {
-                    navController.navigate("dashboard") {
+                    navController.navigate("login") {
                         popUpTo("onboarding") { inclusive = true }
                     }
                 }

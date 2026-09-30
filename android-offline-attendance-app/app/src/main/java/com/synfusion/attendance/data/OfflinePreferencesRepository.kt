@@ -204,9 +204,14 @@ class OfflinePreferencesRepository(val context: Context) {
         }
     }
 
-    suspend fun clearSession() {
+    suspend fun clearAuthSession() {
         context.offlineDataStore.edit { preferences ->
-            preferences.clear()
+            preferences.remove(TOKEN_KEY)
+            preferences.remove(ROLE_KEY)
         }
+    }
+
+    suspend fun clearSession() {
+        clearAuthSession()
     }
 }

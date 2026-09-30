@@ -1,3 +1,4 @@
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 package com.synfusion.attendance.ui
 
 import android.Manifest
@@ -18,6 +19,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -108,9 +111,10 @@ fun LoginScreen(
     var name by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
+    var dailyWageText by remember { mutableStateOf("500") }
 
     var selectedCountry by remember { mutableStateOf(CountryRepository.DEFAULT_COUNTRY) }
-    var showCountryDropdown by remember { mutableStateOf(false) }
+    var showCountryBottomSheet by remember { mutableStateOf(false) }
 
     var isConsentChecked by rememberSaveable { mutableStateOf(false) }
     var showTermsSheet by rememberSaveable { mutableStateOf(false) }
@@ -465,17 +469,12 @@ fun LoginScreen(
                     .statusBarsPadding()
                     .navigationBarsPadding()
                     .imePadding()
-                    .padding(horizontal = 16.dp)
                     .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Spacer(modifier = Modifier.height(12.dp))
-
                 // 1. TOP BANNER CONTAINER
                 Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomStart = 18.dp, bottomEnd = 18.dp))
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     Image(
                         painter = painterResource(id = R.drawable.login_banner),
@@ -485,20 +484,20 @@ fun LoginScreen(
                     )
                 }
 
-                // 2. OVERLAY FORM CONTAINER / CARD
+                // 2. OVERLAY FORM CONTAINER / SHEET
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .offset(y = (-32).dp),
+                        .offset(y = (-24).dp),
                     shape = RoundedCornerShape(
-                        topStart = 30.dp,
-                        topEnd = 30.dp,
-                        bottomStart = 20.dp,
-                        bottomEnd = 20.dp
+                        topStart = 28.dp,
+                        topEnd = 28.dp,
+                        bottomStart = 0.dp,
+                        bottomEnd = 0.dp
                     ),
                     color = MaterialTheme.colorScheme.surface,
-                    tonalElevation = 2.dp,
-                    shadowElevation = 6.dp
+                    tonalElevation = 0.dp,
+                    shadowElevation = 0.dp
                 ) {
                     Column(
                         modifier = Modifier
@@ -555,7 +554,7 @@ fun LoginScreen(
                                 label = { Text(stringResource(R.string.country_label)) },
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clickable { showCountryDropdown = true },
+                                    .clickable { showCountryBottomSheet = true },
                                 shape = RoundedCornerShape(16.dp),
                                 leadingIcon = {
                                     Icon(
@@ -583,33 +582,43 @@ fun LoginScreen(
                             Box(
                                 modifier = Modifier
                                     .matchParentSize()
-                                    .clickable { showCountryDropdown = true }
+                                    .clickable { showCountryBottomSheet = true }
                             )
-                            DropdownMenu(
-                                expanded = showCountryDropdown,
-                                onDismissRequest = { showCountryDropdown = false },
-                                modifier = Modifier.heightIn(max = 280.dp)
-                            ) {
-                                CountryRepository.SUPPORTED_COUNTRIES.forEach { country ->
-                                    DropdownMenuItem(
-                                        text = {
-                                            Text(
-                                                "${country.flagEmoji} ${country.displayName} — ${country.currencySymbol}",
-                                                fontSize = 14.sp
-                                            )
-                                        },
-                                        onClick = {
-                                            selectedCountry = country
-                                            showCountryDropdown = false
-                                        }
-                                    )
-                                }
-                            }
                         }
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        // 5. PHONE FIELD
+                        // 5. DAILY WAGE FIELD
+                        OutlinedTextField(
+                            value = dailyWageText,
+                            onValueChange = { newValue ->
+                                val digits = newValue.filter { it.isDigit() }.take(7)
+                                dailyWageText = digits
+                            },
+                            label = { Text(stringResource(R.string.daily_wage)) },
+                            placeholder = { Text("500") },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(16.dp),
+                            leadingIcon = {
+                                Text(
+                                    text = selectedCountry.currencySymbol,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontSize = 16.sp,
+                                    modifier = Modifier.padding(start = 12.dp)
+                                )
+                            },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                focusedLabelColor = MaterialTheme.colorScheme.primary
+                            )
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // 6. PHONE FIELD
                         OutlinedTextField(
                             value = phone,
                             onValueChange = { newValue ->
@@ -669,8 +678,16 @@ fun LoginScreen(
                         // 7. PRIMARY ACTION BUTTON
                         Button(
                             onClick = {
-                                if (name.isNotBlank() && isPhoneValid && isConsentChecked) {
-                                    authViewModel.login(name, email, phone, selectedCountry.countryCode, selectedCountry.currencyCode)
+                                val dailyWageDouble = dailyWageText.toDoubleOrNull() ?: 500.0
+                                if (name.isNotBlank() && dailyWageText.isNotBlank() && isPhoneValid && isConsentChecked) {
+                                    authViewModel.login(
+                                        name = name,
+                                        email = email,
+                                        phoneNumber = phone,
+                                        countryCode = selectedCountry.countryCode,
+                                        currencyCode = selectedCountry.currencyCode,
+                                        dailyWage = dailyWageDouble
+                                    )
                                 }
                             },
                             modifier = Modifier
@@ -682,7 +699,7 @@ fun LoginScreen(
                                 containerColor = MaterialTheme.colorScheme.primary,
                                 contentColor = MaterialTheme.colorScheme.onPrimary
                             ),
-                            enabled = name.isNotBlank() && isPhoneValid && isConsentChecked && !isProcessing
+                            enabled = name.isNotBlank() && dailyWageText.isNotBlank() && isPhoneValid && isConsentChecked && !isProcessing
                         ) {
                             if (isProcessing) {
                                 CircularProgressIndicator(
@@ -806,6 +823,74 @@ fun LoginScreen(
         }
         if (showPrivacySheet) {
             PrivacyPolicyBottomSheet(onDismiss = { showPrivacySheet = false })
+        }
+
+        if (showCountryBottomSheet) {
+            ModalBottomSheet(
+                onDismissRequest = { showCountryBottomSheet = false },
+                windowInsets = WindowInsets(0.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 12.dp)
+                ) {
+                    Text(
+                        text = stringResource(R.string.onboarding_select_country_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    )
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                    Spacer(modifier = Modifier.height(8.dp))
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 360.dp)
+                    ) {
+                        items(CountryRepository.SUPPORTED_COUNTRIES) { country ->
+                            val isSelected = country.countryCode == selectedCountry.countryCode
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f) else Color.Transparent)
+                                    .clickable {
+                                        selectedCountry = country
+                                        showCountryBottomSheet = false
+                                    }
+                                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(text = country.flagEmoji, fontSize = 20.sp)
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column {
+                                        Text(
+                                            text = country.displayName,
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                            fontSize = 15.sp
+                                        )
+                                        Text(
+                                            text = "${country.currencyCode} (${country.currencySymbol}) • ${country.callingCode}",
+                                            fontSize = 12.sp,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                                if (isSelected) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
