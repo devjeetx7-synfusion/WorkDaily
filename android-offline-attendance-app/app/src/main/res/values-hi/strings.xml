@@ -52,6 +52,7 @@
 
     <string name="man_days">मैन डेज</string>
 
+    <string name="earnings_label">कमाई</string>
     <string name="financial_summary">कमाई का हिसाब</string>
     <string name="gross_earned">कुल कमाई</string>
     <string name="total_advance">कुल एडवांस</string>
