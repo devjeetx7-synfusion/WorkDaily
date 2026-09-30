@@ -7,6 +7,7 @@ import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -66,6 +67,8 @@ fun FloatingBottomNavigation(
             .windowInsetsPadding(WindowInsets.navigationBars),
         contentAlignment = Alignment.BottomCenter
     ) {
+        val capsuleBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)
+
         Row(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -82,6 +85,7 @@ fun FloatingBottomNavigation(
                     ),
                 shape = CircleShape,
                 color = MaterialTheme.colorScheme.surface,
+                border = BorderStroke(1.dp, capsuleBorderColor),
                 tonalElevation = 0.dp
             ) {
                 Row(
@@ -101,6 +105,13 @@ fun FloatingBottomNavigation(
             }
 
             // Second Capsule: Settings Tab
+            val isSettingsSelected = currentRoute == WorkDailyNavItem.SETTINGS.route
+            val settingsCapsuleBgColor by animateColorAsState(
+                targetValue = if (isSettingsSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
+                animationSpec = tween(durationMillis = 200),
+                label = "settingsCapsuleBgColor"
+            )
+
             Surface(
                 modifier = Modifier
                     .shadow(
@@ -111,7 +122,8 @@ fun FloatingBottomNavigation(
                         spotColor = Color.Black.copy(alpha = 0.08f)
                     ),
                 shape = CircleShape,
-                color = MaterialTheme.colorScheme.surface,
+                color = settingsCapsuleBgColor,
+                border = BorderStroke(1.dp, capsuleBorderColor),
                 tonalElevation = 0.dp
             ) {
                 Row(
@@ -119,7 +131,6 @@ fun FloatingBottomNavigation(
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    val isSettingsSelected = currentRoute == WorkDailyNavItem.SETTINGS.route
                     SettingsNavItemButton(
                         item = WorkDailyNavItem.SETTINGS,
                         isSelected = isSettingsSelected,
@@ -202,7 +213,7 @@ private fun SettingsNavItemButton(
     onNavigate: (String) -> Unit
 ) {
     val contentColor by animateColorAsState(
-        targetValue = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+        targetValue = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
         animationSpec = tween(durationMillis = 200),
         label = "settingsNavContentColor"
     )
