@@ -428,6 +428,11 @@
     <string name="create_offline_workspace">ऑफलाइन खाता चालू करें</string>
 
     <string name="private_offline_footer">100% प्राइवेट और ऑफलाइन हाजिरी</string>
+    <string name="enter_full_name_hint">अपना पूरा नाम दर्ज करें</string>
+    <string name="enter_mobile_number_hint">मोबाइल नंबर दर्ज करें</string>
+    <string name="trust_offline_private">100% ऑफलाइन</string>
+    <string name="trust_data_on_device">डेटा फोन में रहेगा</string>
+    <string name="trust_for_daily_workers">मजदूरों के लिए खास</string>
 
     <string name="already_have_backup">पुराना बैकअप है?</string>
 
