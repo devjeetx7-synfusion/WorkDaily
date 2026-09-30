@@ -1,6 +1,9 @@
 package com.synfusion.attendance.backup
 
 import com.google.gson.Gson
+import com.google.gson.GsonBuilder
+import com.google.gson.JsonDeserializer
+import com.google.gson.JsonObject
 import com.google.gson.reflect.TypeToken
 import com.synfusion.attendance.backup.dto.canonical.CanonicalBackupPayload
 import com.synfusion.attendance.backup.dto.v1.*
@@ -14,19 +17,83 @@ import java.nio.charset.StandardCharsets
 
 object JsonImporter {
 
+    fun getLenientGson(): Gson {
+        return GsonBuilder()
+            .registerTypeAdapter(Int::class.java, JsonDeserializer { json, _, _ ->
+                if (json == null || json.isJsonNull) 0
+                else if (json.isJsonPrimitive) {
+                    val prim = json.asJsonPrimitive
+                    if (prim.isNumber) prim.asNumber.toInt()
+                    else if (prim.isString) prim.asString.toDoubleOrNull()?.toInt() ?: 0
+                    else 0
+                } else 0
+            })
+            .registerTypeAdapter(Double::class.java, JsonDeserializer { json, _, _ ->
+                if (json == null || json.isJsonNull) 0.0
+                else if (json.isJsonPrimitive) {
+                    val prim = json.asJsonPrimitive
+                    if (prim.isNumber) prim.asNumber.toDouble()
+                    else if (prim.isString) prim.asString.toDoubleOrNull() ?: 0.0
+                    else 0.0
+                } else 0.0
+            })
+            .registerTypeAdapter(Long::class.java, JsonDeserializer { json, _, _ ->
+                if (json == null || json.isJsonNull) 0L
+                else if (json.isJsonPrimitive) {
+                    val prim = json.asJsonPrimitive
+                    if (prim.isNumber) prim.asNumber.toLong()
+                    else if (prim.isString) prim.asString.toLongOrNull() ?: (prim.asString.toDoubleOrNull()?.toLong() ?: 0L)
+                    else 0L
+                } else 0L
+            })
+            .setLenient()
+            .create()
+    }
+
     suspend fun parseAndMigrateBackup(backupDir: File, logger: BackupLogger): CanonicalBackupPayload {
-        val gson = Gson()
-        val manifestFile = File(backupDir, "manifest.json")
-        val manifest = ManifestManager.readManifest(manifestFile)
+        val gson = getLenientGson()
+        val manifest = ManifestManager.getOrSynthesizeManifest(backupDir, logger)
         val formatVersion = manifest?.backupFormatVersion ?: 1
 
         val dataFile = File(backupDir, "data.json")
         if (dataFile.exists()) {
-            val rawPayload = dataFile.reader(StandardCharsets.UTF_8).use { reader ->
-                gson.fromJson(reader, BackupV1Payload::class.java)
-            } ?: BackupV1Payload()
+            val content = dataFile.readText(StandardCharsets.UTF_8)
+            var rawPayload = try {
+                gson.fromJson(content, BackupV1Payload::class.java)
+            } catch (e: Exception) {
+                null
+            }
 
-            return MigrationRegistry.migrateToCanonical(rawPayload, formatVersion, manifest, logger)
+            // Fallback check for singular or alias property names in JSON object
+            if (rawPayload == null || (rawPayload.users.isEmpty() && rawPayload.attendance.isEmpty())) {
+                try {
+                    val jsonObj = gson.fromJson(content, JsonObject::class.java)
+                    var users = rawPayload?.users ?: emptyList()
+                    var attendance = rawPayload?.attendance ?: emptyList()
+                    var summaries = rawPayload?.summaries ?: emptyList()
+
+                    if (users.isEmpty() && jsonObj.has("user")) {
+                        users = parseListOrSingle(jsonObj.get("user").toString(), gson, UserV1Dto::class.java)
+                    }
+                    if (attendance.isEmpty() && jsonObj.has("attendances")) {
+                        attendance = parseListOrSingle(jsonObj.get("attendances").toString(), gson, AttendanceV1Dto::class.java)
+                    }
+                    if (summaries.isEmpty() && jsonObj.has("summary")) {
+                        summaries = parseListOrSingle(jsonObj.get("summary").toString(), gson, SummaryV1Dto::class.java)
+                    }
+
+                    rawPayload = BackupV1Payload(
+                        users = users,
+                        attendance = attendance,
+                        summaries = summaries,
+                        preferences = rawPayload?.preferences ?: emptyMap()
+                    )
+                } catch (e: Exception) {
+                    logger.error("Error parsing alias properties from data.json: ${e.message}")
+                }
+            }
+
+            return MigrationRegistry.migrateToCanonical(rawPayload ?: BackupV1Payload(), formatVersion, manifest, logger)
         }
 
         // Legacy backup format fallback (database/ directory)
@@ -37,26 +104,17 @@ object JsonImporter {
 
         val userFile = File(dbDir, "user.json")
         if (userFile.exists()) {
-            userFile.reader(StandardCharsets.UTF_8).use { reader ->
-                val type = object : TypeToken<List<UserV1Dto>>() {}.type
-                users = gson.fromJson(reader, type) ?: emptyList()
-            }
+            users = parseListOrSingle(userFile.readText(StandardCharsets.UTF_8), gson, UserV1Dto::class.java)
         }
 
         val attendanceFile = File(dbDir, "attendance.json")
         if (attendanceFile.exists()) {
-            attendanceFile.reader(StandardCharsets.UTF_8).use { reader ->
-                val type = object : TypeToken<List<AttendanceV1Dto>>() {}.type
-                attendances = gson.fromJson(reader, type) ?: emptyList()
-            }
+            attendances = parseListOrSingle(attendanceFile.readText(StandardCharsets.UTF_8), gson, AttendanceV1Dto::class.java)
         }
 
         val summaryFile = File(dbDir, "summary.json")
         if (summaryFile.exists()) {
-            summaryFile.reader(StandardCharsets.UTF_8).use { reader ->
-                val type = object : TypeToken<List<SummaryV1Dto>>() {}.type
-                summaries = gson.fromJson(reader, type) ?: emptyList()
-            }
+            summaries = parseListOrSingle(summaryFile.readText(StandardCharsets.UTF_8), gson, SummaryV1Dto::class.java)
         }
 
         val rawPayload = BackupV1Payload(
@@ -159,8 +217,20 @@ object JsonImporter {
         return counts
     }
 
+    private fun <T> parseListOrSingle(jsonContent: String, gson: Gson, clazz: Class<T>): List<T> {
+        val trimmed = jsonContent.trim()
+        if (trimmed.startsWith("[")) {
+            val listType = TypeToken.getParameterized(List::class.java, clazz).type
+            return gson.fromJson<List<T>>(trimmed, listType) ?: emptyList()
+        } else if (trimmed.startsWith("{")) {
+            val single = gson.fromJson(trimmed, clazz)
+            return if (single != null) listOf(single) else emptyList()
+        }
+        return emptyList()
+    }
+
     fun importPreferences(backupDir: File, logger: BackupLogger): Pair<Map<String, Any>, Map<String, Any>> {
-        val gson = Gson()
+        val gson = getLenientGson()
         val dataFile = File(backupDir, "data.json")
 
         if (dataFile.exists()) {

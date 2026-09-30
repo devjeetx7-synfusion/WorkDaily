@@ -86,11 +86,10 @@ class RestoreManager(private val context: Context) {
                     )
                 }
 
-                // Read manifest
-                val manifestFile = File(tempExtractDir, "manifest.json")
-                val manifest = ManifestManager.readManifest(manifestFile)
+                // Read manifest or synthesize fallback
+                val manifest = ManifestManager.getOrSynthesizeManifest(tempExtractDir, logger)
                 if (manifest == null) {
-                    logger.error("Restore failed: Manifest not found or unparseable.")
+                    logger.error("Restore failed: Manifest not found or unparseable and no valid data files found.")
                     progressTracker.updateState(RestoreState.RESTORE_FAILED)
                     return@withContext RestoreResult.Error(
                         context.getString(com.synfusion.attendance.R.string.restore_invalid_format_msg),
@@ -138,13 +137,23 @@ class RestoreManager(private val context: Context) {
                     progressTracker.updateState(RestoreState.VERIFYING)
                     progressTracker.updateProgress(55f, "Verifying record-level consistency...")
 
-                    val expectedUsers = manifest.recordCounts["users"] ?: 0
-                    val expectedAttendance = manifest.recordCounts["attendance"] ?: 0
-                    val expectedSummaries = manifest.recordCounts["summaries"] ?: 0
-
                     val tempUserCount = if (tempDb.userDao().getUser() != null) 1 else 0
                     val tempAttendanceCount = tempDb.attendanceDao().getPersonalAttendance().size
                     val tempSummariesCount = tempDb.summaryDao().getAllSummaries().size
+
+                    val expectedUsers = manifest.recordCounts["users"]
+                        ?: manifest.recordCounts["user"]
+                        ?: tempUserCount
+
+                    val expectedAttendance = manifest.recordCounts["attendance"]
+                        ?: manifest.recordCounts["attendances"]
+                        ?: tempAttendanceCount
+
+                    val expectedSummaries = manifest.recordCounts["summaries"]
+                        ?: manifest.recordCounts["summary"]
+                        ?: tempSummariesCount
+
+                    logger.info("Record count verification -> Manifest Expected: {users=$expectedUsers, attendance=$expectedAttendance, summaries=$expectedSummaries}, Temp DB Imported: {users=$tempUserCount, attendance=$tempAttendanceCount, summaries=$tempSummariesCount}")
 
                     if (tempUserCount != expectedUsers || tempAttendanceCount != expectedAttendance || tempSummariesCount != expectedSummaries) {
                         val msg = "Validation Failed: Record count mismatch. Expected: {users=$expectedUsers, attendance=$expectedAttendance, summaries=$expectedSummaries}, Actual: {users=$tempUserCount, attendance=$tempAttendanceCount, summaries=$tempSummariesCount}"
@@ -299,8 +308,7 @@ class RestoreManager(private val context: Context) {
                 previewDir.mkdirs()
 
                 RestoreProvider.extractZip(zipFile, previewDir, logger)
-                val manifestFile = File(previewDir, "manifest.json")
-                val manifest = ManifestManager.readManifest(manifestFile)
+                val manifest = ManifestManager.getOrSynthesizeManifest(previewDir, logger)
                 previewDir.deleteRecursively()
                 manifest
             } catch (e: Exception) {

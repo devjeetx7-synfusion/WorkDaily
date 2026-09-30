@@ -17,21 +17,24 @@ class V1ToCanonicalMigration : BackupMigration {
         val payload = rawPayload as? BackupV1Payload
             ?: throw IllegalArgumentException("Expected BackupV1Payload for V1 migration")
 
-        val preferences = payload.preferences
+        val preferences = payload.preferences ?: emptyMap()
 
         val prefCountry = preferences["user_country"]?.toString()
             ?: preferences["country_code"]?.toString()
             ?: preferences["countryCode"]?.toString()
+            ?: preferences["country"]?.toString()
             ?: "IN"
 
         val prefCurrency = preferences["user_currency"]?.toString()
             ?: preferences["currency_code"]?.toString()
             ?: preferences["currencyCode"]?.toString()
+            ?: preferences["currency"]?.toString()
             ?: "INR"
 
         logger?.info("Migrating V1 backup payload. Preference defaults derived -> country: $prefCountry, currency: $prefCurrency")
 
-        val canonicalUsers = payload.users.map { u ->
+        val rawUsers = payload.users ?: emptyList()
+        val canonicalUsers = rawUsers.map { u ->
             val userCountry = u.countryCode?.takeIf { it.isNotBlank() } ?: prefCountry
             val userCurrency = u.currencyCode?.takeIf { it.isNotBlank() } ?: prefCurrency
 
@@ -50,12 +53,15 @@ class V1ToCanonicalMigration : BackupMigration {
 
         val primaryUserCurrency = canonicalUsers.firstOrNull()?.currencyCode ?: prefCurrency
 
-        val canonicalAttendance = payload.attendance.map { a ->
+        val rawAttendance = payload.attendance ?: emptyList()
+        val canonicalAttendance = rawAttendance.map { a ->
             val attCurrency = a.currencyCode?.takeIf { it.isNotBlank() }
                 ?: primaryUserCurrency
 
+            val fallbackId = if (a.workerId != null) "${a.workerId}_${a.date ?: "unknown"}" else "personal_${a.date ?: "unknown"}"
+
             CanonicalAttendance(
-                id = a.id ?: "att_${a.date ?: "unknown"}",
+                id = a.id?.takeIf { it.isNotBlank() } ?: fallbackId,
                 workerId = a.workerId,
                 date = a.date ?: "",
                 status = a.status ?: "present",
@@ -70,7 +76,8 @@ class V1ToCanonicalMigration : BackupMigration {
             )
         }
 
-        val canonicalSummaries = payload.summaries.map { s ->
+        val rawSummaries = payload.summaries ?: emptyList()
+        val canonicalSummaries = rawSummaries.map { s ->
             CanonicalSummary(
                 id = s.id ?: "${s.role ?: "personal"}_${s.monthId ?: ""}",
                 monthId = s.monthId ?: "",

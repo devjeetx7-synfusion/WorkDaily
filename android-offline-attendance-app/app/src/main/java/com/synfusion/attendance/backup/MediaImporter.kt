@@ -12,11 +12,22 @@ object MediaImporter {
             return 0
         }
 
+        // 1. Copy files directly inside backupMediaDir (e.g. root media/ avatar/photos)
+        val profilePhotosDest = File(appFilesDir, "profile_photos").apply { mkdirs() }
+        backupMediaDir.listFiles()?.forEach { file ->
+            if (file.isFile) {
+                val destFile = File(profilePhotosDest, file.name)
+                copyFile(file, destFile)
+                restoredCount++
+            }
+        }
+
+        // 2. Copy files inside subdirectories
         val subDirs = listOf("profile", "profile_photos", "attachments", "reports")
         subDirs.forEach { dirName ->
             val srcSubDir = File(backupMediaDir, dirName)
             if (srcSubDir.exists() && srcSubDir.isDirectory) {
-                val destSubDir = File(appFilesDir, dirName)
+                val destSubDir = File(appFilesDir, if (dirName == "profile") "profile_photos" else dirName)
                 destSubDir.mkdirs()
 
                 srcSubDir.listFiles()?.forEach { file ->
