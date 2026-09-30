@@ -19,26 +19,31 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Done
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.synfusion.attendance.R
+import com.synfusion.attendance.utils.CropMath
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -86,10 +91,11 @@ fun CropScreenContent(
     var isLoading by remember { mutableStateOf(true) }
     var isProcessing by remember { mutableStateOf(false) }
 
-    var scale by remember { mutableStateOf(1f) }
+    // User zoom factor (1f = minimum cover scale)
+    var userZoom by remember { mutableStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
 
-    // Load bitmap in background preserving EXIF orientation
+    // Load scaled bitmap in background with EXIF correction
     LaunchedEffect(imageUri) {
         withContext(Dispatchers.IO) {
             originalBitmap = loadScaledBitmap(context, imageUri)
@@ -103,9 +109,17 @@ fun CropScreenContent(
             .background(Color.Black),
         contentAlignment = Alignment.Center
     ) {
-        val containerWidthPx = with(LocalDensity.current) { maxWidth.toPx() }
-        val containerHeightPx = with(LocalDensity.current) { maxHeight.toPx() }
-        val cropSizePx = min(containerWidthPx, containerHeightPx) * 0.8f
+        val density = LocalDensity.current
+        val containerWidthPx = with(density) { maxWidth.toPx() }
+        val containerHeightPx = with(density) { maxHeight.toPx() }
+
+        // Reserved vertical height for top bar (~64dp) and bottom controls (~110dp)
+        val topBarHeightPx = with(density) { 64.dp.toPx() }
+        val bottomControlsHeightPx = with(density) { 110.dp.toPx() }
+        val availableHeightPx = (containerHeightPx - topBarHeightPx - bottomControlsHeightPx).coerceAtLeast(100f)
+
+        // Diameter of circular crop area
+        val cropDiameter = min(containerWidthPx * 0.88f, availableHeightPx * 0.88f)
 
         if (isLoading) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -117,152 +131,200 @@ fun CropScreenContent(
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Text(
-                            text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.failed_to_load_image),
-                            color = Color.White
+                            text = stringResource(R.string.failed_to_load_image),
+                            color = Color.White,
+                            fontSize = 16.sp
                         )
                         Button(onClick = onCancel) {
-                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.go_back))
+                            Text(stringResource(R.string.go_back))
                         }
                     }
                 }
             } else {
-                val W = bitmap.width.toFloat()
-                val H = bitmap.height.toFloat()
+                val imageW = bitmap.width.toFloat()
+                val imageH = bitmap.height.toFloat()
 
-                // Calculate base scale so the photo initially fits in the view container while preserving aspect ratio
-                val fitScale = minOf(containerWidthPx / W, containerHeightPx / H)
-                val totalScale = fitScale * scale
+                val minCoverScale = remember(imageW, imageH, cropDiameter) {
+                    CropMath.calculateMinimumCoverScale(imageW, imageH, cropDiameter)
+                }
 
-                // Main cropping interactive viewport
+                val totalScale = minCoverScale * userZoom
+
+                // Ensure initial offset is clamped
+                LaunchedEffect(userZoom, cropDiameter) {
+                    offset = CropMath.clampOffset(offset, totalScale, imageW, imageH, cropDiameter)
+                }
+
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .pointerInput(Unit) {
-                            detectTransformGestures { _, pan, zoom, _ ->
-                                scale = (scale * zoom).coerceIn(0.5f, 10f)
-                                offset += pan
+                        .pointerInput(minCoverScale, cropDiameter) {
+                            detectTransformGestures { centroid, pan, zoom, _ ->
+                                val oldScale = minCoverScale * userZoom
+                                val newZoom = (userZoom * zoom).coerceIn(1f, CropMath.DEFAULT_MAX_ZOOM_FACTOR)
+                                val newScale = minCoverScale * newZoom
+
+                                // Center relative calculation for zoom anchoring
+                                val center = Offset(containerWidthPx / 2f, containerHeightPx / 2f)
+                                val centroidShift = (centroid - center) * (1f - newScale / oldScale)
+
+                                val unclampedOffset = offset + centroidShift + pan
+                                offset = CropMath.clampOffset(
+                                    unclampedOffset,
+                                    newScale,
+                                    imageW,
+                                    imageH,
+                                    cropDiameter
+                                )
+                                userZoom = newZoom
                             }
                         }
                 ) {
-                    // Full original photo rendered uncropped in natural aspect ratio
+                    // Render uncropped bitmap at 1:1 raw size centered in container, then transformed with graphicsLayer
                     Image(
                         bitmap = bitmap.asImageBitmap(),
                         contentDescription = null,
                         modifier = Modifier
                             .fillMaxSize()
                             .graphicsLayer {
-                                scaleX = scale
-                                scaleY = scale
+                                scaleX = totalScale
+                                scaleY = totalScale
                                 translationX = offset.x
                                 translationY = offset.y
                             },
-                        contentScale = androidx.compose.ui.layout.ContentScale.Fit
+                        contentScale = ContentScale.None,
+                        alignment = Alignment.Center
                     )
 
-                    // Clear cutout overlay showing 1:1 crop frame over the image
+                    // Overlay: Scrim, Circular Hole, White Border, 3x3 Grid
                     Canvas(
                         modifier = Modifier
                             .fillMaxSize()
                             .graphicsLayer(alpha = 0.99f)
                     ) {
-                        // Dim background around crop frame
-                        drawRect(color = Color.Black.copy(alpha = 0.7f))
+                        val centerX = size.width / 2f
+                        val centerY = size.height / 2f
+                        val radius = cropDiameter / 2f
+                        val left = centerX - radius
+                        val top = centerY - radius
 
-                        // Clear 1:1 square hole for crop area
-                        val left = (size.width - cropSizePx) / 2f
-                        val top = (size.height - cropSizePx) / 2f
-                        drawRect(
+                        // 1. Dark translucent scrim outside circle
+                        drawRect(color = Color.Black.copy(alpha = 0.72f))
+
+                        // 2. Clear circular hole inside crop region
+                        drawCircle(
                             color = Color.Transparent,
-                            topLeft = Offset(left, top),
-                            size = Size(cropSizePx, cropSizePx),
+                            radius = radius,
+                            center = Offset(centerX, centerY),
                             blendMode = BlendMode.Clear
                         )
 
-                        // Subtle white border around crop frame
-                        drawRect(
-                            color = Color.White,
-                            topLeft = Offset(left, top),
-                            size = Size(cropSizePx, cropSizePx),
+                        // 3. Clean circular border
+                        drawCircle(
+                            color = Color.White.copy(alpha = 0.9f),
+                            radius = radius,
+                            center = Offset(centerX, centerY),
                             style = Stroke(width = 2.dp.toPx())
                         )
+
+                        // 4. Subtle 3x3 Grid clipped inside the circle
+                        val circlePath = Path().apply {
+                            addOval(Rect(left, top, left + cropDiameter, top + cropDiameter))
+                        }
+
+                        clipPath(circlePath) {
+                            val gridColor = Color.White.copy(alpha = 0.35f)
+                            val gridStrokeWidth = 1.dp.toPx()
+
+                            // Vertical grid lines
+                            drawLine(
+                                color = gridColor,
+                                start = Offset(left + cropDiameter / 3f, top),
+                                end = Offset(left + cropDiameter / 3f, top + cropDiameter),
+                                strokeWidth = gridStrokeWidth
+                            )
+                            drawLine(
+                                color = gridColor,
+                                start = Offset(left + cropDiameter * 2f / 3f, top),
+                                end = Offset(left + cropDiameter * 2f / 3f, top + cropDiameter),
+                                strokeWidth = gridStrokeWidth
+                            )
+
+                            // Horizontal grid lines
+                            drawLine(
+                                color = gridColor,
+                                start = Offset(left, top + cropDiameter / 3f),
+                                end = Offset(left + cropDiameter, top + cropDiameter / 3f),
+                                strokeWidth = gridStrokeWidth
+                            )
+                            drawLine(
+                                color = gridColor,
+                                start = Offset(left, top + cropDiameter * 2f / 3f),
+                                end = Offset(left + cropDiameter, top + cropDiameter * 2f / 3f),
+                                strokeWidth = gridStrokeWidth
+                            )
+                        }
                     }
 
-                    // Title Header
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .statusBarsPadding()
-                            .padding(16.dp)
-                            .align(Alignment.TopCenter)
-                    ) {
-                        Text(
-                            text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.crop_photo),
-                            color = Color.White,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.align(Alignment.Center)
-                        )
-                    }
-
-                    // Actions Bar at bottom
+                    // Top Bar Actions
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .navigationBarsPadding()
-                            .padding(bottom = 32.dp, start = 24.dp, end = 24.dp)
-                            .align(Alignment.BottomCenter),
+                            .statusBarsPadding()
+                            .height(64.dp)
+                            .padding(horizontal = 16.dp)
+                            .align(Alignment.TopCenter),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Cancel Button
-                        Button(
+                        IconButton(
                             onClick = onCancel,
-                            colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray, contentColor = Color.White),
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.height(50.dp).weight(1f).padding(end = 8.dp)
+                            enabled = !isProcessing
                         ) {
-                            Icon(Icons.Default.Close, contentDescription = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.cancel))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.cancel), fontWeight = FontWeight.Bold)
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = stringResource(R.string.cancel),
+                                tint = Color.White
+                            )
                         }
 
-                        // Done / Confirm Button
-                        Button(
+                        Text(
+                            text = stringResource(R.string.crop_photo),
+                            color = Color.White,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        TextButton(
                             onClick = {
                                 if (!isProcessing) {
                                     isProcessing = true
                                     coroutineScope.launch {
                                         try {
-                                            val bitmapCropLeft = ((W * totalScale - cropSizePx) / 2f - offset.x) / totalScale
-                                            val bitmapCropTop = ((H * totalScale - cropSizePx) / 2f - offset.y) / totalScale
-                                            val bitmapCropSize = cropSizePx / totalScale
+                                            val cropRect = CropMath.calculateCropRect(
+                                                imageWidth = bitmap.width,
+                                                imageHeight = bitmap.height,
+                                                totalScale = totalScale,
+                                                offset = offset,
+                                                cropDiameter = cropDiameter
+                                            )
 
-                                            val targetSize = 500
+                                            val targetSize = CropMath.TARGET_CROP_SIZE
                                             val resultBitmap = Bitmap.createBitmap(targetSize, targetSize, Bitmap.Config.ARGB_8888)
                                             val canvas = android.graphics.Canvas(resultBitmap)
 
-                                            val srcLeft = bitmapCropLeft.toInt().coerceIn(0, bitmap.width)
-                                            val srcTop = bitmapCropTop.toInt().coerceIn(0, bitmap.height)
-                                            val srcRight = (bitmapCropLeft + bitmapCropSize).toInt().coerceIn(0, bitmap.width)
-                                            val srcBottom = (bitmapCropTop + bitmapCropSize).toInt().coerceIn(0, bitmap.height)
+                                            val srcRect = cropRect.toAndroidRect()
+                                            val dstRect = android.graphics.Rect(0, 0, targetSize, targetSize)
+                                            val paint = android.graphics.Paint(
+                                                android.graphics.Paint.ANTI_ALIAS_FLAG or android.graphics.Paint.FILTER_BITMAP_FLAG
+                                            )
 
-                                            val srcRect = android.graphics.Rect(srcLeft, srcTop, srcRight, srcBottom)
+                                            canvas.drawBitmap(bitmap, srcRect, dstRect, paint)
 
-                                            if (srcRect.width() > 0 && srcRect.height() > 0) {
-                                                val dstLeft = ((srcLeft - bitmapCropLeft) / bitmapCropSize * targetSize).toFloat()
-                                                val dstTop = ((srcTop - bitmapCropTop) / bitmapCropSize * targetSize).toFloat()
-                                                val dstRight = ((srcRight - bitmapCropLeft) / bitmapCropSize * targetSize).toFloat()
-                                                val dstBottom = ((srcBottom - bitmapCropTop) / bitmapCropSize * targetSize).toFloat()
-
-                                                val dstRect = android.graphics.RectF(dstLeft, dstTop, dstRight, dstBottom)
-                                                val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG or android.graphics.Paint.FILTER_BITMAP_FLAG)
-                                                canvas.drawBitmap(bitmap, srcRect, dstRect, paint)
-                                            }
-
-                                            // Clean up old temp crop files
+                                            // Cleanup old temporary crop files
                                             val cacheDir = context.cacheDir
                                             cacheDir.listFiles { _, name -> name.startsWith("temp_cropped_profile_") }?.forEach { oldFile ->
                                                 try { oldFile.delete() } catch (_: Exception) {}
@@ -279,7 +341,7 @@ fun CropScreenContent(
                                         } catch (e: Exception) {
                                             Toast.makeText(
                                                 context,
-                                                context.getString(com.synfusion.attendance.R.string.failed_to_crop_image),
+                                                context.getString(R.string.failed_to_crop_image),
                                                 Toast.LENGTH_SHORT
                                             ).show()
                                             isProcessing = false
@@ -287,13 +349,47 @@ fun CropScreenContent(
                                     }
                                 }
                             },
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary),
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.height(50.dp).weight(1f).padding(start = 8.dp)
+                            enabled = !isProcessing
                         ) {
-                            Icon(Icons.Default.Done, contentDescription = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.confirm))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.done), fontWeight = FontWeight.Bold)
+                            Text(
+                                text = stringResource(R.string.done),
+                                color = MaterialTheme.colorScheme.primary,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+
+                    // Bottom Instruction & Reset Controls
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .navigationBarsPadding()
+                            .padding(bottom = 24.dp)
+                            .align(Alignment.BottomCenter),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.drag_and_zoom_hint),
+                            color = Color.White.copy(alpha = 0.75f),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Normal
+                        )
+
+                        TextButton(
+                            onClick = {
+                                userZoom = 1f
+                                offset = Offset.Zero
+                            },
+                            enabled = !isProcessing
+                        ) {
+                            Text(
+                                text = stringResource(R.string.reset),
+                                color = Color.White,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium
+                            )
                         }
                     }
                 }
@@ -309,7 +405,7 @@ fun CropScreenContent(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.5f)),
+                    .background(Color.Black.copy(alpha = 0.6f)),
                 contentAlignment = Alignment.Center
             ) {
                 Card(
@@ -324,7 +420,7 @@ fun CropScreenContent(
                     ) {
                         CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                         Text(
-                            text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.processing_dots),
+                            text = stringResource(R.string.processing_dots),
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
@@ -336,7 +432,7 @@ fun CropScreenContent(
 }
 
 /**
- * Loads a bitmap from the Uri scaling it down to a sensible max dimension (2000px) and preserving EXIF rotation.
+ * Loads a bitmap from [Uri] scaling it down to a sensible max dimension (2000px) and preserving EXIF rotation.
  */
 private fun loadScaledBitmap(context: Context, uri: Uri): Bitmap? {
     return try {
@@ -367,8 +463,8 @@ private fun loadScaledBitmap(context: Context, uri: Uri): Bitmap? {
                     else -> 0
                 }
             }
-        } catch (e: Exception) {
-            // Ignore exif issues
+        } catch (_: Exception) {
+            // Ignore EXIF parsing errors
         }
 
         val maxDim = 2000
@@ -395,7 +491,7 @@ private fun loadScaledBitmap(context: Context, uri: Uri): Bitmap? {
             loadedBitmap = rotated
         }
         loadedBitmap
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         null
     }
 }

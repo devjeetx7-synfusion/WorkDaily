@@ -932,6 +932,8 @@
     <string name="tab_all_time">ऑल-टाइम</string>
 
     <string name="crop_photo">फोटो क्रॉप करें</string>
+    <string name="reset">रीसेट</string>
+    <string name="drag_and_zoom_hint">स्थान बदलें • ज़ूम करें</string>
 
     <string name="processing_dots">प्रोसेस हो रहा है...</string>
 
