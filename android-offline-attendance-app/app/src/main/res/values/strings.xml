@@ -67,6 +67,7 @@
     <string name="daily_attendance_reminder">Daily attendance reminder</string>
     <string name="enable_splash_screen">Enable Splash Screen</string>
     <string name="language_2">Language</string>
+    <string name="country_label">Country</string>
     <string name="role_management">Role Management</string>
     <string name="dailywork_premium">WorkDaily Premium</string>
     <string name="thank_you_for_your_purchase">Thank you for your purchase ❤️</string>
