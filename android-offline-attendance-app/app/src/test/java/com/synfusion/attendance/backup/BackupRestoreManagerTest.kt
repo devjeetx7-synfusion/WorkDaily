@@ -148,22 +148,24 @@ class BackupRestoreManagerTest {
                 androidVersion = 36,
                 deviceModel = "V2334",
                 packageName = "com.synfusion.attendance",
-                recordCounts = mapOf("users" to 1, "attendance" to 39, "summaries" to 2),
-                totalFiles = 3,
+                recordCounts = mapOf("users" to 1, "attendance" to 50, "summaries" to 2, "media" to 1),
+                totalFiles = 4,
                 backupSize = 71069L,
                 featureList = listOf("Database", "Preferences", "Media")
             )
             ManifestManager.writeManifest(manifestFile, manifestObj)
 
             val rawUser = UserV1Dto(id = "72d4a90d-9eab-471f-94b5-5884a1e12662", name = "Dharmjeet Singh", phoneNumber = "9334603912", role = "personal", dailyWage = 400.0)
-            val rawAtt = (1..39).map { i -> AttendanceV1Dto(id = "personal_2026-08-$i", date = "2026-08-${if (i < 10) "0$i" else "$i"}", status = "present", type = "full", wage = 400.0) }
+            val rawAtt = (1..50).map { i -> AttendanceV1Dto(id = "personal_2026-08-$i", date = "2026-08-${if (i < 10) "0$i" else "$i"}", status = "present", type = "full", wage = 400.0) }
             val rawSum = listOf(
                 SummaryV1Dto(id = "personal_2026-08", monthId = "2026-08", role = "personal"),
                 SummaryV1Dto(id = "personal_2026-09", monthId = "2026-09", role = "personal")
             )
-            val rawPayload = BackupV1Payload(users = listOf(rawUser), attendance = rawAtt, summaries = rawSum)
+            val rawPayload = BackupV1Payload(users = listOf(rawUser), attendance = rawAtt, summaries = rawSum, preferences = mapOf("app_language" to "hi"))
 
             File(fixtureDir, "data.json").writeText(Gson().toJson(rawPayload))
+            val mediaDir = File(fixtureDir, "media/profile_photos").apply { mkdirs() }
+            File(mediaDir, "avatar.png").writeText("fake image content")
             fixtureDir
         }
 
@@ -178,12 +180,59 @@ class BackupRestoreManagerTest {
         assertEquals("IN", user.countryCode)
         assertEquals("INR", user.currencyCode)
 
-        assertEquals(39, canonicalPayload.attendance.size)
+        assertEquals(50, canonicalPayload.attendance.size)
         val firstAtt = canonicalPayload.attendance.first()
         assertEquals("INR", firstAtt.currencyCode)
         assertEquals(400.0, firstAtt.wage, 0.01)
 
         assertEquals(2, canonicalPayload.summaries.size)
+    }
+
+    @Test
+    fun testLegacyBackupWithoutManifest() {
+        val legacyDir = tempFolder.newFolder("legacy_no_manifest")
+        val rawUser = UserV1Dto(id = "u1", name = "Legacy User", dailyWage = 500.0)
+        val rawAtt = AttendanceV1Dto(id = "personal_2026-01-01", date = "2026-01-01", status = "present", wage = 500.0)
+        val rawPayload = BackupV1Payload(users = listOf(rawUser), attendance = listOf(rawAtt))
+
+        File(legacyDir, "data.json").writeText(Gson().toJson(rawPayload))
+
+        val result = BackupValidator.validateBackupDirDetailed(legacyDir, logger)
+        assertTrue(result.isValid)
+
+        val canonical = kotlinx.coroutines.runBlocking {
+            JsonImporter.parseAndMigrateBackup(legacyDir, logger)
+        }
+        assertEquals(1, canonical.users.size)
+        assertEquals("Legacy User", canonical.users.first().name)
+        assertEquals("IN", canonical.users.first().countryCode)
+        assertEquals("INR", canonical.users.first().currencyCode)
+    }
+
+    @Test
+    fun testLenientTypeParsingInLegacyJson() {
+        val jsonWithStringsAndDoubles = """
+        {
+            "users": [{ "id": "u1", "name": "Lenient User", "dailyWage": "600.0", "createdAt": "1700000000000" }],
+            "attendance": [{ "id": "personal_2026-01-01", "date": "2026-01-01", "status": "present", "overtimeHours": "2.0", "wage": "600.0", "advanceAmount": "100" }]
+        }
+        """.trimIndent()
+
+        val jsonDir = tempFolder.newFolder("lenient_json_dir")
+        File(jsonDir, "data.json").writeText(jsonWithStringsAndDoubles)
+
+        val canonical = kotlinx.coroutines.runBlocking {
+            JsonImporter.parseAndMigrateBackup(jsonDir, logger)
+        }
+
+        assertEquals(1, canonical.users.size)
+        assertEquals(600.0, canonical.users.first().dailyWage, 0.01)
+        assertEquals(1700000000000L, canonical.users.first().createdAt)
+
+        assertEquals(1, canonical.attendance.size)
+        assertEquals(2, canonical.attendance.first().overtimeHours)
+        assertEquals(600.0, canonical.attendance.first().wage, 0.01)
+        assertEquals(100.0, canonical.attendance.first().advanceAmount, 0.01)
     }
 
     @Test

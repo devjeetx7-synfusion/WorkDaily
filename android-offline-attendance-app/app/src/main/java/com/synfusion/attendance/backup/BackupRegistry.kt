@@ -91,13 +91,22 @@ class PreferencesBackupModule : BackupModule {
 
     private suspend fun applyDataStorePreferences(context: Context, dsMap: Map<String, Any>) {
         context.offlineDataStore.edit { preferences ->
-            dsMap.forEach { (key, rawValue) ->
-                if (key == "auth_token") return@forEach
+            dsMap.forEach { (rawKey, rawValue) ->
+                if (rawKey == "auth_token") return@forEach
                 var value = rawValue
 
+                // Map legacy key aliases to modern DataStore keys
+                val key = when (rawKey) {
+                    "language", "user_language" -> "app_language"
+                    "dark_theme", "theme_mode", "is_dark_mode" -> "dark_mode"
+                    "country_code", "country" -> "user_country"
+                    "currency_code", "currency" -> "user_currency"
+                    else -> rawKey
+                }
+
                 // Remap historical profile photo paths to current internal storage path
-                if (key == "profile_photo_path" && value is String) {
-                    val rawPath = value as String
+                if ((key == "profile_photo_path" || key == "profilePhotoPath" || key == "user_photo") && value is String) {
+                    val rawPath = value
                     val fileName = File(rawPath).name
                     val candidates = listOf(
                         File(context.filesDir, "profile_photos/$fileName"),
@@ -119,7 +128,12 @@ class PreferencesBackupModule : BackupModule {
                         preferences[androidx.datastore.preferences.core.longPreferencesKey(key)] = num
                     }
                     "dark_mode", "reminders_enabled", "onboarding_completed", "splash_enabled", "remember_last_screen" -> {
-                        val bool = value as? Boolean ?: return@forEach
+                        val bool = when (value) {
+                            is Boolean -> value
+                            is String -> value.toBoolean()
+                            is Number -> value.toInt() != 0
+                            else -> null
+                        } ?: return@forEach
                         preferences[androidx.datastore.preferences.core.booleanPreferencesKey(key)] = bool
                     }
                     "user_role", "app_language", "profile_photo_path", "last_backup_loc",

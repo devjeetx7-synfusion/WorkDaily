@@ -16,8 +16,8 @@ object ManifestManager {
         backupVersion: Int = 1,
         appVersion: String = "1.0.3",
         databaseVersion: Int = BackupVersionConstants.CURRENT_DATABASE_VERSION,
-        androidVersion: Int = android.os.Build.VERSION.SDK_INT,
-        deviceModel: String = android.os.Build.MODEL,
+        androidVersion: Int = try { android.os.Build.VERSION.SDK_INT } catch (e: Throwable) { 34 },
+        deviceModel: String = try { android.os.Build.MODEL ?: "Android Device" } catch (e: Throwable) { "Android Device" },
         packageName: String = "com.synfusion.attendance",
         recordCounts: Map<String, Int>,
         totalFiles: Int,
@@ -62,5 +62,45 @@ object ManifestManager {
         } catch (e: Exception) {
             null
         }
+    }
+
+    fun getOrSynthesizeManifest(extractedDir: File, logger: BackupLogger? = null): BackupManifest? {
+        val manifestFile = File(extractedDir, "manifest.json")
+        val existing = readManifest(manifestFile)
+        if (existing != null) {
+            return existing
+        }
+
+        // Fallback for historical legacy backups lacking manifest.json
+        val dataFile = File(extractedDir, "data.json")
+        val dbDir = File(extractedDir, "database")
+
+        if (!dataFile.exists() && (!dbDir.exists() || !dbDir.isDirectory)) {
+            return null
+        }
+
+        logger?.info("manifest.json missing or unparseable. Synthesizing fallback manifest for legacy backup...")
+
+        var totalFiles = 0
+        extractedDir.walkTopDown().forEach { if (it.isFile) totalFiles++ }
+
+        return generateManifest(
+            backupUuid = "legacy-synthetic-${System.currentTimeMillis()}",
+            creationTimestamp = System.currentTimeMillis(),
+            totalBackupDurationMs = 0L,
+            compressionRatio = 1.0,
+            appBuildNumber = 1L,
+            backupFormatVersion = 1,
+            backupVersion = 1,
+            appVersion = "1.0.0",
+            databaseVersion = 1,
+            androidVersion = try { android.os.Build.VERSION.SDK_INT } catch (e: Throwable) { 34 },
+            deviceModel = try { android.os.Build.MODEL ?: "Android Device" } catch (e: Throwable) { "Android Device" },
+            packageName = "com.synfusion.attendance",
+            recordCounts = emptyMap(), // Dynamic lookup fallback will be used
+            totalFiles = totalFiles,
+            backupSize = extractedDir.walkTopDown().filter { it.isFile }.map { it.length() }.sum(),
+            featureList = listOf("Database", "Preferences")
+        )
     }
 }

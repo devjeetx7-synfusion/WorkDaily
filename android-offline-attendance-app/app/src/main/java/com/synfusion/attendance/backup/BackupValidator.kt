@@ -54,17 +54,11 @@ object BackupValidator {
     }
 
     fun validateBackupDirDetailed(extractedDir: File, logger: BackupLogger): BackupValidationResult {
-        // 1. Validate manifest exists
-        val manifestFile = File(extractedDir, "manifest.json")
-        if (!manifestFile.exists()) {
-            logger.error("Validation Failed: manifest.json is missing.")
-            return BackupValidationResult(false, BackupValidationCode.MISSING_MANIFEST, "manifest.json is missing.")
-        }
-
-        val manifest = ManifestManager.readManifest(manifestFile)
+        // 1. Validate manifest exists or synthesize fallback for legacy archives
+        val manifest = ManifestManager.getOrSynthesizeManifest(extractedDir, logger)
         if (manifest == null) {
-            logger.error("Validation Failed: manifest.json is invalid or corrupt.")
-            return BackupValidationResult(false, BackupValidationCode.INVALID_MANIFEST, "manifest.json is invalid or corrupt.")
+            logger.error("Validation Failed: manifest.json is missing or unparseable, and no valid data files found.")
+            return BackupValidationResult(false, BackupValidationCode.MISSING_MANIFEST, "Backup data or manifest.json is missing.")
         }
 
         // 2. Version validation using BackupVersionConstants
