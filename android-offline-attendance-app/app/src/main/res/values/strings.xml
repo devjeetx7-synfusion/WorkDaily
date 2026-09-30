@@ -272,6 +272,11 @@
     <string name="restart_app">Restart App</string>
     <string name="create_offline_workspace">Create Offline Workspace</string>
     <string name="private_offline_footer">100% Private &amp; Offline Attendance</string>
+    <string name="enter_full_name_hint">Enter your full name</string>
+    <string name="enter_mobile_number_hint">Enter mobile number</string>
+    <string name="trust_offline_private">100% Offline</string>
+    <string name="trust_data_on_device">Data Stays on Device</string>
+    <string name="trust_for_daily_workers">Built for Daily Workers</string>
     <string name="already_have_backup">Already have a Backup?</string>
     <string name="prev_backup_preview">Backup Package Preview</string>
     <string name="backup_parsed_msg">A backup package was parsed. Preview details:</string>
