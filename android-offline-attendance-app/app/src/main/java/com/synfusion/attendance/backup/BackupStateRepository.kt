@@ -5,8 +5,10 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.work.WorkManager
 import com.synfusion.attendance.data.offlineDataStore
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 class BackupStateRepository(private val context: Context) {
@@ -57,7 +59,10 @@ class BackupStateRepository(private val context: Context) {
             prefs[LAST_DATA_MUTATION_AT_KEY] = now
             prefs[LAST_BACKUP_STATUS_KEY] = STATUS_BACKUP_PENDING
         }
-        AutoBackupWorker.enqueueAutoBackup(context)
+        val autoBackupEnabled = isAutoBackupEnabledFlow.first()
+        if (autoBackupEnabled) {
+            AutoBackupWorker.enqueueAutoBackup(context)
+        }
     }
 
     suspend fun markBackupSuccessful(timestamp: Long, size: Long, location: String) {
@@ -77,6 +82,14 @@ class BackupStateRepository(private val context: Context) {
     suspend fun setAutoBackupEnabled(enabled: Boolean) {
         context.offlineDataStore.edit { prefs ->
             prefs[AUTO_BACKUP_ENABLED_KEY] = enabled
+        }
+        if (enabled) {
+            DailySafetyBackupWorker.schedulePeriodicSafetyBackup(context)
+            if (isBackupDirtyFlow.first()) {
+                AutoBackupWorker.enqueueAutoBackup(context)
+            }
+        } else {
+            WorkManager.getInstance(context).cancelUniqueWork("workdaily_auto_backup_job")
         }
     }
 

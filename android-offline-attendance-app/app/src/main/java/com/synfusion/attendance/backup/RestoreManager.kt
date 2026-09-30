@@ -209,17 +209,19 @@ class RestoreManager(private val context: Context) {
                     var mediaRestoredCount = 0
                     var mediaExpectedCount = 0
 
+                    // Explicit module order: Media MUST be restored BEFORE Preferences so media files exist during preference remapping
                     val modules = BackupRegistry.getModules()
+                        .filter { it.name != "Database" }
+                        .sortedBy { if (it.name == "Media") 0 else 1 }
+
                     modules.forEach { module ->
-                        if (module.name != "Database") {
-                            logger.info("Restoring module dynamically: ${module.name}")
-                            val resultCounts = module.importModule(context, tempExtractDir, merge, logger)
-                            if (module.name == "Preferences") {
-                                dsPrefsRestoredCount = resultCounts["datastore"] ?: 0
-                            } else if (module.name == "Media") {
-                                mediaRestoredCount = resultCounts["media"] ?: 0
-                                mediaExpectedCount = manifest.recordCounts["media"] ?: mediaRestoredCount
-                            }
+                        logger.info("Restoring module dynamically: ${module.name}")
+                        val resultCounts = module.importModule(context, tempExtractDir, merge, logger)
+                        if (module.name == "Preferences") {
+                            dsPrefsRestoredCount = resultCounts["datastore"] ?: 0
+                        } else if (module.name == "Media") {
+                            mediaRestoredCount = resultCounts["media"] ?: 0
+                            mediaExpectedCount = manifest.recordCounts["media"] ?: mediaRestoredCount
                         }
                     }
 

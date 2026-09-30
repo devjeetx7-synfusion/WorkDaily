@@ -7,7 +7,6 @@ import com.synfusion.attendance.data.OfflinePreferencesRepository
 import com.synfusion.attendance.data.entities.UserEntity
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.util.UUID
 
@@ -56,16 +55,31 @@ class OfflineAuthViewModel(
         checkJob?.cancel()
         checkJob = viewModelScope.launch {
             val user = localAttendanceRepository.getUser()
-            val currentToken = repository.authTokenFlow.first()
             if (user != null) {
-                // Legacy user migration: preserve onboarding completed state for existing users
+                // Recover local session safely for existing user/workspace
                 repository.saveOnboardingCompleted(true)
-                if (currentToken != null) {
-                    repository.saveCountryAndCurrency(user.countryCode, user.currencyCode)
-                    _loginState.value = OfflineLoginState.Success(user.id)
-                }
+                repository.saveAuthToken(user.id)
+                repository.saveUserRole(user.role)
+                repository.saveCountryAndCurrency(user.countryCode, user.currencyCode)
+                _loginState.value = OfflineLoginState.Success(user.id)
             }
         }
+    }
+
+    fun resumeExistingWorkspace(): Boolean {
+        var resumed = false
+        viewModelScope.launch {
+            val existingUser = localAttendanceRepository.getUser()
+            if (existingUser != null) {
+                repository.saveOnboardingCompleted(true)
+                repository.saveAuthToken(existingUser.id)
+                repository.saveUserRole(existingUser.role)
+                repository.saveCountryAndCurrency(existingUser.countryCode, existingUser.currencyCode)
+                _loginState.value = OfflineLoginState.Success(existingUser.id)
+                resumed = true
+            }
+        }
+        return resumed
     }
 
     fun login(
@@ -81,15 +95,22 @@ class OfflineAuthViewModel(
             try {
                 val existingUser = localAttendanceRepository.getUser()
                 val userId = existingUser?.id ?: UUID.randomUUID().toString()
+                val finalName = name.ifBlank { existingUser?.name ?: "User" }
+                val finalEmail = email.ifBlank { existingUser?.email ?: "" }
+                val finalPhone = phoneNumber.ifBlank { existingUser?.phoneNumber ?: "" }
+                val finalDailyWage = if (dailyWage > 0.0) dailyWage else (existingUser?.dailyWage ?: 500.0)
+                val finalCreatedAt = existingUser?.createdAt ?: System.currentTimeMillis()
+
                 val user = UserEntity(
                     id = userId,
-                    name = name,
-                    email = email,
-                    phoneNumber = phoneNumber,
+                    name = finalName,
+                    email = finalEmail,
+                    phoneNumber = finalPhone,
                     role = "personal",
-                    dailyWage = dailyWage,
+                    dailyWage = finalDailyWage,
                     countryCode = countryCode,
-                    currencyCode = currencyCode
+                    currencyCode = currencyCode,
+                    createdAt = finalCreatedAt
                 )
                 localAttendanceRepository.saveUser(user)
                 repository.saveCountryAndCurrency(countryCode, currencyCode)

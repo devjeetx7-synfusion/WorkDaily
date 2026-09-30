@@ -1,8 +1,9 @@
 package com.synfusion.attendance.backup
 
 import android.content.Context
-import kotlinx.coroutines.withContext
+import com.synfusion.attendance.BuildConfig
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.UUID
 
@@ -16,6 +17,7 @@ class BackupManager(private val context: Context) {
     suspend fun performBackup(outputZipFile: File, progressTracker: ProgressTracker) {
         val startTime = System.currentTimeMillis()
         val backupUuid = UUID.randomUUID().toString()
+        val tempCandidateZip = File(context.cacheDir, "temp_candidate_$backupUuid.zip")
 
         withContext(Dispatchers.IO) {
             try {
@@ -43,17 +45,17 @@ class BackupManager(private val context: Context) {
                 val uncompressedSize = calculateDirSize(tempDir)
                 val duration = System.currentTimeMillis() - startTime
 
-                // Generate Manifest with modular record counts
+                // Generate Manifest with dynamic BuildConfig values
                 val manifestFile = File(tempDir, "manifest.json")
                 val manifestObj = ManifestManager.generateManifest(
                     backupUuid = backupUuid,
                     creationTimestamp = startTime,
                     totalBackupDurationMs = duration,
                     compressionRatio = 1.0,
-                    appBuildNumber = 1L,
+                    appBuildNumber = BuildConfig.VERSION_CODE.toLong(),
                     backupFormatVersion = BackupVersionConstants.CURRENT_BACKUP_FORMAT_VERSION,
                     backupVersion = 1,
-                    appVersion = "1.0.3",
+                    appVersion = BuildConfig.VERSION_NAME,
                     databaseVersion = BackupVersionConstants.CURRENT_DATABASE_VERSION,
                     androidVersion = android.os.Build.VERSION.SDK_INT,
                     deviceModel = android.os.Build.MODEL,
@@ -66,18 +68,17 @@ class BackupManager(private val context: Context) {
                 ManifestManager.writeManifest(manifestFile, manifestObj)
 
                 progressTracker.updateProgress(85f, "Compressing backup archive...")
-                if (outputZipFile.exists()) outputZipFile.delete()
-                BackupProvider.compressFolder(tempDir, outputZipFile, logger)
+                if (tempCandidateZip.exists()) tempCandidateZip.delete()
+                BackupProvider.compressFolder(tempDir, tempCandidateZip, logger)
 
-                // Perform immediate Self-Validation Round-Trip Check
+                // Perform immediate Self-Validation Round-Trip Check on tempCandidateZip
                 progressTracker.updateProgress(95f, "Verifying created backup integrity...")
                 verifyDir.deleteRecursively()
                 verifyDir.mkdirs()
                 try {
-                    RestoreProvider.extractZip(outputZipFile, verifyDir, logger)
+                    RestoreProvider.extractZip(tempCandidateZip, verifyDir, logger)
                     val validationRes = BackupValidator.validateBackupDirDetailed(verifyDir, logger)
                     if (!validationRes.isValid) {
-                        outputZipFile.delete()
                         val err = "Backup created failed self-validation check: ${validationRes.code} (${validationRes.details})"
                         logger.error(err)
                         throw IllegalStateException(err)
@@ -87,14 +88,22 @@ class BackupManager(private val context: Context) {
                     verifyDir.deleteRecursively()
                 }
 
+                // Validation succeeded: publish candidate file to output target destination atomically
+                if (outputZipFile.parentFile?.exists() == false) {
+                    outputZipFile.parentFile?.mkdirs()
+                }
+                tempCandidateZip.copyTo(outputZipFile, overwrite = true)
+
                 progressTracker.updateProgress(100f, "Backup completed successfully!")
-                logger.info("Backup generated cleanly: ${outputZipFile.name} (size: ${outputZipFile.length()} bytes, duration: $duration ms).")
+                logger.info("Backup published cleanly to ${outputZipFile.name} (size: ${outputZipFile.length()} bytes, duration: $duration ms).")
 
             } catch (e: Exception) {
                 logger.error("Backup operation aborted due to failure: ${e.message}", e)
-                if (outputZipFile.exists()) outputZipFile.delete()
                 throw e
             } finally {
+                if (tempCandidateZip.exists()) {
+                    tempCandidateZip.delete()
+                }
                 tempDir.deleteRecursively()
             }
         }
