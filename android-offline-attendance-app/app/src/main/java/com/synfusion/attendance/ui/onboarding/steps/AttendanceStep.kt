@@ -58,19 +58,19 @@ fun AttendanceStep() {
             FloatingWorker(
                 role = WorkerRole.LABOUR,
                 size = 52.dp,
-                xOffset = (-132).dp,
-                yOffset = 92.dp,
+                xOffset = (-134).dp,
+                yOffset = 96.dp,
                 animationDelay = 180,
                 floatRange = 5.dp,
                 horizontalRange = 3.dp
             )
             FloatingWorker(
                 role = WorkerRole.CONTRACTOR,
-                size = 58.dp,
-                xOffset = 128.dp,
-                yOffset = (-88).dp,
+                size = 54.dp,
+                xOffset = 132.dp,
+                yOffset = (-92).dp,
                 animationDelay = 620,
-                floatRange = 6.dp,
+                floatRange = 5.dp,
                 horizontalRange = 3.dp
             )
 
@@ -196,7 +196,7 @@ fun AttendanceStep() {
 
             Surface(
                 modifier = Modifier
-                    .offset(x = (-112).dp, y = (-98).dp)
+                    .offset(x = (-118).dp, y = (-96).dp)
                     .shadow(7.dp, RoundedCornerShape(16.dp)),
                 shape = RoundedCornerShape(16.dp),
                 color = MintPrimary.copy(alpha = 0.10f)

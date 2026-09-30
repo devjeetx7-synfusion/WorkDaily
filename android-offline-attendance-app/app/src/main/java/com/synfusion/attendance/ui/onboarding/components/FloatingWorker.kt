@@ -145,11 +145,11 @@ private fun WorkerHalfPortrait(
         WorkerRole.MASON -> Color(0xFF0D8C6D)
     }
     val helmet = when (role) {
-        WorkerRole.CONTRACTOR -> Color(0xFFF8FAFC)
-        WorkerRole.PLUMBER -> Color(0xFFE2E8F0)
-        WorkerRole.ELECTRICIAN -> Color(0xFFFFFFFF)
-        WorkerRole.LABOUR -> Color(0xFFDCEFE9)
-        WorkerRole.MASON -> Color(0xFFF1F5F9)
+        WorkerRole.CONTRACTOR -> Color(0xFF334155) // Slate safety helmet
+        WorkerRole.PLUMBER -> Color(0xFF0284C7)    // Blue cap
+        WorkerRole.ELECTRICIAN -> Color(0xFFEAB308) // Bright Yellow helmet
+        WorkerRole.LABOUR -> Color(0xFFF97316)     // High-vis Orange helmet
+        WorkerRole.MASON -> Color(0xFF64748B)      // Grey construction cap
     }
 
     Canvas(modifier = modifier) {
@@ -182,7 +182,7 @@ private fun WorkerHalfPortrait(
 
         // Hair / side profile framing.
         drawArc(
-            color = Color(0xFF263238),
+            color = Color(0xFF1E293B),
             startAngle = 190f,
             sweepAngle = 160f,
             useCenter = false,
@@ -192,57 +192,110 @@ private fun WorkerHalfPortrait(
         )
 
         // Eyes.
-        drawCircle(Color(0xFF1E293B), w * 0.018f, Offset(w * 0.43f, h * 0.43f))
-        drawCircle(Color(0xFF1E293B), w * 0.018f, Offset(w * 0.57f, h * 0.43f))
+        drawCircle(Color(0xFF0F172A), w * 0.022f, Offset(w * 0.42f, h * 0.43f))
+        drawCircle(Color(0xFF0F172A), w * 0.022f, Offset(w * 0.58f, h * 0.43f))
 
         // Simple smile.
         drawArc(
-            color = Color(0xFF7C3F2D),
+            color = Color(0xFF5A2A1B),
             startAngle = 20f,
             sweepAngle = 140f,
             useCenter = false,
-            topLeft = Offset(w * 0.43f, h * 0.45f),
-            size = Size(w * 0.14f, h * 0.10f),
-            style = androidx.compose.ui.graphics.drawscope.Stroke(width = w * 0.018f)
+            topLeft = Offset(w * 0.42f, h * 0.46f),
+            size = Size(w * 0.16f, h * 0.11f),
+            style = androidx.compose.ui.graphics.drawscope.Stroke(width = w * 0.022f)
         )
 
-        // Work helmet / cap. Small shape variations make each profession recognizable.
+        // Work helmet / cap. Distinct visual styling per profession.
         when (role) {
             WorkerRole.PLUMBER -> {
+                // Work cap with brim
                 drawArc(
                     color = helmet,
                     startAngle = 180f,
                     sweepAngle = 180f,
                     useCenter = true,
-                    topLeft = Offset(w * 0.30f, h * 0.19f),
-                    size = Size(w * 0.40f, h * 0.25f)
+                    topLeft = Offset(w * 0.28f, h * 0.20f),
+                    size = Size(w * 0.44f, h * 0.25f)
                 )
                 drawRoundRect(
-                    color = MintPrimary,
-                    topLeft = Offset(w * 0.29f, h * 0.30f),
-                    size = Size(w * 0.42f, h * 0.055f),
+                    color = helmet,
+                    topLeft = Offset(w * 0.22f, h * 0.31f),
+                    size = Size(w * 0.56f, h * 0.06f),
                     cornerRadius = CornerRadius(w * 0.02f)
                 )
             }
-            else -> {
+            WorkerRole.CONTRACTOR -> {
+                // Hardhat with badge
                 drawArc(
                     color = helmet,
                     startAngle = 180f,
                     sweepAngle = 180f,
                     useCenter = true,
-                    topLeft = Offset(w * 0.28f, h * 0.17f),
-                    size = Size(w * 0.44f, h * 0.29f)
+                    topLeft = Offset(w * 0.26f, h * 0.16f),
+                    size = Size(w * 0.48f, h * 0.30f)
                 )
                 drawRoundRect(
                     color = MintPrimary,
-                    topLeft = Offset(w * 0.27f, h * 0.31f),
-                    size = Size(w * 0.46f, h * 0.052f),
+                    topLeft = Offset(w * 0.22f, h * 0.31f),
+                    size = Size(w * 0.56f, h * 0.055f),
+                    cornerRadius = CornerRadius(w * 0.02f)
+                )
+            }
+            WorkerRole.ELECTRICIAN -> {
+                // Yellow safety helmet with front light mount
+                drawArc(
+                    color = helmet,
+                    startAngle = 180f,
+                    sweepAngle = 180f,
+                    useCenter = true,
+                    topLeft = Offset(w * 0.26f, h * 0.16f),
+                    size = Size(w * 0.48f, h * 0.30f)
+                )
+                drawRoundRect(
+                    color = Color(0xFFCA8A04),
+                    topLeft = Offset(w * 0.22f, h * 0.31f),
+                    size = Size(w * 0.56f, h * 0.055f),
+                    cornerRadius = CornerRadius(w * 0.02f)
+                )
+            }
+            WorkerRole.LABOUR -> {
+                // High-vis safety hardhat
+                drawArc(
+                    color = helmet,
+                    startAngle = 180f,
+                    sweepAngle = 180f,
+                    useCenter = true,
+                    topLeft = Offset(w * 0.26f, h * 0.16f),
+                    size = Size(w * 0.48f, h * 0.30f)
+                )
+                drawRoundRect(
+                    color = Color(0xFFEA580C),
+                    topLeft = Offset(w * 0.22f, h * 0.31f),
+                    size = Size(w * 0.56f, h * 0.055f),
+                    cornerRadius = CornerRadius(w * 0.02f)
+                )
+            }
+            WorkerRole.MASON -> {
+                // Construction cap
+                drawArc(
+                    color = helmet,
+                    startAngle = 180f,
+                    sweepAngle = 180f,
+                    useCenter = true,
+                    topLeft = Offset(w * 0.28f, h * 0.19f),
+                    size = Size(w * 0.44f, h * 0.26f)
+                )
+                drawRoundRect(
+                    color = Color(0xFF475569),
+                    topLeft = Offset(w * 0.24f, h * 0.31f),
+                    size = Size(w * 0.52f, h * 0.055f),
                     cornerRadius = CornerRadius(w * 0.02f)
                 )
             }
         }
 
-        // Role marker on shirt: minimal, brand-safe and readable at small sizes.
+        // Role emblem on chest/shirt.
         when (role) {
             WorkerRole.CONTRACTOR -> drawRoundRect(
                 color = Color.White.copy(alpha = 0.92f),

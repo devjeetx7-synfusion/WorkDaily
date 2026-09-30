@@ -11,7 +11,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ListAlt
+import androidx.compose.material.icons.automirrored.filled.ListAlt
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -71,19 +71,19 @@ fun PassbookStep() {
             FloatingWorker(
                 role = WorkerRole.ELECTRICIAN,
                 size = 52.dp,
-                xOffset = (-136).dp,
-                yOffset = (-88).dp,
+                xOffset = (-138).dp,
+                yOffset = (-90).dp,
                 animationDelay = 200,
                 floatRange = 5.dp,
                 horizontalRange = 3.dp
             )
             FloatingWorker(
                 role = WorkerRole.LABOUR,
-                size = 58.dp,
-                xOffset = 136.dp,
-                yOffset = 108.dp,
+                size = 54.dp,
+                xOffset = 138.dp,
+                yOffset = 106.dp,
                 animationDelay = 620,
-                floatRange = 6.dp,
+                floatRange = 5.dp,
                 horizontalRange = 3.dp
             )
 
@@ -150,7 +150,7 @@ fun PassbookStep() {
                                 .background(MintPrimary.copy(alpha = 0.11f), RoundedCornerShape(13.dp)),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(Icons.Default.ListAlt, null, tint = MintPrimary, modifier = Modifier.size(22.dp))
+                            Icon(Icons.AutoMirrored.Filled.ListAlt, null, tint = MintPrimary, modifier = Modifier.size(22.dp))
                         }
                         Spacer(modifier = Modifier.width(10.dp))
                         Text(
@@ -188,7 +188,7 @@ fun PassbookStep() {
                 color = MintPrimary.copy(alpha = 0.10f)
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    Icon(Icons.Default.ListAlt, null, tint = MintPrimary, modifier = Modifier.size(22.dp))
+                    Icon(Icons.AutoMirrored.Filled.ListAlt, null, tint = MintPrimary, modifier = Modifier.size(22.dp))
                 }
             }
         }

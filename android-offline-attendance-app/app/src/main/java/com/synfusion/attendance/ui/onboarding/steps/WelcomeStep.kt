@@ -8,10 +8,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ListAlt
 import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.ListAlt
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -72,20 +72,29 @@ fun WelcomeStep() {
 
             FloatingWorker(
                 role = WorkerRole.CONTRACTOR,
-                size = 54.dp,
-                xOffset = (-128).dp,
-                yOffset = (-76).dp,
+                size = 52.dp,
+                xOffset = (-132).dp,
+                yOffset = (-86).dp,
                 animationDelay = 120,
                 floatRange = 5.dp,
                 horizontalRange = 3.dp
             )
             FloatingWorker(
+                role = WorkerRole.LABOUR,
+                size = 50.dp,
+                xOffset = (-136).dp,
+                yOffset = 90.dp,
+                animationDelay = 340,
+                floatRange = 4.dp,
+                horizontalRange = 3.dp
+            )
+            FloatingWorker(
                 role = WorkerRole.PLUMBER,
-                size = 58.dp,
-                xOffset = 126.dp,
-                yOffset = 82.dp,
+                size = 54.dp,
+                xOffset = 132.dp,
+                yOffset = 86.dp,
                 animationDelay = 520,
-                floatRange = 6.dp,
+                floatRange = 5.dp,
                 horizontalRange = 3.dp
             )
 
@@ -127,11 +136,11 @@ fun WelcomeStep() {
                         Spacer(modifier = Modifier.width(10.dp))
                         Text(
                             text = stringResource(R.string.app_name),
-                            fontSize = 21.sp,
+                            fontSize = 20.sp,
                             fontWeight = FontWeight.ExtraBold,
                             maxLines = 1,
                             softWrap = false,
-                            overflow = TextOverflow.Clip,
+                            overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -142,7 +151,7 @@ fun WelcomeStep() {
                     ) {
                         WelcomeFeatureTile(Modifier.weight(1f)) { Icon(Icons.Default.DateRange, null) }
                         WelcomeFeatureTile(Modifier.weight(1f)) { Icon(Icons.Default.AccountBalanceWallet, null) }
-                        WelcomeFeatureTile(Modifier.weight(1f)) { Icon(Icons.Default.ListAlt, null) }
+                        WelcomeFeatureTile(Modifier.weight(1f)) { Icon(Icons.AutoMirrored.Filled.ListAlt, null) }
                     }
 
                     Surface(
