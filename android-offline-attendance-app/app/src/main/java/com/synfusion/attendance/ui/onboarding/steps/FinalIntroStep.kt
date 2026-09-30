@@ -12,10 +12,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ListAlt
 import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.ListAlt
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -71,29 +71,38 @@ fun FinalIntroStep() {
         ) {
             FloatingWorker(
                 role = WorkerRole.CONTRACTOR,
-                size = 52.dp,
+                size = 50.dp,
                 xOffset = (-136).dp,
                 yOffset = (-92).dp,
                 animationDelay = 120,
-                floatRange = 5.dp,
+                floatRange = 4.dp,
                 horizontalRange = 3.dp
             )
             FloatingWorker(
                 role = WorkerRole.PLUMBER,
-                size = 58.dp,
+                size = 52.dp,
                 xOffset = 138.dp,
-                yOffset = (-82).dp,
+                yOffset = (-88).dp,
                 animationDelay = 360,
-                floatRange = 6.dp,
+                floatRange = 5.dp,
                 horizontalRange = 3.dp
             )
             FloatingWorker(
                 role = WorkerRole.MASON,
-                size = 54.dp,
-                xOffset = (-132).dp,
-                yOffset = 112.dp,
+                size = 50.dp,
+                xOffset = (-134).dp,
+                yOffset = 108.dp,
                 animationDelay = 640,
-                floatRange = 5.dp,
+                floatRange = 4.dp,
+                horizontalRange = 3.dp
+            )
+            FloatingWorker(
+                role = WorkerRole.ELECTRICIAN,
+                size = 50.dp,
+                xOffset = 136.dp,
+                yOffset = 104.dp,
+                animationDelay = 800,
+                floatRange = 4.dp,
                 horizontalRange = 3.dp
             )
 
@@ -135,12 +144,12 @@ fun FinalIntroStep() {
                         Spacer(modifier = Modifier.width(10.dp))
                         Text(
                             text = stringResource(R.string.app_name),
-                            fontSize = 21.sp,
+                            fontSize = 20.sp,
                             lineHeight = 24.sp,
                             fontWeight = FontWeight.ExtraBold,
                             maxLines = 1,
                             softWrap = false,
-                            overflow = TextOverflow.Clip,
+                            overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -151,7 +160,7 @@ fun FinalIntroStep() {
                     ) {
                         FinalFeatureRow(Icons.Default.DateRange, 0.66f)
                         FinalFeatureRow(Icons.Default.AccountBalanceWallet, 0.79f)
-                        FinalFeatureRow(Icons.Default.ListAlt, 0.58f)
+                        FinalFeatureRow(Icons.AutoMirrored.Filled.ListAlt, 0.58f)
                     }
 
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {

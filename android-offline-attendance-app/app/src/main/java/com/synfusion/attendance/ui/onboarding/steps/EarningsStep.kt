@@ -70,35 +70,35 @@ fun EarningsStep() {
         ) {
             FloatingWorker(
                 role = WorkerRole.PLUMBER,
-                size = 52.dp,
-                xOffset = (-134).dp,
-                yOffset = 102.dp,
+                size = 50.dp,
+                xOffset = (-136).dp,
+                yOffset = 104.dp,
                 animationDelay = 160,
                 floatRange = 5.dp,
                 horizontalRange = 3.dp
             )
             FloatingWorker(
                 role = WorkerRole.ELECTRICIAN,
-                size = 58.dp,
-                xOffset = 132.dp,
-                yOffset = (-94).dp,
+                size = 54.dp,
+                xOffset = 134.dp,
+                yOffset = (-96).dp,
                 animationDelay = 560,
-                floatRange = 6.dp,
+                floatRange = 5.dp,
                 horizontalRange = 3.dp
             )
 
             Surface(
                 modifier = Modifier
-                    .offset(y = (-72 + chipY).dp)
-                    .widthIn(max = 240.dp)
-                    .fillMaxWidth(0.70f)
-                    .height(80.dp)
-                    .shadow(8.dp, RoundedCornerShape(22.dp))
+                    .offset(x = (-32).dp, y = (-72 + chipY).dp)
+                    .widthIn(max = 210.dp)
+                    .fillMaxWidth(0.62f)
+                    .height(58.dp)
+                    .shadow(8.dp, RoundedCornerShape(20.dp))
                     .graphicsLayer {
                         rotationZ = -3f
                         alpha = 0.76f + (reveal * 0.24f)
                     },
-                shape = RoundedCornerShape(22.dp),
+                shape = RoundedCornerShape(20.dp),
                 color = MintPrimary.copy(alpha = 0.085f)
             ) {
                 Row(
@@ -124,7 +124,7 @@ fun EarningsStep() {
                             R.string.onboarding_mock_daily_earnings,
                             AmountFormatter.formatWithSymbol(700.0, defaultCurrency)
                         ),
-                        fontSize = 12.sp,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
