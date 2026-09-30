@@ -25,6 +25,7 @@ import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -464,45 +465,45 @@ fun LoginScreen(
                     .statusBarsPadding()
                     .navigationBarsPadding()
                     .imePadding()
+                    .padding(horizontal = 16.dp)
                     .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                Spacer(modifier = Modifier.height(12.dp))
+
                 // 1. TOP BANNER CONTAINER
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 8.dp)
-                        .clip(RoundedCornerShape(24.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
-                    contentAlignment = Alignment.Center
+                        .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomStart = 18.dp, bottomEnd = 18.dp))
                 ) {
                     Image(
                         painter = painterResource(id = R.drawable.login_banner),
                         contentDescription = "WorkDaily Banner",
-                        contentScale = ContentScale.Fit,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 220.dp)
-                            .padding(4.dp)
+                        contentScale = ContentScale.FillWidth,
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // 2. ROUNDED FORM CONTAINER / CARD
+                // 2. OVERLAY FORM CONTAINER / CARD
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    shape = RoundedCornerShape(24.dp),
+                        .offset(y = (-32).dp),
+                    shape = RoundedCornerShape(
+                        topStart = 30.dp,
+                        topEnd = 30.dp,
+                        bottomStart = 20.dp,
+                        bottomEnd = 20.dp
+                    ),
                     color = MaterialTheme.colorScheme.surface,
                     tonalElevation = 2.dp,
-                    shadowElevation = 4.dp
+                    shadowElevation = 6.dp
                 ) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(20.dp),
+                            .padding(horizontal = 22.dp, vertical = 24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         if (loginState is OfflineLoginState.Error) {
@@ -521,7 +522,7 @@ fun LoginScreen(
                             )
                         }
 
-                        // 3. NAME FIELD
+                        // 3. FULL NAME FIELD
                         OutlinedTextField(
                             value = name,
                             onValueChange = { name = it },
@@ -543,15 +544,15 @@ fun LoginScreen(
                             )
                         )
 
-                        Spacer(modifier = Modifier.height(14.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
 
-                        // 4. COUNTRY / CURRENCY SELECTOR FIELD
+                        // 4. COUNTRY FIELD
                         Box(modifier = Modifier.fillMaxWidth()) {
                             OutlinedTextField(
                                 value = "${selectedCountry.flagEmoji} ${selectedCountry.displayName} — ${selectedCountry.currencySymbol}",
                                 onValueChange = {},
                                 readOnly = true,
-                                label = { Text(stringResource(R.string.language_2)) },
+                                label = { Text(stringResource(R.string.country_label)) },
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable { showCountryDropdown = true },
@@ -606,7 +607,7 @@ fun LoginScreen(
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(14.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
 
                         // 5. PHONE FIELD
                         OutlinedTextField(
@@ -663,7 +664,7 @@ fun LoginScreen(
                             onPrivacyClick = { showPrivacySheet = true }
                         )
 
-                        Spacer(modifier = Modifier.height(18.dp))
+                        Spacer(modifier = Modifier.height(20.dp))
 
                         // 7. PRIMARY ACTION BUTTON
                         Button(
@@ -707,7 +708,7 @@ fun LoginScreen(
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Icon(
-                                        Icons.Default.ArrowForward,
+                                        Icons.AutoMirrored.Filled.ArrowForward,
                                         contentDescription = null,
                                         modifier = Modifier.size(18.dp)
                                     )
@@ -715,50 +716,49 @@ fun LoginScreen(
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(20.dp))
+                        Spacer(modifier = Modifier.height(22.dp))
 
-                        // 8. TRUST / OFFLINE INFO ROW
+                        // 8. TRUST / OFFLINE INFO ROW (3-COLUMN EQUAL WEIGHT)
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(16.dp))
-                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.06f))
-                                .padding(vertical = 12.dp, horizontal = 8.dp),
+                                .padding(vertical = 4.dp),
                             horizontalArrangement = Arrangement.SpaceEvenly,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            TrustItem(
+                            TrustColumnItem(
+                                modifier = Modifier.weight(1f),
                                 icon = Icons.Default.Shield,
                                 title = stringResource(R.string.trust_offline_private)
                             )
-                            Text(
-                                text = "•",
-                                color = MaterialTheme.colorScheme.outline,
-                                fontSize = 12.sp
+                            VerticalDivider(
+                                modifier = Modifier.height(28.dp),
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
                             )
-                            TrustItem(
+                            TrustColumnItem(
+                                modifier = Modifier.weight(1f),
                                 icon = Icons.Default.PhoneAndroid,
                                 title = stringResource(R.string.trust_data_on_device)
                             )
-                            Text(
-                                text = "•",
-                                color = MaterialTheme.colorScheme.outline,
-                                fontSize = 12.sp
+                            VerticalDivider(
+                                modifier = Modifier.height(28.dp),
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
                             )
-                            TrustItem(
+                            TrustColumnItem(
+                                modifier = Modifier.weight(1f),
                                 icon = Icons.Default.Engineering,
                                 title = stringResource(R.string.trust_for_daily_workers)
                             )
                         }
 
-                        Spacer(modifier = Modifier.height(20.dp))
+                        Spacer(modifier = Modifier.height(22.dp))
 
                         HorizontalDivider(
                             modifier = Modifier.fillMaxWidth(0.6f),
                             color = MaterialTheme.colorScheme.outlineVariant
                         )
 
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(18.dp))
 
                         // 9. RESTORE BACKUP SECTION
                         Column(
@@ -770,7 +770,7 @@ fun LoginScreen(
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                            Spacer(modifier = Modifier.height(6.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
                             OutlinedButton(
                                 onClick = { pickRestoreLauncher.launch(arrayOf("application/zip")) },
                                 shape = RoundedCornerShape(16.dp),
@@ -798,8 +798,6 @@ fun LoginScreen(
                         }
                     }
                 }
-
-                Spacer(modifier = Modifier.height(16.dp))
             }
         }
 
@@ -813,26 +811,31 @@ fun LoginScreen(
 }
 
 @Composable
-private fun TrustItem(
+private fun TrustColumnItem(
+    modifier: Modifier = Modifier,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     title: String
 ) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center
+    Column(
+        modifier = modifier.padding(horizontal = 2.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(14.dp)
+            modifier = Modifier.size(20.dp)
         )
-        Spacer(modifier = Modifier.width(4.dp))
+        Spacer(modifier = Modifier.height(6.dp))
         Text(
             text = title,
             fontSize = 11.sp,
             fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            lineHeight = 14.sp,
+            maxLines = 2
         )
     }
 }
