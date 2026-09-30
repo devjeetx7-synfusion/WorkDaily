@@ -32,9 +32,7 @@ class LocalAttendanceRepository(
     suspend fun getUser(): UserEntity? = userDao.getUser()
     suspend fun saveUser(user: UserEntity) = userDao.insertUser(user)
     suspend fun clearSession() {
-        userDao.clearAll()
-        attendanceDao.clearAll()
-        summaryDao.clearAll()
+        // Intentionally no-op to preserve user attendance, profile, and summary records during session reset.
     }
 
     // --- Attendance Operations ---

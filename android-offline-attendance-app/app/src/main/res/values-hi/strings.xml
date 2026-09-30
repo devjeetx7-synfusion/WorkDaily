@@ -426,7 +426,7 @@
 
     <string name="restart_app">ऐप दोबारा चालू करें</string>
 
-    <string name="create_offline_workspace">ऑफलाइन खाता चालू करें</string>
+    <string name="create_offline_workspace">वर्कस्पेस बनाएं</string>
 
     <string name="private_offline_footer">100% प्राइवेट और ऑफलाइन हाजिरी</string>
     <string name="enter_full_name_hint">अपना पूरा नाम दर्ज करें</string>
