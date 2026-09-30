@@ -75,7 +75,8 @@ class OfflineAuthViewModel(
         email: String,
         phoneNumber: String,
         countryCode: String = "IN",
-        currencyCode: String = "INR"
+        currencyCode: String = "INR",
+        dailyWage: Double = 500.0
     ) {
         viewModelScope.launch {
             _loginState.value = OfflineLoginState.Loading
@@ -87,6 +88,7 @@ class OfflineAuthViewModel(
                     email = email,
                     phoneNumber = phoneNumber,
                     role = "personal",
+                    dailyWage = dailyWage,
                     countryCode = countryCode,
                     currencyCode = currencyCode
                 )
