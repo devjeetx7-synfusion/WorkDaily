@@ -157,7 +157,10 @@ class BackupRestoreManagerTest {
 
             val rawUser = UserV1Dto(id = "72d4a90d-9eab-471f-94b5-5884a1e12662", name = "Dharmjeet Singh", phoneNumber = "9334603912", role = "personal", dailyWage = 400.0)
             val rawAtt = (1..39).map { i -> AttendanceV1Dto(id = "personal_2026-08-$i", date = "2026-08-${if (i < 10) "0$i" else "$i"}", status = "present", type = "full", wage = 400.0) }
-            val rawSum = listOf(SummaryV1Dto(id = "personal_2026-08", monthId = "2026-08", role = "personal"))
+            val rawSum = listOf(
+                SummaryV1Dto(id = "personal_2026-08", monthId = "2026-08", role = "personal"),
+                SummaryV1Dto(id = "personal_2026-09", monthId = "2026-09", role = "personal")
+            )
             val rawPayload = BackupV1Payload(users = listOf(rawUser), attendance = rawAtt, summaries = rawSum)
 
             File(fixtureDir, "data.json").writeText(Gson().toJson(rawPayload))
