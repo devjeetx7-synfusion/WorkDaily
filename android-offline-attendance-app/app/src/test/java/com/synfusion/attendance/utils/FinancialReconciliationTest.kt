@@ -43,7 +43,7 @@ class FinancialReconciliationTest {
         // Mandatory Reconciliation Rule 5: Displayed Amount == Central Calculation Amount
         val formattedGross = AmountFormatter.format(passbook.totalEarnings)
         val formattedNet = AmountFormatter.format(passbook.netBalance)
-        assertEquals("Formatted Gross Earnings mismatch", "1,850.00", formattedGross)
+        assertEquals("Formatted Gross Earnings mismatch", "1,850", formattedGross)
         assertEquals("Formatted Net Earnings mismatch", "1,499.75", formattedNet)
     }
 
@@ -102,12 +102,12 @@ class FinancialReconciliationTest {
 
     @Test
     fun testAmountFormatterPrecision() {
-        assertEquals("0.00", AmountFormatter.format(0.0))
-        assertEquals("1.00", AmountFormatter.format(1.0))
+        assertEquals("0", AmountFormatter.format(0.0))
+        assertEquals("1", AmountFormatter.format(1.0))
         assertEquals("1.01", AmountFormatter.format(1.01))
         assertEquals("999.99", AmountFormatter.format(999.99))
-        assertEquals("1,000.00", AmountFormatter.format(1000.0))
-        assertEquals("1,00,000.00", AmountFormatter.format(100000.0))
+        assertEquals("1,000", AmountFormatter.format(1000.0))
+        assertEquals("1,00,000", AmountFormatter.format(100000.0))
         assertEquals("-150.25", AmountFormatter.format(-150.25))
     }
 }

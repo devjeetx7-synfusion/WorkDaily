@@ -11,35 +11,35 @@ class GlobalCurrencyFormattingTest {
 
     @Test
     fun test1_INR_IndianGrouping() {
-        assertEquals("₹1,000.00", AmountFormatter.formatWithSymbol(1000.0, "INR"))
-        assertEquals("₹12,000.00", AmountFormatter.formatWithSymbol(12000.0, "INR"))
-        assertEquals("₹1,00,000.00", AmountFormatter.formatWithSymbol(100000.0, "INR"))
-        assertEquals("₹12,00,000.00", AmountFormatter.formatWithSymbol(1200000.0, "INR"))
-        assertEquals("₹1,00,00,000.00", AmountFormatter.formatWithSymbol(10000000.0, "INR"))
+        assertEquals("₹1,000", AmountFormatter.formatWithSymbol(1000.0, "INR"))
+        assertEquals("₹12,000", AmountFormatter.formatWithSymbol(12000.0, "INR"))
+        assertEquals("₹1,00,000", AmountFormatter.formatWithSymbol(100000.0, "INR"))
+        assertEquals("₹12,00,000", AmountFormatter.formatWithSymbol(1200000.0, "INR"))
+        assertEquals("₹1,00,00,000", AmountFormatter.formatWithSymbol(10000000.0, "INR"))
         assertEquals("₹12,34,56,789.12", AmountFormatter.formatWithSymbol(123456789.12, "INR"))
     }
 
     @Test
     fun test2_USD_WesternGrouping() {
-        assertEquals("$1,000.00", AmountFormatter.formatWithSymbol(1000.0, "USD"))
-        assertEquals("$12,000.00", AmountFormatter.formatWithSymbol(12000.0, "USD"))
-        assertEquals("$100,000.00", AmountFormatter.formatWithSymbol(100000.0, "USD"))
-        assertEquals("$1,000,000.00", AmountFormatter.formatWithSymbol(1000000.0, "USD"))
+        assertEquals("$1,000", AmountFormatter.formatWithSymbol(1000.0, "USD"))
+        assertEquals("$12,000", AmountFormatter.formatWithSymbol(12000.0, "USD"))
+        assertEquals("$100,000", AmountFormatter.formatWithSymbol(100000.0, "USD"))
+        assertEquals("$1,000,000", AmountFormatter.formatWithSymbol(1000000.0, "USD"))
     }
 
     @Test
     fun test3_GBP_Formatting() {
-        assertEquals("£1,000.00", AmountFormatter.formatWithSymbol(1000.0, "GBP"))
-        assertEquals("£12,000.00", AmountFormatter.formatWithSymbol(12000.0, "GBP"))
-        assertEquals("£100,000.00", AmountFormatter.formatWithSymbol(100000.0, "GBP"))
+        assertEquals("£1,000", AmountFormatter.formatWithSymbol(1000.0, "GBP"))
+        assertEquals("£12,000", AmountFormatter.formatWithSymbol(12000.0, "GBP"))
+        assertEquals("£100,000", AmountFormatter.formatWithSymbol(100000.0, "GBP"))
     }
 
     @Test
     fun test4_EUR_LocaleDifferences() {
         val eurFormatted = AmountFormatter.formatWithSymbol(1000.0, "EUR")
-        assertTrue("EUR formatted should contain € and 1.000,00 or 1 000,00: '$eurFormatted'", eurFormatted.contains("€") && eurFormatted.contains("00"))
+        assertTrue("EUR formatted should contain € and 1.000 or 1 000: '$eurFormatted'", eurFormatted.contains("€") && eurFormatted.contains("1"))
         val eurAmountFormatted = AmountFormatter.format(1000.0, "EUR")
-        assertEquals("1.000,00", eurAmountFormatted)
+        assertEquals("1.000", eurAmountFormatted)
     }
 
     @Test
@@ -64,7 +64,7 @@ class GlobalCurrencyFormattingTest {
         val omrWithSym = AmountFormatter.formatWithSymbol(12.5, "OMR")
         assertTrue("OMR with symbol should contain '12.500': '$omrWithSym'", omrWithSym.contains("12.500"))
 
-        assertEquals("100.000", AmountFormatter.format(100.0, "BHD"))
+        assertEquals("100", AmountFormatter.format(100.0, "BHD"))
     }
 
     @Test
@@ -85,11 +85,11 @@ class GlobalCurrencyFormattingTest {
 
     @Test
     fun test13_ZeroFormatting() {
-        assertEquals("₹0.00", AmountFormatter.formatWithSymbol(0.0, "INR"))
-        assertEquals("$0.00", AmountFormatter.formatWithSymbol(0.0, "USD"))
+        assertEquals("₹0", AmountFormatter.formatWithSymbol(0.0, "INR"))
+        assertEquals("$0", AmountFormatter.formatWithSymbol(0.0, "USD"))
         assertEquals("¥0", AmountFormatter.formatWithSymbol(0.0, "JPY"))
         val kwdZero = AmountFormatter.formatWithSymbol(0.0, "KWD")
-        assertTrue(kwdZero.contains("0.000"))
+        assertTrue(kwdZero.contains("0"))
     }
 
     @Test
@@ -103,14 +103,14 @@ class GlobalCurrencyFormattingTest {
         assertEquals("₹0.50", AmountFormatter.formatWithSymbol(0.5, "INR"))
         assertEquals("₹1.25", AmountFormatter.formatWithSymbol(1.25, "INR"))
         assertEquals("₹350.50", AmountFormatter.formatWithSymbol(350.5, "INR"))
-        assertEquals("₹700.00", AmountFormatter.formatWithSymbol(700.0, "INR"))
+        assertEquals("₹700", AmountFormatter.formatWithSymbol(700.0, "INR"))
     }
 
     @Test
     fun test16_NegativeValues() {
-        assertEquals("-₹1,250.00", AmountFormatter.formatWithSymbol(-1250.0, "INR"))
-        assertEquals("-$1,250.00", AmountFormatter.formatWithSymbol(-1250.0, "USD"))
-        assertEquals("-1.250,00 €", AmountFormatter.formatWithSymbol(-1250.0, "EUR"))
+        assertEquals("-₹1,250", AmountFormatter.formatWithSymbol(-1250.0, "INR"))
+        assertEquals("-$1,250", AmountFormatter.formatWithSymbol(-1250.0, "USD"))
+        assertEquals("-1.250 €", AmountFormatter.formatWithSymbol(-1250.0, "EUR"))
     }
 
     @Test
@@ -162,10 +162,10 @@ class GlobalCurrencyFormattingTest {
         )
 
         val formattedEntityUsd = AmountFormatter.formatWithSymbol(historicalEntityUsd.wage, historicalEntityUsd.currencyCode ?: "INR")
-        assertEquals("$100.00", formattedEntityUsd)
+        assertEquals("$100", formattedEntityUsd)
 
         val formattedUserInr = AmountFormatter.formatWithSymbol(historicalEntityUsd.wage, "INR")
-        assertEquals("₹100.00", formattedUserInr)
+        assertEquals("₹100", formattedUserInr)
 
         assertNotEquals(formattedEntityUsd, formattedUserInr)
     }

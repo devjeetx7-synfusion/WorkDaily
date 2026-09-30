@@ -94,7 +94,8 @@ object AmountFormatter {
             formatStandardIntegerStr(intPart, groupingSep)
         }
 
-        val decimalSuffix = if (fractionDigits > 0) {
+        val isWhole = scaled.stripTrailingZeros().scale() <= 0
+        val decimalSuffix = if (!isWhole && fractionDigits > 0) {
             val paddedDec = decPart.padEnd(fractionDigits, '0').take(fractionDigits)
             "$decimalSep$paddedDec"
         } else {
