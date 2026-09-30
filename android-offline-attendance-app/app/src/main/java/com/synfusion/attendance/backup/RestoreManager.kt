@@ -2,14 +2,15 @@ package com.synfusion.attendance.backup
 
 import android.content.Context
 import android.content.Intent
-import com.synfusion.attendance.data.entities.UserEntity
-import com.synfusion.attendance.data.entities.SummaryEntity
-import com.synfusion.attendance.data.entities.AttendanceEntity
-import com.synfusion.attendance.data.AttendanceDatabase
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import kotlinx.coroutines.withContext
+import com.synfusion.attendance.data.AttendanceDatabase
+import com.synfusion.attendance.data.OfflinePreferencesRepository
+import com.synfusion.attendance.data.entities.AttendanceEntity
+import com.synfusion.attendance.data.entities.SummaryEntity
+import com.synfusion.attendance.data.entities.UserEntity
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.File
 
 object RestoreResultStore {
@@ -104,7 +105,7 @@ class RestoreManager(private val context: Context) {
                     logger.error("Integrity check failed: ${validationRes.code} (${validationRes.details})")
                     progressTracker.updateState(RestoreState.RESTORE_FAILED)
                     val userMsg = when (validationRes.code) {
-                        BackupValidationCode.UNSUPPORTED_VERSION -> context.getString(com.synfusion.attendance.R.string.restore_unsupported_version_msg)
+                        BackupValidationCode.UNSUPPORTED_VERSION -> validationRes.details ?: context.getString(com.synfusion.attendance.R.string.restore_unsupported_version_msg)
                         BackupValidationCode.MISSING_REQUIRED_DATA_FILE -> context.getString(com.synfusion.attendance.R.string.restore_missing_data_msg)
                         BackupValidationCode.CHECKSUM_MISMATCH -> context.getString(com.synfusion.attendance.R.string.restore_checksum_mismatch_msg)
                         BackupValidationCode.INVALID_DATA -> context.getString(com.synfusion.attendance.R.string.restore_invalid_data_msg)
@@ -220,6 +221,24 @@ class RestoreManager(private val context: Context) {
 
                     val finalUser = finalProdDb.userDao().getUser()
                     val finalAttendance = finalProdDb.attendanceDao().getPersonalAttendance()
+
+                    // Ensure Session Auto-Activation for restored profile
+                    if (finalUser != null) {
+                        val prefsRepo = OfflinePreferencesRepository(context)
+                        prefsRepo.saveAuthToken(finalUser.id)
+                        prefsRepo.saveOnboardingCompleted(true)
+                        prefsRepo.saveUserRole(finalUser.role)
+                        prefsRepo.saveCountryAndCurrency(finalUser.countryCode, finalUser.currencyCode)
+
+                        // Remap restored profile photo if exists
+                        val profilePhotoDir = File(context.filesDir, "profile_photos")
+                        if (profilePhotoDir.exists()) {
+                            val photoFiles = profilePhotoDir.listFiles()
+                            if (!photoFiles.isNullOrEmpty()) {
+                                prefsRepo.saveProfilePhotoPath(photoFiles.first().absolutePath)
+                            }
+                        }
+                    }
 
                     progressTracker.updateState(RestoreState.RESTORE_SUCCESS)
                     progressTracker.updateProgress(95f, "Restore completed successfully!")

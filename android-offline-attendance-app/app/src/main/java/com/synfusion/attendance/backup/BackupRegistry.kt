@@ -47,23 +47,12 @@ class DatabaseBackupModule : BackupModule {
         try {
             val counts = JsonImporter.importDatabase(tempDb, backupWorkingDir, merge, logger)
 
-            // Redesigned Restore Lifecycle Sequence:
-            // 1. Stop active collectors & cancel restore-sensitive jobs
             DatabaseLifecycleCoordinator.stopAndCancelEverything()
-
-            // 2. Wait for all database transactions/queries to finish/cancel
-            kotlinx.coroutines.delay(300)
-
-            // 3. Close the temporary database safely
+            kotlinx.coroutines.delay(100)
             tempDb.close()
 
-            // 4. Swap data to production database securely (this closes production db via resetInstance() and renames files)
             TempDatabaseManager.swapToProduction(context, tempDb)
-
-            // 5. Recreate production database instance cleanly
             AttendanceDatabase.getInstance(context)
-
-            // 6. Refresh ViewModels (re-query data and trigger new flow subscription collections)
             DatabaseLifecycleCoordinator.refreshViewModels()
 
             return counts
@@ -102,8 +91,24 @@ class PreferencesBackupModule : BackupModule {
 
     private suspend fun applyDataStorePreferences(context: Context, dsMap: Map<String, Any>) {
         context.offlineDataStore.edit { preferences ->
-            dsMap.forEach { (key, value) ->
+            dsMap.forEach { (key, rawValue) ->
                 if (key == "auth_token") return@forEach
+                var value = rawValue
+
+                // Remap historical profile photo paths to current internal storage path
+                if (key == "profile_photo_path" && value is String) {
+                    val rawPath = value as String
+                    val fileName = File(rawPath).name
+                    val candidates = listOf(
+                        File(context.filesDir, "profile_photos/$fileName"),
+                        File(context.filesDir, "profile/$fileName")
+                    )
+                    val matchingFile = candidates.firstOrNull { it.exists() }
+                    if (matchingFile != null) {
+                        value = matchingFile.absolutePath
+                    }
+                }
+
                 when (key) {
                     "last_backup_time" -> {
                         val num = (value as? Number)?.toLong() ?: return@forEach
@@ -118,7 +123,7 @@ class PreferencesBackupModule : BackupModule {
                         preferences[androidx.datastore.preferences.core.booleanPreferencesKey(key)] = bool
                     }
                     "user_role", "app_language", "profile_photo_path", "last_backup_loc",
-                    "nav_left_1", "nav_left_2", "nav_right", "startup_screen", "last_active_screen" -> {
+                    "nav_left_1", "nav_left_2", "nav_right", "startup_screen", "last_active_screen", "user_country", "user_currency" -> {
                         val str = value.toString()
                         preferences[androidx.datastore.preferences.core.stringPreferencesKey(key)] = str
                     }

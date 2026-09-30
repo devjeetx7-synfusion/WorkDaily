@@ -1,6 +1,7 @@
 package com.synfusion.attendance.data
 
 import android.content.Context
+import com.synfusion.attendance.backup.BackupStateRepository
 import com.synfusion.attendance.data.daos.AttendanceDao
 import com.synfusion.attendance.data.daos.SummaryDao
 import com.synfusion.attendance.data.daos.UserDao
@@ -27,10 +28,16 @@ class LocalAttendanceRepository(
     private val summaryDao: SummaryDao
         get() = db.summaryDao()
 
+    private val backupStateRepo: BackupStateRepository
+        get() = BackupStateRepository(context)
+
     // --- User Profile ---
     fun getUserFlow(): Flow<UserEntity?> = userDao.getUserFlow()
     suspend fun getUser(): UserEntity? = userDao.getUser()
-    suspend fun saveUser(user: UserEntity) = userDao.insertUser(user)
+    suspend fun saveUser(user: UserEntity) {
+        userDao.insertUser(user)
+        try { backupStateRepo.markDataMutated() } catch (_: Exception) {}
+    }
     suspend fun clearSession() {
         // Intentionally no-op to preserve user attendance, profile, and summary records during session reset.
     }
@@ -52,6 +59,7 @@ class LocalAttendanceRepository(
         val oldAttendance = attendanceDao.getAttendanceById(attendance.id)
         attendanceDao.insertAttendance(attendance)
         updateSummary(attendance.date, oldAttendance, attendance)
+        try { backupStateRepo.markDataMutated() } catch (_: Exception) {}
     }
 
     suspend fun deleteAttendance(attendanceId: String, date: String) {
@@ -59,6 +67,7 @@ class LocalAttendanceRepository(
         if (oldAttendance != null) {
             attendanceDao.deleteAttendanceById(attendanceId)
             updateSummary(date, oldAttendance, null)
+            try { backupStateRepo.markDataMutated() } catch (_: Exception) {}
         }
     }
 

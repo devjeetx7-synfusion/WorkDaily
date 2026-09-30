@@ -2,8 +2,10 @@ package com.synfusion.attendance.backup
 
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import com.synfusion.attendance.data.entities.AttendanceEntity
-import com.synfusion.attendance.data.entities.UserEntity
+import com.synfusion.attendance.backup.dto.canonical.CanonicalBackupPayload
+import com.synfusion.attendance.backup.dto.v1.*
+import com.synfusion.attendance.backup.migration.MigrationRegistry
+import com.synfusion.attendance.backup.migration.UnsupportedBackupVersionException
 import java.io.File
 import java.nio.charset.StandardCharsets
 
@@ -65,11 +67,13 @@ object BackupValidator {
             return BackupValidationResult(false, BackupValidationCode.INVALID_MANIFEST, "manifest.json is invalid or corrupt.")
         }
 
-        // 2. Older App Graceful Rejection (database version comparison)
-        val currentDatabaseVersion = 2 // Current app database version code
-        if (manifest.databaseVersion > currentDatabaseVersion) {
-            logger.error("Validation Failed: Backup database version (v${manifest.databaseVersion}) is newer than current app database version (v$currentDatabaseVersion). Rejection enforced.")
-            return BackupValidationResult(false, BackupValidationCode.UNSUPPORTED_VERSION, "Backup database version v${manifest.databaseVersion} is newer than current app database version v$currentDatabaseVersion.")
+        // 2. Version validation using BackupVersionConstants
+        val formatVer = manifest.backupFormatVersion
+        val dbVer = manifest.databaseVersion
+
+        if (formatVer > BackupVersionConstants.CURRENT_BACKUP_FORMAT_VERSION || dbVer > BackupVersionConstants.CURRENT_DATABASE_VERSION) {
+            logger.error("Validation Failed: Backup format v$formatVer / DB v$dbVer is newer than app support (Format v${BackupVersionConstants.CURRENT_BACKUP_FORMAT_VERSION} / DB v${BackupVersionConstants.CURRENT_DATABASE_VERSION}). Rejection enforced.")
+            return BackupValidationResult(false, BackupValidationCode.UNSUPPORTED_VERSION, "Backup format v$formatVer / DB v$dbVer is newer than supported app version.")
         }
 
         // 3. Locate data source (data.json OR legacy database/ directory)
@@ -81,47 +85,56 @@ object BackupValidator {
             return BackupValidationResult(false, BackupValidationCode.MISSING_REQUIRED_DATA_FILE, "Backup data file (data.json) is missing.")
         }
 
-        // 4. Read & Validate Data Schema + Records
+        // 4. Read DTO & Migrate to Canonical Payload
         val gson = Gson()
         try {
-            var users: List<UserEntity> = emptyList()
-            var attendances: List<AttendanceEntity> = emptyList()
+            val canonicalPayload: CanonicalBackupPayload
 
             if (dataFile.exists()) {
-                dataFile.reader(StandardCharsets.UTF_8).use { reader ->
-                    val payload = gson.fromJson(reader, BackupDataPayload::class.java)
-                        ?: return BackupValidationResult(false, BackupValidationCode.INVALID_DATA, "data.json is empty or malformed.")
-                    users = payload.users
-                    attendances = payload.attendance
-                }
+                val rawPayload = dataFile.reader(StandardCharsets.UTF_8).use { reader ->
+                    gson.fromJson(reader, BackupV1Payload::class.java)
+                } ?: return BackupValidationResult(false, BackupValidationCode.INVALID_DATA, "data.json is empty or malformed.")
+
+                canonicalPayload = MigrationRegistry.migrateToCanonical(rawPayload, formatVer, manifest, logger)
             } else {
                 val userFile = File(dbDir, "user.json")
                 val attendanceFile = File(dbDir, "attendance.json")
+                val summaryFile = File(dbDir, "summary.json")
+
                 if (!userFile.exists() || !attendanceFile.exists()) {
                     logger.error("Validation Failed: Required legacy database files missing.")
                     return BackupValidationResult(false, BackupValidationCode.MISSING_REQUIRED_DATA_FILE, "Legacy database files missing.")
                 }
-                users = userFile.reader(StandardCharsets.UTF_8).use { reader ->
-                    val type = object : TypeToken<List<UserEntity>>() {}.type
-                    gson.fromJson(reader, type) ?: emptyList()
+
+                val users = userFile.reader(StandardCharsets.UTF_8).use { reader ->
+                    val type = object : TypeToken<List<UserV1Dto>>() {}.type
+                    gson.fromJson<List<UserV1Dto>>(reader, type) ?: emptyList()
                 }
-                attendances = attendanceFile.reader(StandardCharsets.UTF_8).use { reader ->
-                    val type = object : TypeToken<List<AttendanceEntity>>() {}.type
-                    gson.fromJson(reader, type) ?: emptyList()
+
+                val attendances = attendanceFile.reader(StandardCharsets.UTF_8).use { reader ->
+                    val type = object : TypeToken<List<AttendanceV1Dto>>() {}.type
+                    gson.fromJson<List<AttendanceV1Dto>>(reader, type) ?: emptyList()
                 }
+
+                val summaries = if (summaryFile.exists()) {
+                    summaryFile.reader(StandardCharsets.UTF_8).use { reader ->
+                        val type = object : TypeToken<List<SummaryV1Dto>>() {}.type
+                        gson.fromJson<List<SummaryV1Dto>>(reader, type) ?: emptyList()
+                    }
+                } else emptyList()
+
+                val rawPayload = BackupV1Payload(users = users, attendance = attendances, summaries = summaries)
+                canonicalPayload = MigrationRegistry.migrateToCanonical(rawPayload, formatVer, manifest, logger)
             }
 
-            // Referential Integrity:
-            // Since WorkDaily is an offline personal app, workerId in attendance is null for personal records.
-            // If workerId is set (non-null), it must match a user's ID if user list is non-empty.
-            if (users.isNotEmpty()) {
-                val primaryUser = users.first()
-                for (att in attendances) {
+            // 5. Referential & Semantic Integrity Check on Canonical Payload
+            if (canonicalPayload.users.isNotEmpty()) {
+                val primaryUser = canonicalPayload.users.first()
+                for (att in canonicalPayload.attendance) {
                     if (att.workerId != null && att.workerId != primaryUser.id) {
                         logger.error("Validation Failed: Foreign key integrity violation. Attendance record ${att.id} references invalid user ${att.workerId}.")
                         return BackupValidationResult(false, BackupValidationCode.INVALID_DATA, "Foreign key integrity violation in record ${att.id}.")
                     }
-                    // Validate basic attendance date format (YYYY-MM-DD)
                     if (att.date.isBlank() || !att.date.matches(Regex("\\d{4}-\\d{2}-\\d{2}"))) {
                         logger.error("Validation Failed: Invalid date format in record ${att.id}.")
                         return BackupValidationResult(false, BackupValidationCode.INVALID_DATA, "Invalid date format in record ${att.id}.")
@@ -129,7 +142,7 @@ object BackupValidator {
                 }
             }
 
-            // 5. Media Reference Validation
+            // 6. Media Reference Validation
             val mediaDir = File(extractedDir, "media")
             val profileMediaCount = manifest.recordCounts["media"] ?: 0
             if (profileMediaCount > 0) {
@@ -139,12 +152,15 @@ object BackupValidator {
                 }
             }
 
+        } catch (e: UnsupportedBackupVersionException) {
+            logger.error("Validation Failed: Unsupported backup version - ${e.message}")
+            return BackupValidationResult(false, BackupValidationCode.UNSUPPORTED_VERSION, e.message)
         } catch (e: Exception) {
             logger.error("Validation Failed: Syntax error or corrupt database JSON files.", e)
             return BackupValidationResult(false, BackupValidationCode.INVALID_DATA, "Syntax error or corrupt database JSON files: ${e.message}")
         }
 
-        logger.info("Backup directory integrity and schema validation succeeded.")
+        logger.info("Backup directory integrity and canonical schema validation succeeded.")
         return BackupValidationResult(true, BackupValidationCode.VALID)
     }
 }
