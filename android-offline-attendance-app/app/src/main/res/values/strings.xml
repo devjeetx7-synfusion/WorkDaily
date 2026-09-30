@@ -45,6 +45,7 @@
     <string name="absent">ABSENT</string>
     <string name="half">HALF</string>
     <string name="man_days">MAN DAYS</string>
+    <string name="earnings_label">Earnings</string>
     <string name="financial_summary">Financial Summary</string>
     <string name="gross_earned">Gross Earned</string>
     <string name="total_advance">Total Advance</string>

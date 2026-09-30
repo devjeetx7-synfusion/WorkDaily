@@ -63,7 +63,6 @@ fun AllTimePassbookScreen(
     val state by viewModel.state.collectAsStateWithLifecycle(initialValue = OfflineAllTimePassbookState())
     val expandedMonths = remember { mutableStateMapOf<String, Boolean>() }
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     val exportManager = remember { PdfExportManager(context, viewModel.localAttendanceRepository) }
     val exportState by exportManager.exportState.collectAsStateWithLifecycle(initialValue = PdfExportState.Idle)
 
@@ -250,14 +249,14 @@ fun EmploymentSummarySection(state: com.synfusion.attendance.viewmodel.OfflineAl
     val windowSizeInfo = LocalWindowSizeInfo.current
 
     val employmentCard = @Composable {
-        ElevatedCard(
+        Card(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface),
-            elevation = CardDefaults.elevatedCardElevation(defaultElevation = 3.dp)
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
         ) {
             Column(
-                modifier = Modifier.padding(18.dp)
+                modifier = Modifier.padding(16.dp)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -267,57 +266,57 @@ fun EmploymentSummarySection(state: com.synfusion.attendance.viewmodel.OfflineAl
                     Column {
                         Text(
                             text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.employment_summary),
-                            fontSize = 18.sp,
+                            fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onBackground
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                         if (state.employmentSince.isNotEmpty()) {
                             Text(
                                 text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.employment_since, state.employmentSince),
                                 fontSize = 12.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontWeight = FontWeight.Medium
+                                fontWeight = FontWeight.Normal
                             )
                         }
                     }
                     Surface(
                         shape = CircleShape,
                         color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent().copy(alpha = 0.12f),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent().copy(alpha = 0.25f))
+                        border = androidx.compose.foundation.BorderStroke(1.dp, com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent().copy(alpha = 0.2f))
                     ) {
                         Text(
                             text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.active_status),
                             color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent(),
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 12.sp,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 11.sp,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
                     Surface(
                         modifier = Modifier
                             .weight(1f)
-                            .clip(RoundedCornerShape(14.dp))
+                            .clip(RoundedCornerShape(12.dp))
                             .clickable { viewModel.openDrillDown(DrillDownType.PRESENT) },
-                        shape = RoundedCornerShape(14.dp),
-                        color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent().copy(alpha = 0.08f),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent().copy(alpha = 0.2f))
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
                     ) {
                         Column(modifier = Modifier.padding(12.dp)) {
                             Text(
                                 text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.total_present),
                                 fontSize = 11.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontWeight = FontWeight.SemiBold
+                                fontWeight = FontWeight.Medium
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = state.totalPresent.toString(),
-                                fontSize = 20.sp,
+                                fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent()
                             )
@@ -326,23 +325,23 @@ fun EmploymentSummarySection(state: com.synfusion.attendance.viewmodel.OfflineAl
                     Surface(
                         modifier = Modifier
                             .weight(1f)
-                            .clip(RoundedCornerShape(14.dp))
+                            .clip(RoundedCornerShape(12.dp))
                             .clickable { viewModel.openDrillDown(DrillDownType.ABSENT) },
-                        shape = RoundedCornerShape(14.dp),
-                        color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent().copy(alpha = 0.08f),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent().copy(alpha = 0.2f))
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
                     ) {
                         Column(modifier = Modifier.padding(12.dp)) {
                             Text(
                                 text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.total_absent),
                                 fontSize = 11.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontWeight = FontWeight.SemiBold
+                                fontWeight = FontWeight.Medium
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = state.totalAbsent.toString(),
-                                fontSize = 20.sp,
+                                fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent()
                             )
@@ -356,23 +355,23 @@ fun EmploymentSummarySection(state: com.synfusion.attendance.viewmodel.OfflineAl
                     Surface(
                         modifier = Modifier
                             .weight(1f)
-                            .clip(RoundedCornerShape(14.dp))
+                            .clip(RoundedCornerShape(12.dp))
                             .clickable { viewModel.openDrillDown(DrillDownType.HALF_DAY) },
-                        shape = RoundedCornerShape(14.dp),
-                        color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay().copy(alpha = 0.08f),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay().copy(alpha = 0.2f))
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
                     ) {
                         Column(modifier = Modifier.padding(12.dp)) {
                             Text(
                                 text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.total_half_days),
                                 fontSize = 11.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontWeight = FontWeight.SemiBold
+                                fontWeight = FontWeight.Medium
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = state.totalHalfDays.toString(),
-                                fontSize = 20.sp,
+                                fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay()
                             )
@@ -380,23 +379,23 @@ fun EmploymentSummarySection(state: com.synfusion.attendance.viewmodel.OfflineAl
                     }
                     Surface(
                         modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(14.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
                     ) {
                         Column(modifier = Modifier.padding(12.dp)) {
                             Text(
                                 text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.working_days),
                                 fontSize = 11.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontWeight = FontWeight.SemiBold
+                                fontWeight = FontWeight.Medium
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = state.totalWorkingDays.toString().removeSuffix(".0"),
-                                fontSize = 20.sp,
+                                fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onBackground
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                         }
                     }
@@ -406,14 +405,14 @@ fun EmploymentSummarySection(state: com.synfusion.attendance.viewmodel.OfflineAl
     }
 
     val financialCard = @Composable {
-        ElevatedCard(
+        Card(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface),
-            elevation = CardDefaults.elevatedCardElevation(defaultElevation = 3.dp)
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
         ) {
             Column(
-                modifier = Modifier.padding(18.dp)
+                modifier = Modifier.padding(16.dp)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -423,9 +422,9 @@ fun EmploymentSummarySection(state: com.synfusion.attendance.viewmodel.OfflineAl
                     Column {
                         Text(
                             text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.financial_summary),
-                            fontSize = 18.sp,
+                            fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onBackground
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
                             text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.manage_your_daily_labor_earnings),
@@ -436,73 +435,73 @@ fun EmploymentSummarySection(state: com.synfusion.attendance.viewmodel.OfflineAl
                     Surface(
                         shape = CircleShape,
                         color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                        modifier = Modifier.size(40.dp)
+                        modifier = Modifier.size(36.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                             Icon(
                                 imageVector = Icons.Default.AccountBalanceWallet,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(18.dp)
                             )
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.salary),
-                        fontSize = 14.sp,
+                        fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.Medium
                     )
                     Text(
                         text = AmountFormatter.formatWithSymbol(state.totalSalaryEarned, state.currencyCode),
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.overtime),
-                        fontSize = 14.sp,
+                        fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.Medium
                     )
                     Text(
                         text = AmountFormatter.formatWithSymbol(state.totalOtEarned, state.currencyCode),
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getLeave()
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.advance),
-                        fontSize = 14.sp,
+                        fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.Medium
                     )
                     Text(
                         text = AmountFormatter.formatWithSymbol(state.totalAdvance, state.currencyCode),
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay()
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
 
-                Spacer(modifier = Modifier.height(14.dp))
-                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f))
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(12.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
+                Spacer(modifier = Modifier.height(12.dp))
 
                 val settlement = state.settlement
                 val settlementState = settlement?.settlementState ?: if (state.totalNetEarnings > 0) com.synfusion.attendance.utils.SettlementState.RECEIVE else if (state.totalNetEarnings < 0) com.synfusion.attendance.utils.SettlementState.PAY_BACK else com.synfusion.attendance.utils.SettlementState.SETTLED
@@ -515,20 +514,20 @@ fun EmploymentSummarySection(state: com.synfusion.attendance.viewmodel.OfflineAl
                 when (settlementState) {
                     com.synfusion.attendance.utils.SettlementState.RECEIVE -> {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.amount_to_receive), fontSize = 15.sp, fontWeight = FontWeight.Bold)
-                            Text(AmountFormatter.formatWithSymbol(settlement?.amountToReceive ?: state.totalNetEarnings, state.currencyCode), fontSize = 18.sp, fontWeight = FontWeight.Black, color = statusColor)
+                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.amount_to_receive), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                            Text(AmountFormatter.formatWithSymbol(settlement?.amountToReceive ?: state.totalNetEarnings, state.currencyCode), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = statusColor)
                         }
                     }
                     com.synfusion.attendance.utils.SettlementState.PAY_BACK -> {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.amount_to_pay_back), fontSize = 15.sp, fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent())
-                            Text(AmountFormatter.formatWithSymbol(settlement?.amountToPayBack ?: kotlin.math.abs(state.totalNetEarnings), state.currencyCode), fontSize = 18.sp, fontWeight = FontWeight.Black, color = statusColor)
+                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.amount_to_pay_back), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                            Text(AmountFormatter.formatWithSymbol(settlement?.amountToPayBack ?: kotlin.math.abs(state.totalNetEarnings), state.currencyCode), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = statusColor)
                         }
                     }
                     com.synfusion.attendance.utils.SettlementState.SETTLED -> {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.settlement_status), fontSize = 15.sp, fontWeight = FontWeight.Bold)
-                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.settled_zero_pending), fontSize = 15.sp, fontWeight = FontWeight.Bold, color = statusColor)
+                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.settlement_status), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.settled_zero_pending), fontSize = 14.sp, fontWeight = FontWeight.Bold, color = statusColor)
                         }
                     }
                 }
@@ -540,14 +539,15 @@ fun EmploymentSummarySection(state: com.synfusion.attendance.viewmodel.OfflineAl
                     com.synfusion.attendance.utils.SettlementState.SETTLED -> androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.settled_zero_pending)
                 }
                 Surface(
-                    shape = RoundedCornerShape(10.dp),
+                    shape = RoundedCornerShape(8.dp),
                     color = statusColor.copy(alpha = 0.08f),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, statusColor.copy(alpha = 0.18f)),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
                         text = msg,
                         fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = FontWeight.SemiBold,
                         color = statusColor,
                         modifier = Modifier
                             .fillMaxWidth()
@@ -587,7 +587,13 @@ fun YearGroupItem(
     onToggleMonth: (String) -> Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
-        Text(yearGroup.year, fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
+        Text(
+            text = yearGroup.year,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
 
         yearGroup.months.forEach { monthGroup ->
             val monthKey = "${yearGroup.year}_${monthGroup.month}"
@@ -597,7 +603,7 @@ fun YearGroupItem(
                 expanded = expandedMonths[monthKey] ?: false,
                 onToggle = { onToggleMonth(monthKey) }
             )
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(10.dp))
         }
     }
 }
@@ -611,87 +617,138 @@ fun MonthGroupItem(
 ) {
     val rotation by animateFloatAsState(if (expanded) 180f else 0f)
 
-    ElevatedCard(
+    Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.elevatedCardColors(
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Row(
+            BoxWithConstraints(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { onToggle() }
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                    .padding(14.dp)
             ) {
-                Column {
-                    Text(
-                        text = monthGroup.month,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+                val isNarrow = maxWidth < 380.dp
+                val earningsFormatted = AmountFormatter.formatWithSymbol(monthGroup.totalEarnings + monthGroup.totalOvertime, currencyCode)
+                val earningsLabel = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.earnings_label)
+                val presentLabel = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.present_1)
+                val absentLabel = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.absent_1)
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Earnings: ${AmountFormatter.formatWithSymbol(monthGroup.totalEarnings + monthGroup.totalOvertime, currencyCode)}",
-                            fontSize = 12.sp,
+                            text = monthGroup.month,
                             fontWeight = FontWeight.Bold,
-                            color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent()
+                            fontSize = 16.sp,
+                            color = MaterialTheme.colorScheme.onSurface
                         )
-                        Box(
-                            modifier = Modifier
-                                .size(4.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.outline)
-                        )
-                        Text(
-                            text = "Present: ${monthGroup.presentCount}",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        if (!isNarrow) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "$earningsLabel: $earningsFormatted",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent()
+                                )
+                                Text(
+                                    text = "•",
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.outline
+                                )
+                                Text(
+                                    text = "$presentLabel: ${monthGroup.presentCount}",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = "•",
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.outline
+                                )
+                                Text(
+                                    text = "$absentLabel: ${monthGroup.absentCount}",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent()
+                                )
+                            }
+                        } else {
+                            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                Text(
+                                    text = "$earningsLabel: $earningsFormatted",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent()
+                                )
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "$presentLabel: ${monthGroup.presentCount}",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Text(
+                                        text = "•",
+                                        fontSize = 12.sp,
+                                        color = MaterialTheme.colorScheme.outline
+                                    )
+                                    Text(
+                                        text = "$absentLabel: ${monthGroup.absentCount}",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent()
+                                    )
+                                }
+                            }
+                        }
                     }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Icon(
+                        imageVector = Icons.Default.KeyboardArrowDown,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.rotate(rotation)
+                    )
                 }
-                Icon(
-                    imageVector = Icons.Default.KeyboardArrowDown,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.rotate(rotation)
-                )
             }
 
             AnimatedVisibility(visible = expanded) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
-                        .padding(16.dp),
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f))
+                        .padding(14.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    // Small monthly breakdown grid for a modern look
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Column {
                             Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.salary), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text(AmountFormatter.formatWithSymbol(monthGroup.totalEarnings, currencyCode), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                            Text(AmountFormatter.formatWithSymbol(monthGroup.totalEarnings, currencyCode), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                         }
                         Column {
                             Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.overtime), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text(AmountFormatter.formatWithSymbol(monthGroup.totalOvertime, currencyCode), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = com.synfusion.attendance.ui.theme.AttendanceStatusColors.getLeave())
+                            Text(AmountFormatter.formatWithSymbol(monthGroup.totalOvertime, currencyCode), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                         }
                         Column {
                             Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.total_present), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -699,7 +756,7 @@ fun MonthGroupItem(
                         }
                     }
 
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
 
                     monthGroup.logs.forEach { log ->
                         DrillDownRecordItem(log)
