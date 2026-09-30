@@ -33,32 +33,31 @@ object BackupRegistry {
     fun getModules(): List<BackupModule> = modules
 }
 
+suspend fun readDataStoreValuesForBackup(context: Context): Map<String, Any> {
+    val prefs = context.offlineDataStore.data.first()
+    val map = mutableMapOf<String, Any>()
+    prefs.asMap().forEach { (key, value) ->
+        if (key.name != "auth_token") {
+            map[key.name] = value
+        }
+    }
+    return map
+}
+
 class DatabaseBackupModule : BackupModule {
     override val name: String = "Database"
     override val keyName: String = "database"
 
     override suspend fun exportModule(context: Context, backupWorkingDir: File, logger: BackupLogger): Map<String, Int> {
         val db = AttendanceDatabase.getInstance(context)
-        return JsonExporter.exportDatabase(db, backupWorkingDir, logger)
+        val dataStoreMap = readDataStoreValuesForBackup(context)
+        return JsonExporter.exportDataPayload(db, dataStoreMap, backupWorkingDir, logger)
     }
 
     override suspend fun importModule(context: Context, backupWorkingDir: File, merge: Boolean, logger: BackupLogger): Map<String, Int> {
-        val tempDb = TempDatabaseManager.createTempDatabase(context)
-        try {
-            val counts = JsonImporter.importDatabase(tempDb, backupWorkingDir, merge, logger)
-
-            DatabaseLifecycleCoordinator.stopAndCancelEverything()
-            kotlinx.coroutines.delay(100)
-            tempDb.close()
-
-            TempDatabaseManager.swapToProduction(context, tempDb)
-            AttendanceDatabase.getInstance(context)
-            DatabaseLifecycleCoordinator.refreshViewModels()
-
-            return counts
-        } finally {
-            tempDb.close()
-        }
+        // Database import is coordinated centrally by RestoreManager to guarantee atomic temp DB verification and swap.
+        val prodDb = AttendanceDatabase.getInstance(context)
+        return JsonImporter.importDatabase(prodDb, backupWorkingDir, merge, logger)
     }
 }
 
@@ -67,8 +66,7 @@ class PreferencesBackupModule : BackupModule {
     override val keyName: String = "preferences"
 
     override suspend fun exportModule(context: Context, backupWorkingDir: File, logger: BackupLogger): Map<String, Int> {
-        val dataStoreMap = readDataStoreValues(context)
-        JsonExporter.exportPreferences(backupWorkingDir, dataStoreMap, emptyMap(), logger)
+        val dataStoreMap = readDataStoreValuesForBackup(context)
         return mapOf("datastore" to dataStoreMap.size)
     }
 
@@ -76,17 +74,6 @@ class PreferencesBackupModule : BackupModule {
         val (dsPrefs, _) = JsonImporter.importPreferences(backupWorkingDir, logger)
         applyDataStorePreferences(context, dsPrefs)
         return mapOf("datastore" to dsPrefs.size)
-    }
-
-    private suspend fun readDataStoreValues(context: Context): Map<String, Any> {
-        val prefs = context.offlineDataStore.data.first()
-        val map = mutableMapOf<String, Any>()
-        prefs.asMap().forEach { (key, value) ->
-            if (key.name != "auth_token") {
-                map[key.name] = value
-            }
-        }
-        return map
     }
 
     private suspend fun applyDataStorePreferences(context: Context, dsMap: Map<String, Any>) {
@@ -127,7 +114,7 @@ class PreferencesBackupModule : BackupModule {
                         val num = (value as? Number)?.toLong() ?: return@forEach
                         preferences[androidx.datastore.preferences.core.longPreferencesKey(key)] = num
                     }
-                    "dark_mode", "reminders_enabled", "onboarding_completed", "splash_enabled", "remember_last_screen" -> {
+                    "dark_mode", "reminders_enabled", "onboarding_completed", "splash_enabled", "remember_last_screen", "auto_backup_enabled" -> {
                         val bool = when (value) {
                             is Boolean -> value
                             is String -> value.toBoolean()
@@ -137,7 +124,7 @@ class PreferencesBackupModule : BackupModule {
                         preferences[androidx.datastore.preferences.core.booleanPreferencesKey(key)] = bool
                     }
                     "user_role", "app_language", "profile_photo_path", "last_backup_loc",
-                    "nav_left_1", "nav_left_2", "nav_right", "startup_screen", "last_active_screen", "user_country", "user_currency" -> {
+                    "nav_left_1", "nav_left_2", "nav_right", "startup_screen", "last_active_screen", "user_country", "user_currency", "external_backup_uri", "last_backup_status" -> {
                         val str = value.toString()
                         preferences[androidx.datastore.preferences.core.stringPreferencesKey(key)] = str
                     }

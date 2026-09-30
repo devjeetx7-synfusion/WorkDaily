@@ -13,7 +13,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -27,14 +26,9 @@ import com.synfusion.attendance.viewmodel.OfflineAuthViewModel
 import com.synfusion.attendance.viewmodel.OfflineSettingsViewModel
 import com.synfusion.attendance.viewmodel.OfflineViewModelFactory
 import com.synfusion.attendance.utils.collectAsStateWithLifecycle
-import com.synfusion.attendance.utils.LocalizationManager
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -50,6 +44,9 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.res.stringResource
+import com.synfusion.attendance.R
+import kotlinx.coroutines.flow.first
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -166,7 +163,7 @@ fun RestoreSuccessDetailDialog(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Restore Completed!",
+                    text = stringResource(R.string.restore_success),
                     fontWeight = FontWeight.Bold,
                     fontSize = 20.sp
                 )
@@ -182,7 +179,7 @@ fun RestoreSuccessDetailDialog(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    text = "Your data has been verified and restored successfully with 100% data fidelity.",
+                    text = stringResource(R.string.restore_data_success_msg),
                     fontSize = 14.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -190,7 +187,7 @@ fun RestoreSuccessDetailDialog(
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
 
                 // Detail Rows
-                DetailRow(label = "Restore Mode", value = if (isMerge) "Merge Data" else "Replace All")
+                DetailRow(label = stringResource(R.string.restore_mode), value = if (isMerge) "Merge Data" else "Replace All")
                 DetailRow(label = "Total Attendance", value = "$attendanceCount Records")
                 DetailRow(label = "User Profile", value = if (profileRestored) "Restored ✓" else "Not Restored")
                 DetailRow(label = "Total Media", value = "$mediaCount / $totalMedia Files")
@@ -199,7 +196,7 @@ fun RestoreSuccessDetailDialog(
                 DetailRow(label = "Backup Date", value = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault()).format(Date(backupDate)))
                 DetailRow(label = "Restore Date", value = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault()).format(Date(restoreDate)))
                 DetailRow(label = "Backup Size", value = "${String.format("%.2f", backupSize / 1024.0 / 1024.0)} MB")
-                DetailRow(label = "Validation Result", value = "Passed 100% ✓")
+                DetailRow(label = "Validation Status", value = "Passed ✓")
             }
         },
         confirmButton = {
@@ -207,7 +204,7 @@ fun RestoreSuccessDetailDialog(
                 onClick = onDismiss,
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Text("Got it")
+                Text(stringResource(R.string.close))
             }
         }
     )
