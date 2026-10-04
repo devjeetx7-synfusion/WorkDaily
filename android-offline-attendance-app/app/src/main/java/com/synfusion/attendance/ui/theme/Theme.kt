@@ -53,11 +53,6 @@ fun DailyWorkTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            val bgArgb = colorScheme.background.toArgb()
-            val transparentColor = androidx.compose.ui.graphics.Color.Transparent.toArgb()
-
-            window.statusBarColor = bgArgb
-            window.navigationBarColor = transparentColor
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 window.isNavigationBarContrastEnforced = false
