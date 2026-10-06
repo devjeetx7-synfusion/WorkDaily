@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.synfusion.attendance.data.LocalAttendanceRepository
 import com.synfusion.attendance.data.OfflinePreferencesRepository
 import com.synfusion.attendance.data.entities.AttendanceEntity
+import com.synfusion.attendance.festival.Festival
+import com.synfusion.attendance.festival.FestivalRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -37,7 +39,12 @@ data class OfflineCalendarState(
     val currentMonthDate: Date = Date(), // Determines the month/year displayed
     val personalAttendance: List<OfflineAttendanceRecord> = emptyList(),
     val currencyCode: String = "INR",
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+
+    // Festival State
+    val festivalsEnabled: Boolean = true,
+    val countryCode: String = "IN",
+    val festivals: List<Festival> = emptyList()
 )
 
 class OfflineCalendarViewModel(
@@ -52,6 +59,18 @@ class OfflineCalendarViewModel(
 
     init {
         com.synfusion.attendance.backup.DatabaseLifecycleCoordinator.registerViewModel(this)
+        viewModelScope.launch {
+            preferencesRepository.festivalsEnabledFlow.collect { enabled ->
+                _calendarState.update { it.copy(festivalsEnabled = enabled) }
+                loadData(showLoadingIndicator = false)
+            }
+        }
+        viewModelScope.launch {
+            preferencesRepository.countryFlow.collect { country ->
+                _calendarState.update { it.copy(countryCode = country) }
+                loadData(showLoadingIndicator = false)
+            }
+        }
         viewModelScope.launch {
             loadData()
         }
@@ -98,6 +117,7 @@ class OfflineCalendarViewModel(
 
                 val user = withContext(Dispatchers.IO) { localAttendanceRepository.getUser() }
                 val currencyCode = user?.currencyCode ?: "INR"
+                val countryCode = user?.countryCode ?: _calendarState.value.countryCode
 
                 val personal = withContext(Dispatchers.IO) {
                     localAttendanceRepository.getPersonalAttendance()
@@ -116,6 +136,15 @@ class OfflineCalendarViewModel(
                     )
                 }
 
+                val isFestivalsEnabled = _calendarState.value.festivalsEnabled
+                val year = cal.get(Calendar.YEAR)
+                val month1Based = cal.get(Calendar.MONTH) + 1
+                val monthlyFestivals = if (isFestivalsEnabled) {
+                    FestivalRepository.getFestivalsForMonth(countryCode, year, month1Based)
+                } else {
+                    emptyList()
+                }
+
                 if (isRefreshing) {
                     val elapsed = System.currentTimeMillis() - startTime
                     if (elapsed < 400) {
@@ -126,6 +155,8 @@ class OfflineCalendarViewModel(
                 _calendarState.update { it.copy(
                     personalAttendance = mappedRecords,
                     currencyCode = currencyCode,
+                    countryCode = countryCode,
+                    festivals = monthlyFestivals,
                     errorMessage = null
                 ) }
             } catch (e: Exception) {

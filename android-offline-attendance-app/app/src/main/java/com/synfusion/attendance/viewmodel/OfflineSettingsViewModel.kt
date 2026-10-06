@@ -53,7 +53,8 @@ data class OfflineSettingsState(
     val startupScreen: String = "dashboard",
     val rememberLastScreen: Boolean = false,
     val lastActiveScreen: String = "dashboard",
-    val isLoaded: Boolean = false
+    val isLoaded: Boolean = false,
+    val isFestivalsEnabled: Boolean = true
 )
 
 class OfflineSettingsViewModel(
@@ -150,6 +151,11 @@ class OfflineSettingsViewModel(
                 _state.update { it.copy(lastActiveScreen = screen, isLoaded = true) }
             }
         }
+        viewModelScope.launch {
+            repository.festivalsEnabledFlow.collect { enabled ->
+                _state.update { it.copy(isFestivalsEnabled = enabled) }
+            }
+        }
     }
 
     override fun onCleared() {
@@ -213,6 +219,12 @@ class OfflineSettingsViewModel(
     fun toggleSplash(enabled: Boolean) {
         viewModelScope.launch {
             repository.saveSplashEnabledPreference(enabled)
+        }
+    }
+
+    fun toggleFestivals(enabled: Boolean) {
+        viewModelScope.launch {
+            repository.saveFestivalsEnabled(enabled)
         }
     }
 

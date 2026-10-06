@@ -178,6 +178,7 @@ fun SettingsScreen(
     }
     var showDeveloperSheet by remember { mutableStateOf(false) }
     var showBackupSheet by remember { mutableStateOf(false) }
+    var showFestivalDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(state.savedMessage) {
         state.savedMessage?.let { msg ->
@@ -282,7 +283,8 @@ fun SettingsScreen(
                             permissionLauncher = permissionLauncher,
                             supportedLanguages = supportedLanguages,
                             context = context,
-                            onNavigate = onNavigate
+                                onNavigate = onNavigate,
+                                onOpenFestivals = { showFestivalDialog = true }
                         )
                     }
                     BackupRestoreCardSection(state = state, lastBackupFile = lastBackupFile, context = context, onManageBackup = { showBackupSheet = true })
@@ -432,7 +434,8 @@ fun SettingsScreen(
                                         permissionLauncher = permissionLauncher,
                                         supportedLanguages = supportedLanguages,
                                         context = context,
-                                        onNavigate = onNavigate
+                                        onNavigate = onNavigate,
+                                        onOpenFestivals = { showFestivalDialog = true }
                                     )
                                 }
                                 SettingsCategory.BACKUP -> {
@@ -468,6 +471,13 @@ fun SettingsScreen(
 
 
 
+        if (showFestivalDialog) {
+            FestivalSettingsDialog(
+                state = state,
+                viewModel = viewModel,
+                onDismiss = { showFestivalDialog = false }
+            )
+        }
         if (showDeveloperSheet) {
             DeveloperContactBottomSheet(onDismiss = { showDeveloperSheet = false })
         }
@@ -880,7 +890,8 @@ fun AppPreferencesCardSection(
     permissionLauncher: androidx.activity.result.ActivityResultLauncher<String>,
     supportedLanguages: Map<String, String>,
     context: Context,
-    onNavigate: (String) -> Unit
+    onNavigate: (String) -> Unit,
+    onOpenFestivals: () -> Unit = {}
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -930,6 +941,52 @@ fun AppPreferencesCardSection(
             }
 
             HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+
+            // Festivals & Holidays - Clickable setting row
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onOpenFestivals() }
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(androidx.compose.foundation.shape.CircleShape)
+                            .background(Color(0xFF7C4DFF).copy(alpha = 0.12f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.Celebration,
+                            contentDescription = null,
+                            tint = Color(0xFF7C4DFF)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.festivals_and_holidays),
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.show_festivals_sub),
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                Icon(
+                    Icons.Default.ChevronRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
 
             // 2. Enable Splash Screen — Toggle
             Row(
@@ -1443,6 +1500,141 @@ fun LogoutBottomSheet(
 }
 
 
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun FestivalSettingsDialog(
+    state: OfflineSettingsState,
+    viewModel: OfflineSettingsViewModel,
+    onDismiss: () -> Unit
+) {
+    var tempEnabled by remember { mutableStateOf(state.isFestivalsEnabled) }
+    val countryConfig = remember(state.countryCode) { CountryRepository.getCountry(state.countryCode) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(28.dp),
+        containerColor = MaterialTheme.colorScheme.surface,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(androidx.compose.foundation.shape.CircleShape)
+                        .background(Color(0xFF7C4DFF).copy(alpha = 0.12f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Default.Celebration,
+                        contentDescription = null,
+                        tint = Color(0xFF7C4DFF),
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.festivals_and_holidays),
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text(
+                    text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.show_festivals_sub),
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                // Master Switch Row
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.show_festivals),
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Switch(
+                            checked = tempEnabled,
+                            onCheckedChange = { tempEnabled = it }
+                        )
+                    }
+                }
+
+                // Informational Country Card (not editable here)
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(
+                            text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.country_label),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "${countryConfig.flagEmoji} ${countryConfig.countryName}",
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                        Text(
+                            text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.based_on_profile_country),
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    viewModel.toggleFestivals(tempEnabled)
+                    onDismiss()
+                },
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text(
+                    text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.save),
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(
+                    text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.cancel),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+        }
+    )
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
