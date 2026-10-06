@@ -360,6 +360,7 @@ fun DashboardScreen(
                                                                 modifier = Modifier.fillMaxWidth(),
                                                                 verticalArrangement = Arrangement.spacedBy(16.dp)
                                                             ) {
+                                                                HomeFestivalBanner(state = dashboardState)
                                                                 PersonalStatsGrid(currencyCode = settingsState.currencyCode,
                                                                     state = dashboardState,
                                                                     onNavigatePassbook = { bottomNavController.navigate("passbook") },
@@ -395,6 +396,7 @@ fun DashboardScreen(
                                                                     modifier = Modifier.weight(1f),
                                                                     verticalArrangement = Arrangement.spacedBy(16.dp)
                                                                 ) {
+                                                                    HomeFestivalBanner(state = dashboardState)
                                                                     PersonalStatsGrid(currencyCode = settingsState.currencyCode,
                                                                         state = dashboardState,
                                                                         onNavigatePassbook = { bottomNavController.navigate("passbook") },
@@ -794,6 +796,66 @@ fun HeaderSection(state: OfflineDashboardState, onProfileClick: () -> Unit = {})
                 }
             }
         }
+}
+
+@Composable
+fun HomeFestivalBanner(state: OfflineDashboardState) {
+    if (!state.festivalsEnabled) return
+
+    val festival = state.todayFestival ?: state.tomorrowFestival ?: return
+    val isToday = state.todayFestival != null
+
+    val lang = Locale.getDefault().language
+    val displayName = if (lang == "hi" && !festival.nameHi.isNullOrBlank()) festival.nameHi else festival.name
+    val subText = if (isToday) {
+        androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.festival_today)
+    } else {
+        androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.tomorrow)
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF7C4DFF).copy(alpha = 0.08f)),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF7C4DFF).copy(alpha = 0.2f))
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFF7C4DFF).copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Celebration,
+                    contentDescription = null,
+                    tint = Color(0xFF7C4DFF),
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = displayName,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = subText,
+                    fontSize = 12.sp,
+                    color = Color(0xFF7C4DFF),
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        }
+    }
 }
 
 @Composable

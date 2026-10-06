@@ -7,8 +7,11 @@ import com.synfusion.attendance.data.OfflinePreferencesRepository
 import com.synfusion.attendance.data.DrillDownRepository
 import com.synfusion.attendance.data.DrillDownType
 import com.synfusion.attendance.data.entities.AttendanceEntity
+import com.synfusion.attendance.festival.Festival
+import com.synfusion.attendance.festival.FestivalRepository
 import com.synfusion.attendance.utils.OvertimeCalculator
 import com.synfusion.attendance.utils.AttendanceCalculationEngine
+import java.time.LocalDate
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -38,6 +41,12 @@ data class OfflineDashboardState(
     val overtimeHours: Int = 0,
     val todayNote: String? = null,
 
+    // Festival State
+    val festivalsEnabled: Boolean = true,
+    val countryCode: String = "IN",
+    val todayFestival: Festival? = null,
+    val tomorrowFestival: Festival? = null,
+
     // Offline state placeholders
     val showOfflineBottomSheet: Boolean = false,
     val hasShownOfflineSheet: Boolean = false,
@@ -63,6 +72,18 @@ class OfflineDashboardViewModel(
 
     init {
         com.synfusion.attendance.backup.DatabaseLifecycleCoordinator.registerViewModel(this)
+        viewModelScope.launch {
+            preferencesRepository.festivalsEnabledFlow.collect { enabled ->
+                _dashboardState.update { it.copy(festivalsEnabled = enabled) }
+                loadLocalData(showLoadingIndicator = false)
+            }
+        }
+        viewModelScope.launch {
+            preferencesRepository.countryFlow.collect { country ->
+                _dashboardState.update { it.copy(countryCode = country) }
+                loadLocalData(showLoadingIndicator = false)
+            }
+        }
         viewModelScope.launch {
             _dashboardState.update { it.copy(isLoading = true) }
             loadLocalData()
@@ -108,9 +129,10 @@ class OfflineDashboardViewModel(
                 val user = withContext(Dispatchers.IO) { localAttendanceRepository.getUser() }
                 val name = user?.name ?: "User"
                 cachedDefaultWage = user?.dailyWage ?: 500.0
+                val countryCode = user?.countryCode ?: _dashboardState.value.countryCode
                 val resolvedPhotoPath = preferencesRepository.profilePhotoPathFlow.first() ?: ""
 
-                _dashboardState.update { it.copy(name = name, photoUrl = resolvedPhotoPath) }
+                _dashboardState.update { it.copy(name = name, photoUrl = resolvedPhotoPath, countryCode = countryCode) }
 
                 // Personal role
                 val personalAttendance = withContext(Dispatchers.IO) { localAttendanceRepository.getPersonalAttendance() }
@@ -125,6 +147,19 @@ class OfflineDashboardViewModel(
                         defaultWage = cachedDefaultWage
                     )
                 }
+
+                // Resolve Today/Tomorrow Festival
+                val festivalsEnabled = _dashboardState.value.festivalsEnabled
+                val todayLocalDate = LocalDate.now()
+                val tomorrowLocalDate = todayLocalDate.plusDays(1)
+
+                val todayFest = if (festivalsEnabled) {
+                    FestivalRepository.getFestivalsForDate(countryCode, todayLocalDate).firstOrNull()
+                } else null
+
+                val tomorrowFest = if (festivalsEnabled && todayFest == null) {
+                    FestivalRepository.getFestivalsForDate(countryCode, tomorrowLocalDate).firstOrNull()
+                } else null
 
                 if (isRefreshing) {
                     val elapsed = System.currentTimeMillis() - startTime
@@ -141,6 +176,8 @@ class OfflineDashboardViewModel(
                     overtimeHours = calcResult.currentOvertime,
                     todayNote = calcResult.currentNote,
                     todayAdvanceAmount = if (calcResult.advanceToday > 0.0) calcResult.advanceToday else null,
+                    todayFestival = todayFest,
+                    tomorrowFestival = tomorrowFest,
                     errorMessage = null
                 ) }
             } catch (e: Exception) {
