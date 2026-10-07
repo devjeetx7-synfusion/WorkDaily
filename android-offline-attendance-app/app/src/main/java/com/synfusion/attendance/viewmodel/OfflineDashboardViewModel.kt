@@ -73,12 +73,6 @@ class OfflineDashboardViewModel(
     init {
         com.synfusion.attendance.backup.DatabaseLifecycleCoordinator.registerViewModel(this)
         viewModelScope.launch {
-            preferencesRepository.festivalsEnabledFlow.collect { enabled ->
-                _dashboardState.update { it.copy(festivalsEnabled = enabled) }
-                loadLocalData(showLoadingIndicator = false)
-            }
-        }
-        viewModelScope.launch {
             preferencesRepository.countryFlow.collect { country ->
                 _dashboardState.update { it.copy(countryCode = country) }
                 loadLocalData(showLoadingIndicator = false)
@@ -149,15 +143,11 @@ class OfflineDashboardViewModel(
                 }
 
                 // Resolve Today/Tomorrow Festival
-                val festivalsEnabled = _dashboardState.value.festivalsEnabled
                 val todayLocalDate = LocalDate.now()
                 val tomorrowLocalDate = todayLocalDate.plusDays(1)
 
-                val todayFest = if (festivalsEnabled) {
-                    FestivalRepository.getFestivalsForDate(countryCode, todayLocalDate).firstOrNull()
-                } else null
-
-                val tomorrowFest = if (festivalsEnabled && todayFest == null) {
+                val todayFest = FestivalRepository.getFestivalsForDate(countryCode, todayLocalDate).firstOrNull()
+                val tomorrowFest = if (todayFest == null) {
                     FestivalRepository.getFestivalsForDate(countryCode, tomorrowLocalDate).firstOrNull()
                 } else null
 

@@ -21,17 +21,23 @@ class FestivalRepositoryTest {
     }
 
     @Test
-    fun testMonthLookupAndChronologicalSorting() {
-        // October 2026 has Navratri, Dussehra, Gandhi Jayanti
+    fun testOctober2026IndiaFestivalsExactDates() {
         val festivals = FestivalRepository.getFestivalsForMonth("IN", 2026, 10)
 
-        assertTrue(festivals.isNotEmpty())
-        for (i in 0 until festivals.size - 1) {
-            assertTrue(festivals[i].date <= festivals[i + 1].date)
-        }
-        val names = festivals.map { it.name }
-        assertTrue(names.contains("Gandhi Jayanti"))
-        assertTrue(names.any { it.contains("Dussehra") })
+        assertEquals(3, festivals.size)
+        // Verify chronological order
+        assertEquals(LocalDate.of(2026, 10, 2), festivals[0].date)
+        assertEquals("Gandhi Jayanti", festivals[0].name)
+
+        assertEquals(LocalDate.of(2026, 10, 11), festivals[1].date)
+        assertTrue(festivals[1].name.contains("Navratri"))
+
+        assertEquals(LocalDate.of(2026, 10, 20), festivals[2].date)
+        assertTrue(festivals[2].name.contains("Dussehra"))
+
+        // Verify October 7 has no festival
+        val oct7 = FestivalRepository.getFestivalsForDate("IN", LocalDate.of(2026, 10, 7))
+        assertTrue(oct7.isEmpty())
     }
 
     @Test

@@ -33,7 +33,6 @@ class OfflinePreferencesRepository(val context: Context) {
         val STARTUP_SCREEN_KEY = stringPreferencesKey("startup_screen")
         val REMEMBER_LAST_SCREEN_KEY = booleanPreferencesKey("remember_last_screen")
         val LAST_ACTIVE_SCREEN_KEY = stringPreferencesKey("last_active_screen")
-        val FESTIVALS_ENABLED_KEY = booleanPreferencesKey("festivals_enabled")
     }
 
     val userRoleFlow: Flow<String?> = context.offlineDataStore.data.map { preferences ->
@@ -110,10 +109,6 @@ class OfflinePreferencesRepository(val context: Context) {
 
     val lastActiveScreenFlow: Flow<String> = context.offlineDataStore.data.map { preferences ->
         preferences[LAST_ACTIVE_SCREEN_KEY] ?: "dashboard"
-    }
-
-    val festivalsEnabledFlow: Flow<Boolean> = context.offlineDataStore.data.map { preferences ->
-        preferences[FESTIVALS_ENABLED_KEY] ?: true
     }
 
     suspend fun saveCountryAndCurrency(countryCode: String, currencyCode: String) {
@@ -206,12 +201,6 @@ class OfflinePreferencesRepository(val context: Context) {
     suspend fun saveLastActiveScreen(screen: String) {
         context.offlineDataStore.edit { preferences ->
             preferences[LAST_ACTIVE_SCREEN_KEY] = screen
-        }
-    }
-
-    suspend fun saveFestivalsEnabled(enabled: Boolean) {
-        context.offlineDataStore.edit { preferences ->
-            preferences[FESTIVALS_ENABLED_KEY] = enabled
         }
     }
 

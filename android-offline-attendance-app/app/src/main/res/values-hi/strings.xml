@@ -79,16 +79,12 @@
     <string name="reminders">रिमाइंडर (Reminders)</string>
     <string name="daily_attendance_reminder">रोज की हाजिरी का रिमाइंडर</string>
     <string name="enable_splash_screen">वेलकम स्क्रीन चालू रखें</string>
-    <string name="festivals_and_holidays">त्योहार और छुट्टियाँ</string>
-    <string name="show_festivals">त्योहार दिखाएँ</string>
-    <string name="show_festivals_sub">कैलेंडर और होम पर त्योहारों की जानकारी दिखाएँ</string>
     <string name="festival">त्योहार</string>
     <string name="festival_today">आज त्योहार है</string>
     <string name="tomorrow">कल</string>
     <string name="festivals_this_month">इस महीने %1$d त्योहार</string>
     <string name="view">देखें</string>
     <string name="no_festivals">कोई त्योहार नहीं</string>
-    <string name="based_on_profile_country">आपकी प्रोफाइल कंट्री के आधार पर</string>
     <string name="national_holiday">राष्ट्रीय छुट्टी</string>
     <string name="observance">विशेष दिवस</string>
     <string name="language_2">भाषा</string>
