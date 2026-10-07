@@ -42,7 +42,6 @@ data class OfflineCalendarState(
     val errorMessage: String? = null,
 
     // Festival State
-    val festivalsEnabled: Boolean = true,
     val countryCode: String = "IN",
     val festivals: List<Festival> = emptyList()
 )
@@ -59,12 +58,6 @@ class OfflineCalendarViewModel(
 
     init {
         com.synfusion.attendance.backup.DatabaseLifecycleCoordinator.registerViewModel(this)
-        viewModelScope.launch {
-            preferencesRepository.festivalsEnabledFlow.collect { enabled ->
-                _calendarState.update { it.copy(festivalsEnabled = enabled) }
-                loadData(showLoadingIndicator = false)
-            }
-        }
         viewModelScope.launch {
             preferencesRepository.countryFlow.collect { country ->
                 _calendarState.update { it.copy(countryCode = country) }
@@ -136,14 +129,9 @@ class OfflineCalendarViewModel(
                     )
                 }
 
-                val isFestivalsEnabled = _calendarState.value.festivalsEnabled
                 val year = cal.get(Calendar.YEAR)
                 val month1Based = cal.get(Calendar.MONTH) + 1
-                val monthlyFestivals = if (isFestivalsEnabled) {
-                    FestivalRepository.getFestivalsForMonth(countryCode, year, month1Based)
-                } else {
-                    emptyList()
-                }
+                val monthlyFestivals = FestivalRepository.getFestivalsForMonth(countryCode, year, month1Based)
 
                 if (isRefreshing) {
                     val elapsed = System.currentTimeMillis() - startTime

@@ -24,10 +24,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Celebration
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
+import com.synfusion.attendance.festival.Festival
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -108,6 +110,7 @@ fun PersonalCalendarView(
     scrollState: androidx.compose.foundation.lazy.LazyListState
 ) {
     var showDialog by rememberSaveable { mutableStateOf(false) }
+    var showMonthlyFestivalsSheet by rememberSaveable { mutableStateOf(false) }
     var selectedDay by rememberSaveable { mutableStateOf<Int?>(null) }
 
     val currentMonthDate = state.currentMonthDate
@@ -128,6 +131,10 @@ fun PersonalCalendarView(
     val todayDay = todayCal.get(Calendar.DAY_OF_MONTH)
 
     val dayLabels = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
+
+    val festivalByDay = remember(state.festivals) {
+        state.festivals.groupBy { it.date.dayOfMonth }
+    }
 
     val dayMap = remember(state.personalAttendance) {
         val map = mutableMapOf<Int, OfflineAttendanceRecord>()
@@ -294,10 +301,12 @@ fun PersonalCalendarView(
                                         if (day in 1..daysInMonth) {
                                             val data = dayMap[day]
                                             val isToday = isCurrentMonth && day == todayDay
+                                            val festivalsForDay = festivalByDay[day].orEmpty()
                                             CalendarDateCell(
                                                 day = day,
                                                 data = data,
                                                 isToday = isToday,
+                                                festivals = festivalsForDay,
                                                 onClick = {
                                                     selectedDay = day
                                                     showDialog = true
@@ -316,31 +325,83 @@ fun PersonalCalendarView(
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent()))
-                            Spacer(modifier = Modifier.width(6.dp))
+                            Box(modifier = Modifier.size(10.dp).clip(CircleShape).background(com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent()))
+                            Spacer(modifier = Modifier.width(4.dp))
                             Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.full_day), fontSize = 10.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
-                        Spacer(modifier = Modifier.width(16.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay()))
-                            Spacer(modifier = Modifier.width(6.dp))
+                            Box(modifier = Modifier.size(10.dp).clip(CircleShape).background(com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay()))
+                            Spacer(modifier = Modifier.width(4.dp))
                             Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.half_day), fontSize = 10.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
-                        Spacer(modifier = Modifier.width(16.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent()))
-                            Spacer(modifier = Modifier.width(6.dp))
+                            Box(modifier = Modifier.size(10.dp).clip(CircleShape).background(com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent()))
+                            Spacer(modifier = Modifier.width(4.dp))
                             Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.absent_1), fontSize = 10.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
-                        Spacer(modifier = Modifier.width(16.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay()))
-                            Spacer(modifier = Modifier.width(6.dp))
+                            Box(modifier = Modifier.size(10.dp).clip(CircleShape).background(com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay()))
+                            Spacer(modifier = Modifier.width(4.dp))
                             Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.advance), fontSize = 10.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(modifier = Modifier.size(10.dp).clip(CircleShape).background(Color(0xFF7C4DFF)))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.festival), fontSize = 10.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+
+                    if (state.festivals.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(16.dp))
+                                .clickable { showMonthlyFestivalsSheet = true },
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFF7C4DFF).copy(alpha = 0.08f)),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF7C4DFF).copy(alpha = 0.2f))
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(32.dp)
+                                            .clip(CircleShape)
+                                            .background(Color(0xFF7C4DFF).copy(alpha = 0.15f)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Celebration,
+                                            contentDescription = null,
+                                            tint = Color(0xFF7C4DFF),
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Text(
+                                        text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.festivals_this_month, state.festivals.size),
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+                                Text(
+                                    text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.view),
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF7C4DFF)
+                                )
+                            }
                         }
                     }
                 }
@@ -441,11 +502,13 @@ fun PersonalCalendarView(
                                                     if (day in 1..daysInMonth) {
                                                         val data = dayMap[day]
                                                         val isToday = isCurrentMonth && day == todayDay
+                                                        val festivalsForDay = festivalByDay[day].orEmpty()
                                                         CalendarDateCell(
-                                                day = day,
-                                                data = data,
-                                                isToday = isToday,
-                                                onClick = {
+                                                            day = day,
+                                                            data = data,
+                                                            isToday = isToday,
+                                                            festivals = festivalsForDay,
+                                                            onClick = {
                                                                 selectedDay = day
                                                                 showDialog = true
                                                             }
@@ -547,6 +610,60 @@ fun PersonalCalendarView(
                                         Spacer(modifier = Modifier.width(10.dp))
                                         Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.advance), fontSize = 13.sp, fontWeight = FontWeight.Medium)
                                     }
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Box(modifier = Modifier.size(14.dp).clip(CircleShape).background(Color(0xFF7C4DFF)))
+                                        Spacer(modifier = Modifier.width(10.dp))
+                                        Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.festival), fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                                    }
+                                }
+                            }
+
+                            if (state.festivals.isNotEmpty()) {
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(20.dp))
+                                        .clickable { showMonthlyFestivalsSheet = true },
+                                    colors = CardDefaults.cardColors(containerColor = Color(0xFF7C4DFF).copy(alpha = 0.08f)),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF7C4DFF).copy(alpha = 0.2f))
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 16.dp, vertical = 14.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(36.dp)
+                                                    .clip(CircleShape)
+                                                    .background(Color(0xFF7C4DFF).copy(alpha = 0.15f)),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.Celebration,
+                                                    contentDescription = null,
+                                                    tint = Color(0xFF7C4DFF),
+                                                    modifier = Modifier.size(20.dp)
+                                                )
+                                            }
+                                            Spacer(modifier = Modifier.width(12.dp))
+                                            Text(
+                                                text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.festivals_this_month, state.festivals.size),
+                                                fontSize = 14.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.onSurface
+                                            )
+                                        }
+                                        Text(
+                                            text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.view),
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFF7C4DFF)
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -559,11 +676,12 @@ fun PersonalCalendarView(
     if (showDialog && selectedDay != null) {
         val dateStr = String.format(Locale.US, "%04d-%02d-%02d", year, month + 1, selectedDay!!)
         val existingRecord = dayMap[selectedDay!!]
+        val selectedFestivals = festivalByDay[selectedDay!!].orEmpty()
         PersonalAttendanceDialog(
             displayDate = "$selectedDay ${SimpleDateFormat("MMMM", Locale.getDefault()).format(currentMonthDate)} $year",
             existingRecord = existingRecord,
             currencyCode = state.currencyCode,
-
+            festivals = selectedFestivals,
             onDismiss = { showDialog = false },
             onSave = { status, type, reason, overtime, note, advance ->
                 viewModel.markPersonalAttendance(dateStr, status, type, reason, overtime, note, advance)
@@ -575,6 +693,13 @@ fun PersonalCalendarView(
             }
         )
     }
+
+    if (showMonthlyFestivalsSheet) {
+        MonthlyFestivalsBottomSheet(
+            festivals = state.festivals,
+            onDismiss = { showMonthlyFestivalsSheet = false }
+        )
+    }
 }
 
 @Composable
@@ -582,6 +707,7 @@ fun PersonalAttendanceDialog(
     displayDate: String,
     existingRecord: OfflineAttendanceRecord?,
     currencyCode: String = "INR",
+    festivals: List<Festival> = emptyList(),
     onDismiss: () -> Unit,
     onSave: (String, String, String, Int, String, Double) -> Unit,
     onDelete: () -> Unit
@@ -634,6 +760,49 @@ fun PersonalAttendanceDialog(
                         .heightIn(max = 480.dp)
                         .verticalScroll(scrollState)
                 ) {
+                if (festivals.isNotEmpty()) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color(0xFF7C4DFF).copy(alpha = 0.12f))
+                            .padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        festivals.forEach { fest ->
+                            val lang = Locale.getDefault().language
+                            val name = if (lang == "hi" && !fest.nameHi.isNullOrBlank()) fest.nameHi else fest.name
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = name,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = Color(0xFF7C4DFF).copy(alpha = 0.2f)
+                                ) {
+                                    Text(
+                                        text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.festival),
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF7C4DFF),
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
+
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(
                         onClick = { editStatus = "present" },
@@ -805,6 +974,7 @@ fun CalendarDateCell(
     data: OfflineAttendanceRecord?,
     isToday: Boolean,
     onClick: () -> Unit,
+    festivals: List<Festival> = emptyList(),
     modifier: Modifier = Modifier
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -889,6 +1059,131 @@ fun CalendarDateCell(
                     .clip(CircleShape)
                     .background(com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay())
             )
+        }
+
+        if (festivals.isNotEmpty()) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(4.dp)
+                    .size(6.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFF7C4DFF))
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MonthlyFestivalsBottomSheet(
+    festivals: List<Festival>,
+    onDismiss: () -> Unit
+) {
+    val sortedFestivals = remember(festivals) { festivals.sortedBy { it.date } }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        windowInsets = WindowInsets(0.dp),
+        dragHandle = { BottomSheetDefaults.DragHandle() }
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 16.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFF7C4DFF).copy(alpha = 0.12f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Default.Celebration,
+                        contentDescription = null,
+                        tint = Color(0xFF7C4DFF),
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+                Text(
+                    text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.festivals_this_month, sortedFestivals.size),
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+
+            if (sortedFestivals.isEmpty()) {
+                Text(
+                    text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.no_festivals),
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(vertical = 16.dp)
+                )
+            } else {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    sortedFestivals.forEach { fest ->
+                        val lang = Locale.getDefault().language
+                        val name = if (lang == "hi" && !fest.nameHi.isNullOrBlank()) fest.nameHi else fest.name
+                        val dayFormatted = String.format(Locale.getDefault(), "%02d", fest.date.dayOfMonth)
+                        val monthFormatted = fest.date.month.getDisplayName(java.time.format.TextStyle.SHORT, Locale.getDefault())
+                        val dateStr = "$dayFormatted $monthFormatted"
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = dateStr,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF7C4DFF)
+                            )
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Text(
+                                text = name,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.weight(1f),
+                                textAlign = TextAlign.End
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(
+                onClick = onDismiss,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text(
+                    text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.close),
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }
