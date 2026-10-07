@@ -413,15 +413,18 @@ fun PdfViewerScreen(
                                     }
                                 }
 
+                                val navInsets = WindowInsets.navigationBars.asPaddingValues()
+                                val layoutDirection = androidx.compose.ui.platform.LocalLayoutDirection.current
+
                                 LazyColumn(
                                     state = listState,
                                     userScrollEnabled = zoomScale <= 1.05f,
                                     modifier = Modifier.fillMaxSize(),
                                     contentPadding = PaddingValues(
                                         top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 64.dp,
-                                        bottom = 80.dp,
-                                        start = 0.dp,
-                                        end = 0.dp
+                                        bottom = navInsets.calculateBottomPadding() + 80.dp,
+                                        start = navInsets.calculateStartPadding(layoutDirection),
+                                        end = navInsets.calculateEndPadding(layoutDirection)
                                     ),
                                     verticalArrangement = Arrangement.spacedBy(10.dp)
                                 ) {
@@ -447,6 +450,7 @@ fun PdfViewerScreen(
                             exit = fadeOut(animationSpec = tween(300)),
                             modifier = Modifier
                                 .align(Alignment.BottomCenter)
+                                .navigationBarsPadding()
                                 .padding(bottom = 32.dp)
                         ) {
                             Surface(
@@ -491,6 +495,7 @@ fun PdfViewerScreen(
                             exit = fadeOut(animationSpec = tween(180)) + scaleOut(animationSpec = tween(180)),
                             modifier = Modifier
                                 .align(Alignment.BottomEnd)
+                                .navigationBarsPadding()
                                 .padding(bottom = 24.dp, end = 24.dp)
                         ) {
                             PdfViewerFab(
@@ -614,11 +619,13 @@ fun PdfViewerScreen(
                 )
 
                 LazyVerticalGrid(
-                    columns = GridCells.Fixed(3),
+                    columns = GridCells.Adaptive(minSize = 100.dp),
                     contentPadding = PaddingValues(8.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.fillMaxHeight(0.55f)
+                    modifier = Modifier
+                        .fillMaxHeight(0.65f)
+                        .navigationBarsPadding()
                 ) {
                     items(state.totalPages) { index ->
                         val pageNum = index + 1
