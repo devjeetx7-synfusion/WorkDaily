@@ -52,6 +52,7 @@ fun PdfViewerSettingsSheet(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(24.dp)
+                .navigationBarsPadding()
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {

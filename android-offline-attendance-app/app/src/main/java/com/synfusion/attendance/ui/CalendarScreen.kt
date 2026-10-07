@@ -104,6 +104,89 @@ fun CalendarScreen(
 }
 
 @Composable
+private fun CalendarLegendItem(
+    color: Color,
+    label: String
+) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            modifier = Modifier
+                .size(10.dp)
+                .clip(CircleShape)
+                .background(color)
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(
+            text = label,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+private fun MonthlyFestivalSummaryCard(
+    festivalCount: Int,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .clickable(onClick = onClick),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f)
+        ),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Default.Celebration,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.festivals_this_month, festivalCount),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f, fill = false)
+                )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.view),
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+    }
+}
+
+@Composable
 fun PersonalCalendarView(
     viewModel: OfflineCalendarViewModel,
     state: com.synfusion.attendance.viewmodel.OfflineCalendarState,
@@ -323,86 +406,25 @@ fun PersonalCalendarView(
                 item {
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    Row(
+                    @OptIn(ExperimentalLayoutApi::class)
+                    FlowRow(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
-                        verticalAlignment = Alignment.CenterVertically
+                        horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(modifier = Modifier.size(10.dp).clip(CircleShape).background(com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent()))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.full_day), fontSize = 10.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(modifier = Modifier.size(10.dp).clip(CircleShape).background(com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay()))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.half_day), fontSize = 10.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(modifier = Modifier.size(10.dp).clip(CircleShape).background(com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent()))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.absent_1), fontSize = 10.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(modifier = Modifier.size(10.dp).clip(CircleShape).background(com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay()))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.advance), fontSize = 10.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(modifier = Modifier.size(10.dp).clip(CircleShape).background(Color(0xFF7C4DFF)))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.festival), fontSize = 10.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
+                        CalendarLegendItem(com.synfusion.attendance.ui.theme.AttendanceStatusColors.getPresent(), androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.full_day))
+                        CalendarLegendItem(com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay(), androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.half_day))
+                        CalendarLegendItem(com.synfusion.attendance.ui.theme.AttendanceStatusColors.getAbsent(), androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.absent_1))
+                        CalendarLegendItem(com.synfusion.attendance.ui.theme.AttendanceStatusColors.getHalfDay(), androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.advance))
+                        CalendarLegendItem(Color(0xFF7C4DFF), androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.festival))
                     }
 
                     if (state.festivals.isNotEmpty()) {
                         Spacer(modifier = Modifier.height(12.dp))
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(16.dp))
-                                .clickable { showMonthlyFestivalsSheet = true },
-                            colors = CardDefaults.cardColors(containerColor = Color(0xFF7C4DFF).copy(alpha = 0.08f)),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF7C4DFF).copy(alpha = 0.2f))
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(32.dp)
-                                            .clip(CircleShape)
-                                            .background(Color(0xFF7C4DFF).copy(alpha = 0.15f)),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(
-                                            Icons.Default.Celebration,
-                                            contentDescription = null,
-                                            tint = Color(0xFF7C4DFF),
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                    }
-                                    Spacer(modifier = Modifier.width(12.dp))
-                                    Text(
-                                        text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.festivals_this_month, state.festivals.size),
-                                        fontSize = 13.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                }
-                                Text(
-                                    text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.view),
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF7C4DFF)
-                                )
-                            }
-                        }
+                        MonthlyFestivalSummaryCard(
+                            festivalCount = state.festivals.size,
+                            onClick = { showMonthlyFestivalsSheet = true }
+                        )
                     }
                 }
             }
@@ -619,52 +641,10 @@ fun PersonalCalendarView(
                             }
 
                             if (state.festivals.isNotEmpty()) {
-                                Card(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(20.dp))
-                                        .clickable { showMonthlyFestivalsSheet = true },
-                                    colors = CardDefaults.cardColors(containerColor = Color(0xFF7C4DFF).copy(alpha = 0.08f)),
-                                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF7C4DFF).copy(alpha = 0.2f))
-                                ) {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(horizontal = 16.dp, vertical = 14.dp),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Box(
-                                                modifier = Modifier
-                                                    .size(36.dp)
-                                                    .clip(CircleShape)
-                                                    .background(Color(0xFF7C4DFF).copy(alpha = 0.15f)),
-                                                contentAlignment = Alignment.Center
-                                            ) {
-                                                Icon(
-                                                    Icons.Default.Celebration,
-                                                    contentDescription = null,
-                                                    tint = Color(0xFF7C4DFF),
-                                                    modifier = Modifier.size(20.dp)
-                                                )
-                                            }
-                                            Spacer(modifier = Modifier.width(12.dp))
-                                            Text(
-                                                text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.festivals_this_month, state.festivals.size),
-                                                fontSize = 14.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = MaterialTheme.colorScheme.onSurface
-                                            )
-                                        }
-                                        Text(
-                                            text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.view),
-                                            fontSize = 14.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color(0xFF7C4DFF)
-                                        )
-                                    }
-                                }
+                                MonthlyFestivalSummaryCard(
+                                    festivalCount = state.festivals.size,
+                                    onClick = { showMonthlyFestivalsSheet = true }
+                                )
                             }
                         }
                     }
@@ -977,7 +957,6 @@ fun CalendarDateCell(
     festivals: List<Festival> = emptyList(),
     modifier: Modifier = Modifier
 ) {
-    val context = androidx.compose.ui.platform.LocalContext.current
     val isPresent = data?.status == "present"
     val isAbsent = data?.status == "absent"
     val isHalf = data?.type == "half"
@@ -1105,13 +1084,13 @@ fun MonthlyFestivalsBottomSheet(
                     modifier = Modifier
                         .size(40.dp)
                         .clip(CircleShape)
-                        .background(Color(0xFF7C4DFF).copy(alpha = 0.12f)),
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         Icons.Default.Celebration,
                         contentDescription = null,
-                        tint = Color(0xFF7C4DFF),
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(24.dp)
                     )
                 }
@@ -1154,7 +1133,7 @@ fun MonthlyFestivalsBottomSheet(
                                 text = dateStr,
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFF7C4DFF)
+                                color = MaterialTheme.colorScheme.primary
                             )
                             Spacer(modifier = Modifier.width(16.dp))
                             Text(

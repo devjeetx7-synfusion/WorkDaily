@@ -33,6 +33,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.synfusion.attendance.data.model.CountryRepository
+import com.synfusion.attendance.ui.components.CountrySelectionBottomSheet
 import com.synfusion.attendance.ui.components.CropScreenDialog
 import com.synfusion.attendance.ui.responsive.LocalWindowSizeInfo
 import com.synfusion.attendance.ui.responsive.ResponsiveContainer
@@ -54,7 +55,7 @@ fun ProfileScreen(
 
     var selectedUriForCrop by remember { mutableStateOf<Uri?>(null) }
     var showPhotoActionSheet by remember { mutableStateOf(false) }
-    var showCountryDropdown by remember { mutableStateOf(false) }
+    var showCountryBottomSheet by remember { mutableStateOf(false) }
 
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -327,7 +328,7 @@ fun ProfileScreen(
                                         singleLine = true
                                     )
 
-                                    // Country Selector Dropdown
+                                    // Country Selector
                                     Box(modifier = Modifier.fillMaxWidth()) {
                                         OutlinedTextField(
                                             value = "${activeCountry.flagEmoji} ${activeCountry.displayName} — ${activeCountry.currencySymbol}",
@@ -336,7 +337,7 @@ fun ProfileScreen(
                                             label = { Text("Country / Region") },
                                             modifier = Modifier
                                                 .fillMaxWidth()
-                                                .clickable { showCountryDropdown = true },
+                                                .clickable { showCountryBottomSheet = true },
                                             shape = RoundedCornerShape(14.dp),
                                             leadingIcon = { Icon(Icons.Default.Public, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                                             trailingIcon = { Icon(Icons.Default.ArrowDropDown, contentDescription = null) },
@@ -352,25 +353,8 @@ fun ProfileScreen(
                                         Box(
                                             modifier = Modifier
                                                 .matchParentSize()
-                                                .clickable { showCountryDropdown = true }
+                                                .clickable { showCountryBottomSheet = true }
                                         )
-                                        DropdownMenu(
-                                            expanded = showCountryDropdown,
-                                            onDismissRequest = { showCountryDropdown = false },
-                                            modifier = Modifier.heightIn(max = 280.dp)
-                                        ) {
-                                            CountryRepository.SUPPORTED_COUNTRIES.forEach { country ->
-                                                DropdownMenuItem(
-                                                    text = {
-                                                        Text("${country.flagEmoji} ${country.displayName} — ${country.currencySymbol}", fontSize = 14.sp)
-                                                    },
-                                                    onClick = {
-                                                        viewModel.onCountryChange(country.countryCode)
-                                                        showCountryDropdown = false
-                                                    }
-                                                )
-                                            }
-                                        }
                                     }
 
                                     OutlinedTextField(
@@ -574,7 +558,7 @@ fun ProfileScreen(
                                     singleLine = true
                                 )
 
-                                // Country Selector Dropdown
+                                // Country Selector
                                 Box(modifier = Modifier.fillMaxWidth()) {
                                     OutlinedTextField(
                                         value = "${activeCountry.flagEmoji} ${activeCountry.displayName} — ${activeCountry.currencySymbol}",
@@ -583,7 +567,7 @@ fun ProfileScreen(
                                         label = { Text("Country / Region") },
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .clickable { showCountryDropdown = true },
+                                            .clickable { showCountryBottomSheet = true },
                                         shape = RoundedCornerShape(14.dp),
                                         leadingIcon = { Icon(Icons.Default.Public, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                                         trailingIcon = { Icon(Icons.Default.ArrowDropDown, contentDescription = null) },
@@ -599,25 +583,8 @@ fun ProfileScreen(
                                     Box(
                                         modifier = Modifier
                                             .matchParentSize()
-                                            .clickable { showCountryDropdown = true }
+                                            .clickable { showCountryBottomSheet = true }
                                     )
-                                    DropdownMenu(
-                                        expanded = showCountryDropdown,
-                                        onDismissRequest = { showCountryDropdown = false },
-                                        modifier = Modifier.heightIn(max = 280.dp)
-                                    ) {
-                                        CountryRepository.SUPPORTED_COUNTRIES.forEach { country ->
-                                            DropdownMenuItem(
-                                                text = {
-                                                    Text("${country.flagEmoji} ${country.displayName} — ${country.currencySymbol}", fontSize = 14.sp)
-                                                },
-                                                onClick = {
-                                                    viewModel.onCountryChange(country.countryCode)
-                                                    showCountryDropdown = false
-                                                }
-                                            )
-                                        }
-                                    }
                                 }
 
                                 OutlinedTextField(
@@ -815,6 +782,17 @@ fun ProfileScreen(
                         Spacer(modifier = Modifier.height(24.dp))
                     }
                 }
+            }
+
+            if (showCountryBottomSheet) {
+                CountrySelectionBottomSheet(
+                    selectedCountryCode = state.countryCode,
+                    onCountrySelected = { country ->
+                        viewModel.onCountryChange(country.countryCode)
+                        showCountryBottomSheet = false
+                    },
+                    onDismiss = { showCountryBottomSheet = false }
+                )
             }
         }
     }

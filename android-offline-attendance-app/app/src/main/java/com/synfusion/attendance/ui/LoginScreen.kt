@@ -62,6 +62,7 @@ import com.synfusion.attendance.backup.ProgressTracker
 import com.synfusion.attendance.backup.RestoreManager
 import com.synfusion.attendance.data.model.CountryConfig
 import com.synfusion.attendance.data.model.CountryRepository
+import com.synfusion.attendance.ui.components.CountrySelectionBottomSheet
 import com.synfusion.attendance.ui.responsive.LocalWindowSizeInfo
 import com.synfusion.attendance.ui.responsive.ResponsiveContainer
 import com.synfusion.attendance.utils.getActivity
@@ -826,71 +827,14 @@ fun LoginScreen(
         }
 
         if (showCountryBottomSheet) {
-            ModalBottomSheet(
-                onDismissRequest = { showCountryBottomSheet = false },
-                windowInsets = WindowInsets(0.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 12.dp)
-                ) {
-                    Text(
-                        text = stringResource(R.string.onboarding_select_country_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(bottom = 12.dp)
-                    )
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                    Spacer(modifier = Modifier.height(8.dp))
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 360.dp)
-                    ) {
-                        items(CountryRepository.SUPPORTED_COUNTRIES) { country ->
-                            val isSelected = country.countryCode == selectedCountry.countryCode
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f) else Color.Transparent)
-                                    .clickable {
-                                        selectedCountry = country
-                                        showCountryBottomSheet = false
-                                    }
-                                    .padding(horizontal = 16.dp, vertical = 14.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(text = country.flagEmoji, fontSize = 20.sp)
-                                    Spacer(modifier = Modifier.width(12.dp))
-                                    Column {
-                                        Text(
-                                            text = country.displayName,
-                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                            fontSize = 15.sp
-                                        )
-                                        Text(
-                                            text = "${country.currencyCode} (${country.currencySymbol}) • ${country.callingCode}",
-                                            fontSize = 12.sp,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                }
-                                if (isSelected) {
-                                    Icon(
-                                        imageVector = Icons.Default.Check,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            CountrySelectionBottomSheet(
+                selectedCountryCode = selectedCountry.countryCode,
+                onCountrySelected = { country ->
+                    selectedCountry = country
+                    showCountryBottomSheet = false
+                },
+                onDismiss = { showCountryBottomSheet = false }
+            )
         }
     }
 }
