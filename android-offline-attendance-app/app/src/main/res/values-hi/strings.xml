@@ -629,14 +629,14 @@
     <string name="support_section_desc">अगर आपको वर्कडेली ऐप में कोई दिक्कत आ रही है या कोई सवाल है, तो आप हमारी सपोर्ट टीम से ईमेल पर संपर्क कर सकते हैं:\n\nईमेल:\nworkdaily.synfusion@gmail.com\n\nअपनी समस्या को साफ-साफ लिखें ताकि हम आपकी जल्दी मदद कर सकें।\n\nकृपया अपना पासवर्ड, पिन या बैंक की जानकारी शेयर न करें।</string>
 
     <string name="legal_footer_title">WorkDaily</string>
-    <string name="last_updated_date">अंतिम अपडेट: 11 सितंबर 2026</string>
+    <string name="last_updated_date">लागू तिथि: 11 सितंबर 2026 | अंतिम अपडेट: 9 अक्टूबर 2026</string>
 
     <!-- Privacy Policy Strings -->
     <string name="privacy_intro">WorkDaily आपकी प्राइवेसी का पूरा ध्यान रखता है। आपका सारा डेटा आपके फोन में ही सुरक्षित रहता है।</string>
 
     <string name="privacy_local_data_title">1. फोन में डेटा सुरक्षा</string>
 
-    <string name="privacy_local_data_desc">आपका नाम, फोन नंबर, दिहाड़ी, हाजिरी और एडवांस का सारा हिसाब सिर्फ आपके फोन में ही सेव होता है। वर्कडेली किसी सर्वर पर आपका डेटा नहीं भेजता।</string>
+    <string name="privacy_local_data_desc">आपका नाम, फोन नंबर, दिहाड़ी, हाजिरी और एडवांस का सारा हिसाब आपके फोन में ही सेव होता है। वर्कडेली किसी सर्वर पर डेटा नहीं भेजता। एंड्रॉइड सिस्टम का ऑटो-बैकअप आपके फोन सेटिंग्स के अनुसार गूगल अकाउंट में डेटा सुरक्षित रख सकता है।</string>
 
     <string name="privacy_notifications_title">2. नोटिफिकेशन और परमिशन</string>
 
@@ -652,7 +652,7 @@
 
     <string name="privacy_deletion_title">5. डेटा डिलीट करना</string>
 
-    <string name="privacy_deletion_desc">ऐप अनइन्स्टॉल करने पर आपका सारा डेटा अपने आप डिलीट हो जाता है।</string>
+    <string name="privacy_deletion_desc">ऐप अनइन्स्टॉल करने पर आपके फोन से डेटा हट जाता है (यदि फोन में एंड्रॉइड ऑटो बैकअप चालू है, तो बैकअप से डेटा दोबारा आ सकता है)।</string>
 
     <string name="privacy_children_title">6. बच्चों की प्राइवेसी</string>
 

@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   build-and-send-aab:
-    name: Build Unsigned Release AAB & Send to Telegram
+    name: Build Release AAB & Send to Telegram
     runs-on: ubuntu-latest
 
     steps:
@@ -68,11 +68,11 @@ jobs:
           echo "Extracted Version Code: ${VERSION_CODE}"
           echo "Extracted Version Name: ${VERSION_NAME}"
 
-      - name: Build Unsigned Release AAB
+      - name: Build Release AAB
         shell: bash
         run: |
           set -euo pipefail
-          echo "Building Unsigned Release AAB with Gradle..."
+          echo "Building Release AAB with Gradle..."
           cd android-offline-attendance-app
           ./gradlew clean bundleRelease --no-daemon
           echo "Gradle bundleRelease completed successfully."
