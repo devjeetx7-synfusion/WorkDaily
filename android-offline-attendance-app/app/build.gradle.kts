@@ -4,6 +4,10 @@ plugins {
     id("com.google.devtools.ksp") version "1.9.0-1.0.13"
 }
 
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+}
+
 android {
     namespace = "com.synfusion.attendance"
     compileSdk = 36
@@ -126,6 +130,15 @@ dependencies {
 
     // WorkManager
     implementation("androidx.work:work-runtime-ktx:2.8.1")
+
+    // Firebase BoM & Firebase Authentication
+    implementation(platform("com.google.firebase:firebase-bom:32.8.0"))
+    implementation("com.google.firebase:firebase-auth-ktx")
+
+    // Google Credential Manager & Google ID
+    implementation("androidx.credentials:credentials:1.2.1")
+    implementation("androidx.credentials:credentials-play-services-auth:1.2.1")
+    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.0")
 
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
