@@ -39,7 +39,8 @@ suspend fun readDataStoreValuesForBackup(context: Context): Map<String, Any> {
     prefs.asMap().forEach { (key, value) ->
         if (key.name != "auth_token" &&
             key.name != "online_account_setup_completed" &&
-            key.name != "linked_firebase_uid") {
+            key.name != "linked_firebase_uid" &&
+            key.name != "google_photo_url") {
             map[key.name] = value
         }
     }
@@ -83,7 +84,8 @@ class PreferencesBackupModule : BackupModule {
             dsMap.forEach { (rawKey, rawValue) ->
                 if (rawKey == "auth_token" ||
                     rawKey == "online_account_setup_completed" ||
-                    rawKey == "linked_firebase_uid") return@forEach
+                    rawKey == "linked_firebase_uid" ||
+                    rawKey == "google_photo_url") return@forEach
                 var value = rawValue
 
                 // Map legacy key aliases to modern DataStore keys

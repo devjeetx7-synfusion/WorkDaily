@@ -548,7 +548,9 @@ fun LoginScreen(
         )
     }
 
-    val isPhoneValid = if (selectedCountry.countryCode == "IN") phone.length >= 10 else phone.length >= 7
+    val parsedWage = dailyWageText.toDoubleOrNull()
+    val isWageValid = parsedWage != null && parsedWage > 0.0
+    val isPhoneValid = if (selectedCountry.countryCode == "IN") phone.length == 10 else phone.length in 7..15
     val isProcessing = loginState is OfflineLoginState.Loading || onlineAuthState is OnlineAuthState.Loading
 
     Box(
@@ -915,29 +917,31 @@ fun LoginScreen(
                                 )
                             }
 
-                            // FULL NAME FIELD
-                            OutlinedTextField(
-                                value = name,
-                                onValueChange = { name = it },
-                                label = { Text(stringResource(R.string.full_name)) },
-                                placeholder = { Text(stringResource(R.string.enter_full_name_hint)) },
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(16.dp),
-                                leadingIcon = {
-                                    Icon(
-                                        Icons.Default.Person,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary
+                            // FULL NAME FIELD (Preserve custom name for existing upgrading user; brand-new users use Google identity summary)
+                            if (existingUser != null) {
+                                OutlinedTextField(
+                                    value = name,
+                                    onValueChange = { name = it },
+                                    label = { Text(stringResource(R.string.full_name)) },
+                                    placeholder = { Text(stringResource(R.string.enter_full_name_hint)) },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(16.dp),
+                                    leadingIcon = {
+                                        Icon(
+                                            Icons.Default.Person,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    },
+                                    singleLine = true,
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                        focusedLabelColor = MaterialTheme.colorScheme.primary
                                     )
-                                },
-                                singleLine = true,
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                    focusedLabelColor = MaterialTheme.colorScheme.primary
                                 )
-                            )
 
-                            Spacer(modifier = Modifier.height(16.dp))
+                                Spacer(modifier = Modifier.height(16.dp))
+                            }
 
                             // COUNTRY SELECTION FIELD
                             Box(modifier = Modifier.fillMaxWidth()) {
@@ -991,6 +995,7 @@ fun LoginScreen(
                                 },
                                 label = { Text(stringResource(R.string.daily_wage)) },
                                 placeholder = { Text("500") },
+                                isError = dailyWageText.isNotBlank() && !isWageValid,
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(16.dp),
                                 leadingIcon = {
@@ -1009,6 +1014,16 @@ fun LoginScreen(
                                     focusedLabelColor = MaterialTheme.colorScheme.primary
                                 )
                             )
+                            if (dailyWageText.isNotBlank() && !isWageValid) {
+                                Text(
+                                    text = "Daily wage must be greater than 0",
+                                    color = MaterialTheme.colorScheme.error,
+                                    fontSize = 12.sp,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(start = 12.dp, top = 2.dp)
+                                )
+                            }
 
                             Spacer(modifier = Modifier.height(16.dp))
 
@@ -1021,6 +1036,7 @@ fun LoginScreen(
                                 },
                                 label = { Text(stringResource(R.string.phone_number)) },
                                 placeholder = { Text(stringResource(R.string.enter_mobile_number_hint)) },
+                                isError = phone.isNotBlank() && !isPhoneValid,
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(16.dp),
                                 leadingIcon = {
@@ -1056,30 +1072,32 @@ fun LoginScreen(
                                     focusedLabelColor = MaterialTheme.colorScheme.primary
                                 )
                             )
+                            if (phone.isNotBlank() && !isPhoneValid) {
+                                val phoneErrMsg = if (selectedCountry.countryCode == "IN") "Enter a valid 10-digit mobile number" else "Enter a valid phone number (7-15 digits)"
+                                Text(
+                                    text = phoneErrMsg,
+                                    color = MaterialTheme.colorScheme.error,
+                                    fontSize = 12.sp,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(start = 12.dp, top = 2.dp)
+                                )
+                            }
 
                             Spacer(modifier = Modifier.height(20.dp))
 
                             // SUBMIT / COMPLETE SETUP BUTTON
                             Button(
                                 onClick = {
-                                    val dailyWageDouble = dailyWageText.toDoubleOrNull() ?: 500.0
-                                    if (dailyWageText.isNotBlank() && isPhoneValid) {
+                                    if (isWageValid && isPhoneValid) {
                                         authViewModel.completeProfile(
                                             googleAccount = account,
                                             enteredName = name,
                                             enteredPhone = phone,
                                             countryCode = selectedCountry.countryCode,
                                             currencyCode = selectedCountry.currencyCode,
-                                            dailyWage = dailyWageDouble,
-                                            onComplete = { success, _ ->
-                                                if (success) {
-                                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !isPostPermissionsGranted) {
-                                                        showPermissionDialog = true
-                                                    } else {
-                                                        onLoginSuccess()
-                                                    }
-                                                }
-                                            }
+                                            dailyWage = parsedWage!!,
+                                            onComplete = { _, _ -> }
                                         )
                                     }
                                 },
@@ -1092,7 +1110,7 @@ fun LoginScreen(
                                     containerColor = MaterialTheme.colorScheme.primary,
                                     contentColor = MaterialTheme.colorScheme.onPrimary
                                 ),
-                                enabled = dailyWageText.isNotBlank() && isPhoneValid && !isProcessing
+                                enabled = isWageValid && isPhoneValid && !isProcessing
                             ) {
                                 if (isProcessing) {
                                     CircularProgressIndicator(

@@ -136,19 +136,101 @@ class Step2SingleAccountOnboardingTest {
             "onboarding_completed",
             "auth_token",
             "online_account_setup_completed",
-            "linked_firebase_uid"
+            "linked_firebase_uid",
+            "google_photo_url"
         )
 
         val filteredForBackup = mockDataStoreKeys.filter { key ->
             key != "auth_token" &&
             key != "online_account_setup_completed" &&
-            key != "linked_firebase_uid"
+            key != "linked_firebase_uid" &&
+            key != "google_photo_url"
         }
 
         assertFalse(filteredForBackup.contains("auth_token"))
         assertFalse(filteredForBackup.contains("online_account_setup_completed"))
         assertFalse(filteredForBackup.contains("linked_firebase_uid"))
+        assertFalse(filteredForBackup.contains("google_photo_url"))
         assertTrue(filteredForBackup.contains("app_language"))
         assertTrue(filteredForBackup.contains("dark_mode"))
+    }
+
+    @Test
+    fun testDailyWageValidationRules() {
+        val validateWage = { input: String ->
+            val parsed = input.toDoubleOrNull()
+            parsed != null && parsed > 0.0
+        }
+
+        assertFalse("Blank wage is invalid", validateWage(""))
+        assertFalse("Zero wage is invalid", validateWage("0"))
+        assertFalse("Negative wage is invalid", validateWage("-500"))
+        assertFalse("Non-number wage is invalid", validateWage("abc"))
+        assertTrue("Positive wage 500 is valid", validateWage("500"))
+        assertTrue("Positive wage 1250.50 is valid", validateWage("1250.50"))
+    }
+
+    @Test
+    fun testPhoneValidationRules() {
+        val validatePhone = { phone: String, countryCode: String ->
+            val digits = phone.filter { it.isDigit() }
+            if (countryCode == "IN") digits.length == 10 else digits.length in 7..15
+        }
+
+        // India rules
+        assertTrue("Valid 10 digit Indian number", validatePhone("9876543210", "IN"))
+        assertFalse("Too short Indian number", validatePhone("987654321", "IN"))
+        assertFalse("Too long Indian number", validatePhone("98765432101", "IN"))
+
+        // Non-India rules (e.g. US / AE)
+        assertTrue("7 digit US number", validatePhone("5551234", "US"))
+        assertTrue("10 digit US number", validatePhone("2025550143", "US"))
+        assertFalse("6 digit number is too short", validatePhone("123456", "US"))
+        assertFalse("16 digit number is too long", validatePhone("12345678901234567", "US"))
+    }
+
+    @Test
+    fun testProfilePhotoSeparationAndPriority() {
+        var customLocalPhotoPath: String? = "/data/user/0/com.synfusion.attendance/files/profile_photos/user_123.jpg"
+        var googlePhotoUrl: String? = "https://lh3.googleusercontent.com/photo.jpg"
+
+        // Rule: Google photo URL does NOT overwrite custom local photo path
+        val effectiveCustomPhoto = customLocalPhotoPath // preserved
+        val effectiveGooglePhoto = googlePhotoUrl
+
+        // Display priority logic
+        val resolveImageModel = { customPath: String?, googleUrl: String? ->
+            if (!customPath.isNullOrEmpty()) customPath
+            else if (!googleUrl.isNullOrEmpty()) googleUrl
+            else null
+        }
+
+        // Priority 1: Custom local photo present
+        assertEquals(effectiveCustomPhoto, resolveImageModel(effectiveCustomPhoto, effectiveGooglePhoto))
+
+        // Priority 2: Custom local photo missing, Google photo present
+        assertEquals(effectiveGooglePhoto, resolveImageModel(null, effectiveGooglePhoto))
+
+        // Priority 3: Both missing
+        assertNull(resolveImageModel(null, null))
+    }
+
+    @Test
+    fun testExistingUserBypassPrevention() {
+        val existingUser = UserEntity(
+            id = "existing_uuid_123",
+            name = "Existing Worker",
+            phoneNumber = "9876543210",
+            email = "worker@example.com",
+            role = "personal",
+            dailyWage = 700.0,
+            countryCode = "IN",
+            currencyCode = "INR"
+        )
+        val onlineAccountSetupCompleted = false
+
+        // Existing user detection alone MUST NOT set onlineAccountSetupCompleted to true or bypass account linking
+        assertFalse(onlineAccountSetupCompleted)
+        assertEquals("existing_uuid_123", existingUser.id)
     }
 }

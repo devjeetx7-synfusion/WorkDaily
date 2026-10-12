@@ -59,19 +59,15 @@ class OfflineAuthViewModel(
         checkJob = viewModelScope.launch {
             val user = localAttendanceRepository.getUser()
             if (user != null) {
-                // Recover local session safely for existing user/workspace
-                repository.saveOnboardingCompleted(true)
-                repository.saveAuthToken(user.id)
+                // Workspace detected: preload workspace config without auto-triggering login success
                 repository.saveUserRole(user.role)
                 repository.saveCountryAndCurrency(user.countryCode, user.currencyCode)
-                _loginState.value = OfflineLoginState.Success(user.id)
             }
         }
     }
 
-    fun resumeExistingWorkspace(): Boolean {
-        var resumed = false
-        viewModelScope.launch {
+    fun resumeExistingWorkspace(onComplete: ((Boolean) -> Unit)? = null): kotlinx.coroutines.Job {
+        return viewModelScope.launch {
             val existingUser = localAttendanceRepository.getUser()
             if (existingUser != null) {
                 repository.saveOnboardingCompleted(true)
@@ -79,10 +75,11 @@ class OfflineAuthViewModel(
                 repository.saveUserRole(existingUser.role)
                 repository.saveCountryAndCurrency(existingUser.countryCode, existingUser.currencyCode)
                 _loginState.value = OfflineLoginState.Success(existingUser.id)
-                resumed = true
+                onComplete?.invoke(true)
+            } else {
+                onComplete?.invoke(false)
             }
         }
-        return resumed
     }
 
     fun login(
@@ -209,10 +206,9 @@ class OfflineAuthViewModel(
                 repository.saveOnlineAccountSetupCompleted(true)
                 repository.saveLinkedFirebaseUid(googleAccount.uid)
 
-                // Preserve existing custom local profile photo if present; set Google photo as fallback if none exists
-                val currentCustomPhoto = repository.profilePhotoPathFlow.firstOrNull()
-                if (currentCustomPhoto.isNullOrBlank() && !googleAccount.photoUrl.isNullOrBlank()) {
-                    repository.saveProfilePhotoPath(googleAccount.photoUrl)
+                // Save Google photo URL to its own separate account key (leaving custom local photo path untouched)
+                if (!googleAccount.photoUrl.isNullOrBlank()) {
+                    repository.saveGooglePhotoUrl(googleAccount.photoUrl)
                 }
 
                 _loginState.value = OfflineLoginState.Success(userId)

@@ -79,10 +79,12 @@ fun ProfileScreen(
 
     val displayUri = state.profileImageUri
     val currentPhotoPath = state.profileImageUrl
+    val googlePhotoUrl = state.googlePhotoUrl
 
-    val imageModel: Any? = remember(displayUri, currentPhotoPath) {
+    val imageModel: Any? = remember(displayUri, currentPhotoPath, googlePhotoUrl) {
         if (displayUri != null) displayUri
         else if (currentPhotoPath.isNotEmpty()) java.io.File(currentPhotoPath)
+        else if (googlePhotoUrl.isNotEmpty()) googlePhotoUrl
         else null
     }
 
@@ -183,9 +185,11 @@ fun ProfileScreen(
                                             if (imageModel is java.io.File) {
                                                 builder.memoryCacheKey("${imageModel.absolutePath}_${imageModel.lastModified()}")
                                                     .diskCacheKey("${imageModel.absolutePath}_${imageModel.lastModified()}")
+                                                    .networkCachePolicy(coil.request.CachePolicy.DISABLED)
+                                            } else {
+                                                builder.networkCachePolicy(coil.request.CachePolicy.ENABLED)
                                             }
-                                            builder.networkCachePolicy(coil.request.CachePolicy.DISABLED)
-                                                .diskCachePolicy(coil.request.CachePolicy.ENABLED)
+                                            builder.diskCachePolicy(coil.request.CachePolicy.ENABLED)
                                                 .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
                                                 .build()
                                         } else null
