@@ -23,6 +23,7 @@ class OfflinePreferencesRepository(val context: Context) {
         val ONBOARDING_COMPLETED_KEY = booleanPreferencesKey("onboarding_completed")
         val ONLINE_ACCOUNT_SETUP_COMPLETED_KEY = booleanPreferencesKey("online_account_setup_completed")
         val LINKED_FIREBASE_UID_KEY = stringPreferencesKey("linked_firebase_uid")
+        val GOOGLE_PHOTO_URL_KEY = stringPreferencesKey("google_photo_url")
         val SPLASH_ENABLED_KEY = booleanPreferencesKey("splash_enabled")
         val PROFILE_PHOTO_PATH_KEY = stringPreferencesKey("profile_photo_path")
         val LAST_BACKUP_TIME_KEY = longPreferencesKey("last_backup_time")
@@ -63,6 +64,10 @@ class OfflinePreferencesRepository(val context: Context) {
 
     val profilePhotoPathFlow: Flow<String?> = context.offlineDataStore.data.map { preferences ->
         preferences[PROFILE_PHOTO_PATH_KEY]
+    }
+
+    val googlePhotoUrlFlow: Flow<String?> = context.offlineDataStore.data.map { preferences ->
+        preferences[GOOGLE_PHOTO_URL_KEY]
     }
 
     val authTokenFlow: Flow<String?> = context.offlineDataStore.data.map { preferences ->
@@ -176,6 +181,16 @@ class OfflinePreferencesRepository(val context: Context) {
                 preferences[LINKED_FIREBASE_UID_KEY] = uid
             } else {
                 preferences.remove(LINKED_FIREBASE_UID_KEY)
+            }
+        }
+    }
+
+    suspend fun saveGooglePhotoUrl(url: String?) {
+        context.offlineDataStore.edit { preferences ->
+            if (url != null) {
+                preferences[GOOGLE_PHOTO_URL_KEY] = url
+            } else {
+                preferences.remove(GOOGLE_PHOTO_URL_KEY)
             }
         }
     }

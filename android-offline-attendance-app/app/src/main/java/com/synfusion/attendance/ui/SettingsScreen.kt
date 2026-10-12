@@ -672,15 +672,24 @@ fun ProfileCardSection(
                     if (state.profileImageUrl.isNotEmpty()) java.io.File(state.profileImageUrl) else null
                 }
                 val showLocalImage = imageFile != null && imageFile.exists()
-                val imageRequest = remember(state.profileImageUrl, showLocalImage) {
-                    if (imageFile != null && showLocalImage) {
-                        coil.request.ImageRequest.Builder(context)
-                            .data(imageFile)
+                val imageModel: Any? = remember(state.profileImageUrl, showLocalImage, state.googlePhotoUrl) {
+                    if (showLocalImage && imageFile != null) imageFile
+                    else if (state.googlePhotoUrl.isNotEmpty()) state.googlePhotoUrl
+                    else null
+                }
+                val imageRequest = remember(imageModel) {
+                    if (imageModel != null) {
+                        val builder = coil.request.ImageRequest.Builder(context)
+                            .data(imageModel)
                             .crossfade(true)
-                            .memoryCacheKey("${state.profileImageUrl}_${imageFile.lastModified()}")
-                            .diskCacheKey("${state.profileImageUrl}_${imageFile.lastModified()}")
-                            .networkCachePolicy(coil.request.CachePolicy.DISABLED)
-                            .diskCachePolicy(coil.request.CachePolicy.ENABLED)
+                        if (imageModel is java.io.File) {
+                            builder.memoryCacheKey("${state.profileImageUrl}_${imageModel.lastModified()}")
+                                .diskCacheKey("${state.profileImageUrl}_${imageModel.lastModified()}")
+                                .networkCachePolicy(coil.request.CachePolicy.DISABLED)
+                        } else {
+                            builder.networkCachePolicy(coil.request.CachePolicy.ENABLED)
+                        }
+                        builder.diskCachePolicy(coil.request.CachePolicy.ENABLED)
                             .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
                             .build()
                     } else null
@@ -694,7 +703,7 @@ fun ProfileCardSection(
                         .border(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), androidx.compose.foundation.shape.CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    if (showLocalImage && imageRequest != null) {
+                    if (imageModel != null && imageRequest != null) {
                         coil.compose.SubcomposeAsyncImage(
                             model = imageRequest,
                             contentDescription = "Profile Photo",
@@ -1752,10 +1761,12 @@ fun OfflineProfileEditBottomSheet(
 
                 val displayUri = state.profileImageUri
                 val currentPhotoPath = state.profileImageUrl
+                val googlePhotoUrl = state.googlePhotoUrl
 
-                val imageModel: Any? = remember(displayUri, currentPhotoPath) {
+                val imageModel: Any? = remember(displayUri, currentPhotoPath, googlePhotoUrl) {
                     if (displayUri != null) displayUri
                     else if (currentPhotoPath.isNotEmpty()) java.io.File(currentPhotoPath)
+                    else if (googlePhotoUrl.isNotEmpty()) googlePhotoUrl
                     else null
                 }
 
@@ -1807,9 +1818,11 @@ fun OfflineProfileEditBottomSheet(
                                     if (imageModel is java.io.File) {
                                         builder.memoryCacheKey("${imageModel.absolutePath}_${imageModel.lastModified()}")
                                             .diskCacheKey("${imageModel.absolutePath}_${imageModel.lastModified()}")
+                                            .networkCachePolicy(coil.request.CachePolicy.DISABLED)
+                                    } else {
+                                        builder.networkCachePolicy(coil.request.CachePolicy.ENABLED)
                                     }
-                                    builder.networkCachePolicy(coil.request.CachePolicy.DISABLED)
-                                        .diskCachePolicy(coil.request.CachePolicy.ENABLED)
+                                    builder.diskCachePolicy(coil.request.CachePolicy.ENABLED)
                                         .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
                                         .build()
                                 } else null

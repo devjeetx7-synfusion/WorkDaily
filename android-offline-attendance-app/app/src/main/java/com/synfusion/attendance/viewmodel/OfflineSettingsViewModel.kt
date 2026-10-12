@@ -32,6 +32,7 @@ data class OfflineSettingsState(
     val originalCurrencyCode: String = "INR",
     val profileImageUrl: String = "",
     val originalProfileImageUrl: String = "",
+    val googlePhotoUrl: String = "",
     val profileImageUri: Uri? = null,
     val language: String = "en",
     val isDarkMode: Boolean? = null,
@@ -102,6 +103,13 @@ class OfflineSettingsViewModel(
                 _state.update { it.copy(
                     profileImageUrl = path ?: "",
                     originalProfileImageUrl = path ?: ""
+                ) }
+            }
+        }
+        viewModelScope.launch {
+            repository.googlePhotoUrlFlow.collect { url ->
+                _state.update { it.copy(
+                    googlePhotoUrl = url ?: ""
                 ) }
             }
         }
