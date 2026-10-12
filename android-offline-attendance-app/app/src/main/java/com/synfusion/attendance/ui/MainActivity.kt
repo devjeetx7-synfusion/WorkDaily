@@ -25,6 +25,7 @@ import com.synfusion.attendance.ui.theme.DailyWorkTheme
 import com.synfusion.attendance.viewmodel.OfflineAuthViewModel
 import com.synfusion.attendance.viewmodel.OfflineSettingsViewModel
 import com.synfusion.attendance.viewmodel.OfflineViewModelFactory
+import com.synfusion.attendance.viewmodel.OnlineAuthViewModel
 import com.synfusion.attendance.utils.collectAsStateWithLifecycle
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
@@ -227,12 +228,14 @@ fun OfflineDailyWorkApp(
 ) {
     val navController = rememberNavController()
     val authViewModel: OfflineAuthViewModel = viewModel(factory = factory)
+    val onlineAuthViewModel: OnlineAuthViewModel = viewModel(factory = factory)
     val settingsViewModel: OfflineSettingsViewModel = viewModel(factory = factory)
 
     val tokenState by authViewModel.authTokenFlow.collectAsStateWithLifecycle(initialValue = "LOADING")
     val languageState by authViewModel.repository.languageFlow.collectAsStateWithLifecycle(initialValue = "LOADING")
     val splashEnabled by authViewModel.repository.splashEnabledFlow.collectAsStateWithLifecycle(initialValue = true)
     val onboardingCompleted by authViewModel.repository.isOnboardingCompletedFlow.collectAsStateWithLifecycle(initialValue = false)
+    val onlineAccountSetupCompleted by authViewModel.isOnlineAccountSetupCompletedFlow.collectAsStateWithLifecycle(initialValue = false)
 
     if (tokenState == "LOADING" || languageState == "LOADING") {
         return
@@ -241,7 +244,7 @@ fun OfflineDailyWorkApp(
     val startDest = if (splashEnabled == false) {
         if (languageState == null) "language_selection"
         else if (!onboardingCompleted) "onboarding"
-        else if (tokenState == null) "login"
+        else if (tokenState == null || !onlineAccountSetupCompleted) "login"
         else "dashboard"
     } else {
         "splash"
@@ -286,7 +289,7 @@ fun OfflineDailyWorkApp(
                         navController.navigate("onboarding") {
                             popUpTo("splash") { inclusive = true }
                         }
-                    } else if (tokenState == null) {
+                    } else if (tokenState == null || !onlineAccountSetupCompleted) {
                         navController.navigate("login") {
                             popUpTo("splash") { inclusive = true }
                         }
@@ -306,7 +309,7 @@ fun OfflineDailyWorkApp(
                         navController.navigate("onboarding") {
                             popUpTo("language_selection") { inclusive = true }
                         }
-                    } else if (tokenState == null) {
+                    } else if (tokenState == null || !onlineAccountSetupCompleted) {
                         navController.navigate("login") {
                             popUpTo("language_selection") { inclusive = true }
                         }
@@ -332,6 +335,7 @@ fun OfflineDailyWorkApp(
         composable("login") {
             LoginScreen(
                 authViewModel = authViewModel,
+                onlineAuthViewModel = onlineAuthViewModel,
                 selectedLanguage = languageState ?: "en",
                 onLoginSuccess = {
                     navController.navigate("dashboard") {
@@ -347,6 +351,7 @@ fun OfflineDailyWorkApp(
                 externalPdfUri = externalPdfUri,
                 onClearExternalPdfUri = onClearExternalPdfUri,
                 onLogout = {
+                    onlineAuthViewModel.signOut()
                     authViewModel.logout()
                     navController.navigate("login") {
                         popUpTo(0) { inclusive = true }

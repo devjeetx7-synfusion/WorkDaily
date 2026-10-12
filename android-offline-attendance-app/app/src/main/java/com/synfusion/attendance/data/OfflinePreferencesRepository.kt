@@ -21,6 +21,8 @@ class OfflinePreferencesRepository(val context: Context) {
         val CURRENCY_KEY = stringPreferencesKey("user_currency")
 
         val ONBOARDING_COMPLETED_KEY = booleanPreferencesKey("onboarding_completed")
+        val ONLINE_ACCOUNT_SETUP_COMPLETED_KEY = booleanPreferencesKey("online_account_setup_completed")
+        val LINKED_FIREBASE_UID_KEY = stringPreferencesKey("linked_firebase_uid")
         val SPLASH_ENABLED_KEY = booleanPreferencesKey("splash_enabled")
         val PROFILE_PHOTO_PATH_KEY = stringPreferencesKey("profile_photo_path")
         val LAST_BACKUP_TIME_KEY = longPreferencesKey("last_backup_time")
@@ -81,6 +83,14 @@ class OfflinePreferencesRepository(val context: Context) {
 
     val isOnboardingCompletedFlow: Flow<Boolean> = context.offlineDataStore.data.map { preferences ->
         preferences[ONBOARDING_COMPLETED_KEY] ?: false
+    }
+
+    val isOnlineAccountSetupCompletedFlow: Flow<Boolean> = context.offlineDataStore.data.map { preferences ->
+        preferences[ONLINE_ACCOUNT_SETUP_COMPLETED_KEY] ?: false
+    }
+
+    val linkedFirebaseUidFlow: Flow<String?> = context.offlineDataStore.data.map { preferences ->
+        preferences[LINKED_FIREBASE_UID_KEY]
     }
 
     val splashEnabledFlow: Flow<Boolean> = context.offlineDataStore.data.map { preferences ->
@@ -151,6 +161,22 @@ class OfflinePreferencesRepository(val context: Context) {
     suspend fun saveOnboardingCompleted(completed: Boolean) {
         context.offlineDataStore.edit { preferences ->
             preferences[ONBOARDING_COMPLETED_KEY] = completed
+        }
+    }
+
+    suspend fun saveOnlineAccountSetupCompleted(completed: Boolean) {
+        context.offlineDataStore.edit { preferences ->
+            preferences[ONLINE_ACCOUNT_SETUP_COMPLETED_KEY] = completed
+        }
+    }
+
+    suspend fun saveLinkedFirebaseUid(uid: String?) {
+        context.offlineDataStore.edit { preferences ->
+            if (uid != null) {
+                preferences[LINKED_FIREBASE_UID_KEY] = uid
+            } else {
+                preferences.remove(LINKED_FIREBASE_UID_KEY)
+            }
         }
     }
 

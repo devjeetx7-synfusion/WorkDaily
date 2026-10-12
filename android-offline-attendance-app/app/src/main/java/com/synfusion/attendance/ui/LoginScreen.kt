@@ -19,8 +19,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -56,18 +54,22 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import coil.compose.SubcomposeAsyncImage
 import com.synfusion.attendance.R
+import com.synfusion.attendance.auth.OnlineAccount
+import com.synfusion.attendance.auth.OnlineAuthState
 import com.synfusion.attendance.backup.BackupManifest
 import com.synfusion.attendance.backup.ProgressTracker
 import com.synfusion.attendance.backup.RestoreManager
+import com.synfusion.attendance.data.entities.UserEntity
 import com.synfusion.attendance.data.model.CountryConfig
 import com.synfusion.attendance.data.model.CountryRepository
 import com.synfusion.attendance.ui.components.CountrySelectionBottomSheet
-import com.synfusion.attendance.ui.responsive.LocalWindowSizeInfo
 import com.synfusion.attendance.ui.responsive.ResponsiveContainer
 import com.synfusion.attendance.utils.getActivity
 import com.synfusion.attendance.viewmodel.OfflineAuthViewModel
 import com.synfusion.attendance.viewmodel.OfflineLoginState
+import com.synfusion.attendance.viewmodel.OnlineAuthViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -101,17 +103,22 @@ fun Modifier.pressScaleEffect() = composed {
 @Composable
 fun LoginScreen(
     authViewModel: OfflineAuthViewModel,
+    onlineAuthViewModel: OnlineAuthViewModel,
     selectedLanguage: String,
     onLoginSuccess: () -> Unit
 ) {
     val loginState by authViewModel.loginState.collectAsState()
-    val isProcessing = loginState is OfflineLoginState.Loading
+    val onlineAuthState by onlineAuthViewModel.authState.collectAsState()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val webClientId = stringResource(R.string.default_web_client_id)
+
+    var authenticatedAccount by remember { mutableStateOf<OnlineAccount?>(null) }
+    var existingUser by remember { mutableStateOf<UserEntity?>(null) }
+    var showAccountMismatchDialog by remember { mutableStateOf(false) }
 
     var name by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf("") }
     var dailyWageText by remember { mutableStateOf("500") }
 
     var selectedCountry by remember { mutableStateOf(CountryRepository.DEFAULT_COUNTRY) }
@@ -124,8 +131,28 @@ fun LoginScreen(
     var detectedBackupFile by remember { mutableStateOf<File?>(null) }
     var showSmartBackupDialog by remember { mutableStateOf(false) }
 
+    // Fetch existing user profile on load to prefill fields for upgrade flow
     LaunchedEffect(Unit) {
         withContext(Dispatchers.IO) {
+            val user = authViewModel.getExistingUser()
+            existingUser = user
+            if (user != null) {
+                withContext(Dispatchers.Main) {
+                    name = user.name
+                    phone = user.phoneNumber
+                    dailyWageText = if (user.dailyWage > 0) user.dailyWage.toInt().toString() else "500"
+                    selectedCountry = CountryRepository.getCountry(user.countryCode)
+                }
+            } else {
+                // Attempt locale auto-detection for new users
+                val deviceCountryCode = Locale.getDefault().country
+                val detected = CountryRepository.getCountry(deviceCountryCode)
+                withContext(Dispatchers.Main) {
+                    selectedCountry = detected
+                }
+            }
+
+            // Scan for smart backup
             val scanDirs = listOfNotNull(
                 context.getExternalFilesDir(null),
                 android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS)
@@ -151,6 +178,38 @@ fun LoginScreen(
         }
     }
 
+    // Handle online auth state transitions
+    LaunchedEffect(onlineAuthState) {
+        when (val state = onlineAuthState) {
+            is OnlineAuthState.Authenticated -> {
+                val isMismatch = authViewModel.checkAccountMismatch(state.account.uid)
+                if (isMismatch) {
+                    showAccountMismatchDialog = true
+                } else {
+                    authenticatedAccount = state.account
+                    // Prefill profile values if existing user
+                    val currentLocalUser = existingUser
+                    if (currentLocalUser != null) {
+                        if (name.isBlank() || name == "User") {
+                            name = currentLocalUser.name.ifBlank { state.account.displayName ?: "" }
+                        }
+                        if (phone.isBlank()) {
+                            phone = currentLocalUser.phoneNumber
+                        }
+                        if (dailyWageText.isBlank()) {
+                            dailyWageText = if (currentLocalUser.dailyWage > 0) currentLocalUser.dailyWage.toInt().toString() else "500"
+                        }
+                    } else {
+                        if (name.isBlank()) {
+                            name = state.account.displayName ?: ""
+                        }
+                    }
+                }
+            }
+            else -> {}
+        }
+    }
+
     val restoreManager = remember { RestoreManager(context) }
     val progressTracker = remember { ProgressTracker() }
     val progress by progressTracker.progress.collectAsState(initial = 0f)
@@ -168,7 +227,7 @@ fun LoginScreen(
     var operationSuccess by remember { mutableStateOf<Boolean?>(null) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    // File Pick Launcher for SAF Restore
+    // SAF File Picker launcher
     val pickRestoreLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument(),
         onResult = { uri ->
@@ -317,6 +376,40 @@ fun LoginScreen(
         )
     }
 
+    if (showAccountMismatchDialog) {
+        AlertDialog(
+            onDismissRequest = { showAccountMismatchDialog = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(stringResource(R.string.account_mismatch_title), fontWeight = FontWeight.Bold)
+                }
+            },
+            text = {
+                Text(stringResource(R.string.account_mismatch_msg))
+            },
+            confirmButton = {
+                Button(onClick = {
+                    showAccountMismatchDialog = false
+                    onlineAuthViewModel.signOut()
+                }) {
+                    Text(stringResource(R.string.try_again))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showAccountMismatchDialog = false
+                    if (existingUser != null) {
+                        authViewModel.resumeExistingWorkspace()
+                    }
+                }) {
+                    Text(stringResource(R.string.continue_offline))
+                }
+            }
+        )
+    }
+
     if (isOperating) {
         AlertDialog(
             onDismissRequest = {},
@@ -345,6 +438,7 @@ fun LoginScreen(
         )
     }
 
+    // Notification Permission Handling
     val lifecycleOwner = LocalLifecycleOwner.current
     var showPermissionDialog by remember { mutableStateOf(false) }
     var isPostPermissionsGranted by remember {
@@ -398,8 +492,6 @@ fun LoginScreen(
             lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
-
-    val startText = stringResource(R.string.create_offline_workspace)
 
     LaunchedEffect(loginState) {
         if (loginState is OfflineLoginState.Success) {
@@ -457,6 +549,7 @@ fun LoginScreen(
     }
 
     val isPhoneValid = if (selectedCountry.countryCode == "IN") phone.length >= 10 else phone.length >= 7
+    val isProcessing = loginState is OfflineLoginState.Loading || onlineAuthState is OnlineAuthState.Loading
 
     Box(
         modifier = Modifier
@@ -473,10 +566,8 @@ fun LoginScreen(
                     .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // 1. TOP BANNER CONTAINER
-                Box(
-                    modifier = Modifier.fillMaxWidth()
-                ) {
+                // TOP BANNER
+                Box(modifier = Modifier.fillMaxWidth()) {
                     Image(
                         painter = painterResource(id = R.drawable.login_banner),
                         contentDescription = "WorkDaily Banner",
@@ -485,7 +576,7 @@ fun LoginScreen(
                     )
                 }
 
-                // 2. OVERLAY FORM CONTAINER / SHEET
+                // OVERLAY FORM SURFACE
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -506,311 +597,532 @@ fun LoginScreen(
                             .padding(horizontal = 22.dp, vertical = 24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        if (loginState is OfflineLoginState.Error) {
+                        if (authenticatedAccount == null) {
+                            // --- VIEW 1: ACCOUNT ENTRY (GOOGLE FIRST) ---
                             Text(
-                                text = (loginState as OfflineLoginState.Error).message,
-                                color = MaterialTheme.colorScheme.error,
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Medium,
-                                textAlign = TextAlign.Center,
+                                text = stringResource(R.string.workdaily_account),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = stringResource(R.string.manage_your_daily_labor_earnings),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+
+                            Spacer(modifier = Modifier.height(20.dp))
+
+                            // Error states display
+                            when (val state = onlineAuthState) {
+                                is OnlineAuthState.Error -> {
+                                    Text(
+                                        text = state.message,
+                                        color = MaterialTheme.colorScheme.error,
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        textAlign = TextAlign.Center,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(bottom = 16.dp)
+                                            .clip(RoundedCornerShape(12.dp))
+                                            .background(MaterialTheme.colorScheme.error.copy(alpha = 0.08f))
+                                            .padding(vertical = 10.dp, horizontal = 14.dp)
+                                    )
+                                }
+                                is OnlineAuthState.NetworkUnavailable -> {
+                                    Text(
+                                        text = stringResource(R.string.network_unavailable_msg),
+                                        color = MaterialTheme.colorScheme.error,
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        textAlign = TextAlign.Center,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(bottom = 16.dp)
+                                            .clip(RoundedCornerShape(12.dp))
+                                            .background(MaterialTheme.colorScheme.error.copy(alpha = 0.08f))
+                                            .padding(vertical = 10.dp, horizontal = 14.dp)
+                                    )
+                                }
+                                else -> {}
+                            }
+
+                            // TERMS / PRIVACY CONSENT ROW
+                            LegalConsentRow(
+                                isConsentChecked = isConsentChecked,
+                                onConsentChange = { isConsentChecked = it },
+                                onTermsClick = { showTermsSheet = true },
+                                onPrivacyClick = { showPrivacySheet = true }
+                            )
+
+                            Spacer(modifier = Modifier.height(20.dp))
+
+                            // MAIN CTA: CONTINUE WITH GOOGLE
+                            Button(
+                                onClick = {
+                                    if (isConsentChecked && !isProcessing) {
+                                        onlineAuthViewModel.signInWithGoogle(context, webClientId)
+                                    }
+                                },
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(bottom = 16.dp)
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(MaterialTheme.colorScheme.error.copy(alpha = 0.08f))
-                                    .padding(vertical = 10.dp, horizontal = 14.dp)
-                            )
-                        }
+                                    .height(56.dp)
+                                    .pressScaleEffect(),
+                                shape = RoundedCornerShape(20.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary,
+                                    contentColor = MaterialTheme.colorScheme.onPrimary
+                                ),
+                                enabled = isConsentChecked && !isProcessing
+                            ) {
+                                if (isProcessing) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(24.dp),
+                                        strokeWidth = 2.5.dp,
+                                        color = MaterialTheme.colorScheme.onPrimary
+                                    )
+                                } else {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.Center
+                                    ) {
+                                        Icon(
+                                            Icons.Default.AccountCircle,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(22.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(10.dp))
+                                        Text(
+                                            stringResource(R.string.continue_with_google),
+                                            fontSize = 16.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Icon(
+                                            Icons.AutoMirrored.Filled.ArrowForward,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                }
+                            }
 
-                        // 3. FULL NAME FIELD
-                        OutlinedTextField(
-                            value = name,
-                            onValueChange = { name = it },
-                            label = { Text(stringResource(R.string.full_name)) },
-                            placeholder = { Text(stringResource(R.string.enter_full_name_hint)) },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(16.dp),
-                            leadingIcon = {
-                                Icon(
-                                    Icons.Default.Person,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary
+                            // OFFLINE CONTINUATION BUTTON FOR EXISTING WORKSPACE
+                            if (existingUser != null) {
+                                Spacer(modifier = Modifier.height(12.dp))
+                                OutlinedButton(
+                                    onClick = {
+                                        authViewModel.resumeExistingWorkspace()
+                                    },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(50.dp),
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = ButtonDefaults.outlinedButtonColors(
+                                        contentColor = MaterialTheme.colorScheme.primary
+                                    )
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(
+                                            Icons.Default.WifiOff,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            stringResource(R.string.continue_offline),
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 14.sp
+                                        )
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(22.dp))
+
+                            // TRUST / OFFLINE INFO ROW (3-COLUMN EQUAL WEIGHT)
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                                horizontalArrangement = Arrangement.SpaceEvenly,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                TrustColumnItem(
+                                    modifier = Modifier.weight(1f),
+                                    icon = Icons.Default.Shield,
+                                    title = stringResource(R.string.trust_offline_private)
                                 )
-                            },
-                            singleLine = true,
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                focusedLabelColor = MaterialTheme.colorScheme.primary
+                                VerticalDivider(
+                                    modifier = Modifier.height(28.dp),
+                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                                )
+                                TrustColumnItem(
+                                    modifier = Modifier.weight(1f),
+                                    icon = Icons.Default.PhoneAndroid,
+                                    title = stringResource(R.string.trust_data_on_device)
+                                )
+                                VerticalDivider(
+                                    modifier = Modifier.height(28.dp),
+                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                                )
+                                TrustColumnItem(
+                                    modifier = Modifier.weight(1f),
+                                    icon = Icons.Default.Engineering,
+                                    title = stringResource(R.string.trust_for_daily_workers)
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(22.dp))
+
+                            HorizontalDivider(
+                                modifier = Modifier.fillMaxWidth(0.6f),
+                                color = MaterialTheme.colorScheme.outlineVariant
                             )
-                        )
 
-                        Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(18.dp))
 
-                        // 4. COUNTRY FIELD
-                        Box(modifier = Modifier.fillMaxWidth()) {
+                            // RESTORE BACKUP SECTION
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.already_have_backup),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                OutlinedButton(
+                                    onClick = { pickRestoreLauncher.launch(arrayOf("application/zip")) },
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = ButtonDefaults.outlinedButtonColors(
+                                        contentColor = MaterialTheme.colorScheme.primary
+                                    ),
+                                    border = ButtonDefaults.outlinedButtonBorder.copy(
+                                        brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
+                                    )
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(
+                                            Icons.Default.Restore,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = stringResource(R.string.restore_backup),
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 14.sp
+                                        )
+                                    }
+                                }
+                            }
+                        } else {
+                            // --- VIEW 2: COMPLETE PROFILE ---
+                            val account = authenticatedAccount!!
+
+                            Text(
+                                text = stringResource(R.string.complete_your_profile),
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            // GOOGLE IDENTITY SUMMARY CARD
+                            Surface(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(18.dp),
+                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(14.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(52.dp)
+                                            .clip(CircleShape)
+                                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        if (!account.photoUrl.isNullOrBlank()) {
+                                            SubcomposeAsyncImage(
+                                                model = account.photoUrl,
+                                                contentDescription = account.displayName ?: "Google Photo",
+                                                contentScale = ContentScale.Crop,
+                                                modifier = Modifier.fillMaxSize()
+                                            )
+                                        } else {
+                                            Icon(
+                                                imageVector = Icons.Default.Person,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(28.dp)
+                                            )
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.width(14.dp))
+
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = account.displayName ?: name.ifBlank { "WorkDaily User" },
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        if (!account.email.isNullOrBlank()) {
+                                            Text(
+                                                text = account.email,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.height(2.dp))
+                                        Text(
+                                            text = stringResource(R.string.signed_in_as, "Google"),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.primary,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(20.dp))
+
+                            if (loginState is OfflineLoginState.Error) {
+                                Text(
+                                    text = (loginState as OfflineLoginState.Error).message,
+                                    color = MaterialTheme.colorScheme.error,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(bottom = 16.dp)
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(MaterialTheme.colorScheme.error.copy(alpha = 0.08f))
+                                        .padding(vertical = 10.dp, horizontal = 14.dp)
+                                )
+                            }
+
+                            // FULL NAME FIELD
                             OutlinedTextField(
-                                value = "${selectedCountry.flagEmoji} ${selectedCountry.displayName} — ${selectedCountry.currencySymbol}",
-                                onValueChange = {},
-                                readOnly = true,
-                                label = { Text(stringResource(R.string.country_label)) },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { showCountryBottomSheet = true },
+                                value = name,
+                                onValueChange = { name = it },
+                                label = { Text(stringResource(R.string.full_name)) },
+                                placeholder = { Text(stringResource(R.string.enter_full_name_hint)) },
+                                modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(16.dp),
                                 leadingIcon = {
                                     Icon(
-                                        Icons.Default.Public,
+                                        Icons.Default.Person,
                                         contentDescription = null,
                                         tint = MaterialTheme.colorScheme.primary
                                     )
                                 },
-                                trailingIcon = {
-                                    Icon(
-                                        Icons.Default.ArrowDropDown,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                },
-                                enabled = false,
+                                singleLine = true,
                                 colors = OutlinedTextFieldDefaults.colors(
-                                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                                    disabledBorderColor = MaterialTheme.colorScheme.outline,
-                                    disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    disabledLeadingIconColor = MaterialTheme.colorScheme.primary,
-                                    disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                    focusedLabelColor = MaterialTheme.colorScheme.primary
                                 )
                             )
-                            Box(
-                                modifier = Modifier
-                                    .matchParentSize()
-                                    .clickable { showCountryBottomSheet = true }
-                            )
-                        }
 
-                        Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(16.dp))
 
-                        // 5. DAILY WAGE FIELD
-                        OutlinedTextField(
-                            value = dailyWageText,
-                            onValueChange = { newValue ->
-                                val digits = newValue.filter { it.isDigit() }.take(7)
-                                dailyWageText = digits
-                            },
-                            label = { Text(stringResource(R.string.daily_wage)) },
-                            placeholder = { Text("500") },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(16.dp),
-                            leadingIcon = {
-                                Text(
-                                    text = selectedCountry.currencySymbol,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    fontSize = 16.sp,
-                                    modifier = Modifier.padding(start = 12.dp)
-                                )
-                            },
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                focusedLabelColor = MaterialTheme.colorScheme.primary
-                            )
-                        )
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        // 6. PHONE FIELD
-                        OutlinedTextField(
-                            value = phone,
-                            onValueChange = { newValue ->
-                                val digits = newValue.filter { it.isDigit() }.take(15)
-                                phone = digits
-                            },
-                            label = { Text(stringResource(R.string.phone_number)) },
-                            placeholder = { Text(stringResource(R.string.enter_mobile_number_hint)) },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(16.dp),
-                            leadingIcon = {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.padding(start = 12.dp, end = 4.dp)
-                                ) {
-                                    Icon(
-                                        Icons.Default.Phone,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(18.dp)
+                            // COUNTRY SELECTION FIELD
+                            Box(modifier = Modifier.fillMaxWidth()) {
+                                OutlinedTextField(
+                                    value = "${selectedCountry.flagEmoji} ${selectedCountry.displayName} — ${selectedCountry.currencySymbol}",
+                                    onValueChange = {},
+                                    readOnly = true,
+                                    label = { Text(stringResource(R.string.country_label)) },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { showCountryBottomSheet = true },
+                                    shape = RoundedCornerShape(16.dp),
+                                    leadingIcon = {
+                                        Icon(
+                                            Icons.Default.Public,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    },
+                                    trailingIcon = {
+                                        Icon(
+                                            Icons.Default.ArrowDropDown,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    },
+                                    enabled = false,
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                                        disabledBorderColor = MaterialTheme.colorScheme.outline,
+                                        disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        disabledLeadingIconColor = MaterialTheme.colorScheme.primary,
+                                        disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
-                                    Spacer(modifier = Modifier.width(6.dp))
+                                )
+                                Box(
+                                    modifier = Modifier
+                                        .matchParentSize()
+                                        .clickable { showCountryBottomSheet = true }
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            // DAILY WAGE FIELD
+                            OutlinedTextField(
+                                value = dailyWageText,
+                                onValueChange = { newValue ->
+                                    val digits = newValue.filter { it.isDigit() }.take(7)
+                                    dailyWageText = digits
+                                },
+                                label = { Text(stringResource(R.string.daily_wage)) },
+                                placeholder = { Text("500") },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp),
+                                leadingIcon = {
                                     Text(
-                                        text = selectedCountry.callingCode,
+                                        text = selectedCountry.currencySymbol,
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.primary,
-                                        fontSize = 14.sp
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = "|",
-                                        color = MaterialTheme.colorScheme.outline,
-                                        fontWeight = FontWeight.Light
-                                    )
-                                }
-                            },
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                focusedLabelColor = MaterialTheme.colorScheme.primary
-                            )
-                        )
-
-                        Spacer(modifier = Modifier.height(14.dp))
-
-                        // 6. TERMS / PRIVACY CONSENT ROW
-                        LegalConsentRow(
-                            isConsentChecked = isConsentChecked,
-                            onConsentChange = { isConsentChecked = it },
-                            onTermsClick = { showTermsSheet = true },
-                            onPrivacyClick = { showPrivacySheet = true }
-                        )
-
-                        Spacer(modifier = Modifier.height(20.dp))
-
-                        // 7. PRIMARY ACTION BUTTON
-                        Button(
-                            onClick = {
-                                val dailyWageDouble = dailyWageText.toDoubleOrNull() ?: 500.0
-                                if (name.isNotBlank() && dailyWageText.isNotBlank() && isPhoneValid && isConsentChecked) {
-                                    authViewModel.login(
-                                        name = name,
-                                        email = email,
-                                        phoneNumber = phone,
-                                        countryCode = selectedCountry.countryCode,
-                                        currencyCode = selectedCountry.currencyCode,
-                                        dailyWage = dailyWageDouble
-                                    )
-                                }
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(56.dp)
-                                .pressScaleEffect(),
-                            shape = RoundedCornerShape(20.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = MaterialTheme.colorScheme.primary,
-                                contentColor = MaterialTheme.colorScheme.onPrimary
-                            ),
-                            enabled = name.isNotBlank() && dailyWageText.isNotBlank() && isPhoneValid && isConsentChecked && !isProcessing
-                        ) {
-                            if (isProcessing) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(24.dp),
-                                    strokeWidth = 2.5.dp,
-                                    color = MaterialTheme.colorScheme.onPrimary
-                                )
-                            } else {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.Center
-                                ) {
-                                    Icon(
-                                        Icons.Default.Lock,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(10.dp))
-                                    Text(
-                                        startText,
                                         fontSize = 16.sp,
-                                        fontWeight = FontWeight.Bold
+                                        modifier = Modifier.padding(start = 12.dp)
                                     )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Icon(
-                                        Icons.AutoMirrored.Filled.ArrowForward,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(22.dp))
-
-                        // 8. TRUST / OFFLINE INFO ROW (3-COLUMN EQUAL WEIGHT)
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp),
-                            horizontalArrangement = Arrangement.SpaceEvenly,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            TrustColumnItem(
-                                modifier = Modifier.weight(1f),
-                                icon = Icons.Default.Shield,
-                                title = stringResource(R.string.trust_offline_private)
-                            )
-                            VerticalDivider(
-                                modifier = Modifier.height(28.dp),
-                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                            )
-                            TrustColumnItem(
-                                modifier = Modifier.weight(1f),
-                                icon = Icons.Default.PhoneAndroid,
-                                title = stringResource(R.string.trust_data_on_device)
-                            )
-                            VerticalDivider(
-                                modifier = Modifier.height(28.dp),
-                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                            )
-                            TrustColumnItem(
-                                modifier = Modifier.weight(1f),
-                                icon = Icons.Default.Engineering,
-                                title = stringResource(R.string.trust_for_daily_workers)
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(22.dp))
-
-                        HorizontalDivider(
-                            modifier = Modifier.fillMaxWidth(0.6f),
-                            color = MaterialTheme.colorScheme.outlineVariant
-                        )
-
-                        Spacer(modifier = Modifier.height(18.dp))
-
-                        // 9. RESTORE BACKUP SECTION
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                text = stringResource(R.string.already_have_backup),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            OutlinedButton(
-                                onClick = { pickRestoreLauncher.launch(arrayOf("application/zip")) },
-                                shape = RoundedCornerShape(16.dp),
-                                colors = ButtonDefaults.outlinedButtonColors(
-                                    contentColor = MaterialTheme.colorScheme.primary
-                                ),
-                                border = ButtonDefaults.outlinedButtonBorder.copy(
-                                    brush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
+                                },
+                                singleLine = true,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                    focusedLabelColor = MaterialTheme.colorScheme.primary
                                 )
+                            )
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            // PHONE FIELD
+                            OutlinedTextField(
+                                value = phone,
+                                onValueChange = { newValue ->
+                                    val digits = newValue.filter { it.isDigit() }.take(15)
+                                    phone = digits
+                                },
+                                label = { Text(stringResource(R.string.phone_number)) },
+                                placeholder = { Text(stringResource(R.string.enter_mobile_number_hint)) },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp),
+                                leadingIcon = {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.padding(start = 12.dp, end = 4.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Phone,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = selectedCountry.callingCode,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.primary,
+                                            fontSize = 14.sp
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = "|",
+                                            color = MaterialTheme.colorScheme.outline,
+                                            fontWeight = FontWeight.Light
+                                        )
+                                    }
+                                },
+                                singleLine = true,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                    focusedLabelColor = MaterialTheme.colorScheme.primary
+                                )
+                            )
+
+                            Spacer(modifier = Modifier.height(20.dp))
+
+                            // SUBMIT / COMPLETE SETUP BUTTON
+                            Button(
+                                onClick = {
+                                    val dailyWageDouble = dailyWageText.toDoubleOrNull() ?: 500.0
+                                    if (dailyWageText.isNotBlank() && isPhoneValid) {
+                                        authViewModel.completeProfile(
+                                            googleAccount = account,
+                                            enteredName = name,
+                                            enteredPhone = phone,
+                                            countryCode = selectedCountry.countryCode,
+                                            currencyCode = selectedCountry.currencyCode,
+                                            dailyWage = dailyWageDouble,
+                                            onComplete = { success, _ ->
+                                                if (success) {
+                                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !isPostPermissionsGranted) {
+                                                        showPermissionDialog = true
+                                                    } else {
+                                                        onLoginSuccess()
+                                                    }
+                                                }
+                                            }
+                                        )
+                                    }
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(56.dp)
+                                    .pressScaleEffect(),
+                                shape = RoundedCornerShape(20.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary,
+                                    contentColor = MaterialTheme.colorScheme.onPrimary
+                                ),
+                                enabled = dailyWageText.isNotBlank() && isPhoneValid && !isProcessing
                             ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        Icons.Default.Restore,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(18.dp)
+                                if (isProcessing) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(24.dp),
+                                        strokeWidth = 2.5.dp,
+                                        color = MaterialTheme.colorScheme.onPrimary
                                     )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = stringResource(R.string.restore_backup),
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 14.sp
-                                    )
+                                } else {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.Center
+                                    ) {
+                                        Icon(
+                                            Icons.Default.CheckCircle,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(10.dp))
+                                        Text(
+                                            stringResource(R.string.setup_workspace),
+                                            fontSize = 16.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Icon(
+                                            Icons.AutoMirrored.Filled.ArrowForward,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
                                 }
                             }
                         }
