@@ -7,6 +7,7 @@ import com.synfusion.attendance.data.OfflinePreferencesRepository
 import com.synfusion.attendance.data.entities.UserEntity
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import java.util.UUID
 
@@ -28,6 +29,8 @@ class OfflineAuthViewModel(
 
     val userRoleFlow = repository.userRoleFlow
     val authTokenFlow = repository.authTokenFlow
+    val isOnlineAccountSetupCompletedFlow = repository.isOnlineAccountSetupCompletedFlow
+    val linkedFirebaseUidFlow = repository.linkedFirebaseUidFlow
 
     private var checkJob: kotlinx.coroutines.Job? = null
 
@@ -119,6 +122,105 @@ class OfflineAuthViewModel(
                 _loginState.value = OfflineLoginState.Success(userId)
             } catch (e: Exception) {
                 _loginState.value = OfflineLoginState.Error(e.message ?: "Login failed")
+            }
+        }
+    }
+
+    suspend fun getExistingUser(): UserEntity? {
+        return localAttendanceRepository.getUser()
+    }
+
+    suspend fun checkAccountMismatch(authenticatedUid: String): Boolean {
+        val linkedUid = repository.linkedFirebaseUidFlow.firstOrNull()
+        return !linkedUid.isNullOrBlank() && linkedUid != authenticatedUid
+    }
+
+    fun completeProfile(
+        googleAccount: com.synfusion.attendance.auth.OnlineAccount,
+        enteredName: String,
+        enteredPhone: String,
+        countryCode: String,
+        currencyCode: String,
+        dailyWage: Double,
+        onComplete: (Boolean, String?) -> Unit
+    ) {
+        viewModelScope.launch {
+            _loginState.value = OfflineLoginState.Loading
+            try {
+                val existingUser = localAttendanceRepository.getUser()
+                val userId: String
+                val createdAt: Long
+                val finalName: String
+                val finalEmail: String
+                val finalPhone: String
+                val finalWage: Double
+                val finalCountry: String
+                val finalCurrency: String
+
+                if (existingUser != null) {
+                    // Existing User Upgrade: KEEP SAME LOCAL UUID & createdAt
+                    userId = existingUser.id
+                    createdAt = existingUser.createdAt
+
+                    // Name merge rule: keep existing custom name if present, else use Google/entered name
+                    finalName = if (existingUser.name.isNotBlank() && existingUser.name != "User") {
+                        existingUser.name
+                    } else if (enteredName.isNotBlank()) {
+                        enteredName
+                    } else {
+                        googleAccount.displayName ?: existingUser.name
+                    }
+
+                    finalEmail = googleAccount.email?.takeIf { it.isNotBlank() } ?: existingUser.email
+                    finalPhone = enteredPhone.ifBlank { existingUser.phoneNumber }
+                    finalWage = if (dailyWage > 0.0) dailyWage else existingUser.dailyWage
+                    finalCountry = countryCode.ifBlank { existingUser.countryCode }
+                    finalCurrency = currencyCode.ifBlank { existingUser.currencyCode }
+                } else {
+                    // Brand-new user: generate new local UUID (distinct from Firebase UID)
+                    userId = UUID.randomUUID().toString()
+                    createdAt = System.currentTimeMillis()
+
+                    finalName = if (enteredName.isNotBlank()) enteredName else (googleAccount.displayName ?: "User")
+                    finalEmail = googleAccount.email ?: ""
+                    finalPhone = enteredPhone
+                    finalWage = if (dailyWage > 0.0) dailyWage else 500.0
+                    finalCountry = if (countryCode.isNotBlank()) countryCode else "IN"
+                    finalCurrency = if (currencyCode.isNotBlank()) currencyCode else "INR"
+                }
+
+                val user = UserEntity(
+                    id = userId,
+                    name = finalName,
+                    email = finalEmail,
+                    phoneNumber = finalPhone,
+                    role = "personal",
+                    dailyWage = finalWage,
+                    countryCode = finalCountry,
+                    currencyCode = finalCurrency,
+                    createdAt = createdAt
+                )
+
+                localAttendanceRepository.saveUser(user)
+                repository.saveCountryAndCurrency(finalCountry, finalCurrency)
+                repository.saveAuthToken(userId)
+                repository.saveUserRole("personal")
+                repository.saveOnboardingCompleted(true)
+                repository.saveOnlineAccountSetupCompleted(true)
+                repository.saveLinkedFirebaseUid(googleAccount.uid)
+
+                // Preserve existing custom local profile photo if present; set Google photo as fallback if none exists
+                val currentCustomPhoto = repository.profilePhotoPathFlow.firstOrNull()
+                if (currentCustomPhoto.isNullOrBlank() && !googleAccount.photoUrl.isNullOrBlank()) {
+                    repository.saveProfilePhotoPath(googleAccount.photoUrl)
+                }
+
+                _loginState.value = OfflineLoginState.Success(userId)
+                onComplete(true, null)
+            } catch (e: Exception) {
+                val errorMsg = e.message ?: "Failed to complete profile"
+                _loginState.value = OfflineLoginState.Error(errorMsg)
+                onComplete(false, errorMsg)
             }
         }
     }

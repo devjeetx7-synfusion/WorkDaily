@@ -37,7 +37,9 @@ suspend fun readDataStoreValuesForBackup(context: Context): Map<String, Any> {
     val prefs = context.offlineDataStore.data.first()
     val map = mutableMapOf<String, Any>()
     prefs.asMap().forEach { (key, value) ->
-        if (key.name != "auth_token") {
+        if (key.name != "auth_token" &&
+            key.name != "online_account_setup_completed" &&
+            key.name != "linked_firebase_uid") {
             map[key.name] = value
         }
     }
@@ -79,7 +81,9 @@ class PreferencesBackupModule : BackupModule {
     private suspend fun applyDataStorePreferences(context: Context, dsMap: Map<String, Any>) {
         context.offlineDataStore.edit { preferences ->
             dsMap.forEach { (rawKey, rawValue) ->
-                if (rawKey == "auth_token") return@forEach
+                if (rawKey == "auth_token" ||
+                    rawKey == "online_account_setup_completed" ||
+                    rawKey == "linked_firebase_uid") return@forEach
                 var value = rawValue
 
                 // Map legacy key aliases to modern DataStore keys

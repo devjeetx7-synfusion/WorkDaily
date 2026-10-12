@@ -1087,4 +1087,16 @@
     <string name="onboarding_welcome_final">WorkDaily में आपका स्वागत है</string>
     <string name="onboarding_continue">आगे बढ़ें</string>
     <string name="onboarding_back">पीछे</string>
+
+    <!-- Account Onboarding & Upgrade Strings -->
+    <string name="continue_with_google">गूगल से जारी रखें</string>
+    <string name="complete_your_profile">अपनी प्रोफाइल पूरी करें</string>
+    <string name="workdaily_account">WorkDaily अकाउंट</string>
+    <string name="signed_in_as">%1$s के रूप में साइन इन हैं</string>
+    <string name="account_mismatch_title">अकाउंट मेल नहीं खा रहा</string>
+    <string name="account_mismatch_msg">साइन इन किया गया गूगल अकाउंट इस WorkDaily वर्कस्पेस से जुड़े पहले के अकाउंट से अलग है। कृपया मूल गूगल अकाउंट से साइन इन करें या ऑफ़लाइन जारी रखें।</string>
+    <string name="google_sign_in_failed">गूगल साइन-इन विफल रहा। कृपया पुनः प्रयास करें या ऑफ़लाइन जारी रखें।</string>
+    <string name="network_unavailable_msg">नेटवर्क उपलब्ध नहीं है। आप अपनी हाजिरी देखने के लिए ऑफ़लाइन जारी रख सकते हैं।</string>
+    <string name="save_and_continue">सेव करें और आगे बढ़ें</string>
+    <string name="setup_workspace">वर्कस्पेस सेटअप पूरा करें</string>
 </resources>
