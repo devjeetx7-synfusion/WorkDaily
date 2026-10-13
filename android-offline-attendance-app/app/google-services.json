@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "774633202989",
+    "project_id": "workday-60109",
+    "storage_bucket": "workday-60109.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:774633202989:android:764e317ed9fb1468f51fa4",
+        "android_client_info": {
+          "package_name": "com.synfusion.attendance"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "774633202989-fcik85t3kj21fhcduj76n86q7o9qsd0k.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.synfusion.attendance",
+            "certificate_hash": "069c44f38cc0331c328cbbb77d9216c74c0d88f4"
+          }
+        },
+        {
+          "client_id": "774633202989-por5403s5mh4h97c7p7dss1g516fcocu.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC-fPfrI16Dkpl3gYS0D-XZbnuyRlkT-kI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "774633202989-por5403s5mh4h97c7p7dss1g516fcocu.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
