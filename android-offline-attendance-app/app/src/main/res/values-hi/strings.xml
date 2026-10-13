@@ -1099,4 +1099,12 @@
     <string name="network_unavailable_msg">नेटवर्क उपलब्ध नहीं है। आप अपनी हाजिरी देखने के लिए ऑफ़लाइन जारी रख सकते हैं।</string>
     <string name="save_and_continue">सेव करें और आगे बढ़ें</string>
     <string name="setup_workspace">वर्कस्पेस सेटअप पूरा करें</string>
+    <string name="err_daily_wage_greater_than_zero">दैनिक मजदूरी 0 से अधिक होनी चाहिए</string>
+    <string name="err_valid_10_digit_mobile">10 अंकों का मान्य मोबाइल नंबर दर्ज करें</string>
+    <string name="err_valid_phone_digits">मान्य फोन नंबर दर्ज करें (7-15 अंक)</string>
+    <string name="profile_title">प्रोफाइल</string>
+    <string name="personal_info">पर्सनल जानकारी</string>
+    <string name="country_region">देश / क्षेत्र</string>
+    <string name="your_details_saved_locally">आपकी जानकारी लोकल सेव्ड है।</string>
+    <string name="profile_details_saved_locally_desc">आपकी प्रोफाइल जानकारी आपके डिवाइस पर सुरक्षित सेव्ड है।</string>
 </resources>

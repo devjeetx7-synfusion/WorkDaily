@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -102,7 +103,7 @@ fun ProfileScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Profile",
+                        text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.profile_title),
                         fontWeight = FontWeight.Bold
                     )
                 },
@@ -113,7 +114,10 @@ fun ProfileScreen(
                         }
                         onNavigateBack()
                     }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.onboarding_back)
+                        )
                     }
                 },
                 actions = {
@@ -285,13 +289,13 @@ fun ProfileScreen(
                                     }
                                     Column {
                                         Text(
-                                            text = "100% Offline & Private",
+                                            text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.trust_offline_private),
                                             fontSize = 13.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = MaterialTheme.colorScheme.onSurface
                                         )
                                         Text(
-                                            text = "Your details are saved locally.",
+                                            text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.your_details_saved_locally),
                                             fontSize = 11.sp,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
@@ -316,7 +320,7 @@ fun ProfileScreen(
                                     verticalArrangement = Arrangement.spacedBy(16.dp)
                                 ) {
                                     Text(
-                                        text = "Personal Info",
+                                        text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.personal_info),
                                         fontSize = 13.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.primary
@@ -338,7 +342,7 @@ fun ProfileScreen(
                                             value = "${activeCountry.flagEmoji} ${activeCountry.displayName} — ${activeCountry.currencySymbol}",
                                             onValueChange = {},
                                             readOnly = true,
-                                            label = { Text("Country / Region") },
+                                            label = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.country_region)) },
                                             modifier = Modifier
                                                 .fillMaxWidth()
                                                 .clickable { showCountryBottomSheet = true },
@@ -546,7 +550,7 @@ fun ProfileScreen(
                                 verticalArrangement = Arrangement.spacedBy(18.dp)
                             ) {
                                 Text(
-                                    text = "Personal Info",
+                                    text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.personal_info),
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.primary
@@ -568,7 +572,7 @@ fun ProfileScreen(
                                         value = "${activeCountry.flagEmoji} ${activeCountry.displayName} — ${activeCountry.currencySymbol}",
                                         onValueChange = {},
                                         readOnly = true,
-                                        label = { Text("Country / Region") },
+                                        label = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.country_region)) },
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .clickable { showCountryBottomSheet = true },
@@ -647,13 +651,13 @@ fun ProfileScreen(
                                 }
                                 Column {
                                     Text(
-                                        text = "100% Offline & Private",
+                                        text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.trust_offline_private),
                                         fontSize = 14.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
                                     Text(
-                                        text = "Your profile details are safely saved locally on your device.",
+                                        text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.profile_details_saved_locally_desc),
                                         fontSize = 12.sp,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )

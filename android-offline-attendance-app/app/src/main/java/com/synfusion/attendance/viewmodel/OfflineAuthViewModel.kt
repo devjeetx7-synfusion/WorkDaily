@@ -54,9 +54,9 @@ class OfflineAuthViewModel(
         }
     }
 
-    fun checkForUserAndLogin() {
+    fun checkForUserAndLogin(): kotlinx.coroutines.Job {
         checkJob?.cancel()
-        checkJob = viewModelScope.launch {
+        val job = viewModelScope.launch {
             val user = localAttendanceRepository.getUser()
             if (user != null) {
                 // Workspace detected: preload workspace config without auto-triggering login success
@@ -64,6 +64,8 @@ class OfflineAuthViewModel(
                 repository.saveCountryAndCurrency(user.countryCode, user.currencyCode)
             }
         }
+        checkJob = job
+        return job
     }
 
     fun resumeExistingWorkspace(onComplete: ((Boolean) -> Unit)? = null): kotlinx.coroutines.Job {
@@ -140,8 +142,8 @@ class OfflineAuthViewModel(
         currencyCode: String,
         dailyWage: Double,
         onComplete: (Boolean, String?) -> Unit
-    ) {
-        viewModelScope.launch {
+    ): kotlinx.coroutines.Job {
+        return viewModelScope.launch {
             _loginState.value = OfflineLoginState.Loading
             try {
                 val existingUser = localAttendanceRepository.getUser()
@@ -221,9 +223,18 @@ class OfflineAuthViewModel(
         }
     }
 
-    fun logout() {
+    /**
+     * Performs standard user sign-out by clearing active session tokens (auth_token and user_role).
+     *
+     * IMPORTANT WORKDAILY OFFLINE CONTRACT:
+     * - Standard sign-out NEVER deletes UserEntity, attendance records, summaries, passbook history, or local backup files.
+     * - Standard sign-out preserves linked_firebase_uid and online_account_setup_completed to protect against
+     *   account mismatches if the workspace is later re-authenticated with Google.
+     * - Unlink Online Account, Delete Online Account, and Delete Local Data are separate domain operations.
+     */
+    fun logout(): kotlinx.coroutines.Job {
         _loginState.value = OfflineLoginState.Idle
-        viewModelScope.launch {
+        return viewModelScope.launch {
             repository.clearAuthSession()
         }
     }
