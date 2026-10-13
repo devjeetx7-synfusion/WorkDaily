@@ -61,6 +61,10 @@ import com.synfusion.attendance.viewmodel.OfflineSettingsViewModel
 import com.synfusion.attendance.viewmodel.OfflineSettingsState
 import com.synfusion.attendance.viewmodel.OfflineDashboardViewModel
 import com.synfusion.attendance.viewmodel.OfflineDashboardState
+import com.synfusion.attendance.rewards.viewmodel.RewardsViewModel
+import com.synfusion.attendance.rewards.viewmodel.RewardsViewModelFactory
+import com.synfusion.attendance.rewards.ui.screens.*
+import com.synfusion.attendance.rewards.ui.components.RewardsPurple
 import com.synfusion.attendance.data.DrillDownType
 import com.synfusion.attendance.ui.components.DrillDownBottomSheet
 import com.synfusion.attendance.ui.components.FloatingBottomNavigation
@@ -96,6 +100,7 @@ fun DashboardScreen(
     val dashboardViewModel: OfflineDashboardViewModel = viewModel(factory = factory)
     val calendarViewModel: OfflineCalendarViewModel = viewModel(factory = factory)
     val statsViewModel: OfflineStatsViewModel = viewModel(factory = factory)
+    val rewardsViewModel: RewardsViewModel = viewModel(factory = RewardsViewModelFactory())
 
     val dashboardState by dashboardViewModel.dashboardState.collectAsStateWithLifecycle(initialValue = OfflineDashboardState(isLoading = true))
     val bottomNavController = rememberNavController()
@@ -352,7 +357,8 @@ fun DashboardScreen(
                                                         item {
                                                             HeaderSection(
                                                                 state = dashboardState,
-                                                                onProfileClick = { bottomNavController.navigate("profile") }
+                                                                onProfileClick = { bottomNavController.navigate("profile") },
+                                                                onRewardsClick = { bottomNavController.navigate("rewards_hub") }
                                                             )
                                                         }
                                                         item {
@@ -367,6 +373,7 @@ fun DashboardScreen(
                                                                     onEarningsClick = { dashboardViewModel.openDrillDown(DrillDownType.EARNINGS) }
                                                                 )
                                                                 AllTimePassbookButton(onNavigate = { bottomNavController.navigate("all_time_passbook") })
+                                                                RewardsHubHomeCard(onNavigate = { bottomNavController.navigate("rewards_hub") })
                                                                 PersonalQuickActions(currencyCode = settingsState.currencyCode,
                                                                     todayAdvanceAmount = dashboardState.todayAdvanceAmount,
                                                                     onAddAdvance = { showAdvanceDialog = true }
@@ -384,7 +391,11 @@ fun DashboardScreen(
                                                         verticalArrangement = Arrangement.spacedBy(16.dp)
                                                     ) {
                                                         item {
-                                                            HeaderSection(state = dashboardState)
+                                                            HeaderSection(
+                                                                state = dashboardState,
+                                                                onProfileClick = { bottomNavController.navigate("profile") },
+                                                                onRewardsClick = { bottomNavController.navigate("rewards_hub") }
+                                                            )
                                                         }
                                                         item {
                                                             Row(
@@ -403,6 +414,7 @@ fun DashboardScreen(
                                                                         onEarningsClick = { dashboardViewModel.openDrillDown(DrillDownType.EARNINGS) }
                                                                     )
                                                                     AllTimePassbookButton(onNavigate = { bottomNavController.navigate("all_time_passbook") })
+                                                                    RewardsHubHomeCard(onNavigate = { bottomNavController.navigate("rewards_hub") })
                                                                     PersonalQuickActions(currencyCode = settingsState.currencyCode,
                                                                         todayAdvanceAmount = dashboardState.todayAdvanceAmount,
                                                                         onAddAdvance = { showAdvanceDialog = true }
@@ -517,6 +529,106 @@ fun DashboardScreen(
             }
             composable("terms_conditions") {
                 TermsConditionsScreen(onNavigateBack = { bottomNavController.navigateUp() })
+            }
+            composable("rewards_hub") {
+                RewardsHubScreen(
+                    viewModel = rewardsViewModel,
+                    onNavigateBack = { bottomNavController.navigateUp() },
+                    onNavigateWallet = { bottomNavController.navigate("rewards_wallet") },
+                    onNavigateRedeem = { bottomNavController.navigate("rewards_redeem") },
+                    onNavigateRefer = { bottomNavController.navigate("rewards_refer") },
+                    onNavigateTasks = { bottomNavController.navigate("rewards_tasks") },
+                    onNavigateAchievements = { bottomNavController.navigate("rewards_achievements") },
+                    onNavigateLeaderboard = { bottomNavController.navigate("rewards_leaderboard") },
+                    onNavigateCoinHistory = { bottomNavController.navigate("rewards_coin_history") },
+                    onNavigateInfo = { bottomNavController.navigate("rewards_info") },
+                    onSelectTransaction = { bottomNavController.navigate("rewards_transaction_detail") }
+                )
+            }
+            composable("rewards_wallet") {
+                WalletScreen(
+                    viewModel = rewardsViewModel,
+                    onNavigateBack = { bottomNavController.navigateUp() },
+                    onNavigateRedeem = { bottomNavController.navigate("rewards_redeem") },
+                    onNavigateCoinHistory = { bottomNavController.navigate("rewards_coin_history") },
+                    onSelectTransaction = { bottomNavController.navigate("rewards_transaction_detail") }
+                )
+            }
+            composable("rewards_coin_history") {
+                CoinHistoryScreen(
+                    viewModel = rewardsViewModel,
+                    onNavigateBack = { bottomNavController.navigateUp() },
+                    onSelectTransaction = { bottomNavController.navigate("rewards_transaction_detail") }
+                )
+            }
+            composable("rewards_transaction_detail") {
+                TransactionDetailScreen(
+                    viewModel = rewardsViewModel,
+                    onNavigateBack = { bottomNavController.navigateUp() }
+                )
+            }
+            composable("rewards_refer") {
+                ReferAndEarnScreen(
+                    viewModel = rewardsViewModel,
+                    onNavigateBack = { bottomNavController.navigateUp() },
+                    onNavigateReferralHistory = { bottomNavController.navigate("rewards_referral_history") }
+                )
+            }
+            composable("rewards_referral_history") {
+                ReferralHistoryScreen(
+                    viewModel = rewardsViewModel,
+                    onNavigateBack = { bottomNavController.navigateUp() }
+                )
+            }
+            composable("rewards_tasks") {
+                TasksScreen(
+                    viewModel = rewardsViewModel,
+                    onNavigateBack = { bottomNavController.navigateUp() },
+                    onSelectTask = { bottomNavController.navigate("rewards_task_detail") }
+                )
+            }
+            composable("rewards_task_detail") {
+                TaskDetailScreen(
+                    viewModel = rewardsViewModel,
+                    onNavigateBack = { bottomNavController.navigateUp() }
+                )
+            }
+            composable("rewards_achievements") {
+                AchievementsScreen(
+                    viewModel = rewardsViewModel,
+                    onNavigateBack = { bottomNavController.navigateUp() },
+                    onSelectAchievement = { bottomNavController.navigate("rewards_achievement_detail") }
+                )
+            }
+            composable("rewards_achievement_detail") {
+                AchievementDetailScreen(
+                    viewModel = rewardsViewModel,
+                    onNavigateBack = { bottomNavController.navigateUp() }
+                )
+            }
+            composable("rewards_leaderboard") {
+                LeaderboardScreen(
+                    viewModel = rewardsViewModel,
+                    onNavigateBack = { bottomNavController.navigateUp() }
+                )
+            }
+            composable("rewards_redeem") {
+                RedeemRewardsScreen(
+                    viewModel = rewardsViewModel,
+                    onNavigateBack = { bottomNavController.navigateUp() },
+                    onNavigateRedemptionHistory = { bottomNavController.navigate("rewards_redemption_history") }
+                )
+            }
+            composable("rewards_redemption_history") {
+                RedemptionHistoryScreen(
+                    viewModel = rewardsViewModel,
+                    onNavigateBack = { bottomNavController.navigateUp() }
+                )
+            }
+            composable("rewards_info") {
+                RewardsInfoScreen(
+                    onNavigateBack = { bottomNavController.navigateUp() }
+                )
             }
 
         }
@@ -690,7 +802,11 @@ fun DashboardShimmer() {
 }
 
 @Composable
-fun HeaderSection(state: OfflineDashboardState, onProfileClick: () -> Unit = {}) {
+fun HeaderSection(
+    state: OfflineDashboardState,
+    onProfileClick: () -> Unit = {},
+    onRewardsClick: () -> Unit = {}
+) {
     val context = LocalContext.current
     val todayCal = remember { Calendar.getInstance() }
     val todayFullDate = remember {
@@ -795,7 +911,101 @@ fun HeaderSection(state: OfflineDashboardState, onProfileClick: () -> Unit = {})
                     )
                 }
             }
+
+            // Compact Rewards Entry: 🪙 Rewards >
+            Surface(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(20.dp))
+                    .clickable { onRewardsClick() },
+                color = RewardsPurple.copy(alpha = 0.12f),
+                border = androidx.compose.foundation.BorderStroke(1.dp, RewardsPurple.copy(alpha = 0.25f))
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(text = "🪙", fontSize = 13.sp)
+                    Text(
+                        text = "Rewards",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = RewardsPurple
+                    )
+                    Icon(
+                        imageVector = Icons.Default.ChevronRight,
+                        contentDescription = "Rewards",
+                        tint = RewardsPurple,
+                        modifier = Modifier.size(14.dp)
+                    )
+                }
+            }
         }
+}
+
+@Composable
+fun RewardsHubHomeCard(onNavigate: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onNavigate),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, RewardsPurple.copy(alpha = 0.35f))
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .background(RewardsPurple.copy(alpha = 0.12f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(text = "🏆", fontSize = 22.sp)
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Column {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "🏆 🎁 REWARDS HUB",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = RewardsPurple,
+                            letterSpacing = 0.5.sp
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "Earn Coins & Get Rewards",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "Complete tasks, refer friends & more",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            Icon(
+                imageVector = Icons.Default.ArrowForward,
+                contentDescription = "Open Rewards Hub",
+                tint = RewardsPurple,
+                modifier = Modifier.size(18.dp)
+            )
+        }
+    }
 }
 
 @Composable
