@@ -5,6 +5,9 @@ import androidx.lifecycle.viewModelScope
 import com.synfusion.attendance.data.LocalAttendanceRepository
 import com.synfusion.attendance.data.OfflinePreferencesRepository
 import com.synfusion.attendance.data.entities.UserEntity
+import com.synfusion.attendance.online.FirestoreOnlineProfileRepository
+import com.synfusion.attendance.online.OnlineProfile
+import com.synfusion.attendance.online.OnlineProfileRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.firstOrNull
@@ -21,7 +24,8 @@ sealed class OfflineLoginState {
 
 class OfflineAuthViewModel(
     val repository: OfflinePreferencesRepository,
-    private val localAttendanceRepository: LocalAttendanceRepository
+    private val localAttendanceRepository: LocalAttendanceRepository,
+    private val onlineProfileRepository: OnlineProfileRepository = FirestoreOnlineProfileRepository()
 ) : ViewModel(), com.synfusion.attendance.backup.RefreshableViewModel {
 
     private val _loginState = MutableStateFlow<OfflineLoginState>(OfflineLoginState.Idle)
@@ -211,6 +215,25 @@ class OfflineAuthViewModel(
                 // Save Google photo URL to its own separate account key (leaving custom local photo path untouched)
                 if (!googleAccount.photoUrl.isNullOrBlank()) {
                     repository.saveGooglePhotoUrl(googleAccount.photoUrl)
+                }
+
+                // Ensure minimal allowlisted online profile in Firestore (`users/{firebaseUid}`)
+                // Daily wage, attendance, and work history are strictly excluded!
+                try {
+                    val onlineProfile = OnlineProfile(
+                        uid = googleAccount.uid,
+                        localWorkspaceId = userId,
+                        displayName = finalName,
+                        email = finalEmail,
+                        phoneNumber = finalPhone,
+                        photoUrl = googleAccount.photoUrl,
+                        countryCode = finalCountry,
+                        currencyCode = finalCurrency,
+                        emailVerified = googleAccount.isEmailVerified
+                    )
+                    onlineProfileRepository.ensureOnlineProfile(onlineProfile)
+                } catch (e: Exception) {
+                    // Safe offline failure handling: do NOT block local onboarding or corrupt local workspace
                 }
 
                 _loginState.value = OfflineLoginState.Success(userId)
