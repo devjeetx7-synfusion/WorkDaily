@@ -3,6 +3,7 @@ package com.synfusion.attendance.rewards.ui.screens
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -10,14 +11,23 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.synfusion.attendance.R
@@ -34,8 +44,7 @@ fun LeaderboardScreen(
 ) {
     val tabs = remember { listOf("Weekly", "Monthly") }
     val pagerState = rememberPagerState(initialPage = 0, pageCount = { tabs.size })
-
-    val weeklyLeaderboard by viewModel.getLeaderboard().collectAsState()
+    val leaderboardUsers by viewModel.getLeaderboard().collectAsState()
 
     Scaffold(
         topBar = {
@@ -44,75 +53,140 @@ fun LeaderboardScreen(
                 onNavigateBack = onNavigateBack
             )
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = RewardsScreenBg
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            RewardTabRow(
-                tabs = tabs,
-                pagerState = pagerState
-            )
+            // Segmented Switcher Top
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+            ) {
+                RewardSegmentedControl(
+                    options = tabs,
+                    selectedIndex = pagerState.currentPage,
+                    onOptionSelected = { index ->
+                        kotlinx.coroutines.runBlocking {
+                            pagerState.animateScrollToPage(index)
+                        }
+                    }
+                )
+            }
 
             HorizontalPager(
                 state = pagerState,
                 modifier = Modifier.fillMaxSize()
             ) { pageIndex ->
                 LaunchedEffect(pageIndex) {
-                    viewModel.setLeaderboardTimeframe(if (pageIndex == 0) LeaderboardTimeframe.WEEKLY else LeaderboardTimeframe.MONTHLY)
+                    viewModel.setLeaderboardTimeframe(
+                        if (pageIndex == 0) LeaderboardTimeframe.WEEKLY else LeaderboardTimeframe.MONTHLY
+                    )
                 }
 
-                val top1 = weeklyLeaderboard.find { it.rank == 1 }
-                val top2 = weeklyLeaderboard.find { it.rank == 2 }
-                val top3 = weeklyLeaderboard.find { it.rank == 3 }
-                val restUsers = weeklyLeaderboard.filter { it.rank > 3 }
-                val currentUser = weeklyLeaderboard.find { it.isCurrentUser }
+                val top1 = leaderboardUsers.find { it.rank == 1 }
+                val top2 = leaderboardUsers.find { it.rank == 2 }
+                val top3 = leaderboardUsers.find { it.rank == 3 }
+                val restUsers = leaderboardUsers.filter { it.rank > 3 }
+                val currentUser = leaderboardUsers.find { it.isCurrentUser }
 
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    // Podium Section
+                    // XP Rankings Hero & 3D Podium Card
                     item {
                         Card(
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(20.dp),
-                            colors = CardDefaults.cardColors(containerColor = RewardsPurpleContainer),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, RewardsPurple.copy(alpha = 0.3f))
+                            shape = RoundedCornerShape(26.dp),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color.Transparent)
                         ) {
-                            Column(
+                            Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(20.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
+                                    .background(RewardsSecondaryGradient)
+                                    .padding(vertical = 22.dp, horizontal = 16.dp)
                             ) {
-                                Text("XP RANKINGS", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = RewardsPurple, letterSpacing = 1.sp)
-                                Spacer(modifier = Modifier.height(16.dp))
-
-                                Row(
+                                Column(
                                     modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceEvenly,
-                                    verticalAlignment = Alignment.Bottom
+                                    horizontalAlignment = Alignment.CenterHorizontally
                                 ) {
-                                    PodiumSlot(user = top2, drawableRes = R.drawable.leaderboard_second, rankNum = 2, heightDp = 80)
-                                    PodiumSlot(user = top1, drawableRes = R.drawable.leaderboard_first, rankNum = 1, heightDp = 110)
-                                    PodiumSlot(user = top3, drawableRes = R.drawable.leaderboard_third, rankNum = 3, heightDp = 65)
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.WorkspacePremium,
+                                            contentDescription = null,
+                                            tint = GoldBright,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = "XP RANKINGS",
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.ExtraBold,
+                                            color = Color.White,
+                                            letterSpacing = 1.5.sp
+                                        )
+                                    }
+
+                                    Spacer(modifier = Modifier.height(20.dp))
+
+                                    // 3D Podium Container
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceEvenly,
+                                        verticalAlignment = Alignment.Bottom
+                                    ) {
+                                        // Rank #2 (Silver)
+                                        PodiumSlot3D(
+                                            user = top2,
+                                            drawableRes = R.drawable.leaderboard_second,
+                                            rankNum = 2,
+                                            pillarHeight = 90.dp,
+                                            pillarBrush = RewardsSilverGradient,
+                                            artworkSize = 72.dp
+                                        )
+
+                                        // Rank #1 (Gold)
+                                        PodiumSlot3D(
+                                            user = top1,
+                                            drawableRes = R.drawable.leaderboard_first,
+                                            rankNum = 1,
+                                            pillarHeight = 125.dp,
+                                            pillarBrush = RewardsGoldGradient,
+                                            artworkSize = 92.dp
+                                        )
+
+                                        // Rank #3 (Bronze)
+                                        PodiumSlot3D(
+                                            user = top3,
+                                            drawableRes = R.drawable.leaderboard_third,
+                                            rankNum = 3,
+                                            pillarHeight = 75.dp,
+                                            pillarBrush = RewardsBronzeGradient,
+                                            artworkSize = 68.dp
+                                        )
+                                    }
                                 }
                             }
                         }
                     }
 
-                    // Sticky/Highlighted Current User Rank Card
-                    if (currentUser != null && currentUser.rank > 3) {
+                    // Highlighted Current User Rank Card
+                    if (currentUser != null) {
                         item {
-                            LeaderboardRowItem(user = currentUser)
+                            CurrentUserRankCard(user = currentUser)
                         }
                     }
 
-                    // List of remaining users
+                    // Remaining Ranking Rows
                     items(restUsers, key = { it.id }) { user ->
                         if (!user.isCurrentUser) {
                             LeaderboardRowItem(user = user)
@@ -125,44 +199,204 @@ fun LeaderboardScreen(
 }
 
 @Composable
-private fun PodiumSlot(user: LeaderboardUser?, drawableRes: Int, rankNum: Int, heightDp: Int) {
+private fun PodiumSlot3D(
+    user: LeaderboardUser?,
+    drawableRes: Int,
+    rankNum: Int,
+    pillarHeight: androidx.compose.ui.unit.Dp,
+    pillarBrush: Brush,
+    artworkSize: androidx.compose.ui.unit.Dp
+) {
     if (user == null) return
+
     Column(
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.width(96.dp)
     ) {
-        Image(
-            painter = painterResource(id = drawableRes),
-            contentDescription = "Rank #$rankNum",
-            modifier = Modifier.size(if (rankNum == 1) 64.dp else 52.dp)
+        // Medal / Avatar Artwork with optional Gold Halo for #1
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier.padding(bottom = 6.dp)
+        ) {
+            if (rankNum == 1) {
+                Box(
+                    modifier = Modifier
+                        .size(artworkSize + 16.dp)
+                        .clip(CircleShape)
+                        .background(GoldBright.copy(alpha = 0.25f))
+                )
+            }
+            Image(
+                painter = painterResource(id = drawableRes),
+                contentDescription = "Rank #$rankNum",
+                modifier = Modifier.size(artworkSize),
+                contentScale = ContentScale.Fit
+            )
+        }
+
+        Text(
+            text = user.name,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.White,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.Center
         )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(user.name, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1F1047))
-        Text("${user.xp} XP", fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = RewardsPurple)
-        Spacer(modifier = Modifier.height(6.dp))
+
+        Spacer(modifier = Modifier.height(2.dp))
+
         Box(
             modifier = Modifier
-                .width(72.dp)
-                .height(heightDp.dp)
-                .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp))
-                .background(if (rankNum == 1) RewardsGold else RewardsPurple.copy(alpha = 0.3f)),
-            contentAlignment = Alignment.Center
+                .clip(RoundedCornerShape(10.dp))
+                .background(Color.White.copy(alpha = 0.2f))
+                .padding(horizontal = 8.dp, vertical = 2.dp)
         ) {
-            Text("#$rankNum", fontSize = 20.sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
+            Text(
+                text = "${user.xp} XP",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = Color.White
+            )
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // 3D Styled Pillar Container with Beveled Top Edge
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(0.9f)
+                .height(pillarHeight)
+                .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
+                .background(pillarBrush)
+                .border(
+                    1.dp,
+                    Color.White.copy(alpha = 0.4f),
+                    RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
+                ),
+            contentAlignment = Alignment.TopCenter
+        ) {
+            // Beveled Top Surface Highlight
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(12.dp)
+                    .background(Color.White.copy(alpha = 0.35f))
+            )
+
+            // Rank Number
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = 10.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "#$rankNum",
+                    fontSize = if (rankNum == 1) 28.sp else 22.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Color.White
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CurrentUserRankCard(user: LeaderboardUser) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = RewardsLavenderSurface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        border = androidx.compose.foundation.BorderStroke(2.dp, RoyalPurple)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(42.dp)
+                        .clip(CircleShape)
+                        .background(RoyalPurple),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "#${user.rank}",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color.White
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(14.dp))
+
+                Column {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = user.name,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = RewardsTextPrimary
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(RoyalPurple)
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = "YOU",
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "Current Leaderboard Rank",
+                        fontSize = 12.sp,
+                        color = RewardsTextSecondary
+                    )
+                }
+            }
+
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color.White)
+                    .border(1.dp, HighlightLavender, RoundedCornerShape(12.dp))
+                    .padding(horizontal = 12.dp, vertical = 6.dp)
+            ) {
+                Text(
+                    text = "${user.xp} XP",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = RoyalPurple
+                )
+            }
         }
     }
 }
 
 @Composable
 private fun LeaderboardRowItem(user: LeaderboardUser) {
-    val isMe = user.isCurrentUser
-    val cardBg = if (isMe) RewardsPurpleContainer else MaterialTheme.colorScheme.surface
-    val borderStroke = if (isMe) androidx.compose.foundation.BorderStroke(1.5.dp, RewardsPurple) else androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
-
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = cardBg),
-        border = borderStroke
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFF1F5F9))
     ) {
         Row(
             modifier = Modifier
@@ -171,35 +405,59 @@ private fun LeaderboardRowItem(user: LeaderboardUser) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f)
+            ) {
                 Box(
                     modifier = Modifier
-                        .size(32.dp)
+                        .size(36.dp)
                         .clip(CircleShape)
-                        .background(if (isMe) RewardsPurple else MaterialTheme.colorScheme.outline.copy(alpha = 0.15f)),
+                        .background(Color(0xFFF1F5F9)),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = "#${user.rank}",
-                        fontSize = 12.sp,
+                        fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
-                        color = if (isMe) Color.White else MaterialTheme.colorScheme.onSurface
+                        color = RewardsTextSecondary
                     )
                 }
+
                 Spacer(modifier = Modifier.width(12.dp))
+
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(RewardsLavenderSurface),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = null,
+                        tint = RoyalPurple,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
                 Text(
                     text = user.name,
                     fontSize = 14.sp,
-                    fontWeight = if (isMe) FontWeight.ExtraBold else FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurface
+                    fontWeight = FontWeight.Bold,
+                    color = RewardsTextPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
 
             Text(
                 text = "${user.xp} XP",
                 fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                color = RewardsPurple
+                fontWeight = FontWeight.ExtraBold,
+                color = RoyalPurple
             )
         }
     }

@@ -22,6 +22,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
@@ -29,7 +31,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -41,17 +42,70 @@ import com.synfusion.attendance.rewards.data.*
 import kotlinx.coroutines.launch
 import java.util.Locale
 
-// Rewards Design Tokens
-val RewardsPurple = Color(0xFF7C4DFF)
-val RewardsPurpleDark = Color(0xFF512DA8)
-val RewardsPurpleContainer = Color(0xFFF3E8FF)
-val RewardsGold = Color(0xFFFFB300)
-val RewardsGoldDark = Color(0xFFE68C00)
-val RewardsGoldContainer = Color(0xFFFFF8E1)
-val StatusGreen = Color(0xFF2E7D32)
-val StatusOrange = Color(0xFFEF6C00)
-val StatusRed = Color(0xFFC62828)
-val NeutralSlate = Color(0xFF64748B)
+// Centralized Rewards UI Design Tokens (Section 3)
+
+// Primary Purple Palette
+val DeepIndigo = Color(0xFF4F35E8)
+val RoyalPurple = Color(0xFF6737F5)
+val VibrantViolet = Color(0xFF873FFF)
+val ElectricPurple = Color(0xFFA64CFF)
+val HighlightLavender = Color(0xFFCA7BFF)
+
+// Primary Hero Gradients
+val RewardsPrimaryGradient = Brush.linearGradient(
+    colors = listOf(Color(0xFF4F35E8), Color(0xFF873FFF), Color(0xFFBD5CFA))
+)
+val RewardsSecondaryGradient = Brush.linearGradient(
+    colors = listOf(Color(0xFF5135E9), Color(0xFF8744F6), Color(0xFFBC65FC))
+)
+val RewardsReferralGradient = Brush.linearGradient(
+    colors = listOf(Color(0xFFF8DFFF), Color(0xFFFFF4FD), Color(0xFFF0E8FF))
+)
+
+// Gold Palette
+val GoldBright = Color(0xFFFFD54A)
+val GoldPrimary = Color(0xFFFFBE0B)
+val GoldRich = Color(0xFFF59E0B)
+val GoldDeep = Color(0xFFE88A08)
+
+val RewardsGoldGradient = Brush.verticalGradient(
+    colors = listOf(Color(0xFFFFD54A), Color(0xFFFFBE0B), Color(0xFFF59E0B))
+)
+val RewardsSilverGradient = Brush.verticalGradient(
+    colors = listOf(Color(0xFFF1F5F9), Color(0xFFCBD5E1), Color(0xFF94A3B8))
+)
+val RewardsBronzeGradient = Brush.verticalGradient(
+    colors = listOf(Color(0xFFFED7AA), Color(0xFFF97316), Color(0xFFC2410C))
+)
+
+// Surfaces
+val RewardsScreenBg = Color(0xFFF8F9FD)
+val RewardsCardBg = Color(0xFFFFFFFF)
+val RewardsLavenderSurface = Color(0xFFF4EBFF)
+val RewardsSoftPurple = Color(0xFFEEE5FF)
+val RewardsSoftPink = Color(0xFFFFEAFB)
+val RewardsGoldSurface = Color(0xFFFFF8DE)
+
+// Text Colors
+val RewardsTextPrimary = Color(0xFF11152F)
+val RewardsTextSecondary = Color(0xFF647086)
+val RewardsPurpleAccent = Color(0xFF8745F5)
+
+// Status & Indicators
+val RewardsSuccessGreen = Color(0xFF07994C)
+val RewardsSuccessBg = Color(0xFFE2F8EA)
+val StatusOrange = Color(0xFFE88A08)
+val StatusRed = Color(0xFFDC2626)
+
+// Legacy alias compatibility
+val RewardsPurple = Color(0xFF873FFF)
+val RewardsPurpleDark = Color(0xFF4F35E8)
+val RewardsPurpleContainer = Color(0xFFF4EBFF)
+val RewardsGold = Color(0xFFFFBE0B)
+val RewardsGoldDark = Color(0xFFE88A08)
+val RewardsGoldContainer = Color(0xFFFFF8DE)
+val StatusGreen = RewardsSuccessGreen
+val NeutralSlate = RewardsTextSecondary
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -127,7 +181,7 @@ fun RewardStatusChip(
         modifier = modifier
             .clip(RoundedCornerShape(8.dp))
             .background(statusColor.copy(alpha = 0.12f))
-            .border(1.dp, statusColor.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
+            .border(1.dp, statusColor.copy(alpha = 0.25f), RoundedCornerShape(8.dp))
             .padding(horizontal = 8.dp, vertical = 4.dp)
     ) {
         Text(
@@ -153,7 +207,7 @@ fun RewardsSectionHeader(
     ) {
         Text(
             text = title,
-            fontSize = 16.sp,
+            fontSize = 17.sp,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground
         )
@@ -161,9 +215,12 @@ fun RewardsSectionHeader(
             Text(
                 text = actionText,
                 fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = RewardsPurple,
-                modifier = Modifier.clickable { onActionClick() }
+                fontWeight = FontWeight.Bold,
+                color = RewardsPurpleAccent,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(6.dp))
+                    .clickable { onActionClick() }
+                    .padding(horizontal = 4.dp, vertical = 2.dp)
             )
         }
     }
@@ -175,14 +232,14 @@ fun RewardPrimaryButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    containerColor: Color = RewardsPurple,
+    containerColor: Color = DeepIndigo,
     contentColor: Color = Color.White,
     icon: ImageVector? = null
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.97f else 1f,
+        targetValue = if (isPressed) 0.96f else 1f,
         animationSpec = tween(durationMillis = 100),
         label = "buttonScale"
     )
@@ -191,12 +248,17 @@ fun RewardPrimaryButton(
         onClick = onClick,
         enabled = enabled,
         modifier = modifier
+            .height(50.dp)
             .graphicsLayer(scaleX = scale, scaleY = scale),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(14.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = containerColor,
             contentColor = contentColor,
             disabledContainerColor = containerColor.copy(alpha = 0.4f)
+        ),
+        elevation = ButtonDefaults.buttonElevation(
+            defaultElevation = 2.dp,
+            pressedElevation = 0.dp
         ),
         interactionSource = interactionSource
     ) {
@@ -219,13 +281,14 @@ fun RewardSecondaryButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    borderColor: Color = RewardsPurple,
-    contentColor: Color = RewardsPurple
+    borderColor: Color = RoyalPurple,
+    contentColor: Color = RoyalPurple,
+    containerColor: Color = Color.White
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.97f else 1f,
+        targetValue = if (isPressed) 0.96f else 1f,
         animationSpec = tween(durationMillis = 100),
         label = "buttonScale"
     )
@@ -233,10 +296,15 @@ fun RewardSecondaryButton(
     OutlinedButton(
         onClick = onClick,
         enabled = enabled,
-        modifier = modifier.graphicsLayer(scaleX = scale, scaleY = scale),
-        shape = RoundedCornerShape(12.dp),
-        colors = ButtonDefaults.outlinedButtonColors(contentColor = contentColor),
-        border = androidx.compose.foundation.BorderStroke(1.dp, borderColor),
+        modifier = modifier
+            .height(50.dp)
+            .graphicsLayer(scaleX = scale, scaleY = scale),
+        shape = RoundedCornerShape(14.dp),
+        colors = ButtonDefaults.outlinedButtonColors(
+            containerColor = containerColor,
+            contentColor = contentColor
+        ),
+        border = androidx.compose.foundation.BorderStroke(1.5.dp, borderColor),
         interactionSource = interactionSource
     ) {
         Text(text = text, fontWeight = FontWeight.Bold, fontSize = 14.sp)
@@ -247,8 +315,8 @@ fun RewardSecondaryButton(
 fun RewardProgressBar(
     progress: Float,
     modifier: Modifier = Modifier,
-    color: Color = RewardsPurple,
-    trackColor: Color = color.copy(alpha = 0.15f)
+    color: Color = GoldPrimary,
+    trackColor: Color = Color.White.copy(alpha = 0.25f)
 ) {
     val animatedProgress by animateFloatAsState(
         targetValue = progress.coerceIn(0f, 1f),
@@ -265,6 +333,158 @@ fun RewardProgressBar(
         color = color,
         trackColor = trackColor
     )
+}
+
+@Composable
+fun RewardSegmentedControl(
+    options: List<String>,
+    selectedIndex: Int,
+    onOptionSelected: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color.White)
+            .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(16.dp))
+            .padding(4.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            options.forEachIndexed { index, title ->
+                val isSelected = index == selectedIndex
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(42.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(
+                            if (isSelected) RewardsSecondaryGradient else Brush.linearGradient(
+                                listOf(Color.Transparent, Color.Transparent)
+                            )
+                        )
+                        .clickable { onOptionSelected(index) },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = title,
+                        fontSize = 14.sp,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                        color = if (isSelected) Color.White else RewardsTextSecondary
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun RewardPillTabs(
+    tabs: List<String>,
+    selectedIndex: Int,
+    onTabSelected: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        tabs.forEachIndexed { index, title ->
+            val isSelected = index == selectedIndex
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(if (isSelected) RoyalPurple else RewardsLavenderSurface)
+                    .clickable { onTabSelected(index) }
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = title,
+                    fontSize = 13.sp,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
+                    color = if (isSelected) Color.White else RewardsTextSecondary
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun RewardTabRow(
+    tabs: List<String>,
+    pagerState: PagerState,
+    modifier: Modifier = Modifier
+) {
+    val coroutineScope = rememberCoroutineScope()
+
+    TabRow(
+        selectedTabIndex = pagerState.currentPage,
+        containerColor = MaterialTheme.colorScheme.surface,
+        contentColor = RoyalPurple,
+        divider = { HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)) },
+        indicator = { tabPositions ->
+            if (tabPositions.isNotEmpty()) {
+                val currentTab = pagerState.currentPage.coerceIn(0, tabPositions.size - 1)
+                val fractionalOffset = pagerState.currentPageOffsetFraction
+                val targetTab = if (fractionalOffset > 0) {
+                    (currentTab + 1).coerceAtMost(tabPositions.size - 1)
+                } else {
+                    (currentTab - 1).coerceAtLeast(0)
+                }
+
+                val currentPos = tabPositions[currentTab]
+                val targetPos = tabPositions[targetTab]
+
+                val left = androidx.compose.ui.unit.lerp(
+                    currentPos.left,
+                    targetPos.left,
+                    fractionalOffset.coerceIn(-1f, 1f).let { if (it < 0) -it else it }
+                )
+                val width = androidx.compose.ui.unit.lerp(
+                    currentPos.width,
+                    targetPos.width,
+                    fractionalOffset.coerceIn(-1f, 1f).let { if (it < 0) -it else it }
+                )
+
+                Box(
+                    modifier = Modifier
+                        .wrapContentSize(Alignment.BottomStart)
+                        .offset(x = left)
+                        .width(width)
+                        .height(3.dp)
+                        .background(color = RoyalPurple, shape = RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp))
+                )
+            }
+        },
+        modifier = modifier.fillMaxWidth()
+    ) {
+        tabs.forEachIndexed { index, title ->
+            val isSelected = pagerState.currentPage == index
+            Tab(
+                selected = isSelected,
+                onClick = {
+                    coroutineScope.launch {
+                        pagerState.animateScrollToPage(index)
+                    }
+                },
+                text = {
+                    Text(
+                        text = title,
+                        fontSize = 13.sp,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                        color = if (isSelected) RoyalPurple else MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            )
+        }
+    }
 }
 
 @Composable
@@ -319,81 +539,6 @@ fun RewardEmptyState(
     }
 }
 
-// Custom Synchronized Swipeable Tab Row with continuous indicator motion
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-fun RewardTabRow(
-    tabs: List<String>,
-    pagerState: PagerState,
-    modifier: Modifier = Modifier
-) {
-    val coroutineScope = rememberCoroutineScope()
-
-    TabRow(
-        selectedTabIndex = pagerState.currentPage,
-        containerColor = MaterialTheme.colorScheme.surface,
-        contentColor = RewardsPurple,
-        divider = { HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)) },
-        indicator = { tabPositions ->
-            if (tabPositions.isNotEmpty()) {
-                val currentTab = pagerState.currentPage.coerceIn(0, tabPositions.size - 1)
-                val fractionalOffset = pagerState.currentPageOffsetFraction
-                val targetTab = if (fractionalOffset > 0) {
-                    (currentTab + 1).coerceAtMost(tabPositions.size - 1)
-                } else {
-                    (currentTab - 1).coerceAtLeast(0)
-                }
-
-                val currentPos = tabPositions[currentTab]
-                val targetPos = tabPositions[targetTab]
-
-                val left = androidx.compose.ui.unit.lerp(
-                    currentPos.left,
-                    targetPos.left,
-                    fractionalOffset.coerceIn(-1f, 1f).let { if (it < 0) -it else it }
-                )
-                val width = androidx.compose.ui.unit.lerp(
-                    currentPos.width,
-                    targetPos.width,
-                    fractionalOffset.coerceIn(-1f, 1f).let { if (it < 0) -it else it }
-                )
-
-                Box(
-                    modifier = Modifier
-                        .wrapContentSize(Alignment.BottomStart)
-                        .offset(x = left)
-                        .width(width)
-                        .height(3.dp)
-                        .background(color = RewardsPurple, shape = RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp))
-                )
-            }
-        },
-        modifier = modifier.fillMaxWidth()
-    ) {
-        tabs.forEachIndexed { index, title ->
-            val isSelected = pagerState.currentPage == index
-            Tab(
-                selected = isSelected,
-                onClick = {
-                    coroutineScope.launch {
-                        pagerState.animateScrollToPage(index)
-                    }
-                },
-                text = {
-                    Text(
-                        text = title,
-                        fontSize = 13.sp,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                        color = if (isSelected) RewardsPurple else MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            )
-        }
-    }
-}
-
 @Composable
 fun RewardTransactionRow(
     transaction: RewardTransaction,
@@ -401,67 +546,76 @@ fun RewardTransactionRow(
     modifier: Modifier = Modifier
 ) {
     val statusColor = when (transaction.status) {
-        RewardTransactionStatus.CONFIRMED, RewardTransactionStatus.COMPLETED -> StatusGreen
+        RewardTransactionStatus.CONFIRMED, RewardTransactionStatus.COMPLETED -> RewardsSuccessGreen
         RewardTransactionStatus.PENDING -> StatusOrange
         RewardTransactionStatus.REVERSED, RewardTransactionStatus.REJECTED -> StatusRed
     }
 
-    Row(
+    Card(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .background(MaterialTheme.colorScheme.surface)
-            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f), RoundedCornerShape(14.dp))
-            .clickable { onClick() }
-            .padding(14.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+            .clickable { onClick() },
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFF1F5F9))
     ) {
         Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(statusColor.copy(alpha = 0.12f)),
-                contentAlignment = Alignment.Center
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f)
             ) {
-                val icon = if (transaction.amount >= 0) Icons.Default.AddCircleOutline else Icons.Default.RemoveCircleOutline
-                Icon(imageVector = icon, contentDescription = null, tint = statusColor, modifier = Modifier.size(20.dp))
+                Box(
+                    modifier = Modifier
+                        .size(42.dp)
+                        .clip(CircleShape)
+                        .background(statusColor.copy(alpha = 0.12f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    val icon = if (transaction.amount >= 0) Icons.Default.AddCircleOutline else Icons.Default.RemoveCircleOutline
+                    Icon(imageVector = icon, contentDescription = null, tint = statusColor, modifier = Modifier.size(22.dp))
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Column {
+                    Text(
+                        text = transaction.title,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = RewardsTextPrimary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = transaction.timestamp,
+                        fontSize = 12.sp,
+                        color = RewardsTextSecondary
+                    )
+                }
             }
-            Spacer(modifier = Modifier.width(12.dp))
-            Column {
-                Text(
-                    text = transaction.title,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
+            Spacer(modifier = Modifier.width(8.dp))
+            Column(
+                horizontalAlignment = Alignment.End
+            ) {
+                RewardCoinBalance(
+                    amount = transaction.amount,
+                    fontSize = 14,
+                    textColor = if (transaction.amount < 0) StatusRed else statusColor,
+                    showSign = true,
+                    coinSize = 16.dp
                 )
-                Text(
-                    text = transaction.timestamp,
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                Spacer(modifier = Modifier.height(4.dp))
+                RewardStatusChip(
+                    statusText = transaction.status.name,
+                    statusColor = statusColor
                 )
             }
-        }
-        Spacer(modifier = Modifier.width(8.dp))
-        Column(
-            horizontalAlignment = Alignment.End
-        ) {
-            RewardCoinBalance(
-                amount = transaction.amount,
-                fontSize = 14,
-                textColor = if (transaction.amount < 0) StatusRed else statusColor,
-                showSign = true,
-                coinSize = 16.dp
-            )
-            Spacer(modifier = Modifier.height(2.dp))
-            RewardStatusChip(
-                statusText = transaction.status.name,
-                statusColor = statusColor
-            )
         }
     }
 }
@@ -474,30 +628,33 @@ fun RewardBadgeCard(
     modifier: Modifier = Modifier
 ) {
     val isUnlocked = achievement.isUnlocked
-    val cardBg = if (isUnlocked) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surface.copy(alpha = 0.7f)
+    val cardBg = if (isUnlocked) RewardsGoldSurface else RewardsLavenderSurface
     val border = if (isUnlocked) {
-        androidx.compose.foundation.BorderStroke(1.dp, RewardsGold.copy(alpha = 0.6f))
+        androidx.compose.foundation.BorderStroke(1.5.dp, GoldPrimary)
     } else {
-        androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+        androidx.compose.foundation.BorderStroke(1.dp, HighlightLavender.copy(alpha = 0.4f))
     }
 
     Card(
         modifier = modifier
             .fillMaxWidth()
             .clickable { onClick() },
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = cardBg),
-        border = border
+        border = border,
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isUnlocked) 2.dp else 0.dp)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Box(
                 modifier = Modifier
-                    .size(64.dp)
+                    .size(90.dp)
                     .clip(CircleShape)
-                    .background(if (isUnlocked) RewardsGoldContainer else Color.LightGray.copy(alpha = 0.2f)),
+                    .background(if (isUnlocked) Color.White else Color.White.copy(alpha = 0.6f)),
                 contentAlignment = Alignment.Center
             ) {
                 val colorFilter = if (!isUnlocked) {
@@ -507,54 +664,65 @@ fun RewardBadgeCard(
                 Image(
                     painter = painterResource(id = drawableRes),
                     contentDescription = achievement.title,
-                    modifier = Modifier.size(52.dp),
-                    colorFilter = colorFilter
+                    modifier = Modifier.size(72.dp),
+                    colorFilter = colorFilter,
+                    contentScale = ContentScale.Fit
                 )
 
                 if (!isUnlocked) {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(Color.Black.copy(alpha = 0.3f), CircleShape),
+                            .background(Color.Black.copy(alpha = 0.25f), CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Lock,
-                            contentDescription = "Locked",
-                            tint = Color.White,
-                            modifier = Modifier.size(20.dp)
-                        )
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(CircleShape)
+                                .background(Color.White),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Lock,
+                                contentDescription = "Locked",
+                                tint = DeepIndigo,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             Text(
                 text = achievement.title,
-                fontSize = 14.sp,
+                fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
-                color = if (isUnlocked) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                color = RewardsTextPrimary,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center
             )
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(6.dp))
 
             if (isUnlocked) {
-                RewardStatusChip(statusText = "Unlocked", statusColor = StatusGreen)
+                RewardStatusChip(statusText = "UNLOCKED", statusColor = RewardsSuccessGreen)
             } else {
                 Text(
                     text = "${achievement.currentProgress} / ${achievement.maxProgress}",
-                    fontSize = 11.sp,
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = RewardsTextSecondary
                 )
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(6.dp))
                 RewardProgressBar(
                     progress = achievement.currentProgress.toFloat() / achievement.maxProgress.toFloat(),
-                    color = RewardsPurple,
-                    modifier = Modifier.width(60.dp)
+                    color = RoyalPurple,
+                    trackColor = HighlightLavender.copy(alpha = 0.4f),
+                    modifier = Modifier.fillMaxWidth(0.85f)
                 )
             }
         }
