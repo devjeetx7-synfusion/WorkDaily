@@ -1107,4 +1107,20 @@
     <string name="country_region">देश / क्षेत्र</string>
     <string name="your_details_saved_locally">आपकी जानकारी लोकल सेव्ड है।</string>
     <string name="profile_details_saved_locally_desc">आपकी प्रोफाइल जानकारी आपके डिवाइस पर सुरक्षित सेव्ड है।</string>
+
+    <!-- Rewards UI Strings -->
+    <string name="rewards_title">रिवॉर्ड्स हब</string>
+    <string name="my_workdaily_coins">मेरे वर्कडेली कॉइन्स</string>
+    <string name="available">अवेलेबल</string>
+    <string name="pending">पेंडिंग</string>
+    <string name="view_wallet">वॉलेट देखें</string>
+    <string name="redeem">रिडीम</string>
+    <string name="refer_and_earn">रेफर एवं अर्न</string>
+    <string name="refer_subtitle">दोस्तों को जोड़ें, साथ में कॉइन्स कमाएं</string>
+    <string name="earn_up_to_coins">🪙500 कॉइन्स तक कमाएं</string>
+    <string name="tasks">टास्क</string>
+    <string name="achievements">अचीवमेंट्स</string>
+    <string name="leaderboard">लीडरबोर्ड</string>
+    <string name="coin_history">कॉइन हिस्ट्री</string>
+    <string name="recent_activity">हाल की एक्टिविटी</string>
 </resources>

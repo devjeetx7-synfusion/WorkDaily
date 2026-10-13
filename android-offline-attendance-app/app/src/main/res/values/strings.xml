@@ -726,4 +726,20 @@
     <string name="country_region">Country / Region</string>
     <string name="your_details_saved_locally">Your details are saved locally.</string>
     <string name="profile_details_saved_locally_desc">Your profile details are safely saved locally on your device.</string>
+
+    <!-- Rewards UI Strings -->
+    <string name="rewards_title">Rewards Hub</string>
+    <string name="my_workdaily_coins">MY WORKDAILY COINS</string>
+    <string name="available">Available</string>
+    <string name="pending">Pending</string>
+    <string name="view_wallet">View Wallet</string>
+    <string name="redeem">Redeem</string>
+    <string name="refer_and_earn">REFER &amp; EARN</string>
+    <string name="refer_subtitle">Invite friends, earn together</string>
+    <string name="earn_up_to_coins">Earn up to 🪙500</string>
+    <string name="tasks">Tasks</string>
+    <string name="achievements">Achievements</string>
+    <string name="leaderboard">Leaderboard</string>
+    <string name="coin_history">Coin History</string>
+    <string name="recent_activity">Recent Activity</string>
 </resources>
