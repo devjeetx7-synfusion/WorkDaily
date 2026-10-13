@@ -1016,7 +1016,7 @@ fun LoginScreen(
                             )
                             if (dailyWageText.isNotBlank() && !isWageValid) {
                                 Text(
-                                    text = "Daily wage must be greater than 0",
+                                    text = stringResource(R.string.err_daily_wage_greater_than_zero),
                                     color = MaterialTheme.colorScheme.error,
                                     fontSize = 12.sp,
                                     modifier = Modifier
@@ -1073,7 +1073,11 @@ fun LoginScreen(
                                 )
                             )
                             if (phone.isNotBlank() && !isPhoneValid) {
-                                val phoneErrMsg = if (selectedCountry.countryCode == "IN") "Enter a valid 10-digit mobile number" else "Enter a valid phone number (7-15 digits)"
+                                val phoneErrMsg = if (selectedCountry.countryCode == "IN") {
+                                    stringResource(R.string.err_valid_10_digit_mobile)
+                                } else {
+                                    stringResource(R.string.err_valid_phone_digits)
+                                }
                                 Text(
                                     text = phoneErrMsg,
                                     color = MaterialTheme.colorScheme.error,

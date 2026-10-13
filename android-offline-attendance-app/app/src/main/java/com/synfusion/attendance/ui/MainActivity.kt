@@ -241,6 +241,13 @@ fun OfflineDailyWorkApp(
         return
     }
 
+    /**
+     * WORKDAILY OFFLINE-FIRST STARTUP ROUTING:
+     * - Local WorkDaily workspaces operate 100% offline (Attendance, Wage, Overtime, Advance, Passbook, PDF, Backup).
+     * - An active or non-expired Firebase Auth session is NOT required on every app launch.
+     * - Once onlineAccountSetupCompleted is saved locally, startup routes directly to "dashboard" without network checks.
+     * - If online account setup was skipped or uncompleted, users can tap "Continue Offline" to access local workspace data.
+     */
     val startDest = if (splashEnabled == false) {
         if (languageState == null) "language_selection"
         else if (!onboardingCompleted) "onboarding"

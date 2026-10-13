@@ -13,7 +13,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-class LocalAttendanceRepository(
+open class LocalAttendanceRepository(
     private val context: Context
 ) {
     private val db: AttendanceDatabase
@@ -32,21 +32,26 @@ class LocalAttendanceRepository(
         get() = BackupStateRepository(context)
 
     // --- User Profile ---
-    fun getUserFlow(): Flow<UserEntity?> = userDao.getUserFlow()
-    suspend fun getUser(): UserEntity? = userDao.getUser()
-    suspend fun saveUser(user: UserEntity) {
+    open fun getUserFlow(): Flow<UserEntity?> = userDao.getUserFlow()
+    open suspend fun getUser(): UserEntity? = userDao.getUser()
+    open suspend fun saveUser(user: UserEntity) {
         userDao.insertUser(user)
         try { backupStateRepo.markDataMutated() } catch (_: Exception) {}
     }
-    suspend fun clearSession() {
+
+    /**
+     * Intentionally no-op during session clearing / sign-out to preserve user attendance,
+     * profile, summary records, and local backup files intact.
+     */
+    open suspend fun clearSession() {
         // Intentionally no-op to preserve user attendance, profile, and summary records during session reset.
     }
 
     // --- Attendance Operations ---
-    fun getPersonalAttendanceFlow(): Flow<List<AttendanceEntity>> =
+    open fun getPersonalAttendanceFlow(): Flow<List<AttendanceEntity>> =
         attendanceDao.getPersonalAttendanceFlow()
 
-    suspend fun getPersonalAttendance(): List<AttendanceEntity> =
+    open suspend fun getPersonalAttendance(): List<AttendanceEntity> =
         attendanceDao.getPersonalAttendance()
 
     fun getAttendanceByDateFlow(date: String): Flow<List<AttendanceEntity>> =

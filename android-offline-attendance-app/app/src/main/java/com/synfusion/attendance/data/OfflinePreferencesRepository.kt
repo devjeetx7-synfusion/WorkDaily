@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.map
 
 val Context.offlineDataStore: DataStore<Preferences> by preferencesDataStore(name = "synfusion_user_prefs")
 
-class OfflinePreferencesRepository(val context: Context) {
+open class OfflinePreferencesRepository(val context: Context) {
 
     companion object {
         val ROLE_KEY = stringPreferencesKey("user_role")
@@ -38,108 +38,130 @@ class OfflinePreferencesRepository(val context: Context) {
         val LAST_ACTIVE_SCREEN_KEY = stringPreferencesKey("last_active_screen")
     }
 
-    val userRoleFlow: Flow<String?> = context.offlineDataStore.data.map { preferences ->
-        preferences[ROLE_KEY]
-    }
+    open val userRoleFlow: Flow<String?>
+        get() = context.offlineDataStore.data.map { preferences ->
+            preferences[ROLE_KEY]
+        }
 
-    val countryFlow: Flow<String> = context.offlineDataStore.data.map { preferences ->
-        preferences[COUNTRY_KEY] ?: "IN"
-    }
+    val countryFlow: Flow<String>
+        get() = context.offlineDataStore.data.map { preferences ->
+            preferences[COUNTRY_KEY] ?: "IN"
+        }
 
-    val currencyFlow: Flow<String> = context.offlineDataStore.data.map { preferences ->
-        preferences[CURRENCY_KEY] ?: "INR"
-    }
+    val currencyFlow: Flow<String>
+        get() = context.offlineDataStore.data.map { preferences ->
+            preferences[CURRENCY_KEY] ?: "INR"
+        }
 
-    val lastBackupTimeFlow: Flow<Long?> = context.offlineDataStore.data.map { preferences ->
-        preferences[LAST_BACKUP_TIME_KEY]
-    }
+    val lastBackupTimeFlow: Flow<Long?>
+        get() = context.offlineDataStore.data.map { preferences ->
+            preferences[LAST_BACKUP_TIME_KEY]
+        }
 
-    val lastBackupSizeFlow: Flow<Long?> = context.offlineDataStore.data.map { preferences ->
-        preferences[LAST_BACKUP_SIZE_KEY]
-    }
+    val lastBackupSizeFlow: Flow<Long?>
+        get() = context.offlineDataStore.data.map { preferences ->
+            preferences[LAST_BACKUP_SIZE_KEY]
+        }
 
-    val lastBackupLocFlow: Flow<String?> = context.offlineDataStore.data.map { preferences ->
-        preferences[LAST_BACKUP_LOC_KEY]
-    }
+    val lastBackupLocFlow: Flow<String?>
+        get() = context.offlineDataStore.data.map { preferences ->
+            preferences[LAST_BACKUP_LOC_KEY]
+        }
 
-    val profilePhotoPathFlow: Flow<String?> = context.offlineDataStore.data.map { preferences ->
-        preferences[PROFILE_PHOTO_PATH_KEY]
-    }
+    open val profilePhotoPathFlow: Flow<String?>
+        get() = context.offlineDataStore.data.map { preferences ->
+            preferences[PROFILE_PHOTO_PATH_KEY]
+        }
 
-    val googlePhotoUrlFlow: Flow<String?> = context.offlineDataStore.data.map { preferences ->
-        preferences[GOOGLE_PHOTO_URL_KEY]
-    }
+    open val googlePhotoUrlFlow: Flow<String?>
+        get() = context.offlineDataStore.data.map { preferences ->
+            preferences[GOOGLE_PHOTO_URL_KEY]
+        }
 
-    val authTokenFlow: Flow<String?> = context.offlineDataStore.data.map { preferences ->
-        preferences[TOKEN_KEY]
-    }
+    open val authTokenFlow: Flow<String?>
+        get() = context.offlineDataStore.data.map { preferences ->
+            preferences[TOKEN_KEY]
+        }
 
-    val languageFlow: Flow<String?> = context.offlineDataStore.data.map { preferences ->
-        preferences[LANGUAGE_KEY]
-    }
+    val languageFlow: Flow<String?>
+        get() = context.offlineDataStore.data.map { preferences ->
+            preferences[LANGUAGE_KEY]
+        }
 
-    val darkModeFlow: Flow<Boolean?> = context.offlineDataStore.data.map { preferences ->
-        preferences[THEME_KEY]
-    }
+    val darkModeFlow: Flow<Boolean?>
+        get() = context.offlineDataStore.data.map { preferences ->
+            preferences[THEME_KEY]
+        }
 
-    val remindersFlow: Flow<Boolean> = context.offlineDataStore.data.map { preferences ->
-        preferences[REMINDERS_KEY] ?: false
-    }
+    val remindersFlow: Flow<Boolean>
+        get() = context.offlineDataStore.data.map { preferences ->
+            preferences[REMINDERS_KEY] ?: false
+        }
 
-    val isOnboardingCompletedFlow: Flow<Boolean> = context.offlineDataStore.data.map { preferences ->
-        preferences[ONBOARDING_COMPLETED_KEY] ?: false
-    }
+    open val isOnboardingCompletedFlow: Flow<Boolean>
+        get() = context.offlineDataStore.data.map { preferences ->
+            preferences[ONBOARDING_COMPLETED_KEY] ?: false
+        }
 
-    val isOnlineAccountSetupCompletedFlow: Flow<Boolean> = context.offlineDataStore.data.map { preferences ->
-        preferences[ONLINE_ACCOUNT_SETUP_COMPLETED_KEY] ?: false
-    }
+    open val isOnlineAccountSetupCompletedFlow: Flow<Boolean>
+        get() = context.offlineDataStore.data.map { preferences ->
+            preferences[ONLINE_ACCOUNT_SETUP_COMPLETED_KEY] ?: false
+        }
 
-    val linkedFirebaseUidFlow: Flow<String?> = context.offlineDataStore.data.map { preferences ->
-        preferences[LINKED_FIREBASE_UID_KEY]
-    }
+    open val linkedFirebaseUidFlow: Flow<String?>
+        get() = context.offlineDataStore.data.map { preferences ->
+            preferences[LINKED_FIREBASE_UID_KEY]
+        }
 
-    val splashEnabledFlow: Flow<Boolean> = context.offlineDataStore.data.map { preferences ->
-        preferences[SPLASH_ENABLED_KEY] ?: true
-    }
+    val splashEnabledFlow: Flow<Boolean>
+        get() = context.offlineDataStore.data.map { preferences ->
+            preferences[SPLASH_ENABLED_KEY] ?: true
+        }
 
-    val navLeft1Flow: Flow<String> = context.offlineDataStore.data.map { preferences ->
-        preferences[NAV_LEFT_1_KEY] ?: "dashboard"
-    }
+    val navLeft1Flow: Flow<String>
+        get() = context.offlineDataStore.data.map { preferences ->
+            preferences[NAV_LEFT_1_KEY] ?: "dashboard"
+        }
 
-    val navLeft2Flow: Flow<String> = context.offlineDataStore.data.map { preferences ->
-        preferences[NAV_LEFT_2_KEY] ?: "calendar"
-    }
+    val navLeft2Flow: Flow<String>
+        get() = context.offlineDataStore.data.map { preferences ->
+            preferences[NAV_LEFT_2_KEY] ?: "calendar"
+        }
 
-    val navRightFlow: Flow<String> = context.offlineDataStore.data.map { preferences ->
-        preferences[NAV_RIGHT_KEY] ?: "settings"
-    }
+    val navRightFlow: Flow<String>
+        get() = context.offlineDataStore.data.map { preferences ->
+            preferences[NAV_RIGHT_KEY] ?: "settings"
+        }
 
-    val startupScreenFlow: Flow<String> = context.offlineDataStore.data.map { preferences ->
-        preferences[STARTUP_SCREEN_KEY] ?: "dashboard"
-    }
+    val startupScreenFlow: Flow<String>
+        get() = context.offlineDataStore.data.map { preferences ->
+            preferences[STARTUP_SCREEN_KEY] ?: "dashboard"
+        }
 
-    val rememberLastScreenFlow: Flow<Boolean> = context.offlineDataStore.data.map { preferences ->
-        preferences[REMEMBER_LAST_SCREEN_KEY] ?: false
-    }
+    val rememberLastScreenFlow: Flow<Boolean>
+        get() = context.offlineDataStore.data.map { preferences ->
+            preferences[REMEMBER_LAST_SCREEN_KEY] ?: false
+        }
 
-    val lastActiveScreenFlow: Flow<String> = context.offlineDataStore.data.map { preferences ->
-        preferences[LAST_ACTIVE_SCREEN_KEY] ?: "dashboard"
-    }
+    val lastActiveScreenFlow: Flow<String>
+        get() = context.offlineDataStore.data.map { preferences ->
+            preferences[LAST_ACTIVE_SCREEN_KEY] ?: "dashboard"
+        }
 
-    suspend fun saveCountryAndCurrency(countryCode: String, currencyCode: String) {
+    open suspend fun saveCountryAndCurrency(countryCode: String, currencyCode: String) {
         context.offlineDataStore.edit { preferences ->
             preferences[COUNTRY_KEY] = countryCode
             preferences[CURRENCY_KEY] = currencyCode
         }
     }
 
-    suspend fun saveUserRole(role: String) {
+    open suspend fun saveUserRole(role: String) {
         context.offlineDataStore.edit { preferences ->
             preferences[ROLE_KEY] = role
         }
     }
 
-    suspend fun saveAuthToken(token: String) {
+    open suspend fun saveAuthToken(token: String) {
         context.offlineDataStore.edit { preferences ->
             preferences[TOKEN_KEY] = token
         }
@@ -163,19 +185,19 @@ class OfflinePreferencesRepository(val context: Context) {
         }
     }
 
-    suspend fun saveOnboardingCompleted(completed: Boolean) {
+    open suspend fun saveOnboardingCompleted(completed: Boolean) {
         context.offlineDataStore.edit { preferences ->
             preferences[ONBOARDING_COMPLETED_KEY] = completed
         }
     }
 
-    suspend fun saveOnlineAccountSetupCompleted(completed: Boolean) {
+    open suspend fun saveOnlineAccountSetupCompleted(completed: Boolean) {
         context.offlineDataStore.edit { preferences ->
             preferences[ONLINE_ACCOUNT_SETUP_COMPLETED_KEY] = completed
         }
     }
 
-    suspend fun saveLinkedFirebaseUid(uid: String?) {
+    open suspend fun saveLinkedFirebaseUid(uid: String?) {
         context.offlineDataStore.edit { preferences ->
             if (uid != null) {
                 preferences[LINKED_FIREBASE_UID_KEY] = uid
@@ -185,7 +207,7 @@ class OfflinePreferencesRepository(val context: Context) {
         }
     }
 
-    suspend fun saveGooglePhotoUrl(url: String?) {
+    open suspend fun saveGooglePhotoUrl(url: String?) {
         context.offlineDataStore.edit { preferences ->
             if (url != null) {
                 preferences[GOOGLE_PHOTO_URL_KEY] = url
@@ -245,7 +267,12 @@ class OfflinePreferencesRepository(val context: Context) {
         }
     }
 
-    suspend fun clearAuthSession() {
+    /**
+     * Clears active session tokens (auth_token and user_role) during sign-out.
+     * Preserves UserEntity, attendance records, summaries, backup files, and
+     * linked_firebase_uid metadata (for account mismatch protection).
+     */
+    open suspend fun clearAuthSession() {
         context.offlineDataStore.edit { preferences ->
             preferences.remove(TOKEN_KEY)
             preferences.remove(ROLE_KEY)

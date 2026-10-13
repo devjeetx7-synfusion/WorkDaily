@@ -718,4 +718,12 @@
     <string name="network_unavailable_msg">Network unavailable. You can continue offline to access your attendance workspace.</string>
     <string name="save_and_continue">Save &amp; Continue</string>
     <string name="setup_workspace">Complete Workspace Setup</string>
+    <string name="err_daily_wage_greater_than_zero">Daily wage must be greater than 0</string>
+    <string name="err_valid_10_digit_mobile">Enter a valid 10-digit mobile number</string>
+    <string name="err_valid_phone_digits">Enter a valid phone number (7-15 digits)</string>
+    <string name="profile_title">Profile</string>
+    <string name="personal_info">Personal Info</string>
+    <string name="country_region">Country / Region</string>
+    <string name="your_details_saved_locally">Your details are saved locally.</string>
+    <string name="profile_details_saved_locally_desc">Your profile details are safely saved locally on your device.</string>
 </resources>
