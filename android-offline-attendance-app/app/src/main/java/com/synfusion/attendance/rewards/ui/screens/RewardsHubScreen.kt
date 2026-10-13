@@ -1,5 +1,6 @@
 package com.synfusion.attendance.rewards.ui.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -15,16 +16,19 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.synfusion.attendance.R
 import com.synfusion.attendance.rewards.data.*
 import com.synfusion.attendance.rewards.ui.components.*
 import com.synfusion.attendance.rewards.viewmodel.RewardsViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RewardsHubScreen(
     viewModel: RewardsViewModel,
@@ -44,25 +48,14 @@ fun RewardsHubScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = "Rewards Hub",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                },
+            RewardsTopAppBar(
+                title = stringResource(id = R.string.rewards_title),
+                onNavigateBack = onNavigateBack,
                 actions = {
                     IconButton(onClick = onNavigateInfo) {
                         Icon(imageVector = Icons.Default.Info, contentDescription = "Rewards Info", tint = RewardsPurple)
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
+                }
             )
         },
         containerColor = MaterialTheme.colorScheme.background
@@ -74,17 +67,105 @@ fun RewardsHubScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Top premium balance card
+            // Hero Banner
             item {
-                RewardsBalanceCard(
-                    availableCoins = walletSummary.availableCoins,
-                    pendingCoins = walletSummary.pendingCoins,
-                    onViewWallet = onNavigateWallet,
-                    onRedeem = onNavigateRedeem
-                )
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = RewardsPurpleContainer),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, RewardsPurple.copy(alpha = 0.3f))
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(RewardsPurpleContainer, Color.White)
+                                )
+                            )
+                            .padding(20.dp)
+                    ) {
+                        Column {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = stringResource(id = R.string.my_workdaily_coins),
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        letterSpacing = 1.sp,
+                                        color = RewardsPurple
+                                    )
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    RewardCoinBalance(
+                                        amount = walletSummary.totalBalance,
+                                        fontSize = 30,
+                                        textColor = Color(0xFF1F1047),
+                                        coinSize = 32.dp
+                                    )
+                                }
+                                Image(
+                                    painter = painterResource(id = R.drawable.rewards_hub_worker),
+                                    contentDescription = "Rewards Worker",
+                                    modifier = Modifier.size(90.dp)
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(Color.White.copy(alpha = 0.85f))
+                                    .border(1.dp, RewardsPurple.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
+                                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(text = stringResource(id = R.string.available), fontSize = 12.sp, color = NeutralSlate, fontWeight = FontWeight.Medium)
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    RewardCoinBalance(amount = walletSummary.availableCoins, fontSize = 13, textColor = StatusGreen, coinSize = 14.dp)
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .height(16.dp)
+                                        .width(1.dp)
+                                        .background(Color.LightGray)
+                                )
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(text = stringResource(id = R.string.pending), fontSize = 12.sp, color = NeutralSlate, fontWeight = FontWeight.Medium)
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    RewardCoinBalance(amount = walletSummary.pendingCoins, fontSize = 13, textColor = StatusOrange, coinSize = 14.dp)
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                RewardSecondaryButton(
+                                    text = stringResource(id = R.string.view_wallet),
+                                    onClick = onNavigateWallet,
+                                    modifier = Modifier.weight(1f).height(44.dp)
+                                )
+                                RewardPrimaryButton(
+                                    text = stringResource(id = R.string.redeem),
+                                    onClick = onNavigateRedeem,
+                                    modifier = Modifier.weight(1f).height(44.dp)
+                                )
+                            }
+                        }
+                    }
+                }
             }
 
-            // Refer & Earn Banner
+            // Refer & Earn Card
             item {
                 Card(
                     modifier = Modifier
@@ -100,36 +181,35 @@ fun RewardsHubScreen(
                             .padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(48.dp)
-                                .clip(CircleShape)
-                                .background(RewardsPurple.copy(alpha = 0.12f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(text = "🎁", fontSize = 24.sp)
-                        }
-                        Spacer(modifier = Modifier.width(16.dp))
+                        Image(
+                            painter = painterResource(id = R.drawable.refer_workers),
+                            contentDescription = "Refer Workers",
+                            modifier = Modifier.size(56.dp)
+                        )
+                        Spacer(modifier = Modifier.width(14.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "REFER & EARN",
+                                text = stringResource(id = R.string.refer_and_earn),
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = RewardsPurple,
                                 letterSpacing = 0.5.sp
                             )
                             Text(
-                                text = "Invite friends, earn together",
-                                fontSize = 15.sp,
+                                text = stringResource(id = R.string.refer_subtitle),
+                                fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
-                            Text(
-                                text = "Earn up to 🪙500",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = StatusGreen
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = "Earn up to ",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = StatusGreen
+                                )
+                                RewardCoinBalance(amount = 500, fontSize = 12, textColor = StatusGreen, coinSize = 13.dp)
+                            }
                         }
                         Icon(
                             imageVector = Icons.Default.ChevronRight,
@@ -140,12 +220,12 @@ fun RewardsHubScreen(
                 }
             }
 
-            // 2-column grid for Features
+            // Feature Grid
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         RewardFeatureCard(
-                            title = "Tasks",
+                            title = stringResource(id = R.string.tasks),
                             subtitle = "3 available",
                             icon = Icons.Default.TaskAlt,
                             iconTint = Color(0xFF1976D2),
@@ -154,7 +234,7 @@ fun RewardsHubScreen(
                             modifier = Modifier.weight(1f)
                         )
                         RewardFeatureCard(
-                            title = "Achievements",
+                            title = stringResource(id = R.string.achievements),
                             subtitle = "8 unlocked",
                             icon = Icons.Default.MilitaryTech,
                             iconTint = RewardsGold,
@@ -165,7 +245,7 @@ fun RewardsHubScreen(
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         RewardFeatureCard(
-                            title = "Leaderboard",
+                            title = stringResource(id = R.string.leaderboard),
                             subtitle = "Rank #128",
                             icon = Icons.Default.EmojiEvents,
                             iconTint = RewardsPurple,
@@ -174,7 +254,7 @@ fun RewardsHubScreen(
                             modifier = Modifier.weight(1f)
                         )
                         RewardFeatureCard(
-                            title = "Coin History",
+                            title = stringResource(id = R.string.coin_history),
                             subtitle = "24 activities",
                             icon = Icons.Default.History,
                             iconTint = Color(0xFF388E3C),
@@ -189,7 +269,7 @@ fun RewardsHubScreen(
             // Recent Activity
             item {
                 RewardsSectionHeader(
-                    title = "Recent Activity",
+                    title = stringResource(id = R.string.recent_activity),
                     actionText = "View All",
                     onActionClick = onNavigateCoinHistory
                 )
@@ -204,6 +284,71 @@ fun RewardsHubScreen(
                     }
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun RewardFeatureCard(
+    title: String,
+    subtitle: String,
+    icon: ImageVector,
+    iconTint: Color,
+    badgeText: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(iconTint.copy(alpha = 0.12f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(imageVector = icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(22.dp))
+                }
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(RewardsPurple.copy(alpha = 0.1f))
+                        .padding(horizontal = 8.dp, vertical = 2.dp)
+                ) {
+                    Text(text = badgeText, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = RewardsPurple)
+                }
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = title,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = subtitle,
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+            )
         }
     }
 }
