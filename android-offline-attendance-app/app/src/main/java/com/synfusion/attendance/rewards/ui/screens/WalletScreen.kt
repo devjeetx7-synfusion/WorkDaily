@@ -1,25 +1,26 @@
 package com.synfusion.attendance.rewards.ui.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.synfusion.attendance.R
 import com.synfusion.attendance.rewards.data.RewardTransaction
 import com.synfusion.attendance.rewards.ui.components.*
 import com.synfusion.attendance.rewards.viewmodel.RewardsViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WalletScreen(
     viewModel: RewardsViewModel,
@@ -33,14 +34,9 @@ fun WalletScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("My Wallet", fontWeight = FontWeight.Bold, fontSize = 18.sp) },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
+            RewardsTopAppBar(
+                title = "My Wallet",
+                onNavigateBack = onNavigateBack
             )
         },
         containerColor = MaterialTheme.colorScheme.background
@@ -59,57 +55,70 @@ fun WalletScreen(
                     colors = CardDefaults.cardColors(containerColor = RewardsPurpleContainer),
                     border = androidx.compose.foundation.BorderStroke(1.dp, RewardsPurple.copy(alpha = 0.3f))
                 ) {
-                    Column(
+                    Box(
                         modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(RewardsPurpleContainer, Color.White)
+                                )
+                            )
                             .padding(24.dp)
-                            .fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text(text = "🪙", fontSize = 48.sp)
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = String.format("%,d", walletSummary.totalBalance),
-                            fontSize = 36.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = Color(0xFF1F1047)
-                        )
-                        Text(
-                            text = "WorkDaily Coins",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = RewardsPurple
-                        )
-
-                        Spacer(modifier = Modifier.height(20.dp))
-                        HorizontalDivider(color = RewardsPurple.copy(alpha = 0.2f))
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceEvenly
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text("Available", fontSize = 12.sp, color = Color.Gray)
-                                Text(String.format("%,d", walletSummary.availableCoins), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = StatusGreen)
-                            }
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text("Pending", fontSize = 12.sp, color = Color.Gray)
-                                Text(String.format("%,d", walletSummary.pendingCoins), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = StatusOrange)
-                            }
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text("Lifetime Earned", fontSize = 12.sp, color = Color.Gray)
-                                Text(String.format("%,d", walletSummary.lifetimeEarned), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = RewardsPurple)
-                            }
-                        }
+                            Image(
+                                painter = painterResource(id = R.drawable.wallet_worker),
+                                contentDescription = "Wallet Worker",
+                                modifier = Modifier.size(100.dp)
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            RewardCoinBalance(
+                                amount = walletSummary.totalBalance,
+                                fontSize = 34,
+                                textColor = Color(0xFF1F1047),
+                                coinSize = 36.dp
+                            )
+                            Text(
+                                text = "WorkDaily Coins",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = RewardsPurple
+                            )
 
-                        Spacer(modifier = Modifier.height(20.dp))
-                        Button(
-                            onClick = onNavigateRedeem,
-                            modifier = Modifier.fillMaxWidth().height(48.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = RewardsPurple)
-                        ) {
-                            Text("Redeem Rewards", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color.White)
+                            Spacer(modifier = Modifier.height(20.dp))
+                            HorizontalDivider(color = RewardsPurple.copy(alpha = 0.2f))
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceEvenly
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text("Available", fontSize = 12.sp, color = NeutralSlate)
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    RewardCoinBalance(amount = walletSummary.availableCoins, fontSize = 15, textColor = StatusGreen, coinSize = 16.dp)
+                                }
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text("Pending", fontSize = 12.sp, color = NeutralSlate)
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    RewardCoinBalance(amount = walletSummary.pendingCoins, fontSize = 15, textColor = StatusOrange, coinSize = 16.dp)
+                                }
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text("Lifetime", fontSize = 12.sp, color = NeutralSlate)
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    RewardCoinBalance(amount = walletSummary.lifetimeEarned, fontSize = 15, textColor = RewardsPurple, coinSize = 16.dp)
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(20.dp))
+                            RewardPrimaryButton(
+                                text = "Redeem Rewards",
+                                onClick = onNavigateRedeem,
+                                modifier = Modifier.fillMaxWidth().height(48.dp)
+                            )
                         }
                     }
                 }
