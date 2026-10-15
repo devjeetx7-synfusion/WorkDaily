@@ -72,13 +72,20 @@ fun RedeemRewardsScreen(
                     colors = CardDefaults.cardColors(containerColor = Color.Transparent)
                 ) {
                     Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(RewardsPrimaryGradient)
-                            .padding(20.dp)
+                        modifier = Modifier.fillMaxWidth()
                     ) {
+                        RewardsHeroBackground(
+                            modifier = Modifier.matchParentSize(),
+                            baseGradient = RewardsPrimaryGradient,
+                            showGlow = true,
+                            glowColor = GoldBright,
+                            showSparkles = true
+                        )
+
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(20.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -87,11 +94,15 @@ fun RedeemRewardsScreen(
                                 Spacer(modifier = Modifier.height(4.dp))
                                 RewardCoinBalance(amount = walletSummary.availableCoins, fontSize = 26, textColor = Color.White, coinSize = 28.dp)
                             }
-                            Image(
-                                painter = painterResource(id = R.drawable.redeem_rewards),
-                                contentDescription = "Redeem Vouchers",
-                                modifier = Modifier.size(75.dp)
-                            )
+
+                            Box(contentAlignment = Alignment.Center) {
+                                RewardsRadialGlow(glowColor = GoldBright, alpha = 0.4f, modifier = Modifier.size(90.dp))
+                                Image(
+                                    painter = painterResource(id = R.drawable.redeem_rewards),
+                                    contentDescription = "Redeem Vouchers",
+                                    modifier = Modifier.size(85.dp)
+                                )
+                            }
                         }
                     }
                 }
@@ -162,6 +173,7 @@ fun RedeemRewardsScreen(
             ModalBottomSheet(
                 onDismissRequest = { showConfirmationBottomSheet = false },
                 containerColor = RewardsTheme.cardBackground,
+                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
                 windowInsets = WindowInsets(0.dp)
             ) {
                 Column(

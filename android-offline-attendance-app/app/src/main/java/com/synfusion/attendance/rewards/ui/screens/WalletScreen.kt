@@ -10,7 +10,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -47,6 +49,7 @@ fun WalletScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // Balanced Premium Wallet Hero Card
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -55,66 +58,102 @@ fun WalletScreen(
                     colors = CardDefaults.cardColors(containerColor = Color.Transparent)
                 ) {
                     Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(RewardsPrimaryGradient)
-                            .padding(22.dp)
+                        modifier = Modifier.fillMaxWidth()
                     ) {
+                        RewardsHeroBackground(
+                            modifier = Modifier.matchParentSize(),
+                            baseGradient = RewardsPrimaryGradient,
+                            showGlow = true,
+                            glowColor = GoldBright,
+                            showSparkles = true
+                        )
+
                         Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(20.dp)
                         ) {
-                            Image(
-                                painter = painterResource(id = R.drawable.wallet_worker),
-                                contentDescription = "Wallet Worker",
-                                modifier = Modifier.size(115.dp)
-                            )
-                            Spacer(modifier = Modifier.height(12.dp))
-                            RewardCoinBalance(
-                                amount = walletSummary.totalBalance,
-                                fontSize = 34,
-                                textColor = Color.White,
-                                coinSize = 38.dp
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "Total WorkDaily Coin Balance",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = HighlightLavender
-                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text(
+                                        text = "MY WORKDAILY WALLET",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        letterSpacing = 1.2.sp,
+                                        color = HighlightLavender
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    RewardCoinBalance(
+                                        amount = walletSummary.totalBalance,
+                                        fontSize = 32,
+                                        textColor = Color.White,
+                                        coinSize = 36.dp
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = "Total WorkDaily Coin Balance",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = Color.White.copy(alpha = 0.85f)
+                                    )
+                                }
+
+                                Box(
+                                    contentAlignment = Alignment.Center,
+                                    modifier = Modifier.size(150.dp)
+                                ) {
+                                    RewardsRadialGlow(
+                                        glowColor = GoldPrimary,
+                                        alpha = 0.45f
+                                    )
+                                    Image(
+                                        painter = painterResource(id = R.drawable.wallet_worker),
+                                        contentDescription = "Wallet Worker",
+                                        modifier = Modifier.size(145.dp),
+                                        contentScale = ContentScale.Fit
+                                    )
+                                }
+                            }
 
                             Spacer(modifier = Modifier.height(18.dp))
 
-                            // Available, Pending, Lifetime Metrics Inset
+                            // Available, Pending, Lifetime Inset Panel
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .background(Color.White.copy(alpha = 0.95f), RoundedCornerShape(16.dp))
-                                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(Color.White.copy(alpha = 0.95f))
+                                    .padding(horizontal = 12.dp, vertical = 12.dp),
                                 horizontalArrangement = Arrangement.SpaceEvenly,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Text("Available", fontSize = 11.sp, color = RewardsTextSecondary, fontWeight = FontWeight.SemiBold)
-                                    Spacer(modifier = Modifier.height(2.dp))
-                                    RewardCoinBalance(amount = walletSummary.availableCoins, fontSize = 14, textColor = RewardsSuccessGreen, coinSize = 15.dp)
+                                    Spacer(modifier = Modifier.height(3.dp))
+                                    RewardCoinBalance(amount = walletSummary.availableCoins, fontSize = 13, textColor = RewardsSuccessGreen, coinSize = 14.dp)
                                 }
                                 Box(modifier = Modifier.height(20.dp).width(1.dp).background(Color(0xFFCBD5E1)))
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Text("Pending", fontSize = 11.sp, color = RewardsTextSecondary, fontWeight = FontWeight.SemiBold)
-                                    Spacer(modifier = Modifier.height(2.dp))
-                                    RewardCoinBalance(amount = walletSummary.pendingCoins, fontSize = 14, textColor = StatusOrange, coinSize = 15.dp)
+                                    Spacer(modifier = Modifier.height(3.dp))
+                                    RewardCoinBalance(amount = walletSummary.pendingCoins, fontSize = 13, textColor = StatusOrange, coinSize = 14.dp)
                                 }
                                 Box(modifier = Modifier.height(20.dp).width(1.dp).background(Color(0xFFCBD5E1)))
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Text("Lifetime", fontSize = 11.sp, color = RewardsTextSecondary, fontWeight = FontWeight.SemiBold)
-                                    Spacer(modifier = Modifier.height(2.dp))
-                                    RewardCoinBalance(amount = walletSummary.lifetimeEarned, fontSize = 14, textColor = RoyalPurple, coinSize = 15.dp)
+                                    Spacer(modifier = Modifier.height(3.dp))
+                                    RewardCoinBalance(amount = walletSummary.lifetimeEarned, fontSize = 13, textColor = RoyalPurple, coinSize = 14.dp)
                                 }
                             }
 
                             Spacer(modifier = Modifier.height(18.dp))
+
                             RewardPrimaryButton(
                                 text = "Redeem Rewards",
                                 onClick = onNavigateRedeem,
