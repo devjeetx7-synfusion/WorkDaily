@@ -65,6 +65,7 @@ val RewardsReferralGradient = Brush.linearGradient(
 val GoldBright = Color(0xFFFFD54A)
 val GoldPrimary = Color(0xFFFFBE0B)
 val GoldRich = Color(0xFFF59E0B)
+val GoldSecondary = Color(0xFFF59E0B)
 val GoldDeep = Color(0xFFE88A08)
 
 val RewardsGoldGradient = Brush.verticalGradient(
@@ -119,6 +120,9 @@ object RewardsTheme {
 
     val elevatedSurface: Color
         @Composable get() = if (isDark) Color(0xFF202640) else Color(0xFFF4F0FF)
+
+    val inputBackground: Color
+        @Composable get() = if (isDark) Color(0xFF1B2035) else Color(0xFFF1F5F9)
 
     val textPrimary: Color
         @Composable get() = MaterialTheme.colorScheme.onBackground

@@ -542,7 +542,22 @@ fun DashboardScreen(
                     onNavigateLeaderboard = { bottomNavController.navigate("rewards_leaderboard") },
                     onNavigateCoinHistory = { bottomNavController.navigate("rewards_coin_history") },
                     onNavigateInfo = { bottomNavController.navigate("rewards_info") },
+                    onNavigateDailyCheckIn = { bottomNavController.navigate("rewards_daily_checkin") },
+                    onNavigateSpin = { bottomNavController.navigate("rewards_spin") },
                     onSelectTransaction = { bottomNavController.navigate("rewards_transaction_detail") }
+                )
+            }
+            composable("rewards_daily_checkin") {
+                DailyCheckInScreen(
+                    viewModel = rewardsViewModel,
+                    onNavigateBack = { bottomNavController.navigateUp() },
+                    onNavigateSpin = { bottomNavController.navigate("rewards_spin") }
+                )
+            }
+            composable("rewards_spin") {
+                ConstructionSpinScreen(
+                    viewModel = rewardsViewModel,
+                    onNavigateBack = { bottomNavController.navigateUp() }
                 )
             }
             composable("rewards_wallet") {
