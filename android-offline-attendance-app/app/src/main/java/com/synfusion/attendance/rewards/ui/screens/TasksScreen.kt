@@ -16,6 +16,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -46,7 +47,7 @@ fun TasksScreen(
                 onNavigateBack = onNavigateBack
             )
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = RewardsTheme.screenBackground
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -117,7 +118,7 @@ fun TaskDetailScreen(
                 onNavigateBack = onNavigateBack
             )
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = RewardsTheme.screenBackground
     ) { paddingValues ->
         val task = selectedTask
         if (task == null) {
@@ -142,8 +143,8 @@ fun TaskDetailScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
+                    colors = CardDefaults.cardColors(containerColor = RewardsTheme.cardBackground),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, RewardsTheme.softBorder)
                 ) {
                     Column(
                         modifier = Modifier.padding(20.dp),
@@ -156,10 +157,10 @@ fun TaskDetailScreen(
                             modifier = Modifier.size(80.dp)
                         )
 
-                        Text(task.title, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                        Text(task.description, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(task.title, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = RewardsTheme.textPrimary)
+                        Text(task.description, fontSize = 14.sp, color = RewardsTheme.textSecondary)
 
-                        RewardCoinBalance(amount = task.coinReward, fontSize = 22, textColor = RewardsPurple, coinSize = 24.dp)
+                        RewardCoinBalance(amount = task.coinReward, fontSize = 22, textColor = RoyalPurple, coinSize = 24.dp)
 
                         Spacer(modifier = Modifier.height(4.dp))
 
@@ -168,22 +169,26 @@ fun TaskDetailScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Text("Progress", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                                Text("${task.currentProgress} / ${task.maxProgress}", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = RewardsPurple)
+                                Text("Progress", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = RewardsTheme.textPrimary)
+                                Text("${task.currentProgress} / ${task.maxProgress}", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = RoyalPurple)
                             }
                             Spacer(modifier = Modifier.height(6.dp))
-                            RewardProgressBar(progress = task.currentProgress.toFloat() / task.maxProgress.toFloat())
+                            RewardProgressBar(
+                                progress = task.currentProgress.toFloat() / task.maxProgress.toFloat(),
+                                color = RoyalPurple,
+                                trackColor = HighlightLavender.copy(alpha = 0.3f)
+                            )
                         }
 
                         Spacer(modifier = Modifier.height(8.dp))
 
                         Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text("Requirements:", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                            Text("Requirements:", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = RewardsTheme.textPrimary)
                             task.requirements.forEach { req ->
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(Icons.Default.CheckCircle, contentDescription = null, tint = StatusGreen, modifier = Modifier.size(16.dp))
+                                    Icon(Icons.Default.CheckCircle, contentDescription = null, tint = RewardsSuccessGreen, modifier = Modifier.size(16.dp))
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text(req, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface)
+                                    Text(req, fontSize = 13.sp, color = RewardsTheme.textPrimary)
                                 }
                             }
                         }
@@ -199,6 +204,8 @@ fun TaskDetailScreen(
                                         Toast.makeText(context, "Task claimed! +🪙${task.coinReward}", Toast.LENGTH_SHORT).show()
                                         onNavigateBack()
                                     },
+                                    containerColor = RoyalPurple,
+                                    contentColor = Color.White,
                                     modifier = Modifier.fillMaxWidth().height(48.dp)
                                 )
                             }
@@ -216,6 +223,8 @@ fun TaskDetailScreen(
                                     onClick = {
                                         Toast.makeText(context, "Task in progress! Complete required actions.", Toast.LENGTH_SHORT).show()
                                     },
+                                    containerColor = RoyalPurple,
+                                    contentColor = Color.White,
                                     modifier = Modifier.fillMaxWidth().height(48.dp)
                                 )
                             }
@@ -244,8 +253,8 @@ private fun TaskCardRow(
             .fillMaxWidth()
             .clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
+        colors = CardDefaults.cardColors(containerColor = RewardsTheme.cardBackground),
+        border = androidx.compose.foundation.BorderStroke(1.dp, RewardsTheme.softBorder)
     ) {
         Row(
             modifier = Modifier
@@ -261,18 +270,20 @@ private fun TaskCardRow(
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(task.title, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                    Text(task.title, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = RewardsTheme.textPrimary)
                     Spacer(modifier = Modifier.width(8.dp))
-                    RewardCoinBalance(amount = task.coinReward, fontSize = 12, textColor = RewardsPurple, coinSize = 13.dp)
+                    RewardCoinBalance(amount = task.coinReward, fontSize = 12, textColor = RoyalPurple, coinSize = 13.dp)
                 }
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(task.description, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(task.description, fontSize = 12.sp, color = RewardsTheme.textSecondary)
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("${task.currentProgress}/${task.maxProgress}", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = RewardsPurple)
+                    Text("${task.currentProgress}/${task.maxProgress}", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = RoyalPurple)
                     Spacer(modifier = Modifier.width(8.dp))
                     RewardProgressBar(
                         progress = task.currentProgress.toFloat() / task.maxProgress.toFloat(),
+                        color = RoyalPurple,
+                        trackColor = HighlightLavender.copy(alpha = 0.3f),
                         modifier = Modifier.width(80.dp)
                     )
                 }
@@ -285,11 +296,13 @@ private fun TaskCardRow(
                     RewardPrimaryButton(
                         text = "Claim",
                         onClick = onClaim,
+                        containerColor = RoyalPurple,
+                        contentColor = Color.White,
                         modifier = Modifier.height(36.dp)
                     )
                 }
                 TaskStatus.CLAIMED -> {
-                    RewardStatusChip(statusText = "Completed", statusColor = StatusGreen)
+                    RewardStatusChip(statusText = "Completed", statusColor = RewardsSuccessGreen)
                 }
                 TaskStatus.IN_PROGRESS -> {
                     RewardStatusChip(statusText = "In Progress", statusColor = StatusOrange)

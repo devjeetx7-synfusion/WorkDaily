@@ -50,12 +50,12 @@ fun RedeemRewardsScreen(
                 onNavigateBack = onNavigateBack,
                 actions = {
                     TextButton(onClick = onNavigateRedemptionHistory) {
-                        Text("History", color = RewardsPurple, fontWeight = FontWeight.Bold)
+                        Text("History", color = RoyalPurple, fontWeight = FontWeight.Bold)
                     }
                 }
             )
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = RewardsTheme.screenBackground
     ) { paddingValues ->
         LazyColumn(
             modifier = Modifier
@@ -67,27 +67,32 @@ fun RedeemRewardsScreen(
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(containerColor = RewardsPurpleContainer),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, RewardsPurple.copy(alpha = 0.3f))
+                    shape = RoundedCornerShape(22.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.Transparent)
                 ) {
-                    Row(
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(20.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                            .background(RewardsPrimaryGradient)
+                            .padding(20.dp)
                     ) {
-                        Column {
-                            Text("Available Balance", fontSize = 12.sp, color = RewardsPurple, fontWeight = FontWeight.Bold)
-                            Spacer(modifier = Modifier.height(4.dp))
-                            RewardCoinBalance(amount = walletSummary.availableCoins, fontSize = 24, textColor = Color(0xFF1F1047), coinSize = 26.dp)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text("AVAILABLE BALANCE", fontSize = 11.sp, color = HighlightLavender, fontWeight = FontWeight.ExtraBold, letterSpacing = 1.sp)
+                                Spacer(modifier = Modifier.height(4.dp))
+                                RewardCoinBalance(amount = walletSummary.availableCoins, fontSize = 26, textColor = Color.White, coinSize = 28.dp)
+                            }
+                            Image(
+                                painter = painterResource(id = R.drawable.redeem_rewards),
+                                contentDescription = "Redeem Vouchers",
+                                modifier = Modifier.size(75.dp)
+                            )
                         }
-                        Image(
-                            painter = painterResource(id = R.drawable.redeem_rewards),
-                            contentDescription = "Redeem Vouchers",
-                            modifier = Modifier.size(70.dp)
-                        )
                     }
                 }
             }
@@ -104,9 +109,9 @@ fun RedeemRewardsScreen(
                             selectedOptionForRedeem = option
                             showConfirmationBottomSheet = true
                         },
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(containerColor = RewardsTheme.cardBackground),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, RewardsTheme.softBorder)
                 ) {
                     Row(
                         modifier = Modifier
@@ -120,7 +125,7 @@ fun RedeemRewardsScreen(
                                 modifier = Modifier
                                     .size(48.dp)
                                     .clip(CircleShape)
-                                    .background(RewardsPurple.copy(alpha = 0.12f)),
+                                    .background(RoyalPurple.copy(alpha = 0.12f)),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Image(
@@ -131,8 +136,8 @@ fun RedeemRewardsScreen(
                             }
                             Spacer(modifier = Modifier.width(14.dp))
                             Column {
-                                Text(option.title, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                                Text(option.description, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(option.title, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = RewardsTheme.textPrimary)
+                                Text(option.description, fontSize = 12.sp, color = RewardsTheme.textSecondary)
                             }
                         }
                         Spacer(modifier = Modifier.width(8.dp))
@@ -142,6 +147,8 @@ fun RedeemRewardsScreen(
                                 selectedOptionForRedeem = option
                                 showConfirmationBottomSheet = true
                             },
+                            containerColor = RoyalPurple,
+                            contentColor = Color.White,
                             modifier = Modifier.height(38.dp)
                         )
                     }
@@ -154,6 +161,7 @@ fun RedeemRewardsScreen(
             val option = selectedOptionForRedeem!!
             ModalBottomSheet(
                 onDismissRequest = { showConfirmationBottomSheet = false },
+                containerColor = RewardsTheme.cardBackground,
                 windowInsets = WindowInsets(0.dp)
             ) {
                 Column(
@@ -164,12 +172,12 @@ fun RedeemRewardsScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Icon(Icons.Default.Warning, contentDescription = null, tint = StatusOrange, modifier = Modifier.size(40.dp))
-                    Text("Confirm Redemption (Demo)", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    Text("Confirm Redemption (Demo)", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = RewardsTheme.textPrimary)
 
                     Text(
                         text = "You are redeeming '${option.title}' for 🪙${option.coinsCost}.",
                         fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onSurface,
+                        color = RewardsTheme.textPrimary,
                         textAlign = TextAlign.Center
                     )
 
@@ -207,6 +215,8 @@ fun RedeemRewardsScreen(
                                 val record = viewModel.submitRedemption(option)
                                 showSuccessDialog = record
                             },
+                            containerColor = RoyalPurple,
+                            contentColor = Color.White,
                             modifier = Modifier.weight(1f).height(48.dp)
                         )
                     }
@@ -219,6 +229,7 @@ fun RedeemRewardsScreen(
             val rec = showSuccessDialog!!
             AlertDialog(
                 onDismissRequest = { showSuccessDialog = null },
+                containerColor = RewardsTheme.cardBackground,
                 icon = {
                     Image(
                         painter = painterResource(id = R.drawable.reward_success),
@@ -226,16 +237,16 @@ fun RedeemRewardsScreen(
                         modifier = Modifier.size(64.dp)
                     )
                 },
-                title = { Text("Redemption Submitted!", fontWeight = FontWeight.Bold, textAlign = TextAlign.Center) },
+                title = { Text("Redemption Submitted!", fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, color = RewardsTheme.textPrimary) },
                 text = {
                     Column(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Text("Voucher: ${rec.optionTitle}", fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
-                        RewardCoinBalance(amount = rec.coinsSpent, fontSize = 16, textColor = RewardsPurple)
-                        Text("Reference: ${rec.referenceCode}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("Voucher: ${rec.optionTitle}", fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, color = RewardsTheme.textPrimary)
+                        RewardCoinBalance(amount = rec.coinsSpent, fontSize = 16, textColor = RoyalPurple)
+                        Text("Reference: ${rec.referenceCode}", fontSize = 12.sp, color = RewardsTheme.textSecondary)
                         RewardStatusChip(statusText = rec.status.name, statusColor = StatusOrange)
                     }
                 },
@@ -243,6 +254,8 @@ fun RedeemRewardsScreen(
                     RewardPrimaryButton(
                         text = "OK",
                         onClick = { showSuccessDialog = null },
+                        containerColor = RoyalPurple,
+                        contentColor = Color.White,
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
@@ -265,7 +278,7 @@ fun RedemptionHistoryScreen(
                 onNavigateBack = onNavigateBack
             )
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = RewardsTheme.screenBackground
     ) { paddingValues ->
         if (redemptionHistory.isEmpty()) {
             RewardEmptyState(
@@ -282,16 +295,16 @@ fun RedemptionHistoryScreen(
             ) {
                 items(redemptionHistory, key = { it.id }) { rec ->
                     val statusColor = when (rec.status) {
-                        RedemptionStatus.COMPLETED -> StatusGreen
+                        RedemptionStatus.COMPLETED -> RewardsSuccessGreen
                         RedemptionStatus.PENDING, RedemptionStatus.PROCESSING -> StatusOrange
                         RedemptionStatus.FAILED, RedemptionStatus.REVERSED -> StatusRed
                     }
 
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(14.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = RewardsTheme.cardBackground),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, RewardsTheme.softBorder)
                     ) {
                         Row(
                             modifier = Modifier
@@ -301,12 +314,12 @@ fun RedemptionHistoryScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Column {
-                                Text(rec.optionTitle, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                                Text(rec.timestamp, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Text("Ref: ${rec.referenceCode}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(rec.optionTitle, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = RewardsTheme.textPrimary)
+                                Text(rec.timestamp, fontSize = 12.sp, color = RewardsTheme.textSecondary)
+                                Text("Ref: ${rec.referenceCode}", fontSize = 11.sp, color = RewardsTheme.textSecondary)
                             }
                             Column(horizontalAlignment = Alignment.End) {
-                                RewardCoinBalance(amount = rec.coinsSpent, fontSize = 14, textColor = RewardsPurple, coinSize = 16.dp)
+                                RewardCoinBalance(amount = rec.coinsSpent, fontSize = 14, textColor = RoyalPurple, coinSize = 16.dp)
                                 Spacer(modifier = Modifier.height(2.dp))
                                 RewardStatusChip(statusText = rec.status.name, statusColor = statusColor)
                             }

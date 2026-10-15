@@ -73,7 +73,7 @@ fun AchievementsScreen(
                 onNavigateBack = onNavigateBack
             )
         },
-        containerColor = RewardsScreenBg
+        containerColor = RewardsTheme.screenBackground
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -161,8 +161,8 @@ fun AchievementsScreen(
                             }
                         },
                         shape = CircleShape,
-                        color = if (isSelected) RoyalPurple else RewardsLavenderSurface,
-                        contentColor = if (isSelected) Color.White else RewardsTextPrimary
+                        color = if (isSelected) RoyalPurple else RewardsTheme.elevatedSurface,
+                        contentColor = if (isSelected) Color.White else RewardsTheme.textPrimary
                     ) {
                         Text(
                             text = tabs[index],
@@ -235,7 +235,7 @@ fun AchievementDetailScreen(
                 onNavigateBack = onNavigateBack
             )
         },
-        containerColor = RewardsScreenBg
+        containerColor = RewardsTheme.screenBackground
     ) { paddingValues ->
         val ach = selectedAchievement
         if (ach == null) {
@@ -264,6 +264,7 @@ fun AchievementDetailScreen(
                         showModalSheet = false
                         onNavigateBack()
                     },
+                    containerColor = RewardsTheme.cardBackground,
                     windowInsets = WindowInsets(0.dp)
                 ) {
                     Column(
@@ -277,7 +278,7 @@ fun AchievementDetailScreen(
                             modifier = Modifier
                                 .size(110.dp)
                                 .clip(CircleShape)
-                                .background(if (isUnlocked) RewardsGoldSurface else RewardsLavenderSurface)
+                                .background(if (isUnlocked) RewardsTheme.goldBadgeSurface else RewardsTheme.lockedBadgeSurface)
                                 .border(
                                     2.dp,
                                     if (isUnlocked) GoldPrimary else HighlightLavender,
@@ -328,13 +329,13 @@ fun AchievementDetailScreen(
                             text = ach.title,
                             fontSize = 20.sp,
                             fontWeight = FontWeight.ExtraBold,
-                            color = RewardsTextPrimary
+                            color = RewardsTheme.textPrimary
                         )
 
                         Text(
                             text = ach.description,
                             fontSize = 14.sp,
-                            color = RewardsTextSecondary,
+                            color = RewardsTheme.textSecondary,
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center
                         )
 
@@ -356,7 +357,7 @@ fun AchievementDetailScreen(
                                         text = "Progress",
                                         fontSize = 13.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = RewardsTextPrimary
+                                        color = RewardsTheme.textPrimary
                                     )
                                     Text(
                                         text = "${ach.currentProgress} / ${ach.maxProgress}",

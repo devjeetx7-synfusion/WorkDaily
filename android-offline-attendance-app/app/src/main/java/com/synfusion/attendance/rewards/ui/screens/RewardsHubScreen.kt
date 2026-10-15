@@ -2,7 +2,6 @@ package com.synfusion.attendance.rewards.ui.screens
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -17,7 +16,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -61,7 +59,7 @@ fun RewardsHubScreen(
                 }
             )
         },
-        containerColor = RewardsScreenBg
+        containerColor = RewardsTheme.screenBackground
     ) { paddingValues ->
         LazyColumn(
             modifier = Modifier
@@ -118,14 +116,21 @@ fun RewardsHubScreen(
                                         textColor = Color.White,
                                         coinSize = 36.dp
                                     )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = "Keep earning, keep growing!",
+                                        fontSize = 12.sp,
+                                        color = Color.White.copy(alpha = 0.85f),
+                                        fontWeight = FontWeight.Medium
+                                    )
                                 }
 
                                 Image(
                                     painter = painterResource(id = R.drawable.rewards_hub_worker),
                                     contentDescription = "Rewards Worker",
                                     modifier = Modifier
-                                        .size(115.dp)
-                                        .padding(start = 8.dp),
+                                        .size(130.dp)
+                                        .padding(start = 4.dp),
                                     contentScale = ContentScale.Fit
                                 )
                             }
@@ -208,8 +213,8 @@ fun RewardsHubScreen(
                                     text = stringResource(id = R.string.redeem),
                                     onClick = onNavigateRedeem,
                                     modifier = Modifier.weight(1f),
-                                    containerColor = GoldPrimary,
-                                    contentColor = RewardsTextPrimary,
+                                    containerColor = RoyalPurple,
+                                    contentColor = Color.White,
                                     icon = Icons.Default.CardGiftcard
                                 )
                             }
@@ -231,7 +236,7 @@ fun RewardsHubScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(RewardsReferralGradient)
+                            .background(RewardsTheme.referralBannerGradient)
                             .padding(18.dp)
                     ) {
                         Row(
@@ -267,7 +272,7 @@ fun RewardsHubScreen(
                                     text = "Invite friends,\nearn together",
                                     fontSize = 15.sp,
                                     fontWeight = FontWeight.ExtraBold,
-                                    color = RewardsTextPrimary,
+                                    color = RewardsTheme.textPrimary,
                                     lineHeight = 19.sp
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
@@ -392,12 +397,12 @@ private fun RewardHubFeatureCard(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .height(138.dp)
+            .height(145.dp)
             .clickable { onClick() },
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = RewardsTheme.cardBackground),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFF1F5F9))
+        border = androidx.compose.foundation.BorderStroke(1.dp, RewardsTheme.softBorder)
     ) {
         Column(
             modifier = Modifier
@@ -444,7 +449,7 @@ private fun RewardHubFeatureCard(
                     text = title,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = RewardsTextPrimary,
+                    color = RewardsTheme.textPrimary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -452,7 +457,7 @@ private fun RewardHubFeatureCard(
                 Text(
                     text = subtitle,
                     fontSize = 12.sp,
-                    color = RewardsTextSecondary,
+                    color = RewardsTheme.textSecondary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
