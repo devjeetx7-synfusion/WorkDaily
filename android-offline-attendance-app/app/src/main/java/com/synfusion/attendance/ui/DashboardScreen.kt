@@ -97,10 +97,11 @@ fun DashboardScreen(
     val snackbarHostState = remember { SnackbarHostState() }
 
     // Lazy instantiate the ViewModels needed for DashboardScreen tabs
+    val context = LocalContext.current
     val dashboardViewModel: OfflineDashboardViewModel = viewModel(factory = factory)
     val calendarViewModel: OfflineCalendarViewModel = viewModel(factory = factory)
     val statsViewModel: OfflineStatsViewModel = viewModel(factory = factory)
-    val rewardsViewModel: RewardsViewModel = viewModel(factory = RewardsViewModelFactory())
+    val rewardsViewModel: RewardsViewModel = viewModel(factory = RewardsViewModelFactory(context.applicationContext as android.app.Application))
 
     val dashboardState by dashboardViewModel.dashboardState.collectAsStateWithLifecycle(initialValue = OfflineDashboardState(isLoading = true))
     val bottomNavController = rememberNavController()

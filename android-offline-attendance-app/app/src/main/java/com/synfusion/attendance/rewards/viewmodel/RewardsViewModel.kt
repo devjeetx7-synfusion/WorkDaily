@@ -1,15 +1,23 @@
 package com.synfusion.attendance.rewards.viewmodel
 
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import com.synfusion.attendance.rewards.audio.RewardsAudioSettings
+import com.synfusion.attendance.rewards.audio.RewardsSoundEvent
+import com.synfusion.attendance.rewards.audio.RewardsSoundManager
 import com.synfusion.attendance.rewards.data.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 class RewardsViewModel(
-    private val repository: DemoRewardsRepository = DemoRewardsRepository()
-) : ViewModel() {
+    application: Application,
+    private val repository: DemoRewardsRepository = DemoRewardsRepository(application)
+) : AndroidViewModel(application) {
+
+    private val soundManager = RewardsSoundManager.getInstance(application)
 
     val walletSummary: StateFlow<WalletSummary> = repository.walletSummary
     val referralStats: StateFlow<ReferralStats> = repository.referralStats
@@ -26,6 +34,9 @@ class RewardsViewModel(
     val milestones: StateFlow<List<MilestoneReward>> = repository.milestones
     val spinSegments: List<SpinWheelSegment> get() = repository.spinSegments
 
+    private val _audioSettings = MutableStateFlow(soundManager.settings)
+    val audioSettings: StateFlow<RewardsAudioSettings> = _audioSettings.asStateFlow()
+
     private val _leaderboardTimeframe = MutableStateFlow(LeaderboardTimeframe.WEEKLY)
     val leaderboardTimeframe: StateFlow<LeaderboardTimeframe> = _leaderboardTimeframe.asStateFlow()
 
@@ -37,6 +48,15 @@ class RewardsViewModel(
 
     private val _selectedAchievement = MutableStateFlow<Achievement?>(null)
     val selectedAchievement: StateFlow<Achievement?> = _selectedAchievement.asStateFlow()
+
+    fun updateAudioSettings(newSettings: RewardsAudioSettings) {
+        soundManager.updateSettings(newSettings)
+        _audioSettings.value = newSettings
+    }
+
+    fun playSound(event: RewardsSoundEvent) {
+        soundManager.playSound(event)
+    }
 
     fun selectTransaction(transaction: RewardTransaction?) {
         _selectedTransaction.value = transaction
@@ -64,18 +84,33 @@ class RewardsViewModel(
 
     fun claimTask(taskId: String) {
         repository.claimTaskDemo(taskId)
+        playSound(RewardsSoundEvent.COIN_REWARD)
     }
 
     fun submitRedemption(option: RedemptionOption): RedemptionRecord {
-        return repository.submitDemoRedemption(option)
+        val record = repository.submitDemoRedemption(option)
+        playSound(RewardsSoundEvent.CONGRATULATIONS)
+        return record
     }
 
     fun claimDailyCheckIn(): Boolean {
-        return repository.claimDailyCheckIn()
+        val success = repository.claimDailyCheckIn()
+        if (success) {
+            playSound(RewardsSoundEvent.DAILY_CHECKIN_SUCCESS)
+        } else {
+            playSound(RewardsSoundEvent.ACTION_ERROR)
+        }
+        return success
     }
 
     fun claimMilestone(milestoneId: String): Boolean {
-        return repository.claimMilestone(milestoneId)
+        val success = repository.claimMilestone(milestoneId)
+        if (success) {
+            playSound(RewardsSoundEvent.MILESTONE_CLAIM)
+        } else {
+            playSound(RewardsSoundEvent.ACTION_ERROR)
+        }
+        return success
     }
 
     fun spinWheel(): SpinWheelSegment? {
@@ -88,12 +123,13 @@ class RewardsViewModel(
 }
 
 class RewardsViewModelFactory(
-    private val repository: DemoRewardsRepository = DemoRewardsRepository()
+    private val application: Application,
+    private val repository: DemoRewardsRepository = DemoRewardsRepository(application)
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(RewardsViewModel::class.java)) {
-            return RewardsViewModel(repository) as T
+            return RewardsViewModel(application, repository) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

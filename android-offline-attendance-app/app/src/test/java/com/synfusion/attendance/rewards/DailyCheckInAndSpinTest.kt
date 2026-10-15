@@ -11,7 +11,7 @@ class DailyCheckInAndSpinTest {
 
     @Before
     fun setUp() {
-        // Deterministic random supplier returning fixed value 0.5 (4th sector out of 8)
+        // Deterministic random supplier returning fixed value 0.5 (index 4 out of 8: Construction Crane +10 coins)
         dataSource = DemoRewardsDataSource(randomSupplier = { 0.5 })
     }
 
@@ -134,9 +134,33 @@ class DailyCheckInAndSpinTest {
         // Token deducted
         assertEquals(spinsBefore - 1, dataSource.spinTokens.value.availableSpins)
 
-        // Won sector reward added to wallet (fixed random 0.5 -> index 4: Cement Truck with 6 coins)
-        assertEquals(6, wonSegment!!.coinReward)
-        assertEquals(coinsBefore + 6, dataSource.walletSummary.value.availableCoins)
+        // Won sector reward added to wallet (fixed random 0.5 -> index 4: Construction Crane with 10 coins)
+        val reward = wonSegment!!.rewardType
+        assertTrue(reward is SpinRewardType.Coins)
+        assertEquals(10, (reward as SpinRewardType.Coins).amount)
+        assertEquals(coinsBefore + 10, dataSource.walletSummary.value.availableCoins)
+    }
+
+    @Test
+    fun testSpinWheel_bonusSpinSector_creditsBonusSpinTokenWithoutCoinAccident() {
+        // Deterministic random supplier returning fixed value 0.95 (index 7: Foreman's Pass +1 Bonus Spin)
+        val spinSource = DemoRewardsDataSource(randomSupplier = { 0.95 })
+        val coinsBefore = spinSource.walletSummary.value.availableCoins
+        val spinsBefore = spinSource.spinTokens.value.availableSpins
+
+        val wonSegment = spinSource.spinWheel()
+        assertNotNull(wonSegment)
+        assertEquals("Foreman's Pass", wonSegment!!.name)
+
+        val reward = wonSegment.rewardType
+        assertTrue(reward is SpinRewardType.BonusSpin)
+        assertEquals(1, (reward as SpinRewardType.BonusSpin).count)
+
+        // Available spins should remain equal (1 deducted for spin + 1 bonus credited = spinsBefore)
+        assertEquals(spinsBefore, spinSource.spinTokens.value.availableSpins)
+
+        // Coins should remain unchanged
+        assertEquals(coinsBefore, spinSource.walletSummary.value.availableCoins)
     }
 
     @Test

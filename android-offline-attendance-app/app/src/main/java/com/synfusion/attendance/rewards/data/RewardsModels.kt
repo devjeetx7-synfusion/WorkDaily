@@ -186,11 +186,17 @@ data class MilestoneReward(
     val status: MilestoneStatus
 )
 
+sealed class SpinRewardType {
+    data class Coins(val amount: Int) : SpinRewardType()
+    data class BonusSpin(val count: Int) : SpinRewardType()
+}
+
 data class SpinWheelSegment(
     val id: Int,
     val name: String,
     val coinReward: Int,
-    val iconName: String
+    val iconName: String,
+    val rewardType: SpinRewardType = SpinRewardType.Coins(coinReward)
 )
 
 data class SpinTokenBalance(
