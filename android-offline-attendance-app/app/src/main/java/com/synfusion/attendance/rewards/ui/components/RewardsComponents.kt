@@ -630,9 +630,9 @@ fun RewardBadgeCard(
     val isUnlocked = achievement.isUnlocked
     val cardBg = if (isUnlocked) RewardsGoldSurface else RewardsLavenderSurface
     val border = if (isUnlocked) {
-        androidx.compose.foundation.BorderStroke(1.5.dp, GoldPrimary)
+        androidx.compose.foundation.BorderStroke(1.5.dp, GoldPrimary.copy(alpha = 0.5f))
     } else {
-        androidx.compose.foundation.BorderStroke(1.dp, HighlightLavender.copy(alpha = 0.4f))
+        androidx.compose.foundation.BorderStroke(1.dp, RewardsTextSecondary.copy(alpha = 0.15f))
     }
 
     Card(
@@ -652,19 +652,19 @@ fun RewardBadgeCard(
         ) {
             Box(
                 modifier = Modifier
-                    .size(90.dp)
-                    .clip(CircleShape)
-                    .background(if (isUnlocked) Color.White else Color.White.copy(alpha = 0.6f)),
+                    .size(120.dp),
                 contentAlignment = Alignment.Center
             ) {
                 val colorFilter = if (!isUnlocked) {
-                    ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0f) })
+                    ColorFilter.colorMatrix(ColorMatrix().apply {
+                        setToSaturation(0f)
+                    })
                 } else null
 
                 Image(
                     painter = painterResource(id = drawableRes),
                     contentDescription = achievement.title,
-                    modifier = Modifier.size(72.dp),
+                    modifier = Modifier.size(115.dp),
                     colorFilter = colorFilter,
                     contentScale = ContentScale.Fit
                 )
@@ -673,20 +673,21 @@ fun RewardBadgeCard(
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(Color.Black.copy(alpha = 0.25f), CircleShape),
+                            .clip(CircleShape)
+                            .background(Color.Black.copy(alpha = 0.35f)),
                         contentAlignment = Alignment.Center
                     ) {
                         Box(
                             modifier = Modifier
                                 .size(32.dp)
                                 .clip(CircleShape)
-                                .background(Color.White),
+                                .background(Color.White.copy(alpha = 0.9f)),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Lock,
                                 contentDescription = "Locked",
-                                tint = DeepIndigo,
+                                tint = Color(0xFF647086),
                                 modifier = Modifier.size(18.dp)
                             )
                         }
@@ -694,7 +695,7 @@ fun RewardBadgeCard(
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             Text(
                 text = achievement.title,
@@ -706,7 +707,7 @@ fun RewardBadgeCard(
                 textAlign = TextAlign.Center
             )
 
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             if (isUnlocked) {
                 RewardStatusChip(statusText = "UNLOCKED", statusColor = RewardsSuccessGreen)
@@ -721,7 +722,7 @@ fun RewardBadgeCard(
                 RewardProgressBar(
                     progress = achievement.currentProgress.toFloat() / achievement.maxProgress.toFloat(),
                     color = RoyalPurple,
-                    trackColor = HighlightLavender.copy(alpha = 0.4f),
+                    trackColor = RewardsTextSecondary.copy(alpha = 0.2f),
                     modifier = Modifier.fillMaxWidth(0.85f)
                 )
             }

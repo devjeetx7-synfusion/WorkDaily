@@ -1,5 +1,6 @@
 package com.synfusion.attendance.rewards.ui.screens
 
+import kotlinx.coroutines.launch
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -8,6 +9,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -134,7 +136,7 @@ fun AchievementsScreen(
                         Image(
                             painter = painterResource(id = R.drawable.badge_legend),
                             contentDescription = "Badge Trophy",
-                            modifier = Modifier.size(90.dp),
+                            modifier = Modifier.size(130.dp),
                             contentScale = ContentScale.Fit
                         )
                     }
@@ -142,13 +144,34 @@ fun AchievementsScreen(
             }
 
             // Category Tabs
-            Box(
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+            androidx.compose.foundation.lazy.LazyRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = PaddingValues(end = 16.dp)
             ) {
-                RewardTabRow(
-                    tabs = tabs,
-                    pagerState = pagerState
-                )
+                items(tabs.size) { index ->
+                    val isSelected = pagerState.currentPage == index
+                    val coroutineScope = rememberCoroutineScope()
+                    Surface(
+                        modifier = Modifier.clickable {
+                            coroutineScope.launch {
+                                pagerState.animateScrollToPage(index)
+                            }
+                        },
+                        shape = CircleShape,
+                        color = if (isSelected) RoyalPurple else RewardsLavenderSurface,
+                        contentColor = if (isSelected) Color.White else RewardsTextPrimary
+                    ) {
+                        Text(
+                            text = tabs[index],
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            fontSize = 13.sp,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                        )
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(8.dp))
