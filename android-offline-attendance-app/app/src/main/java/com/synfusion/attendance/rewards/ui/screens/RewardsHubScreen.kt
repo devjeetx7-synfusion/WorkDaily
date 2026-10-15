@@ -42,10 +42,15 @@ fun RewardsHubScreen(
     onNavigateLeaderboard: () -> Unit,
     onNavigateCoinHistory: () -> Unit,
     onNavigateInfo: () -> Unit,
+    onNavigateDailyCheckIn: () -> Unit,
+    onNavigateSpin: () -> Unit,
     onSelectTransaction: (RewardTransaction) -> Unit
 ) {
     val walletSummary by viewModel.walletSummary.collectAsState()
     val transactions by viewModel.transactions.collectAsState()
+    val checkInState by viewModel.dailyCheckInState.collectAsState()
+    val streakState by viewModel.streakState.collectAsState()
+    val spinTokens by viewModel.spinTokens.collectAsState()
 
     Scaffold(
         topBar = {
@@ -221,6 +226,147 @@ fun RewardsHubScreen(
                                     containerColor = RoyalPurple,
                                     contentColor = Color.White,
                                     icon = Icons.Default.CardGiftcard
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Daily Check-in & Builder's Spin Wheel Section Banners
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // Daily Check-in Card
+                    Card(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(140.dp)
+                            .clickable { onNavigateDailyCheckIn() },
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = RewardsTheme.cardBackground),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, RoyalPurple.copy(alpha = 0.3f))
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(14.dp),
+                            verticalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    contentAlignment = Alignment.Center,
+                                    modifier = Modifier
+                                        .size(38.dp)
+                                        .clip(CircleShape)
+                                        .background(RoyalPurple.copy(alpha = 0.12f))
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.CalendarToday,
+                                        contentDescription = "Daily Check-in",
+                                        tint = RoyalPurple,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(if (checkInState.isTodayClaimed) RewardsSuccessGreen.copy(alpha = 0.15f) else GoldPrimary.copy(alpha = 0.2f))
+                                        .padding(horizontal = 8.dp, vertical = 2.dp)
+                                ) {
+                                    Text(
+                                        text = if (checkInState.isTodayClaimed) "CLAIMED" else "CLAIM",
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = if (checkInState.isTodayClaimed) RewardsSuccessGreen else DeepIndigo
+                                    )
+                                }
+                            }
+
+                            Column {
+                                Text(
+                                    text = "Daily Check-in",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = RewardsTheme.textPrimary
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = "${streakState.currentStreak} Day Streak 🔥",
+                                    fontSize = 11.sp,
+                                    color = RoyalPurple,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+
+                    // Builder's Spin Wheel Card
+                    Card(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(140.dp)
+                            .clickable { onNavigateSpin() },
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = RewardsTheme.cardBackground),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, GoldPrimary.copy(alpha = 0.4f))
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(14.dp),
+                            verticalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    contentAlignment = Alignment.Center,
+                                    modifier = Modifier
+                                        .size(38.dp)
+                                        .clip(CircleShape)
+                                        .background(GoldPrimary.copy(alpha = 0.18f))
+                                ) {
+                                    Text(text = "🎯", fontSize = 18.sp)
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(RoyalPurple.copy(alpha = 0.12f))
+                                        .padding(horizontal = 8.dp, vertical = 2.dp)
+                                ) {
+                                    Text(
+                                        text = "${spinTokens.availableSpins} SPINS",
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = RoyalPurple
+                                    )
+                                }
+                            }
+
+                            Column {
+                                Text(
+                                    text = "Builder's Spin",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = RewardsTheme.textPrimary
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = "Spin & Win Coins 🪙",
+                                    fontSize = 11.sp,
+                                    color = GoldSecondary,
+                                    fontWeight = FontWeight.Bold
                                 )
                             }
                         }

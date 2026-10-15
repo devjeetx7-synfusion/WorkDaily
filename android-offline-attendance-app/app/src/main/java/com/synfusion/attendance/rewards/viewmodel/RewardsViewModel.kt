@@ -20,6 +20,12 @@ class RewardsViewModel(
     val redemptionOptions: StateFlow<List<RedemptionOption>> = repository.redemptionOptions
     val redemptionHistory: StateFlow<List<RedemptionRecord>> = repository.redemptionHistory
 
+    val spinTokens: StateFlow<SpinTokenBalance> = repository.spinTokens
+    val dailyCheckInState: StateFlow<DailyCheckInState> = repository.dailyCheckInState
+    val streakState: StateFlow<DailyStreakState> = repository.streakState
+    val milestones: StateFlow<List<MilestoneReward>> = repository.milestones
+    val spinSegments: List<SpinWheelSegment> get() = repository.spinSegments
+
     private val _leaderboardTimeframe = MutableStateFlow(LeaderboardTimeframe.WEEKLY)
     val leaderboardTimeframe: StateFlow<LeaderboardTimeframe> = _leaderboardTimeframe.asStateFlow()
 
@@ -62,6 +68,22 @@ class RewardsViewModel(
 
     fun submitRedemption(option: RedemptionOption): RedemptionRecord {
         return repository.submitDemoRedemption(option)
+    }
+
+    fun claimDailyCheckIn(): Boolean {
+        return repository.claimDailyCheckIn()
+    }
+
+    fun claimMilestone(milestoneId: String): Boolean {
+        return repository.claimMilestone(milestoneId)
+    }
+
+    fun spinWheel(): SpinWheelSegment? {
+        return repository.spinWheel()
+    }
+
+    fun updateDateState(dateStr: String) {
+        repository.updateDateState(dateStr)
     }
 }
 

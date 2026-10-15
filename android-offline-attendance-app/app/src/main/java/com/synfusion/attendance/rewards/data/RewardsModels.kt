@@ -138,3 +138,75 @@ data class RedemptionRecord(
     val status: RedemptionStatus,
     val referenceCode: String
 )
+
+enum class DailyCheckInStatus {
+    AVAILABLE,
+    CLAIMING,
+    CLAIMED
+}
+
+data class DailyCheckInState(
+    val isTodayClaimed: Boolean = false,
+    val todayDate: String = "",
+    val lastCheckInDate: String? = null,
+    val claimedDates: Set<String> = emptySet(),
+    val status: DailyCheckInStatus = DailyCheckInStatus.AVAILABLE
+)
+
+data class DailyStreakState(
+    val currentStreak: Int = 0,
+    val longestStreak: Int = 0,
+    val totalCheckInDays: Int = 0
+)
+
+enum class MilestoneStatus {
+    LOCKED,
+    CLAIMABLE,
+    CLAIMED
+}
+
+enum class MilestoneType {
+    SEVEN_DAY_STREAK,
+    THIRTY_DAYS,
+    ONE_HUNDRED_EIGHTY_DAYS,
+    THREE_HUNDRED_SIXTY_FIVE_DAYS
+}
+
+data class MilestoneReward(
+    val id: String,
+    val type: MilestoneType,
+    val title: String,
+    val description: String,
+    val requiredProgress: Int,
+    val currentProgress: Int,
+    val coinReward: Int,
+    val bonusSpins: Int,
+    val badgeName: String,
+    val badgeIconName: String,
+    val status: MilestoneStatus
+)
+
+data class SpinWheelSegment(
+    val id: Int,
+    val name: String,
+    val coinReward: Int,
+    val iconName: String
+)
+
+data class SpinTokenBalance(
+    val availableSpins: Int = 1
+)
+
+enum class SpinStatus {
+    READY,
+    SPINNING,
+    RESULT_AVAILABLE,
+    NO_SPINS
+}
+
+data class SpinRewardRecord(
+    val id: String,
+    val segment: SpinWheelSegment,
+    val coinsEarned: Int,
+    val timestamp: String
+)
