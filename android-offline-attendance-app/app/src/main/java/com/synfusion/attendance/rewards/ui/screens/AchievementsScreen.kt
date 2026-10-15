@@ -1,15 +1,12 @@
 package com.synfusion.attendance.rewards.ui.screens
 
 import kotlinx.coroutines.launch
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -24,13 +21,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.synfusion.attendance.R
@@ -51,7 +48,7 @@ fun getBadgeDrawableRes(iconName: String): Int {
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun AchievementsScreen(
     viewModel: RewardsViewModel,
@@ -65,6 +62,8 @@ fun AchievementsScreen(
     val unlockedCount = remember(achievements) { achievements.count { it.isUnlocked } }
     val totalCount = achievements.size
     val completionPercent = if (totalCount > 0) (unlockedCount * 100) / totalCount else 0
+
+    var selectedAchievementForSheet by remember { mutableStateOf<Achievement?>(null) }
 
     Scaffold(
         topBar = {
@@ -80,7 +79,7 @@ fun AchievementsScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Achievement Progress Hero Banner
+            // Achievement Progress Hero Banner with Canvas Graphics
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -90,13 +89,20 @@ fun AchievementsScreen(
                 colors = CardDefaults.cardColors(containerColor = Color.Transparent)
             ) {
                 Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(RewardsPrimaryGradient)
-                        .padding(20.dp)
+                    modifier = Modifier.fillMaxWidth()
                 ) {
+                    RewardsHeroBackground(
+                        modifier = Modifier.matchParentSize(),
+                        baseGradient = RewardsPrimaryGradient,
+                        showGlow = true,
+                        glowColor = GoldBright,
+                        showSparkles = true
+                    )
+
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(20.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column(
@@ -133,17 +139,23 @@ fun AchievementsScreen(
 
                         Spacer(modifier = Modifier.width(12.dp))
 
-                        Image(
-                            painter = painterResource(id = R.drawable.badge_legend),
-                            contentDescription = "Badge Trophy",
-                            modifier = Modifier.size(130.dp),
-                            contentScale = ContentScale.Fit
-                        )
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier.size(125.dp)
+                        ) {
+                            RewardsRadialGlow(glowColor = GoldBright, alpha = 0.45f)
+                            Image(
+                                painter = painterResource(id = R.drawable.badge_legend),
+                                contentDescription = "Badge Trophy",
+                                modifier = Modifier.size(120.dp),
+                                contentScale = ContentScale.Fit
+                            )
+                        }
                     }
                 }
             }
 
-            // Category Tabs
+            // Category Filter Pills
             androidx.compose.foundation.lazy.LazyRow(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -208,11 +220,150 @@ fun AchievementsScreen(
                                 drawableRes = getBadgeDrawableRes(achievement.iconName),
                                 onClick = {
                                     viewModel.selectAchievement(achievement)
+                                    selectedAchievementForSheet = achievement
                                     onSelectAchievement(achievement)
                                 }
                             )
                         }
                     }
+                }
+            }
+        }
+
+        // Custom Modal Bottom Sheet directly over achievements grid without extra scaffold or duplicate header
+        val currentSheetAchievement = selectedAchievementForSheet
+        if (currentSheetAchievement != null) {
+            val drawableRes = getBadgeDrawableRes(currentSheetAchievement.iconName)
+            val isUnlocked = currentSheetAchievement.isUnlocked
+
+            ModalBottomSheet(
+                onDismissRequest = { selectedAchievementForSheet = null },
+                containerColor = RewardsTheme.cardBackground,
+                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                windowInsets = WindowInsets(0.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(120.dp)
+                            .clip(CircleShape)
+                            .background(if (isUnlocked) RewardsTheme.goldBadgeSurface else RewardsTheme.lockedBadgeSurface)
+                            .border(
+                                2.dp,
+                                if (isUnlocked) GoldPrimary else HighlightLavender,
+                                CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (isUnlocked) {
+                            RewardsRadialGlow(glowColor = GoldBright, alpha = 0.5f)
+                            RewardsSparkleLayer(starColor = GoldBright)
+                        }
+
+                        val colorFilter = if (!isUnlocked) {
+                            ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0f) })
+                        } else null
+
+                        Image(
+                            painter = painterResource(id = drawableRes),
+                            contentDescription = currentSheetAchievement.title,
+                            modifier = Modifier.size(95.dp),
+                            colorFilter = colorFilter,
+                            contentScale = ContentScale.Fit
+                        )
+
+                        if (!isUnlocked) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(Color.Black.copy(alpha = 0.25f), CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .clip(CircleShape)
+                                        .background(Color.White),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Lock,
+                                        contentDescription = "Locked",
+                                        tint = DeepIndigo,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Text(
+                        text = currentSheetAchievement.title,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = RewardsTheme.textPrimary
+                    )
+
+                    Text(
+                        text = currentSheetAchievement.description,
+                        fontSize = 14.sp,
+                        color = RewardsTheme.textSecondary,
+                        textAlign = TextAlign.Center
+                    )
+
+                    if (isUnlocked) {
+                        RewardStatusChip(
+                            statusText = "UNLOCKED ${currentSheetAchievement.unlockedDate ?: ""}",
+                            statusColor = RewardsSuccessGreen
+                        )
+                    } else {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = "Progress",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = RewardsTheme.textPrimary
+                                )
+                                Text(
+                                    text = "${currentSheetAchievement.currentProgress} / ${currentSheetAchievement.maxProgress}",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = RoyalPurple
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            RewardProgressBar(
+                                progress = currentSheetAchievement.currentProgress.toFloat() / currentSheetAchievement.maxProgress.toFloat(),
+                                color = RoyalPurple,
+                                trackColor = HighlightLavender.copy(alpha = 0.4f)
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            RewardStatusChip(statusText = "LOCKED", statusColor = StatusOrange)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    RewardPrimaryButton(
+                        text = "Close",
+                        onClick = { selectedAchievementForSheet = null },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp)
+                    )
                 }
             }
         }
@@ -226,171 +377,145 @@ fun AchievementDetailScreen(
     onNavigateBack: () -> Unit
 ) {
     val selectedAchievement by viewModel.selectedAchievement.collectAsState()
-    var showModalSheet by remember { mutableStateOf(true) }
 
-    Scaffold(
-        topBar = {
-            RewardsTopAppBar(
-                title = "Badge Details",
-                onNavigateBack = onNavigateBack
-            )
-        },
-        containerColor = RewardsTheme.screenBackground
-    ) { paddingValues ->
-        val ach = selectedAchievement
-        if (ach == null) {
-            Box(modifier = Modifier.padding(paddingValues)) {
-                RewardEmptyState(
-                    title = "No Badge Selected",
-                    description = "Select a badge from achievements to view details."
-                )
-            }
-        } else {
-            val drawableRes = getBadgeDrawableRes(ach.iconName)
-            val isUnlocked = ach.isUnlocked
+    val ach = selectedAchievement
+    if (ach == null) {
+        RewardEmptyState(
+            title = "No Badge Selected",
+            description = "Select a badge from achievements to view details."
+        )
+    } else {
+        val drawableRes = getBadgeDrawableRes(ach.iconName)
+        val isUnlocked = ach.isUnlocked
 
-            val badgeScale by animateFloatAsState(
-                targetValue = 1f,
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                    stiffness = Spring.StiffnessLow
-                ),
-                label = "badgeScale"
-            )
-
-            if (showModalSheet) {
-                ModalBottomSheet(
-                    onDismissRequest = {
-                        showModalSheet = false
-                        onNavigateBack()
-                    },
-                    containerColor = RewardsTheme.cardBackground,
-                    windowInsets = WindowInsets(0.dp)
+        ModalBottomSheet(
+            onDismissRequest = onNavigateBack,
+            containerColor = RewardsTheme.cardBackground,
+            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+            windowInsets = WindowInsets(0.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(110.dp)
+                        .clip(CircleShape)
+                        .background(if (isUnlocked) RewardsTheme.goldBadgeSurface else RewardsTheme.lockedBadgeSurface)
+                        .border(
+                            2.dp,
+                            if (isUnlocked) GoldPrimary else HighlightLavender,
+                            CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
+                    if (isUnlocked) {
+                        RewardsRadialGlow(glowColor = GoldBright, alpha = 0.5f)
+                        RewardsSparkleLayer(starColor = GoldBright)
+                    }
+
+                    val colorFilter = if (!isUnlocked) {
+                        ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0f) })
+                    } else null
+
+                    Image(
+                        painter = painterResource(id = drawableRes),
+                        contentDescription = ach.title,
+                        modifier = Modifier.size(85.dp),
+                        colorFilter = colorFilter,
+                        contentScale = ContentScale.Fit
+                    )
+
+                    if (!isUnlocked) {
                         Box(
                             modifier = Modifier
-                                .size(110.dp)
-                                .clip(CircleShape)
-                                .background(if (isUnlocked) RewardsTheme.goldBadgeSurface else RewardsTheme.lockedBadgeSurface)
-                                .border(
-                                    2.dp,
-                                    if (isUnlocked) GoldPrimary else HighlightLavender,
-                                    CircleShape
-                                ),
+                                .fillMaxSize()
+                                .background(Color.Black.copy(alpha = 0.25f), CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
-                            val colorFilter = if (!isUnlocked) {
-                                ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0f) })
-                            } else null
-
-                            Image(
-                                painter = painterResource(id = drawableRes),
-                                contentDescription = ach.title,
+                            Box(
                                 modifier = Modifier
-                                    .size(85.dp)
-                                    .scale(badgeScale),
-                                colorFilter = colorFilter,
-                                contentScale = ContentScale.Fit
-                            )
-
-                            if (!isUnlocked) {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .background(Color.Black.copy(alpha = 0.25f), CircleShape),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(36.dp)
-                                            .clip(CircleShape)
-                                            .background(Color.White),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Lock,
-                                            contentDescription = "Locked",
-                                            tint = DeepIndigo,
-                                            modifier = Modifier.size(20.dp)
-                                        )
-                                    }
-                                }
-                            }
-                        }
-
-                        Text(
-                            text = ach.title,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = RewardsTheme.textPrimary
-                        )
-
-                        Text(
-                            text = ach.description,
-                            fontSize = 14.sp,
-                            color = RewardsTheme.textSecondary,
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                        )
-
-                        if (isUnlocked) {
-                            RewardStatusChip(
-                                statusText = "UNLOCKED ${ach.unlockedDate ?: ""}",
-                                statusColor = RewardsSuccessGreen
-                            )
-                        } else {
-                            Column(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalAlignment = Alignment.CenterHorizontally
+                                    .size(36.dp)
+                                    .clip(CircleShape)
+                                    .background(Color.White),
+                                contentAlignment = Alignment.Center
                             ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Text(
-                                        text = "Progress",
-                                        fontSize = 13.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = RewardsTheme.textPrimary
-                                    )
-                                    Text(
-                                        text = "${ach.currentProgress} / ${ach.maxProgress}",
-                                        fontSize = 13.sp,
-                                        fontWeight = FontWeight.ExtraBold,
-                                        color = RoyalPurple
-                                    )
-                                }
-                                Spacer(modifier = Modifier.height(8.dp))
-                                RewardProgressBar(
-                                    progress = ach.currentProgress.toFloat() / ach.maxProgress.toFloat(),
-                                    color = RoyalPurple,
-                                    trackColor = HighlightLavender.copy(alpha = 0.4f)
+                                Icon(
+                                    imageVector = Icons.Default.Lock,
+                                    contentDescription = "Locked",
+                                    tint = DeepIndigo,
+                                    modifier = Modifier.size(20.dp)
                                 )
-                                Spacer(modifier = Modifier.height(12.dp))
-                                RewardStatusChip(statusText = "LOCKED", statusColor = StatusOrange)
                             }
                         }
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        RewardPrimaryButton(
-                            text = "Close",
-                            onClick = {
-                                showModalSheet = false
-                                onNavigateBack()
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(50.dp)
-                        )
                     }
                 }
+
+                Text(
+                    text = ach.title,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = RewardsTheme.textPrimary
+                )
+
+                Text(
+                    text = ach.description,
+                    fontSize = 14.sp,
+                    color = RewardsTheme.textSecondary,
+                    textAlign = TextAlign.Center
+                )
+
+                if (isUnlocked) {
+                    RewardStatusChip(
+                        statusText = "UNLOCKED ${ach.unlockedDate ?: ""}",
+                        statusColor = RewardsSuccessGreen
+                    )
+                } else {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "Progress",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = RewardsTheme.textPrimary
+                            )
+                            Text(
+                                text = "${ach.currentProgress} / ${ach.maxProgress}",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = RoyalPurple
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        RewardProgressBar(
+                            progress = ach.currentProgress.toFloat() / ach.maxProgress.toFloat(),
+                            color = RoyalPurple,
+                            trackColor = HighlightLavender.copy(alpha = 0.4f)
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        RewardStatusChip(statusText = "LOCKED", statusColor = StatusOrange)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                RewardPrimaryButton(
+                    text = "Close",
+                    onClick = onNavigateBack,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp)
+                )
             }
         }
     }

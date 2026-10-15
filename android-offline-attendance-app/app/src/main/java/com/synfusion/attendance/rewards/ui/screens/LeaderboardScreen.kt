@@ -1,6 +1,7 @@
 package com.synfusion.attendance.rewards.ui.screens
 
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -20,6 +21,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -27,8 +30,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import com.synfusion.attendance.R
 import com.synfusion.attendance.rewards.data.LeaderboardTimeframe
 import com.synfusion.attendance.rewards.data.LeaderboardUser
@@ -98,7 +103,7 @@ fun LeaderboardScreen(
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    // XP Rankings Hero & 3D Podium Card
+                    // XP Rankings Hero & 3D Metallic Podium Card
                     item {
                         Card(
                             modifier = Modifier.fillMaxWidth(),
@@ -110,10 +115,13 @@ fun LeaderboardScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .background(RewardsSecondaryGradient)
-                                    .padding(vertical = 22.dp, horizontal = 12.dp)
                             ) {
+                                RewardsCelebrationEffects(modifier = Modifier.matchParentSize())
+
                                 Column(
-                                    modifier = Modifier.fillMaxWidth(),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 22.dp, horizontal = 12.dp),
                                     horizontalAlignment = Alignment.CenterHorizontally
                                 ) {
                                     Row(
@@ -138,40 +146,41 @@ fun LeaderboardScreen(
 
                                     Spacer(modifier = Modifier.height(20.dp))
 
-                                    // 3D Podium Container (#2 Left, #1 Center, #3 Right)
+                                    // Connected 3D Metallic Podium Row (#2 Left, #1 Center, #3 Right)
+                                    // Sharing exact same bottom baseline alignment
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
                                         horizontalArrangement = Arrangement.SpaceEvenly,
                                         verticalAlignment = Alignment.Bottom
                                     ) {
-                                        // Rank #2 (Silver)
+                                        // Rank #2 (Silver, Left)
                                         LeaderboardPodiumSlot3D(
                                             user = top2,
                                             drawableRes = R.drawable.leaderboard_second,
                                             rankNum = 2,
-                                            pillarHeight = 110.dp,
+                                            pillarHeight = 118.dp,
                                             pillarBrush = RewardsSilverGradient,
-                                            artworkSize = 90.dp
+                                            artworkSize = 92.dp
                                         )
 
-                                        // Rank #1 (Gold)
+                                        // Rank #1 (Gold, Center)
                                         LeaderboardPodiumSlot3D(
                                             user = top1,
                                             drawableRes = R.drawable.leaderboard_first,
                                             rankNum = 1,
-                                            pillarHeight = 150.dp,
+                                            pillarHeight = 155.dp,
                                             pillarBrush = RewardsGoldGradient,
-                                            artworkSize = 110.dp
+                                            artworkSize = 112.dp
                                         )
 
-                                        // Rank #3 (Bronze)
+                                        // Rank #3 (Bronze, Right)
                                         LeaderboardPodiumSlot3D(
                                             user = top3,
                                             drawableRes = R.drawable.leaderboard_third,
                                             rankNum = 3,
-                                            pillarHeight = 90.dp,
+                                            pillarHeight = 98.dp,
                                             pillarBrush = RewardsBronzeGradient,
-                                            artworkSize = 80.dp
+                                            artworkSize = 82.dp
                                         )
                                     }
                                 }
@@ -203,27 +212,37 @@ private fun LeaderboardPodiumSlot3D(
     user: LeaderboardUser?,
     drawableRes: Int,
     rankNum: Int,
-    pillarHeight: androidx.compose.ui.unit.Dp,
+    pillarHeight: Dp,
     pillarBrush: Brush,
-    artworkSize: androidx.compose.ui.unit.Dp
+    artworkSize: Dp
 ) {
     if (user == null) return
 
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.width(100.dp)
+    Box(
+        contentAlignment = Alignment.BottomCenter,
+        modifier = Modifier.width(102.dp)
     ) {
-        // Medal / Avatar Artwork resting directly on top of the podium rim
+        // Layer 1: Metallic Cylinder Podium
+        LeaderboardCanvasPodium(
+            rank = rankNum,
+            colorGradient = pillarBrush,
+            height = pillarHeight
+        )
+
+        // Layer 2: Mounted Medal resting on top rim (rendered over podium)
         Box(
             contentAlignment = Alignment.Center,
-            modifier = Modifier.offset(y = 12.dp)
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .offset(y = (-artworkSize / 2f + 12.dp))
+                .zIndex(2f)
         ) {
             if (rankNum == 1) {
-                Box(
-                    modifier = Modifier
-                        .size(artworkSize + 12.dp)
-                        .clip(CircleShape)
-                        .background(GoldBright.copy(alpha = 0.3f))
+                RewardsRadialGlow(
+                    glowColor = GoldBright,
+                    alpha = 0.5f,
+                    radiusFraction = 0.8f,
+                    modifier = Modifier.size(artworkSize + 24.dp)
                 )
             }
             Image(
@@ -234,47 +253,38 @@ private fun LeaderboardPodiumSlot3D(
             )
         }
 
-        // Layered 3D Metallic Podium Cylinder with Name & XP embedded on front face
-        Box(
-            contentAlignment = Alignment.TopCenter,
-            modifier = Modifier.fillMaxWidth()
+        // Layer 3: Name & XP Text on cylinder front face
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 22.dp, start = 4.dp, end = 4.dp)
+                .zIndex(3f)
         ) {
-            LeaderboardCanvasPodium(
-                rank = rankNum,
-                colorGradient = pillarBrush,
-                height = pillarHeight
+            Text(
+                text = user.name,
+                fontSize = if (rankNum == 1) 14.sp else 12.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = if (rankNum == 1) Color(0xFF3B1D00) else Color(0xFF0F172A),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center
             )
 
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Box(
                 modifier = Modifier
-                    .padding(top = 18.dp, start = 4.dp, end = 4.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color.Black.copy(alpha = 0.22f))
+                    .padding(horizontal = 8.dp, vertical = 3.dp)
             ) {
                 Text(
-                    text = user.name,
-                    fontSize = if (rankNum == 1) 14.sp else 12.sp,
+                    text = "${user.xp} XP",
+                    fontSize = 11.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    color = if (rankNum == 1) Color(0xFF4A2800) else Color(0xFF0F172A),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    textAlign = TextAlign.Center
+                    color = Color.White
                 )
-
-                Spacer(modifier = Modifier.height(2.dp))
-
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(Color.Black.copy(alpha = 0.18f))
-                        .padding(horizontal = 6.dp, vertical = 2.dp)
-                ) {
-                    Text(
-                        text = "${user.xp} XP",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = Color.White
-                    )
-                }
             }
         }
     }
@@ -445,7 +455,7 @@ private fun LeaderboardRowItem(user: LeaderboardUser) {
 private fun LeaderboardCanvasPodium(
     rank: Int,
     colorGradient: Brush,
-    height: androidx.compose.ui.unit.Dp,
+    height: Dp,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -454,46 +464,47 @@ private fun LeaderboardCanvasPodium(
             .height(height),
         contentAlignment = Alignment.BottomCenter
     ) {
-        androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
             val canvasWidth = size.width
             val canvasHeight = size.height
             val ellipseHeight = 22.dp.toPx()
 
-            // Shadow
+            // Ground Shadow
             drawOval(
-                color = Color.Black.copy(alpha = 0.22f),
-                topLeft = androidx.compose.ui.geometry.Offset(0f, canvasHeight - ellipseHeight),
-                size = androidx.compose.ui.geometry.Size(canvasWidth, ellipseHeight)
+                color = Color.Black.copy(alpha = 0.25f),
+                topLeft = Offset(0f, canvasHeight - ellipseHeight),
+                size = Size(canvasWidth, ellipseHeight)
             )
 
-            // Main Cylinder Body
+            // Main Metallic Cylinder Body
             drawRect(
                 brush = colorGradient,
-                topLeft = androidx.compose.ui.geometry.Offset(0f, ellipseHeight / 2),
-                size = androidx.compose.ui.geometry.Size(canvasWidth, canvasHeight - ellipseHeight)
+                topLeft = Offset(0f, ellipseHeight / 2f),
+                size = Size(canvasWidth, canvasHeight - ellipseHeight)
             )
 
-            // Front face highlights
+            // Front face metallic highlights
             drawRect(
-                color = Color.White.copy(alpha = 0.18f),
-                topLeft = androidx.compose.ui.geometry.Offset(canvasWidth * 0.08f, ellipseHeight / 2),
-                size = androidx.compose.ui.geometry.Size(canvasWidth * 0.22f, canvasHeight - ellipseHeight)
+                color = Color.White.copy(alpha = 0.22f),
+                topLeft = Offset(canvasWidth * 0.08f, ellipseHeight / 2f),
+                size = Size(canvasWidth * 0.22f, canvasHeight - ellipseHeight)
             )
 
+            // Fixed right-side shadow width math: 0.28f instead of 0.72f
             drawRect(
                 color = Color.Black.copy(alpha = 0.18f),
-                topLeft = androidx.compose.ui.geometry.Offset(canvasWidth * 0.72f, ellipseHeight / 2),
-                size = androidx.compose.ui.geometry.Size(canvasWidth * 0.28f, canvasHeight - ellipseHeight)
+                topLeft = Offset(canvasWidth * 0.72f, ellipseHeight / 2f),
+                size = Size(canvasWidth * 0.28f, canvasHeight - ellipseHeight)
             )
 
-            // Bottom Curve
+            // Bottom Curved Lip
             drawArc(
                 brush = colorGradient,
                 startAngle = 0f,
                 sweepAngle = 180f,
                 useCenter = false,
-                topLeft = androidx.compose.ui.geometry.Offset(0f, canvasHeight - ellipseHeight),
-                size = androidx.compose.ui.geometry.Size(canvasWidth, ellipseHeight)
+                topLeft = Offset(0f, canvasHeight - ellipseHeight),
+                size = Size(canvasWidth, ellipseHeight)
             )
 
             // Top Metallic Rim Surface
@@ -504,15 +515,15 @@ private fun LeaderboardCanvasPodium(
                     3 -> Color(0xFFFED7AA)
                     else -> Color.White
                 },
-                topLeft = androidx.compose.ui.geometry.Offset(0f, 0f),
-                size = androidx.compose.ui.geometry.Size(canvasWidth, ellipseHeight)
+                topLeft = Offset(0f, 0f),
+                size = Size(canvasWidth, ellipseHeight)
             )
 
-            // Top inner highlight
+            // Top inner glossy highlight
             drawOval(
                 color = Color.White.copy(alpha = 0.65f),
-                topLeft = androidx.compose.ui.geometry.Offset(canvasWidth * 0.1f, ellipseHeight * 0.1f),
-                size = androidx.compose.ui.geometry.Size(canvasWidth * 0.8f, ellipseHeight * 0.8f)
+                topLeft = Offset(canvasWidth * 0.1f, ellipseHeight * 0.1f),
+                size = Size(canvasWidth * 0.8f, ellipseHeight * 0.8f)
             )
         }
     }

@@ -578,6 +578,9 @@ fun RewardEmptyState(
     }
 }
 
+/**
+ * Structured Transaction Row with meaningful category icons based on transaction type.
+ */
 @Composable
 fun RewardTransactionRow(
     transaction: RewardTransaction,
@@ -588,6 +591,18 @@ fun RewardTransactionRow(
         RewardTransactionStatus.CONFIRMED, RewardTransactionStatus.COMPLETED -> RewardsSuccessGreen
         RewardTransactionStatus.PENDING -> StatusOrange
         RewardTransactionStatus.REVERSED, RewardTransactionStatus.REJECTED -> StatusRed
+    }
+
+    val titleLower = transaction.title.lowercase(Locale.getDefault())
+    val (iconVector: ImageVector, iconTint: Color) = when {
+        transaction.status == RewardTransactionStatus.PENDING -> Icons.Default.Schedule to StatusOrange
+        transaction.type == RewardTransactionType.SPENT || transaction.amount < 0 -> Icons.Default.CardGiftcard to StatusOrange
+        titleLower.contains("referral") -> Icons.Default.CardGiftcard to RoyalPurple
+        titleLower.contains("task") || titleLower.contains("challenge") -> Icons.Default.TaskAlt to Color(0xFF1976D2)
+        titleLower.contains("achievement") || titleLower.contains("badge") -> Icons.Default.MilitaryTech to GoldPrimary
+        titleLower.contains("streak") || titleLower.contains("login") || titleLower.contains("attendance") -> Icons.Default.EventAvailable to RewardsSuccessGreen
+        titleLower.contains("leaderboard") || titleLower.contains("rank") -> Icons.Default.EmojiEvents to GoldPrimary
+        else -> Icons.Default.MonetizationOn to GoldPrimary
     }
 
     Card(
@@ -614,11 +629,15 @@ fun RewardTransactionRow(
                     modifier = Modifier
                         .size(42.dp)
                         .clip(CircleShape)
-                        .background(statusColor.copy(alpha = 0.12f)),
+                        .background(iconTint.copy(alpha = 0.14f)),
                     contentAlignment = Alignment.Center
                 ) {
-                    val icon = if (transaction.amount >= 0) Icons.Default.AddCircleOutline else Icons.Default.RemoveCircleOutline
-                    Icon(imageVector = icon, contentDescription = null, tint = statusColor, modifier = Modifier.size(22.dp))
+                    Icon(
+                        imageVector = iconVector,
+                        contentDescription = null,
+                        tint = iconTint,
+                        modifier = Modifier.size(22.dp)
+                    )
                 }
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
@@ -669,7 +688,7 @@ fun RewardBadgeCard(
     val isUnlocked = achievement.isUnlocked
     val cardBg = if (isUnlocked) RewardsTheme.goldBadgeSurface else RewardsTheme.lockedBadgeSurface
     val border = if (isUnlocked) {
-        androidx.compose.foundation.BorderStroke(1.5.dp, GoldPrimary.copy(alpha = 0.5f))
+        androidx.compose.foundation.BorderStroke(1.5.dp, GoldPrimary.copy(alpha = 0.6f))
     } else {
         androidx.compose.foundation.BorderStroke(1.dp, RewardsTheme.softBorder)
     }
@@ -685,25 +704,35 @@ fun RewardBadgeCard(
     ) {
         Column(
             modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .padding(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Box(
-                modifier = Modifier
-                    .size(120.dp),
+                modifier = Modifier.size(105.dp),
                 contentAlignment = Alignment.Center
             ) {
+                if (isUnlocked) {
+                    RewardsRadialGlow(
+                        glowColor = GoldBright,
+                        alpha = 0.45f,
+                        radiusFraction = 0.85f,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                    RewardsSparkleLayer(
+                        starColor = GoldBright,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+
                 val colorFilter = if (!isUnlocked) {
-                    ColorFilter.colorMatrix(ColorMatrix().apply {
-                        setToSaturation(0f)
-                    })
+                    ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0f) })
                 } else null
 
                 Image(
                     painter = painterResource(id = drawableRes),
                     contentDescription = achievement.title,
-                    modifier = Modifier.size(115.dp),
+                    modifier = Modifier.size(98.dp),
                     colorFilter = colorFilter,
                     contentScale = ContentScale.Fit
                 )
@@ -711,58 +740,53 @@ fun RewardBadgeCard(
                 if (!isUnlocked) {
                     Box(
                         modifier = Modifier
-                            .fillMaxSize()
+                            .align(Alignment.BottomEnd)
+                            .size(28.dp)
                             .clip(CircleShape)
-                            .background(Color.Black.copy(alpha = 0.35f)),
+                            .background(Color(0xFF343653)),
                         contentAlignment = Alignment.Center
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(32.dp)
-                                .clip(CircleShape)
-                                .background(Color.White.copy(alpha = 0.9f)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Lock,
-                                contentDescription = "Locked",
-                                tint = Color(0xFF647086),
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
+                        Icon(
+                            imageVector = Icons.Default.Lock,
+                            contentDescription = "Locked",
+                            tint = Color.White,
+                            modifier = Modifier.size(14.dp)
+                        )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             Text(
                 text = achievement.title,
-                fontSize = 15.sp,
+                fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
                 color = RewardsTheme.textPrimary,
-                maxLines = 1,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                lineHeight = 17.sp,
+                modifier = Modifier.heightIn(min = 34.dp)
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(6.dp))
 
             if (isUnlocked) {
                 RewardStatusChip(statusText = "UNLOCKED", statusColor = RewardsSuccessGreen)
             } else {
                 Text(
                     text = "${achievement.currentProgress} / ${achievement.maxProgress}",
-                    fontSize = 12.sp,
+                    fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     color = RewardsTheme.textSecondary
                 )
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(4.dp))
                 RewardProgressBar(
                     progress = achievement.currentProgress.toFloat() / achievement.maxProgress.toFloat(),
                     color = RoyalPurple,
                     trackColor = RewardsTheme.textSecondary.copy(alpha = 0.2f),
-                    modifier = Modifier.fillMaxWidth(0.85f)
+                    modifier = Modifier.fillMaxWidth(0.9f)
                 )
             }
         }
