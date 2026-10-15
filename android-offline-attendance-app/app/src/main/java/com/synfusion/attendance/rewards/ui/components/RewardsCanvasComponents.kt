@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
@@ -12,6 +13,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Fill
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
 
 /**
@@ -250,4 +252,206 @@ fun RewardsCelebrationEffects(
             }
         }
     }
+}
+
+// ==========================================
+// CONSTRUCTION ITEM CANVAS ILLUSTRATION DRAWING FUNCTIONS
+// ==========================================
+
+fun DrawScope.drawSafetyHelmet(cx: Float, cy: Float, itemSize: Float) {
+    val r = itemSize / 2f
+    val domePath = Path().apply {
+        moveTo(cx - r * 0.85f, cy + r * 0.2f)
+        cubicTo(
+            cx - r * 0.85f, cy - r * 0.9f,
+            cx + r * 0.85f, cy - r * 0.9f,
+            cx + r * 0.85f, cy + r * 0.2f
+        )
+        close()
+    }
+    drawPath(
+        path = domePath,
+        brush = Brush.verticalGradient(
+            listOf(Color(0xFFFFF1A8), Color(0xFFFFBE0B), Color(0xFFD97706)),
+            startY = cy - r, endY = cy + r * 0.2f
+        )
+    )
+    drawRoundRect(
+        color = Color(0xFFF59E0B),
+        topLeft = Offset(cx - r * 1.05f, cy + r * 0.15f),
+        size = Size(r * 2.1f, r * 0.35f),
+        cornerRadius = CornerRadius(r * 0.15f)
+    )
+    drawRoundRect(
+        color = Color(0xFFFFF1A8),
+        topLeft = Offset(cx - r * 0.2f, cy - r * 0.75f),
+        size = Size(r * 0.4f, r * 0.8f),
+        cornerRadius = CornerRadius(r * 0.1f)
+    )
+}
+
+fun DrawScope.drawHammer(cx: Float, cy: Float, itemSize: Float) {
+    val r = itemSize / 2f
+    val handlePath = Path().apply {
+        moveTo(cx - r * 0.15f, cy - r * 0.1f)
+        lineTo(cx + r * 0.45f, cy + r * 0.85f)
+        lineTo(cx + r * 0.30f, cy + r * 0.95f)
+        lineTo(cx - r * 0.30f, cy + r * 0.05f)
+        close()
+    }
+    drawPath(handlePath, color = Color(0xFF8B4513))
+    drawRoundRect(
+        brush = Brush.horizontalGradient(listOf(Color(0xFFE2E8F0), Color(0xFF94A3B8), Color(0xFF475569))),
+        topLeft = Offset(cx - r * 0.8f, cy - r * 0.6f),
+        size = Size(r * 1.2f, r * 0.5f),
+        cornerRadius = CornerRadius(r * 0.1f)
+    )
+    val clawPath = Path().apply {
+        moveTo(cx + r * 0.4f, cy - r * 0.6f)
+        quadraticBezierTo(cx + r * 0.8f, cy - r * 0.3f, cx + r * 0.7f, cy + r * 0.1f)
+        lineTo(cx + r * 0.4f, cy - r * 0.1f)
+        close()
+    }
+    drawPath(clawPath, color = Color(0xFF64748B))
+}
+
+fun DrawScope.drawBricks(cx: Float, cy: Float, itemSize: Float) {
+    val r = itemSize / 2f
+    val bw = r * 0.85f
+    val bh = r * 0.35f
+    val brickColor = Color(0xFFEA580C)
+    val brickDark = Color(0xFFC2410C)
+
+    drawRoundRect(
+        color = brickColor,
+        topLeft = Offset(cx - bw * 1.05f, cy + bh * 0.2f),
+        size = Size(bw, bh),
+        cornerRadius = CornerRadius(r * 0.05f)
+    )
+    drawRoundRect(
+        color = brickDark,
+        topLeft = Offset(cx + bw * 0.05f, cy + bh * 0.2f),
+        size = Size(bw, bh),
+        cornerRadius = CornerRadius(r * 0.05f)
+    )
+    drawRoundRect(
+        brush = Brush.verticalGradient(listOf(Color(0xFFF97316), Color(0xFFC2410C))),
+        topLeft = Offset(cx - bw * 0.5f, cy - bh * 0.9f),
+        size = Size(bw, bh),
+        cornerRadius = CornerRadius(r * 0.05f)
+    )
+}
+
+fun DrawScope.drawToolbox(cx: Float, cy: Float, itemSize: Float) {
+    val r = itemSize / 2f
+    drawRoundRect(
+        brush = Brush.verticalGradient(listOf(Color(0xFF873FFF), Color(0xFF4F35E8))),
+        topLeft = Offset(cx - r * 0.85f, cy - r * 0.3f),
+        size = Size(r * 1.7f, r * 1.0f),
+        cornerRadius = CornerRadius(r * 0.15f)
+    )
+    drawRoundRect(
+        color = Color(0xFFFFBE0B),
+        topLeft = Offset(cx - r * 0.9f, cy - r * 0.45f),
+        size = Size(r * 1.8f, r * 0.3f),
+        cornerRadius = CornerRadius(r * 0.08f)
+    )
+    val handlePath = Path().apply {
+        moveTo(cx - r * 0.35f, cy - r * 0.45f)
+        lineTo(cx - r * 0.35f, cy - r * 0.75f)
+        lineTo(cx + r * 0.35f, cy - r * 0.75f)
+        lineTo(cx + r * 0.35f, cy - r * 0.45f)
+    }
+    drawPath(handlePath, color = Color(0xFFFFD54A), style = Stroke(width = r * 0.18f))
+    drawCircle(color = Color.White, radius = r * 0.12f, center = Offset(cx - r * 0.4f, cy - r * 0.15f))
+    drawCircle(color = Color.White, radius = r * 0.12f, center = Offset(cx + r * 0.4f, cy - r * 0.15f))
+}
+
+fun DrawScope.drawCrane(cx: Float, cy: Float, itemSize: Float) {
+    val r = itemSize / 2f
+    val craneColor = Color(0xFFFFBE0B)
+    val steelColor = Color(0xFF475569)
+
+    drawLine(craneColor, Offset(cx - r * 0.3f, cy + r * 0.9f), Offset(cx - r * 0.3f, cy - r * 0.7f), strokeWidth = r * 0.15f)
+    drawLine(steelColor, Offset(cx - r * 0.3f, cy + r * 0.5f), Offset(cx - r * 0.1f, cy + r * 0.1f), strokeWidth = r * 0.08f)
+    drawLine(steelColor, Offset(cx - r * 0.3f, cy + r * 0.1f), Offset(cx - r * 0.1f, cy - r * 0.3f), strokeWidth = r * 0.08f)
+    drawLine(craneColor, Offset(cx - r * 0.7f, cy - r * 0.6f), Offset(cx + r * 0.9f, cy - r * 0.6f), strokeWidth = r * 0.15f)
+    drawLine(steelColor, Offset(cx + r * 0.6f, cy - r * 0.6f), Offset(cx + r * 0.6f, cy + r * 0.2f), strokeWidth = r * 0.08f)
+    drawCircle(Color(0xFFF59E0B), radius = r * 0.15f, center = Offset(cx + r * 0.6f, cy + r * 0.25f))
+}
+
+fun DrawScope.drawCementTruck(cx: Float, cy: Float, itemSize: Float) {
+    val r = itemSize / 2f
+    drawRoundRect(
+        color = Color(0xFFFFBE0B),
+        topLeft = Offset(cx - r * 0.9f, cy - r * 0.1f),
+        size = Size(r * 0.6f, r * 0.7f),
+        cornerRadius = CornerRadius(r * 0.1f)
+    )
+    val drumPath = Path().apply {
+        moveTo(cx - r * 0.2f, cy - r * 0.5f)
+        lineTo(cx + r * 0.8f, cy - r * 0.2f)
+        lineTo(cx + r * 0.6f, cy + r * 0.3f)
+        lineTo(cx - r * 0.4f, cy + r * 0.0f)
+        close()
+    }
+    drawPath(
+        path = drumPath,
+        brush = Brush.horizontalGradient(listOf(Color(0xFF873FFF), Color(0xFFA64CFF), Color(0xFF6737F5)))
+    )
+    drawCircle(Color(0xFF1E293B), radius = r * 0.22f, center = Offset(cx - r * 0.6f, cy + r * 0.65f))
+    drawCircle(Color(0xFF1E293B), radius = r * 0.22f, center = Offset(cx + r * 0.2f, cy + r * 0.65f))
+    drawCircle(Color.White, radius = r * 0.08f, center = Offset(cx - r * 0.6f, cy + r * 0.65f))
+    drawCircle(Color.White, radius = r * 0.08f, center = Offset(cx + r * 0.2f, cy + r * 0.65f))
+}
+
+fun DrawScope.drawGoldenBlueprint(cx: Float, cy: Float, itemSize: Float) {
+    val r = itemSize / 2f
+    drawRoundRect(
+        brush = Brush.horizontalGradient(listOf(Color(0xFFFFF1A8), Color(0xFFFFBE0B), Color(0xFFF59E0B))),
+        topLeft = Offset(cx - r * 0.7f, cy - r * 0.6f),
+        size = Size(r * 1.4f, r * 1.1f),
+        cornerRadius = CornerRadius(r * 0.12f)
+    )
+    val gridColor = Color(0xFF8D5B00).copy(alpha = 0.5f)
+    drawLine(gridColor, Offset(cx - r * 0.4f, cy - r * 0.4f), Offset(cx - r * 0.4f, cy + r * 0.3f), strokeWidth = r * 0.06f)
+    drawLine(gridColor, Offset(cx, cy - r * 0.4f), Offset(cx, cy + r * 0.3f), strokeWidth = r * 0.06f)
+    drawLine(gridColor, Offset(cx + r * 0.4f, cy - r * 0.4f), Offset(cx + r * 0.4f, cy + r * 0.3f), strokeWidth = r * 0.06f)
+    drawLine(gridColor, Offset(cx - r * 0.5f, cy - r * 0.1f), Offset(cx + r * 0.5f, cy - r * 0.1f), strokeWidth = r * 0.06f)
+    drawRoundRect(
+        color = Color(0xFF6737F5),
+        topLeft = Offset(cx - r * 0.15f, cy - r * 0.65f),
+        size = Size(r * 0.3f, r * 1.2f),
+        cornerRadius = CornerRadius(r * 0.05f)
+    )
+}
+
+fun DrawScope.drawForemansPass(cx: Float, cy: Float, itemSize: Float) {
+    val r = itemSize / 2f
+    drawRoundRect(
+        brush = Brush.verticalGradient(listOf(Color(0xFFFFF1A8), Color(0xFFFFBE0B))),
+        topLeft = Offset(cx - r * 0.65f, cy - r * 0.7f),
+        size = Size(r * 1.3f, r * 1.4f),
+        cornerRadius = CornerRadius(r * 0.15f)
+    )
+    drawRoundRect(
+        color = Color(0xFFD97706),
+        topLeft = Offset(cx - r * 0.65f, cy - r * 0.7f),
+        size = Size(r * 1.3f, r * 1.4f),
+        cornerRadius = CornerRadius(r * 0.15f),
+        style = Stroke(width = r * 0.08f)
+    )
+    drawRoundRect(
+        color = Color(0xFF6737F5),
+        topLeft = Offset(cx - r * 0.55f, cy - r * 0.6f),
+        size = Size(r * 1.1f, r * 0.35f),
+        cornerRadius = CornerRadius(r * 0.08f)
+    )
+    drawRoundRect(
+        color = Color(0xFF1E293B),
+        topLeft = Offset(cx - r * 0.2f, cy - r * 0.85f),
+        size = Size(r * 0.4f, r * 0.2f),
+        cornerRadius = CornerRadius(r * 0.05f)
+    )
+    drawFourPointStar(centerX = cx, centerY = cy + r * 0.15f, size = r * 0.6f, color = Color(0xFF6737F5))
 }

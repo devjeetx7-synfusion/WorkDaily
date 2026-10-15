@@ -1,5 +1,7 @@
 package com.synfusion.attendance.rewards.data
 
+import android.content.Context
+import android.content.SharedPreferences
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -12,25 +14,36 @@ import java.util.Locale
 import java.util.Random
 
 class DemoRewardsDataSource(
+    context: Context? = null,
     private val randomSupplier: () -> Double = { Random().nextDouble() }
 ) {
 
-    // Default Spin Segments (8 sectors)
-    val spinSegments = listOf(
-        SpinWheelSegment(1, "Safety Helmet", 2, "helmet"),
-        SpinWheelSegment(2, "Hammer", 3, "hammer"),
-        SpinWheelSegment(3, "Bricks", 4, "bricks"),
-        SpinWheelSegment(4, "Toolbox", 5, "toolbox"),
-        SpinWheelSegment(5, "Cement Truck", 6, "truck"),
-        SpinWheelSegment(6, "Construction Crane", 8, "crane"),
-        SpinWheelSegment(7, "Safety Gear", 10, "gear"),
-        SpinWheelSegment(8, "Golden Blueprint", 20, "blueprint")
+    private val prefs: SharedPreferences? = context?.applicationContext?.getSharedPreferences(
+        "demo_rewards_persistent_store",
+        Context.MODE_PRIVATE
     )
 
-    private val _spinTokens = MutableStateFlow(SpinTokenBalance(availableSpins = 2))
+    // 8 Construction-Themed Spin Sectors according to specifications
+    val spinSegments = listOf(
+        SpinWheelSegment(1, "Safety Helmet", 2, "helmet", SpinRewardType.Coins(2)),
+        SpinWheelSegment(2, "Hammer", 4, "hammer", SpinRewardType.Coins(4)),
+        SpinWheelSegment(3, "Bricks", 5, "bricks", SpinRewardType.Coins(5)),
+        SpinWheelSegment(4, "Toolbox", 8, "toolbox", SpinRewardType.Coins(8)),
+        SpinWheelSegment(5, "Construction Crane", 10, "crane", SpinRewardType.Coins(10)),
+        SpinWheelSegment(6, "Cement Truck", 12, "truck", SpinRewardType.Coins(12)),
+        SpinWheelSegment(7, "Golden Blueprint", 20, "blueprint", SpinRewardType.Coins(20)),
+        SpinWheelSegment(8, "Foreman's Pass", 0, "pass", SpinRewardType.BonusSpin(1))
+    )
+
+    private val _spinTokens = MutableStateFlow(
+        SpinTokenBalance(availableSpins = prefs?.getInt("available_spins", 2) ?: 2)
+    )
     val spinTokens: StateFlow<SpinTokenBalance> = _spinTokens.asStateFlow()
 
-    private val _dailyCheckInState = MutableStateFlow(DailyCheckInState())
+    private val initialClaimedDates = prefs?.getStringSet("claimed_dates", emptySet()) ?: emptySet()
+    private val _dailyCheckInState = MutableStateFlow(
+        DailyCheckInState(claimedDates = initialClaimedDates)
+    )
     val dailyCheckInState: StateFlow<DailyCheckInState> = _dailyCheckInState.asStateFlow()
 
     private val _streakState = MutableStateFlow(DailyStreakState())
@@ -39,10 +52,17 @@ class DemoRewardsDataSource(
     private val _milestones = MutableStateFlow<List<MilestoneReward>>(emptyList())
     val milestones: StateFlow<List<MilestoneReward>> = _milestones.asStateFlow()
 
-    private val _claimedMilestoneIds = MutableStateFlow<Set<String>>(emptySet())
+    private val initialClaimedMilestoneIds = prefs?.getStringSet("claimed_milestone_ids", emptySet()) ?: emptySet()
+    private val _claimedMilestoneIds = MutableStateFlow<Set<String>>(initialClaimedMilestoneIds)
     val claimedMilestoneIds: StateFlow<Set<String>> = _claimedMilestoneIds.asStateFlow()
 
-    private val _walletSummary = MutableStateFlow(WalletSummary())
+    private val _walletSummary = MutableStateFlow(
+        WalletSummary(
+            availableCoins = prefs?.getInt("available_coins", 2000) ?: 2000,
+            pendingCoins = prefs?.getInt("pending_coins", 450) ?: 450,
+            lifetimeEarned = prefs?.getInt("lifetime_earned", 7850) ?: 7850
+        )
+    )
     val walletSummary: StateFlow<WalletSummary> = _walletSummary.asStateFlow()
 
     private val _referralStats = MutableStateFlow(ReferralStats())
@@ -240,6 +260,18 @@ class DemoRewardsDataSource(
         updateDateState(todayStr)
     }
 
+    private fun persistState() {
+        prefs?.edit()?.apply {
+            putInt("available_spins", _spinTokens.value.availableSpins)
+            putStringSet("claimed_dates", _dailyCheckInState.value.claimedDates)
+            putStringSet("claimed_milestone_ids", _claimedMilestoneIds.value)
+            putInt("available_coins", _walletSummary.value.availableCoins)
+            putInt("pending_coins", _walletSummary.value.pendingCoins)
+            putInt("lifetime_earned", _walletSummary.value.lifetimeEarned)
+            apply()
+        }
+    }
+
     fun updateDateState(currentDateStr: String) {
         val claimed = _dailyCheckInState.value.claimedDates
         val isTodayClaimed = claimed.contains(currentDateStr)
@@ -284,7 +316,6 @@ class DemoRewardsDataSource(
             prevDate = d
         }
 
-        // Current streak calculation based on reference date (today)
         val refDate = try { LocalDate.parse(referenceDateStr) } catch (e: Throwable) { LocalDate.of(2026, 10, 15) }
         var currentStreak = 0
         val lastClaimed = claimedDates.lastOrNull()
@@ -292,19 +323,16 @@ class DemoRewardsDataSource(
         if (lastClaimed != null) {
             val daysDiff = ChronoUnit.DAYS.between(lastClaimed, refDate)
             if (daysDiff == 0L || daysDiff == 1L) {
-                // Determine continuous streak counting backwards from lastClaimed
                 var streakCount = 0
-                var checkPointer = lastClaimed
                 val dateSet = claimedDates.toSet()
 
-                var ptr: LocalDate? = checkPointer
+                var ptr: LocalDate? = lastClaimed
                 while (ptr != null && dateSet.contains(ptr)) {
                     streakCount++
                     ptr = ptr.minusDays(1)
                 }
                 currentStreak = streakCount
             } else {
-                // Missed more than 1 day
                 currentStreak = 0
             }
         }
@@ -321,7 +349,6 @@ class DemoRewardsDataSource(
         val totalDays = _streakState.value.totalCheckInDays
         val claimedIds = _claimedMilestoneIds.value
 
-        // 7-Day Streak Milestone (repeating per 7-day cycle)
         val cycle7Count = streak / 7
         val current7Progress = streak % 7
         val m7Id = "milestone_7_streak_${cycle7Count + 1}"
@@ -346,7 +373,6 @@ class DemoRewardsDataSource(
             status = status7
         )
 
-        // 30 Day Milestone
         val m30Id = "milestone_30_days"
         val is30Claimed = claimedIds.contains(m30Id)
         val status30 = when {
@@ -368,7 +394,6 @@ class DemoRewardsDataSource(
             status = status30
         )
 
-        // 180 Day Milestone
         val m180Id = "milestone_180_days"
         val is180Claimed = claimedIds.contains(m180Id)
         val status180 = when {
@@ -390,7 +415,6 @@ class DemoRewardsDataSource(
             status = status180
         )
 
-        // 365 Day Milestone
         val m365Id = "milestone_365_days"
         val is365Claimed = claimedIds.contains(m365Id)
         val status365 = when {
@@ -414,7 +438,6 @@ class DemoRewardsDataSource(
 
         _milestones.value = listOf(m7, m30, m180, m365)
 
-        // Sync milestone badges to achievements list
         _achievements.value = _achievements.value.map { ach ->
             when (ach.id) {
                 "ach_m7" -> ach.copy(
@@ -460,7 +483,6 @@ class DemoRewardsDataSource(
         creditDemoCoins(5, "Daily Check-in Reward", "Logged daily check-in for $dateStr", "Daily Check-in")
         _spinTokens.value = _spinTokens.value.copy(availableSpins = _spinTokens.value.availableSpins + 1)
 
-        // Sync Task "Daily Check-in"
         _tasks.value = _tasks.value.map { task ->
             if (task.id == "task_1") {
                 task.copy(currentProgress = 1, status = TaskStatus.CLAIMED)
@@ -471,6 +493,7 @@ class DemoRewardsDataSource(
 
         recalculateStreaks(dateStr)
         recalculateMilestones()
+        persistState()
         return true
     }
 
@@ -480,13 +503,15 @@ class DemoRewardsDataSource(
 
         _claimedMilestoneIds.value = _claimedMilestoneIds.value + milestoneId
 
-        // Credit coins & bonus spins
-        creditDemoCoins(milestone.coinReward, "${milestone.title} Bonus", "Claimed milestone: ${milestone.description}", "Milestone Reward")
+        if (milestone.coinReward > 0) {
+            creditDemoCoins(milestone.coinReward, "${milestone.title} Bonus", "Claimed milestone: ${milestone.description}", "Milestone Reward")
+        }
         if (milestone.bonusSpins > 0) {
             _spinTokens.value = _spinTokens.value.copy(availableSpins = _spinTokens.value.availableSpins + milestone.bonusSpins)
         }
 
         recalculateMilestones()
+        persistState()
         return true
     }
 
@@ -503,14 +528,29 @@ class DemoRewardsDataSource(
         val index = (randVal * spinSegments.size).toInt().coerceIn(0, spinSegments.size - 1)
         val selectedSegment = spinSegments[index]
 
-        // Credit coin reward
-        creditDemoCoins(
-            amount = selectedSegment.coinReward,
-            title = "Spin Wheel Prize",
-            description = "Won ${selectedSegment.coinReward} coins on ${selectedSegment.name}",
-            source = "Spin Wheel"
-        )
+        when (val reward = selectedSegment.rewardType) {
+            is SpinRewardType.Coins -> {
+                creditDemoCoins(
+                    amount = reward.amount,
+                    title = "Spin Wheel Prize",
+                    description = "Won ${reward.amount} coins on ${selectedSegment.name}",
+                    source = "Spin Wheel"
+                )
+            }
+            is SpinRewardType.BonusSpin -> {
+                _spinTokens.value = _spinTokens.value.copy(
+                    availableSpins = _spinTokens.value.availableSpins + reward.count
+                )
+                addTransaction(
+                    title = "Bonus Spin Won",
+                    description = "+${reward.count} Free Spin Token on ${selectedSegment.name}",
+                    amount = 0,
+                    source = "Spin Wheel"
+                )
+            }
+        }
 
+        persistState()
         return selectedSegment
     }
 
@@ -521,6 +561,10 @@ class DemoRewardsDataSource(
             lifetimeEarned = currentSummary.lifetimeEarned + amount
         )
 
+        addTransaction(title, description, amount, source)
+    }
+
+    private fun addTransaction(title: String, description: String, amount: Int, source: String) {
         val dateFormat = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault())
         val newTx = RewardTransaction(
             id = "tx_${System.currentTimeMillis()}_${(100..999).random()}",
@@ -529,7 +573,7 @@ class DemoRewardsDataSource(
             timestamp = dateFormat.format(Date()),
             amount = amount,
             status = RewardTransactionStatus.CONFIRMED,
-            type = RewardTransactionType.EARNED,
+            type = if (amount >= 0) RewardTransactionType.EARNED else RewardTransactionType.SPENT,
             referenceCode = "RW-${(10000..99999).random()}",
             source = source
         )
@@ -537,15 +581,16 @@ class DemoRewardsDataSource(
         _transactions.value = listOf(newTx) + _transactions.value
     }
 
-
     fun claimTask(taskId: String) {
         _tasks.value = _tasks.value.map { task ->
             if (task.id == taskId && task.status == TaskStatus.CLAIMABLE) {
+                creditDemoCoins(task.coinReward, "Task Reward", "Completed task: ${task.title}", "Tasks")
                 task.copy(status = TaskStatus.CLAIMED)
             } else {
                 task
             }
         }
+        persistState()
     }
 
     fun addDemoRedemptionRecord(option: RedemptionOption): RedemptionRecord {
@@ -560,6 +605,22 @@ class DemoRewardsDataSource(
             referenceCode = "RDM-${(10000..99999).random()}"
         )
         _redemptionHistory.value = listOf(newRecord) + _redemptionHistory.value
+
+        // Deduct coins for redemption
+        val currentSummary = _walletSummary.value
+        if (currentSummary.availableCoins >= option.coinsCost) {
+            _walletSummary.value = currentSummary.copy(
+                availableCoins = currentSummary.availableCoins - option.coinsCost
+            )
+            addTransaction(
+                title = "Reward Redemption",
+                description = "Redeemed ${option.title} (${option.monetaryValue})",
+                amount = -option.coinsCost,
+                source = "Redemption Center"
+            )
+        }
+
+        persistState()
         return newRecord
     }
 }

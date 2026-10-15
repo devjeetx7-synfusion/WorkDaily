@@ -1,9 +1,11 @@
 package com.synfusion.attendance.rewards.data
 
+import android.content.Context
 import kotlinx.coroutines.flow.StateFlow
 
 class DemoRewardsRepository(
-    private val dataSource: DemoRewardsDataSource = DemoRewardsDataSource()
+    context: Context? = null,
+    private val dataSource: DemoRewardsDataSource = DemoRewardsDataSource(context)
 ) {
     val walletSummary: StateFlow<WalletSummary> = dataSource.walletSummary
     val spinTokens: StateFlow<SpinTokenBalance> = dataSource.spinTokens

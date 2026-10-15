@@ -34,6 +34,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.synfusion.attendance.R
+import com.synfusion.attendance.rewards.audio.RewardsSoundEvent
 import com.synfusion.attendance.rewards.data.ReferralItem
 import com.synfusion.attendance.rewards.data.ReferralStatus
 import com.synfusion.attendance.rewards.ui.components.*
@@ -156,6 +157,7 @@ fun ReferAndEarnScreen(
                                                 val clip = ClipData.newPlainText("Referral Code", stats.referralCode)
                                                 clipboard.setPrimaryClip(clip)
                                                 isCopied = true
+                                                viewModel.playSound(RewardsSoundEvent.REFERRAL_COPY)
                                                 Toast.makeText(context, "Referral code copied!", Toast.LENGTH_SHORT).show()
                                             },
                                             modifier = Modifier
@@ -178,6 +180,7 @@ fun ReferAndEarnScreen(
                                                     putExtra(Intent.EXTRA_TEXT, "Join WorkDaily using my referral code: ${stats.referralCode}")
                                                     type = "text/plain"
                                                 }
+                                                viewModel.playSound(RewardsSoundEvent.BUTTON_TAP)
                                                 context.startActivity(Intent.createChooser(sendIntent, "Share Referral Code"))
                                             },
                                             modifier = Modifier
