@@ -65,6 +65,7 @@ import com.synfusion.attendance.rewards.viewmodel.RewardsViewModel
 import com.synfusion.attendance.rewards.viewmodel.RewardsViewModelFactory
 import com.synfusion.attendance.rewards.ui.screens.*
 import com.synfusion.attendance.rewards.ui.components.RewardsPurple
+import com.synfusion.attendance.rewards.ui.components.RewardCoinBalance
 import com.synfusion.attendance.data.DrillDownType
 import com.synfusion.attendance.ui.components.DrillDownBottomSheet
 import com.synfusion.attendance.ui.components.FloatingBottomNavigation
@@ -104,6 +105,7 @@ fun DashboardScreen(
     val rewardsViewModel: RewardsViewModel = viewModel(factory = RewardsViewModelFactory(context.applicationContext as android.app.Application))
 
     val dashboardState by dashboardViewModel.dashboardState.collectAsStateWithLifecycle(initialValue = OfflineDashboardState(isLoading = true))
+    val walletSummary by rewardsViewModel.walletSummary.collectAsState()
     val bottomNavController = rememberNavController()
     val navBackStackEntry by bottomNavController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route ?: "main_pager"
@@ -358,6 +360,7 @@ fun DashboardScreen(
                                                         item {
                                                             HeaderSection(
                                                                 state = dashboardState,
+                                                                coinBalance = walletSummary.totalBalance,
                                                                 onProfileClick = { bottomNavController.navigate("profile") },
                                                                 onRewardsClick = { bottomNavController.navigate("rewards_hub") }
                                                             )
@@ -394,6 +397,7 @@ fun DashboardScreen(
                                                         item {
                                                             HeaderSection(
                                                                 state = dashboardState,
+                                                                coinBalance = walletSummary.totalBalance,
                                                                 onProfileClick = { bottomNavController.navigate("profile") },
                                                                 onRewardsClick = { bottomNavController.navigate("rewards_hub") }
                                                             )
@@ -820,6 +824,7 @@ fun DashboardShimmer() {
 @Composable
 fun HeaderSection(
     state: OfflineDashboardState,
+    coinBalance: Int = 0,
     onProfileClick: () -> Unit = {},
     onRewardsClick: () -> Unit = {}
 ) {
@@ -928,7 +933,7 @@ fun HeaderSection(
                 }
             }
 
-            // Compact Rewards Entry: 🪙 Rewards >
+            // Real Coin Balance Header Pill: [WORKDAILY COIN ICON] [COIN AMOUNT] [CHEVRON]
             Surface(
                 modifier = Modifier
                     .clip(RoundedCornerShape(20.dp))
@@ -941,18 +946,17 @@ fun HeaderSection(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    Text(text = "🪙", fontSize = 13.sp)
-                    Text(
-                        text = "Rewards",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = RewardsPurple
+                    RewardCoinBalance(
+                        amount = coinBalance,
+                        fontSize = 13,
+                        textColor = RewardsPurple,
+                        coinSize = 16.dp
                     )
                     Icon(
                         imageVector = Icons.Default.ChevronRight,
-                        contentDescription = "Rewards",
+                        contentDescription = "Open Rewards Hub",
                         tint = RewardsPurple,
-                        modifier = Modifier.size(14.dp)
+                        modifier = Modifier.size(16.dp)
                     )
                 }
             }
@@ -1534,4 +1538,3 @@ fun AdaptiveNavigationRail(currentRoute: String, onNavigate: (String) -> Unit = 
         }
     }
 }
-

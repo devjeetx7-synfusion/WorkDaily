@@ -1,17 +1,16 @@
 package com.synfusion.attendance.rewards.ui.screens
 
-import kotlinx.coroutines.launch
-import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -48,7 +47,7 @@ fun getBadgeDrawableRes(iconName: String): Int {
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AchievementsScreen(
     viewModel: RewardsViewModel,
@@ -57,13 +56,22 @@ fun AchievementsScreen(
 ) {
     val achievements by viewModel.achievements.collectAsState()
     val tabs = remember { listOf("All", "Attendance", "Work", "Milestones") }
-    val pagerState = rememberPagerState(initialPage = 0, pageCount = { tabs.size })
+    var selectedCategoryIndex by remember { mutableIntStateOf(0) }
 
     val unlockedCount = remember(achievements) { achievements.count { it.isUnlocked } }
     val totalCount = achievements.size
     val completionPercent = if (totalCount > 0) (unlockedCount * 100) / totalCount else 0
 
     var selectedAchievementForSheet by remember { mutableStateOf<Achievement?>(null) }
+
+    val filteredAchievements = remember(selectedCategoryIndex, achievements) {
+        when (selectedCategoryIndex) {
+            1 -> achievements.filter { it.category == AchievementCategory.ATTENDANCE }
+            2 -> achievements.filter { it.category == AchievementCategory.WORK }
+            3 -> achievements.filter { it.category == AchievementCategory.MILESTONES }
+            else -> achievements
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -74,163 +82,121 @@ fun AchievementsScreen(
         },
         containerColor = RewardsTheme.screenBackground
     ) { paddingValues ->
-        Column(
+        // Single unified vertical grid scroll container: hero, category pills, and badge grid all scroll cohesively together
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(2),
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
+                .padding(paddingValues),
+            contentPadding = PaddingValues(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // Achievement Progress Hero Banner with Canvas Graphics
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                shape = RoundedCornerShape(24.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.Transparent)
-            ) {
-                Box(
-                    modifier = Modifier.fillMaxWidth()
+            // Header 1: Progress Hero Banner
+            item(span = { GridItemSpan(2) }) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(24.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.Transparent)
                 ) {
-                    RewardsHeroBackground(
-                        modifier = Modifier.matchParentSize(),
-                        baseGradient = RewardsPrimaryGradient,
-                        showGlow = true,
-                        glowColor = GoldBright,
-                        showSparkles = true
-                    )
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(20.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text(
-                                text = "BADGE PROGRESS",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = HighlightLavender,
-                                letterSpacing = 1.2.sp
-                            )
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Text(
-                                text = "$unlockedCount / $totalCount Unlocked ($completionPercent%)",
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = Color.White
-                            )
-                            Spacer(modifier = Modifier.height(10.dp))
-                            RewardProgressBar(
-                                progress = if (totalCount > 0) unlockedCount.toFloat() / totalCount.toFloat() else 0f,
-                                color = GoldPrimary,
-                                trackColor = Color.White.copy(alpha = 0.25f),
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = "Keep completing daily tasks to earn more badges",
-                                fontSize = 12.sp,
-                                color = Color.White.copy(alpha = 0.9f)
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.width(12.dp))
-
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier.size(125.dp)
-                        ) {
-                            RewardsRadialGlow(glowColor = GoldBright, alpha = 0.45f)
-                            Image(
-                                painter = painterResource(id = R.drawable.badge_legend),
-                                contentDescription = "Badge Trophy",
-                                modifier = Modifier.size(120.dp),
-                                contentScale = ContentScale.Fit
-                            )
-                        }
-                    }
-                }
-            }
-
-            // Category Filter Pills
-            androidx.compose.foundation.lazy.LazyRow(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(end = 16.dp)
-            ) {
-                items(tabs.size) { index ->
-                    val isSelected = pagerState.currentPage == index
-                    val coroutineScope = rememberCoroutineScope()
-                    Surface(
-                        modifier = Modifier.clickable {
-                            coroutineScope.launch {
-                                pagerState.animateScrollToPage(index)
-                            }
-                        },
-                        shape = CircleShape,
-                        color = if (isSelected) RoyalPurple else RewardsTheme.elevatedSurface,
-                        contentColor = if (isSelected) Color.White else RewardsTheme.textPrimary
-                    ) {
-                        Text(
-                            text = tabs[index],
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                            fontSize = 13.sp,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        RewardsHeroBackground(
+                            modifier = Modifier.matchParentSize(),
+                            baseGradient = RewardsPrimaryGradient,
+                            showGlow = true,
+                            glowColor = GoldBright,
+                            showSparkles = true
                         )
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(20.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "BADGE PROGRESS",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = HighlightLavender,
+                                    letterSpacing = 1.2.sp
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = "$unlockedCount / $totalCount Unlocked ($completionPercent%)",
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = Color.White
+                                )
+                                Spacer(modifier = Modifier.height(10.dp))
+                                RewardProgressBar(
+                                    progress = if (totalCount > 0) unlockedCount.toFloat() / totalCount.toFloat() else 0f,
+                                    color = GoldPrimary,
+                                    trackColor = Color.White.copy(alpha = 0.25f),
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = "Keep completing daily tasks to earn more badges",
+                                    fontSize = 12.sp,
+                                    color = Color.White.copy(alpha = 0.9f)
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.width(12.dp))
+
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier.size(125.dp)
+                            ) {
+                                RewardsRadialGlow(glowColor = GoldBright, alpha = 0.45f)
+                                Image(
+                                    painter = painterResource(id = R.drawable.badge_legend),
+                                    contentDescription = "Badge Trophy",
+                                    modifier = Modifier.size(120.dp),
+                                    contentScale = ContentScale.Fit
+                                )
+                            }
+                        }
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            // Header 2: Category Filter Pills Segmented Row
+            item(span = { GridItemSpan(2) }) {
+                RewardPillTabs(
+                    tabs = tabs,
+                    selectedIndex = selectedCategoryIndex,
+                    onTabSelected = { selectedCategoryIndex = it },
+                    modifier = Modifier.padding(vertical = 4.dp)
+                )
+            }
 
-            HorizontalPager(
-                state = pagerState,
-                modifier = Modifier.fillMaxSize()
-            ) { pageIndex ->
-                val filteredAchievements = remember(pageIndex, achievements) {
-                    when (pageIndex) {
-                        1 -> achievements.filter { it.category == AchievementCategory.ATTENDANCE }
-                        2 -> achievements.filter { it.category == AchievementCategory.WORK }
-                        3 -> achievements.filter { it.category == AchievementCategory.MILESTONES }
-                        else -> achievements
-                    }
-                }
-
-                if (filteredAchievements.isEmpty()) {
+            if (filteredAchievements.isEmpty()) {
+                item(span = { GridItemSpan(2) }) {
                     RewardEmptyState(
-                        title = "No ${tabs[pageIndex]} Badges",
+                        title = "No ${tabs[selectedCategoryIndex]} Badges",
                         description = "Achievements in this category will appear as you progress."
                     )
-                } else {
-                    LazyVerticalGrid(
-                        columns = GridCells.Fixed(2),
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(14.dp),
-                        verticalArrangement = Arrangement.spacedBy(14.dp)
-                    ) {
-                        items(filteredAchievements, key = { it.id }) { achievement ->
-                            RewardBadgeCard(
-                                achievement = achievement,
-                                drawableRes = getBadgeDrawableRes(achievement.iconName),
-                                onClick = {
-                                    viewModel.selectAchievement(achievement)
-                                    selectedAchievementForSheet = achievement
-                                    onSelectAchievement(achievement)
-                                }
-                            )
+                }
+            } else {
+                items(filteredAchievements, key = { it.id }) { achievement ->
+                    RewardBadgeCard(
+                        achievement = achievement,
+                        drawableRes = getBadgeDrawableRes(achievement.iconName),
+                        onClick = {
+                            viewModel.selectAchievement(achievement)
+                            selectedAchievementForSheet = achievement
+                            onSelectAchievement(achievement)
                         }
-                    }
+                    )
                 }
             }
         }
 
-        // Custom Modal Bottom Sheet directly over achievements grid without extra scaffold or duplicate header
+        // Custom Modal Bottom Sheet directly over achievements screen (preserves screen state underneath without extra blank activity)
         val currentSheetAchievement = selectedAchievementForSheet
         if (currentSheetAchievement != null) {
             val drawableRes = getBadgeDrawableRes(currentSheetAchievement.iconName)

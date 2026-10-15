@@ -2,18 +2,15 @@ package com.synfusion.attendance.rewards.ui.screens
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.VolumeMute
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.*
@@ -29,12 +26,10 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.nativeCanvas
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.synfusion.attendance.R
 import com.synfusion.attendance.rewards.audio.RewardsSoundEvent
 import com.synfusion.attendance.rewards.data.*
 import com.synfusion.attendance.rewards.ui.components.*
@@ -60,6 +55,7 @@ fun ConstructionSpinScreen(
     var isSpinning by remember { mutableStateOf(false) }
     var selectedWinningSegment by remember { mutableStateOf<SpinWheelSegment?>(null) }
     var showResultSheet by remember { mutableStateOf(false) }
+    var showPossibleRewardsSheet by remember { mutableStateOf(false) }
 
     val rotationAnim = remember { Animatable(0f) }
 
@@ -95,7 +91,6 @@ fun ConstructionSpinScreen(
                     easing = FastOutSlowInEasing
                 )
             ) {
-                // Calculate current sector under top pointer (270 deg)
                 val currentDegree = (value % 360f)
                 val effectivePointerAngle = (360f + 270f - currentDegree) % 360f
                 val currentSectorIndex = (effectivePointerAngle / degreesPerSegment).toInt() % segmentCount
@@ -122,6 +117,13 @@ fun ConstructionSpinScreen(
                 title = "Builder's Spin Wheel",
                 onNavigateBack = onNavigateBack,
                 actions = {
+                    IconButton(onClick = { showPossibleRewardsSheet = true }) {
+                        Icon(
+                            imageVector = Icons.Default.Info,
+                            contentDescription = "Possible Rewards Info",
+                            tint = RoyalPurple
+                        )
+                    }
                     IconButton(onClick = {
                         viewModel.updateAudioSettings(audioSettings.copy(isSoundEnabled = !audioSettings.isSoundEnabled))
                     }) {
@@ -174,35 +176,35 @@ fun ConstructionSpinScreen(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Spin and collect WorkDaily Demo Rewards!",
+                    text = "Spin and collect WorkDaily Rewards!",
                     fontSize = 13.sp,
                     color = RewardsTheme.textSecondary
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
-                // Available Spins Pill
+                // Available Spins Capsule Indicator
                 Surface(
                     shape = RoundedCornerShape(20.dp),
                     color = RoyalPurple,
                     contentColor = Color.White
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        modifier = Modifier.padding(horizontal = 18.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Text(
-                            text = "Available Spins: ${spinTokens.availableSpins}",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold
+                            text = "AVAILABLE SPINS: ${spinTokens.availableSpins}",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = 0.5.sp
                         )
-                        Text(text = "🎯", fontSize = 14.sp)
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             // Canvas Spin Wheel Container
             Box(
@@ -352,14 +354,16 @@ fun ConstructionSpinScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(28.dp))
 
             // Action Button
             if (spinTokens.availableSpins > 0) {
                 RewardPrimaryButton(
-                    text = if (isSpinning) "SPINNING..." else "SPIN NOW 🎯",
+                    text = if (isSpinning) "SPINNING..." else "SPIN NOW",
                     onClick = { startSpin() },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
                     enabled = !isSpinning,
                     containerColor = RoyalPurple,
                     contentColor = Color.White
@@ -374,7 +378,7 @@ fun ConstructionSpinScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp),
+                            .padding(18.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
@@ -393,18 +397,38 @@ fun ConstructionSpinScreen(
                     }
                 }
             }
+        }
+    }
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Possible Rewards Section (8 Prize Showcase Cards)
-            Column(modifier = Modifier.fillMaxWidth()) {
+    // Possible Rewards Info Bottom Sheet Overlay
+    if (showPossibleRewardsSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showPossibleRewardsSheet = false },
+            containerColor = RewardsTheme.cardBackground,
+            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+            windowInsets = WindowInsets(0.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
                 Text(
                     text = "Possible Rewards",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.ExtraBold,
                     color = RewardsTheme.textPrimary
                 )
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Spin the wheel to earn construction rewards & bonus coins",
+                    fontSize = 13.sp,
+                    color = RewardsTheme.textSecondary,
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(18.dp))
 
                 val rowItems = segments.chunked(2)
                 rowItems.forEach { pair ->
@@ -418,11 +442,11 @@ fun ConstructionSpinScreen(
                             Card(
                                 modifier = Modifier.weight(1f),
                                 shape = RoundedCornerShape(14.dp),
-                                colors = CardDefaults.cardColors(containerColor = RewardsTheme.cardBackground),
+                                colors = CardDefaults.cardColors(containerColor = RewardsTheme.elevatedSurface),
                                 border = androidx.compose.foundation.BorderStroke(1.dp, RewardsTheme.softBorder)
                             ) {
                                 Row(
-                                    modifier = Modifier.padding(10.dp),
+                                    modifier = Modifier.padding(12.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                                 ) {
@@ -455,11 +479,11 @@ fun ConstructionSpinScreen(
                                         )
                                         Text(
                                             text = when (val r = seg.rewardType) {
-                                                is SpinRewardType.Coins -> "+${r.amount} Demo Coins"
-                                                is SpinRewardType.BonusSpin -> "+1 Bonus Spin Token"
+                                                is SpinRewardType.Coins -> "+${r.amount} Coins"
+                                                is SpinRewardType.BonusSpin -> "+1 Bonus Spin"
                                             },
                                             fontSize = 11.sp,
-                                            fontWeight = FontWeight.Medium,
+                                            fontWeight = FontWeight.ExtraBold,
                                             color = RoyalPurple
                                         )
                                     }
@@ -468,6 +492,16 @@ fun ConstructionSpinScreen(
                         }
                     }
                 }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                RewardPrimaryButton(
+                    text = "Close",
+                    onClick = { showPossibleRewardsSheet = false },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp)
+                )
             }
         }
     }
@@ -478,7 +512,8 @@ fun ConstructionSpinScreen(
         ModalBottomSheet(
             onDismissRequest = { showResultSheet = false },
             containerColor = RewardsTheme.cardBackground,
-            shape = RoundedCornerShape(topStart = 26.dp, topEnd = 26.dp)
+            shape = RoundedCornerShape(topStart = 26.dp, topEnd = 26.dp),
+            windowInsets = WindowInsets(0.dp)
         ) {
             Column(
                 modifier = Modifier
@@ -512,7 +547,7 @@ fun ConstructionSpinScreen(
                 Spacer(modifier = Modifier.height(14.dp))
 
                 Text(
-                    text = "CONGRATULATIONS! 🎉",
+                    text = "CONGRATULATIONS!",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Black,
                     color = RewardsTheme.textPrimary
@@ -530,12 +565,12 @@ fun ConstructionSpinScreen(
                                 textColor = RewardsSuccessGreen,
                                 coinSize = 20.dp
                             )
-                            Text(text = " DEMO COINS!", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = RewardsTheme.textPrimary)
+                            Text(text = " COINS!", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = RewardsTheme.textPrimary)
                         }
                     }
                     is SpinRewardType.BonusSpin -> {
                         Text(
-                            text = "YOU WON +1 BONUS SPIN TOKEN! 🎯",
+                            text = "YOU WON +1 BONUS SPIN TOKEN!",
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
                             color = RoyalPurple
@@ -557,7 +592,7 @@ fun ConstructionSpinScreen(
 
                     if (spinTokens.availableSpins > 0) {
                         RewardPrimaryButton(
-                            text = "SPIN AGAIN 🎯",
+                            text = "SPIN AGAIN",
                             onClick = {
                                 showResultSheet = false
                                 startSpin()
