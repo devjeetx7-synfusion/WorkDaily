@@ -9,6 +9,49 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.unit.dp
 
+val TelegramIcon: ImageVector
+    get() = ImageVector.Builder(
+        name = "Telegram",
+        defaultWidth = 24.dp,
+        defaultHeight = 24.dp,
+        viewportWidth = 24f,
+        viewportHeight = 24f
+    ).apply {
+        path(
+            fill = SolidColor(Color.Black),
+            fillAlpha = 1.0f,
+            stroke = null,
+            strokeAlpha = 1.0f,
+            strokeLineWidth = 1.0f,
+            strokeLineCap = StrokeCap.Butt,
+            strokeLineJoin = StrokeJoin.Miter,
+            strokeLineMiter = 1.0f,
+            pathFillType = PathFillType.NonZero
+        ) {
+            moveTo(12f, 0f)
+            curveTo(5.373f, 0f, 0f, 5.373f, 0f, 12f)
+            curveTo(0f, 18.627f, 5.373f, 24f, 12f, 24f)
+            curveTo(18.627f, 24f, 24f, 18.627f, 24f, 12f)
+            curveTo(24f, 5.373f, 18.627f, 0f, 12f, 0f)
+            close()
+            moveTo(17.893f, 7.828f)
+            lineTo(15.932f, 17.072f)
+            curveTo(15.784f, 17.728f, 15.393f, 17.891f, 14.843f, 17.582f)
+            lineTo(11.854f, 15.379f)
+            lineTo(10.412f, 16.767f)
+            curveTo(10.252f, 16.927f, 10.119f, 17.06f, 9.811f, 17.06f)
+            lineTo(10.025f, 14.02f)
+            lineTo(15.558f, 9.022f)
+            curveTo(15.799f, 8.807f, 15.505f, 8.688f, 15.184f, 8.902f)
+            lineTo(8.344f, 13.208f)
+            lineTo(5.397f, 12.287f)
+            curveTo(4.756f, 12.087f, 4.743f, 11.646f, 5.531f, 11.338f)
+            lineTo(17.042f, 6.899f)
+            curveTo(17.575f, 6.708f, 18.041f, 7.028f, 17.893f, 7.828f)
+            close()
+        }
+    }.build()
+
 val InstagramIcon: ImageVector
     get() = ImageVector.Builder(
         name = "Instagram",

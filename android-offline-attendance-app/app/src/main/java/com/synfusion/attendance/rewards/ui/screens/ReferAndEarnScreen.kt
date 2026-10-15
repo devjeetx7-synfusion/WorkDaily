@@ -9,6 +9,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -19,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -26,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -39,7 +42,11 @@ import com.synfusion.attendance.rewards.data.ReferralItem
 import com.synfusion.attendance.rewards.data.ReferralStatus
 import com.synfusion.attendance.rewards.ui.components.*
 import com.synfusion.attendance.rewards.viewmodel.RewardsViewModel
+import com.synfusion.attendance.ui.components.InstagramIcon
+import com.synfusion.attendance.ui.components.TelegramIcon
+import com.synfusion.attendance.ui.components.WhatsAppIcon
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReferAndEarnScreen(
     viewModel: RewardsViewModel,
@@ -50,6 +57,38 @@ fun ReferAndEarnScreen(
     val referrals by viewModel.referrals.collectAsState()
     val context = LocalContext.current
     var isCopied by remember { mutableStateOf(false) }
+
+    var inputReferralCode by remember { mutableStateOf("") }
+    var isSubmittingCode by remember { mutableStateOf(false) }
+    var codeError by remember { mutableStateOf<String?>(null) }
+    var showCodeSuccessSheet by remember { mutableStateOf(false) }
+
+    fun shareMessage(targetPackage: String? = null) {
+        val shareText = "Join me on WorkDaily! Track attendance, wages, overtime, and earnings easily. Use my referral code: ${stats.referralCode}. Download WorkDaily: https://play.google.com/store/apps/details?id=com.synfusion.attendance"
+        val intent = Intent().apply {
+            action = Intent.ACTION_SEND
+            putExtra(Intent.EXTRA_TEXT, shareText)
+            type = "text/plain"
+            if (targetPackage != null) {
+                setPackage(targetPackage)
+            }
+        }
+        viewModel.playSound(RewardsSoundEvent.BUTTON_TAP)
+        try {
+            if (targetPackage != null) {
+                context.startActivity(intent)
+            } else {
+                context.startActivity(Intent.createChooser(intent, "Share Invite Link"))
+            }
+        } catch (e: Exception) {
+            val fallbackChooser = Intent().apply {
+                action = Intent.ACTION_SEND
+                putExtra(Intent.EXTRA_TEXT, shareText)
+                type = "text/plain"
+            }
+            context.startActivity(Intent.createChooser(fallbackChooser, "Share Invite Link"))
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -67,7 +106,7 @@ fun ReferAndEarnScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            // Referral Hero Card
+            // 1. Premium Referral Hero
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -95,7 +134,7 @@ fun ReferAndEarnScreen(
                             Spacer(modifier = Modifier.height(14.dp))
 
                             Text(
-                                text = "Invite Friends. Earn Together.",
+                                text = "Invite Friends, Earn Together",
                                 fontSize = 22.sp,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = Color.White,
@@ -105,105 +144,18 @@ fun ReferAndEarnScreen(
                             Spacer(modifier = Modifier.height(6.dp))
 
                             Text(
-                                text = "Share your referral code with fellow workers and contractors to earn bonus WorkDaily Coins.",
+                                text = "Share WorkDaily and earn rewards when your friends qualify.",
                                 fontSize = 13.sp,
                                 color = HighlightLavender,
                                 textAlign = TextAlign.Center,
                                 lineHeight = 18.sp
                             )
-
-                            Spacer(modifier = Modifier.height(20.dp))
-
-                            // Coupon Ticket Box for Referral Code
-                            Card(
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(16.dp),
-                                colors = CardDefaults.cardColors(containerColor = RewardsTheme.cardBackground),
-                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                                border = androidx.compose.foundation.BorderStroke(1.5.dp, GoldPrimary)
-                            ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 18.dp, vertical = 14.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Column {
-                                        Text(
-                                            text = "YOUR REFERRAL CODE",
-                                            fontSize = 10.sp,
-                                            fontWeight = FontWeight.ExtraBold,
-                                            color = RewardsTheme.textSecondary,
-                                            letterSpacing = 1.2.sp
-                                        )
-                                        Spacer(modifier = Modifier.height(2.dp))
-                                        Text(
-                                            text = stats.referralCode,
-                                            fontSize = 24.sp,
-                                            fontWeight = FontWeight.Black,
-                                            color = DeepIndigo,
-                                            letterSpacing = 1.sp
-                                        )
-                                    }
-
-                                    Row(
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        IconButton(
-                                            onClick = {
-                                                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                                                val clip = ClipData.newPlainText("Referral Code", stats.referralCode)
-                                                clipboard.setPrimaryClip(clip)
-                                                isCopied = true
-                                                viewModel.playSound(RewardsSoundEvent.REFERRAL_COPY)
-                                                Toast.makeText(context, "Referral code copied!", Toast.LENGTH_SHORT).show()
-                                            },
-                                            modifier = Modifier
-                                                .size(42.dp)
-                                                .clip(CircleShape)
-                                                .background(RewardsTheme.elevatedSurface)
-                                        ) {
-                                            Icon(
-                                                imageVector = if (isCopied) Icons.Default.Check else Icons.Default.ContentCopy,
-                                                contentDescription = "Copy Code",
-                                                tint = if (isCopied) RewardsSuccessGreen else RoyalPurple,
-                                                modifier = Modifier.size(20.dp)
-                                            )
-                                        }
-
-                                        IconButton(
-                                            onClick = {
-                                                val sendIntent = Intent().apply {
-                                                    action = Intent.ACTION_SEND
-                                                    putExtra(Intent.EXTRA_TEXT, "Join WorkDaily using my referral code: ${stats.referralCode}")
-                                                    type = "text/plain"
-                                                }
-                                                viewModel.playSound(RewardsSoundEvent.BUTTON_TAP)
-                                                context.startActivity(Intent.createChooser(sendIntent, "Share Referral Code"))
-                                            },
-                                            modifier = Modifier
-                                                .size(42.dp)
-                                                .clip(CircleShape)
-                                                .background(RoyalPurple)
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.Share,
-                                                contentDescription = "Share",
-                                                tint = Color.White,
-                                                modifier = Modifier.size(20.dp)
-                                            )
-                                        }
-                                    }
-                                }
-                            }
                         }
                     }
                 }
             }
 
-            // Stats Row Summary
+            // 2. Referral Statistics Cards
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -219,9 +171,8 @@ fun ReferAndEarnScreen(
                         horizontalArrangement = Arrangement.SpaceEvenly,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        StatColumn("${stats.invitedCount}", "Invited")
-                        StatColumn("${stats.rewardedCount}", "Rewarded", RewardsSuccessGreen)
-                        StatColumn("${stats.pendingCount}", "Pending", StatusOrange)
+                        StatColumn("${stats.invitedCount}", "Total Invited")
+                        StatColumn("${stats.rewardedCount}", "Successful", RewardsSuccessGreen)
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             RewardCoinBalance(
                                 amount = stats.totalCoinsEarned,
@@ -230,19 +181,211 @@ fun ReferAndEarnScreen(
                                 coinSize = 18.dp
                             )
                             Spacer(modifier = Modifier.height(2.dp))
-                            Text("Total Earned", fontSize = 11.sp, color = RewardsTheme.textSecondary)
+                            Text("Coins Earned", fontSize = 11.sp, color = RewardsTheme.textSecondary)
                         }
                     }
                 }
             }
 
-            // How It Works - Vertical Timeline
+            // 3. Your Referral Code
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(20.dp),
                     colors = CardDefaults.cardColors(containerColor = RewardsTheme.cardBackground),
                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.5.dp, GoldPrimary)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(18.dp),
+                        verticalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        Text(
+                            text = "Your Referral Code",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = RewardsTheme.textPrimary
+                        )
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(RewardsTheme.elevatedSurface)
+                                .border(1.dp, RewardsTheme.softBorder, RoundedCornerShape(14.dp))
+                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = stats.referralCode,
+                                fontSize = 22.sp,
+                                fontWeight = FontWeight.Black,
+                                color = DeepIndigo,
+                                letterSpacing = 1.2.sp
+                            )
+
+                            Button(
+                                onClick = {
+                                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                                    val clip = ClipData.newPlainText("Referral Code", stats.referralCode)
+                                    clipboard.setPrimaryClip(clip)
+                                    isCopied = true
+                                    viewModel.playSound(RewardsSoundEvent.REFERRAL_COPY)
+                                    Toast.makeText(context, "Referral code copied!", Toast.LENGTH_SHORT).show()
+                                },
+                                shape = RoundedCornerShape(10.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (isCopied) RewardsSuccessGreen else RoyalPurple
+                                ),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
+                                Icon(
+                                    imageVector = if (isCopied) Icons.Default.Check else Icons.Default.ContentCopy,
+                                    contentDescription = "Copy",
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = if (isCopied) "COPIED" else "COPY",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+
+                        // Primary Invite Button
+                        RewardPrimaryButton(
+                            text = "Invite Friends",
+                            onClick = { shareMessage(null) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(50.dp),
+                            containerColor = RoyalPurple,
+                            contentColor = Color.White,
+                            icon = Icons.Default.Share
+                        )
+
+                        // Dedicated Social Sharing Buttons Row
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            SocialShareButton(
+                                name = "WhatsApp",
+                                icon = WhatsAppIcon,
+                                iconTint = Color(0xFF25D366),
+                                onClick = { shareMessage("com.whatsapp") },
+                                modifier = Modifier.weight(1f)
+                            )
+                            SocialShareButton(
+                                name = "Instagram",
+                                icon = InstagramIcon,
+                                iconTint = Color(0xFFE4405F),
+                                onClick = { shareMessage("com.instagram.android") },
+                                modifier = Modifier.weight(1f)
+                            )
+                            SocialShareButton(
+                                name = "Telegram",
+                                icon = TelegramIcon,
+                                iconTint = Color(0xFF229ED9),
+                                onClick = { shareMessage("org.telegram.messenger") },
+                                modifier = Modifier.weight(1f)
+                            )
+                            SocialShareButton(
+                                name = "More",
+                                icon = Icons.Default.Share,
+                                iconTint = RoyalPurple,
+                                onClick = { shareMessage(null) },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
+                }
+            }
+
+            // 4. Enter Referral Code Section
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = RewardsTheme.cardBackground),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, RewardsTheme.softBorder)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(18.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(
+                            text = "Have a Referral Code?",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = RewardsTheme.textPrimary
+                        )
+                        Text(
+                            text = "Enter your friend's code to connect your referral.",
+                            fontSize = 12.sp,
+                            color = RewardsTheme.textSecondary
+                        )
+
+                        OutlinedTextField(
+                            value = inputReferralCode,
+                            onValueChange = {
+                                inputReferralCode = it.uppercase()
+                                codeError = null
+                            },
+                            placeholder = { Text("e.g. WD7X29") },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            singleLine = true,
+                            isError = codeError != null
+                        )
+
+                        if (codeError != null) {
+                            Text(
+                                text = codeError!!,
+                                fontSize = 12.sp,
+                                color = StatusRed,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+
+                        Button(
+                            onClick = {
+                                val trimmed = inputReferralCode.trim()
+                                if (trimmed.isEmpty()) {
+                                    codeError = "Please enter a referral code."
+                                } else if (trimmed.equals(stats.referralCode, ignoreCase = true)) {
+                                    codeError = "You cannot enter your own referral code."
+                                } else {
+                                    isSubmittingCode = true
+                                    viewModel.playSound(RewardsSoundEvent.BUTTON_TAP)
+                                    // Simulated secure validation
+                                    showCodeSuccessSheet = true
+                                    isSubmittingCode = false
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth().height(48.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = DeepIndigo),
+                            enabled = !isSubmittingCode
+                        ) {
+                            if (isSubmittingCode) {
+                                CircularProgressIndicator(modifier = Modifier.size(20.dp), color = Color.White)
+                            } else {
+                                Text(text = "Apply Code", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 5. How It Works - Step-by-Step Modern Timeline
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = RewardsTheme.cardBackground),
                     border = androidx.compose.foundation.BorderStroke(1.dp, RewardsTheme.softBorder)
                 ) {
                     Column(
@@ -256,15 +399,15 @@ fun ReferAndEarnScreen(
                             color = RewardsTheme.textPrimary
                         )
 
-                        TimelineStep(1, "Share your code", "Send code to contractor or worker peers", isLast = false)
-                        TimelineStep(2, "Friend joins WorkDaily", "They register their workspace using your code", isLast = false)
-                        TimelineStep(3, "Friend qualifies", "They complete initial attendance and work logs", isLast = false)
-                        TimelineStep(4, "Reward confirmed", "Both receive +🪙100 confirmed reward coins!", isLast = true)
+                        TimelineStep(1, "Share Your Code", "Invite a friend using your referral link or code.", isLast = false)
+                        TimelineStep(2, "Your Friend Joins", "Your friend joins WorkDaily and enters your valid referral code.", isLast = false)
+                        TimelineStep(3, "Complete Requirements", "Your friend completes initial attendance logs.", isLast = false)
+                        TimelineStep(4, "Earn Your Coins", "Approved rewards are credited according to referral rules.", isLast = true)
                     }
                 }
             }
 
-            // Recent Referrals Header
+            // 6. Recent Referrals Header
             item {
                 RewardsSectionHeader(
                     title = "Recent Referrals",
@@ -278,9 +421,93 @@ fun ReferAndEarnScreen(
             }
         }
     }
+
+    // Success Dialog Sheet for Referral Code Entry
+    if (showCodeSuccessSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showCodeSuccessSheet = false },
+            containerColor = RewardsTheme.cardBackground,
+            shape = RoundedCornerShape(topStart = 26.dp, topEnd = 26.dp),
+            windowInsets = WindowInsets(0.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(64.dp)
+                        .clip(CircleShape)
+                        .background(RewardsSuccessGreen.copy(alpha = 0.15f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(imageVector = Icons.Default.Check, contentDescription = null, tint = RewardsSuccessGreen, modifier = Modifier.size(36.dp))
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                Text(
+                    text = "Referral Code Applied!",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Black,
+                    color = RewardsTheme.textPrimary
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Text(
+                    text = "Your referral link has been recorded. Rewards will be credited upon qualification.",
+                    fontSize = 13.sp,
+                    color = RewardsTheme.textSecondary,
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                RewardPrimaryButton(
+                    text = "DONE",
+                    onClick = {
+                        showCodeSuccessSheet = false
+                        inputReferralCode = ""
+                    },
+                    modifier = Modifier.fillMaxWidth().height(50.dp)
+                )
+            }
+        }
+    }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun SocialShareButton(
+    name: String,
+    icon: ImageVector,
+    iconTint: Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier
+            .height(56.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .clickable { onClick() },
+        color = RewardsTheme.elevatedSurface,
+        border = androidx.compose.foundation.BorderStroke(1.dp, RewardsTheme.softBorder)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(imageVector = icon, contentDescription = name, tint = iconTint, modifier = Modifier.size(20.dp))
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(text = name, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = RewardsTheme.textPrimary)
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun ReferralHistoryScreen(
     viewModel: RewardsViewModel,
@@ -410,6 +637,13 @@ private fun ReferralRowItem(referral: ReferralItem) {
         ReferralStatus.NOT_QUALIFIED -> StatusRed
     }
 
+    val initials = if (referral.name.contains(" ")) {
+        val parts = referral.name.split(" ")
+        "${parts[0].take(1)}${parts[1].take(1)}".uppercase()
+    } else {
+        referral.name.take(2).uppercase()
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -424,20 +658,43 @@ private fun ReferralRowItem(referral: ReferralItem) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
-                Text(
-                    text = referral.name,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = RewardsTheme.textPrimary
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = referral.date,
-                    fontSize = 12.sp,
-                    color = RewardsTheme.textSecondary
-                )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.weight(1f)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(RoyalPurple.copy(alpha = 0.12f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = initials,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = RoyalPurple
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Column {
+                    Text(
+                        text = referral.name,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = RewardsTheme.textPrimary
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "Joined: ${referral.date}",
+                        fontSize = 12.sp,
+                        color = RewardsTheme.textSecondary
+                    )
+                }
             }
+
             Column(horizontalAlignment = Alignment.End) {
                 RewardCoinBalance(
                     amount = referral.rewardCoins,
