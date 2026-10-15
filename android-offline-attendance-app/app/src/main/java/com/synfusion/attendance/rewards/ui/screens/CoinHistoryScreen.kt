@@ -45,14 +45,13 @@ fun CoinHistoryScreen(
                 onNavigateBack = onNavigateBack
             )
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = RewardsTheme.screenBackground
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Custom Synchronized Swipeable Tab Bar
             RewardTabRow(
                 tabs = tabs,
                 pagerState = pagerState
@@ -113,7 +112,7 @@ fun TransactionDetailScreen(
                 onNavigateBack = onNavigateBack
             )
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = RewardsTheme.screenBackground
     ) { paddingValues ->
         val tx = transaction
         if (tx == null) {
@@ -123,7 +122,7 @@ fun TransactionDetailScreen(
             )
         } else {
             val statusColor = when (tx.status) {
-                RewardTransactionStatus.CONFIRMED, RewardTransactionStatus.COMPLETED -> StatusGreen
+                RewardTransactionStatus.CONFIRMED, RewardTransactionStatus.COMPLETED -> RewardsSuccessGreen
                 RewardTransactionStatus.PENDING -> StatusOrange
                 RewardTransactionStatus.REVERSED, RewardTransactionStatus.REJECTED -> StatusRed
             }
@@ -138,8 +137,8 @@ fun TransactionDetailScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
+                    colors = CardDefaults.cardColors(containerColor = RewardsTheme.cardBackground),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, RewardsTheme.softBorder)
                 ) {
                     Column(
                         modifier = Modifier
@@ -151,7 +150,7 @@ fun TransactionDetailScreen(
                             text = tx.title,
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = RewardsTheme.textPrimary
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         RewardCoinBalance(
@@ -169,8 +168,8 @@ fun TransactionDetailScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
+                    colors = CardDefaults.cardColors(containerColor = RewardsTheme.cardBackground),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, RewardsTheme.softBorder)
                 ) {
                     Column(
                         modifier = Modifier.padding(16.dp),
@@ -188,8 +187,8 @@ fun TransactionDetailScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Column {
-                                    Text("Reference Code", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    Text(tx.referenceCode, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                                    Text("Reference Code", fontSize = 12.sp, color = RewardsTheme.textSecondary)
+                                    Text(tx.referenceCode, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = RewardsTheme.textPrimary)
                                 }
                                 IconButton(onClick = {
                                     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
@@ -197,7 +196,7 @@ fun TransactionDetailScreen(
                                     clipboard.setPrimaryClip(clip)
                                     Toast.makeText(context, "Copied reference code!", Toast.LENGTH_SHORT).show()
                                 }) {
-                                    Icon(Icons.Default.ContentCopy, contentDescription = "Copy", tint = RewardsPurple)
+                                    Icon(Icons.Default.ContentCopy, contentDescription = "Copy", tint = RoyalPurple)
                                 }
                             }
                         }
@@ -211,8 +210,8 @@ fun TransactionDetailScreen(
 @Composable
 private fun DetailRow(label: String, value: String) {
     Column {
-        Text(text = label, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(text = label, fontSize = 12.sp, color = RewardsTheme.textSecondary)
         Spacer(modifier = Modifier.height(2.dp))
-        Text(text = value, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface)
+        Text(text = value, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = RewardsTheme.textPrimary)
     }
 }

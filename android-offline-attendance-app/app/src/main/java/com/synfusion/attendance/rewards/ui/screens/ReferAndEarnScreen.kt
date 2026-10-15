@@ -57,7 +57,7 @@ fun ReferAndEarnScreen(
                 onNavigateBack = onNavigateBack
             )
         },
-        containerColor = RewardsScreenBg
+        containerColor = RewardsTheme.screenBackground
     ) { paddingValues ->
         LazyColumn(
             modifier = Modifier
@@ -117,7 +117,7 @@ fun ReferAndEarnScreen(
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(16.dp),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                colors = CardDefaults.cardColors(containerColor = RewardsTheme.cardBackground),
                                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                                 border = androidx.compose.foundation.BorderStroke(1.5.dp, GoldPrimary)
                             ) {
@@ -133,7 +133,7 @@ fun ReferAndEarnScreen(
                                             text = "YOUR REFERRAL CODE",
                                             fontSize = 10.sp,
                                             fontWeight = FontWeight.ExtraBold,
-                                            color = RewardsTextSecondary,
+                                            color = RewardsTheme.textSecondary,
                                             letterSpacing = 1.2.sp
                                         )
                                         Spacer(modifier = Modifier.height(2.dp))
@@ -161,7 +161,7 @@ fun ReferAndEarnScreen(
                                             modifier = Modifier
                                                 .size(42.dp)
                                                 .clip(CircleShape)
-                                                .background(RewardsLavenderSurface)
+                                                .background(RewardsTheme.elevatedSurface)
                                         ) {
                                             Icon(
                                                 imageVector = if (isCopied) Icons.Default.Check else Icons.Default.ContentCopy,
@@ -205,9 +205,9 @@ fun ReferAndEarnScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    colors = CardDefaults.cardColors(containerColor = RewardsTheme.cardBackground),
                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFF1F5F9))
+                    border = androidx.compose.foundation.BorderStroke(1.dp, RewardsTheme.softBorder)
                 ) {
                     Row(
                         modifier = Modifier
@@ -227,7 +227,7 @@ fun ReferAndEarnScreen(
                                 coinSize = 18.dp
                             )
                             Spacer(modifier = Modifier.height(2.dp))
-                            Text("Total Earned", fontSize = 11.sp, color = RewardsTextSecondary)
+                            Text("Total Earned", fontSize = 11.sp, color = RewardsTheme.textSecondary)
                         }
                     }
                 }
@@ -238,9 +238,9 @@ fun ReferAndEarnScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    colors = CardDefaults.cardColors(containerColor = RewardsTheme.cardBackground),
                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFF1F5F9))
+                    border = androidx.compose.foundation.BorderStroke(1.dp, RewardsTheme.softBorder)
                 ) {
                     Column(
                         modifier = Modifier.padding(20.dp),
@@ -250,7 +250,7 @@ fun ReferAndEarnScreen(
                             text = "How It Works",
                             fontSize = 17.sp,
                             fontWeight = FontWeight.Bold,
-                            color = RewardsTextPrimary
+                            color = RewardsTheme.textPrimary
                         )
 
                         TimelineStep(1, "Share your code", "Send code to contractor or worker peers", isLast = false)
@@ -294,7 +294,7 @@ fun ReferralHistoryScreen(
                 onNavigateBack = onNavigateBack
             )
         },
-        containerColor = RewardsScreenBg
+        containerColor = RewardsTheme.screenBackground
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -343,11 +343,11 @@ fun ReferralHistoryScreen(
 }
 
 @Composable
-private fun StatColumn(value: String, label: String, color: Color = RewardsTextPrimary) {
+private fun StatColumn(value: String, label: String, color: Color = RewardsTheme.textPrimary) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(value, fontSize = 17.sp, fontWeight = FontWeight.ExtraBold, color = color)
         Spacer(modifier = Modifier.height(2.dp))
-        Text(label, fontSize = 11.sp, color = RewardsTextSecondary)
+        Text(label, fontSize = 11.sp, color = RewardsTheme.textSecondary)
     }
 }
 
@@ -362,7 +362,7 @@ private fun TimelineStep(stepNumber: Int, title: String, description: String, is
                 modifier = Modifier
                     .size(32.dp)
                     .clip(CircleShape)
-                    .background(RewardsLavenderSurface),
+                    .background(RewardsTheme.elevatedSurface),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -387,13 +387,13 @@ private fun TimelineStep(stepNumber: Int, title: String, description: String, is
                 text = title,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
-                color = RewardsTextPrimary
+                color = RewardsTheme.textPrimary
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = description,
                 fontSize = 12.sp,
-                color = RewardsTextSecondary
+                color = RewardsTheme.textSecondary
             )
         }
     }
@@ -410,9 +410,9 @@ private fun ReferralRowItem(referral: ReferralItem) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = RewardsTheme.cardBackground),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFF1F5F9))
+        border = androidx.compose.foundation.BorderStroke(1.dp, RewardsTheme.softBorder)
     ) {
         Row(
             modifier = Modifier
@@ -426,13 +426,13 @@ private fun ReferralRowItem(referral: ReferralItem) {
                     text = referral.name,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
-                    color = RewardsTextPrimary
+                    color = RewardsTheme.textPrimary
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = referral.date,
                     fontSize = 12.sp,
-                    color = RewardsTextSecondary
+                    color = RewardsTheme.textSecondary
                 )
             }
             Column(horizontalAlignment = Alignment.End) {

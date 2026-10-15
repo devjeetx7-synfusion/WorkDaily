@@ -16,8 +16,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.synfusion.attendance.rewards.ui.components.RewardsPurple
+import com.synfusion.attendance.rewards.ui.components.RewardsTheme
 import com.synfusion.attendance.rewards.ui.components.RewardsTopAppBar
+import com.synfusion.attendance.rewards.ui.components.RoyalPurple
 
 data class FAQItem(val question: String, val answer: String)
 
@@ -73,7 +74,7 @@ fun RewardsInfoScreen(
                 onNavigateBack = onNavigateBack
             )
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = RewardsTheme.screenBackground
     ) { paddingValues ->
         LazyColumn(
             modifier = Modifier
@@ -97,9 +98,9 @@ private fun FAQCard(faq: FAQItem) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable { expanded = !expanded },
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = RewardsTheme.cardBackground),
+        border = androidx.compose.foundation.BorderStroke(1.dp, RewardsTheme.softBorder)
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
@@ -113,13 +114,13 @@ private fun FAQCard(faq: FAQItem) {
                     text = faq.question,
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = RewardsTheme.textPrimary,
                     modifier = Modifier.weight(1f)
                 )
                 Icon(
                     imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                     contentDescription = null,
-                    tint = RewardsPurple
+                    tint = RoyalPurple
                 )
             }
 
@@ -129,7 +130,7 @@ private fun FAQCard(faq: FAQItem) {
                     Text(
                         text = faq.answer,
                         fontSize = 13.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = RewardsTheme.textSecondary,
                         lineHeight = 18.sp
                     )
                 }

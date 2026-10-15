@@ -22,7 +22,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
@@ -42,7 +41,7 @@ import com.synfusion.attendance.rewards.data.*
 import kotlinx.coroutines.launch
 import java.util.Locale
 
-// Centralized Rewards UI Design Tokens (Section 3)
+// Centralized Rewards UI Design Tokens & Theme Accessors (Section 3)
 
 // Primary Purple Palette
 val DeepIndigo = Color(0xFF4F35E8)
@@ -78,7 +77,7 @@ val RewardsBronzeGradient = Brush.verticalGradient(
     colors = listOf(Color(0xFFFED7AA), Color(0xFFF97316), Color(0xFFC2410C))
 )
 
-// Surfaces
+// Static Fallback Surfaces
 val RewardsScreenBg = Color(0xFFF8F9FD)
 val RewardsCardBg = Color(0xFFFFFFFF)
 val RewardsLavenderSurface = Color(0xFFF4EBFF)
@@ -107,6 +106,46 @@ val RewardsGoldContainer = Color(0xFFFFF8DE)
 val StatusGreen = RewardsSuccessGreen
 val NeutralSlate = RewardsTextSecondary
 
+/**
+ * Theme-aware Rewards Design System Accessor.
+ * Dynamically resolves surface, background, text, border, and badge colors based on effective dark/light state.
+ */
+object RewardsTheme {
+    val screenBackground: Color
+        @Composable get() = MaterialTheme.colorScheme.background
+
+    val cardBackground: Color
+        @Composable get() = MaterialTheme.colorScheme.surface
+
+    val elevatedSurface: Color
+        @Composable get() = if (isDark) Color(0xFF202640) else Color(0xFFF4F0FF)
+
+    val textPrimary: Color
+        @Composable get() = MaterialTheme.colorScheme.onBackground
+
+    val textSecondary: Color
+        @Composable get() = MaterialTheme.colorScheme.onSurfaceVariant
+
+    val softBorder: Color
+        @Composable get() = MaterialTheme.colorScheme.outline.copy(alpha = if (isDark) 0.25f else 0.4f)
+
+    val goldBadgeSurface: Color
+        @Composable get() = if (isDark) Color(0xFF2C2210) else Color(0xFFFFF8DE)
+
+    val lockedBadgeSurface: Color
+        @Composable get() = if (isDark) Color(0xFF1F1D32) else Color(0xFFF4EBFF)
+
+    val referralBannerGradient: Brush
+        @Composable get() = if (isDark) {
+            Brush.linearGradient(listOf(Color(0xFF2A1C44), Color(0xFF201833), Color(0xFF331B47)))
+        } else {
+            Brush.linearGradient(listOf(Color(0xFFF8DFFF), Color(0xFFFFF4FD), Color(0xFFF0E8FF)))
+        }
+
+    val isDark: Boolean
+        @Composable get() = MaterialTheme.colorScheme.background.red < 0.2f
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RewardsTopAppBar(
@@ -121,7 +160,7 @@ fun RewardsTopAppBar(
                 text = title,
                 fontWeight = FontWeight.Bold,
                 fontSize = 18.sp,
-                color = MaterialTheme.colorScheme.onBackground
+                color = RewardsTheme.textPrimary
             )
         },
         navigationIcon = {
@@ -129,12 +168,12 @@ fun RewardsTopAppBar(
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Back",
-                    tint = MaterialTheme.colorScheme.onBackground
+                    tint = RewardsTheme.textPrimary
                 )
             }
         },
         actions = actions,
-        colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
+        colors = TopAppBarDefaults.topAppBarColors(containerColor = RewardsTheme.screenBackground),
         modifier = modifier
     )
 }
@@ -143,7 +182,7 @@ fun RewardsTopAppBar(
 fun RewardCoinBalance(
     amount: Int,
     fontSize: Int = 18,
-    textColor: Color = MaterialTheme.colorScheme.onBackground,
+    textColor: Color = RewardsTheme.textPrimary,
     showSign: Boolean = false,
     coinSize: Dp = (fontSize * 1.1).dp,
     modifier: Modifier = Modifier
@@ -209,7 +248,7 @@ fun RewardsSectionHeader(
             text = title,
             fontSize = 17.sp,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground
+            color = RewardsTheme.textPrimary
         )
         if (actionText != null && onActionClick != null) {
             Text(
@@ -283,7 +322,7 @@ fun RewardSecondaryButton(
     enabled: Boolean = true,
     borderColor: Color = RoyalPurple,
     contentColor: Color = RoyalPurple,
-    containerColor: Color = Color.White
+    containerColor: Color = RewardsTheme.cardBackground
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -346,8 +385,8 @@ fun RewardSegmentedControl(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(Color.White)
-            .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(16.dp))
+            .background(RewardsTheme.cardBackground)
+            .border(1.dp, RewardsTheme.softBorder, RoundedCornerShape(16.dp))
             .padding(4.dp)
     ) {
         Row(
@@ -373,7 +412,7 @@ fun RewardSegmentedControl(
                         text = title,
                         fontSize = 14.sp,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                        color = if (isSelected) Color.White else RewardsTextSecondary
+                        color = if (isSelected) Color.White else RewardsTheme.textSecondary
                     )
                 }
             }
@@ -397,7 +436,7 @@ fun RewardPillTabs(
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(20.dp))
-                    .background(if (isSelected) RoyalPurple else RewardsLavenderSurface)
+                    .background(if (isSelected) RoyalPurple else RewardsTheme.elevatedSurface)
                     .clickable { onTabSelected(index) }
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 contentAlignment = Alignment.Center
@@ -406,7 +445,7 @@ fun RewardPillTabs(
                     text = title,
                     fontSize = 13.sp,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
-                    color = if (isSelected) Color.White else RewardsTextSecondary
+                    color = if (isSelected) Color.White else RewardsTheme.textSecondary
                 )
             }
         }
@@ -424,9 +463,9 @@ fun RewardTabRow(
 
     TabRow(
         selectedTabIndex = pagerState.currentPage,
-        containerColor = MaterialTheme.colorScheme.surface,
+        containerColor = RewardsTheme.cardBackground,
         contentColor = RoyalPurple,
-        divider = { HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)) },
+        divider = { HorizontalDivider(color = RewardsTheme.softBorder) },
         indicator = { tabPositions ->
             if (tabPositions.isNotEmpty()) {
                 val currentTab = pagerState.currentPage.coerceIn(0, tabPositions.size - 1)
@@ -477,7 +516,7 @@ fun RewardTabRow(
                         text = title,
                         fontSize = 13.sp,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                        color = if (isSelected) RoyalPurple else MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = if (isSelected) RoyalPurple else RewardsTheme.textSecondary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -525,14 +564,14 @@ fun RewardEmptyState(
             text = title,
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface,
+            color = RewardsTheme.textPrimary,
             textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.height(6.dp))
         Text(
             text = description,
             fontSize = 13.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = RewardsTheme.textSecondary,
             textAlign = TextAlign.Center,
             lineHeight = 18.sp
         )
@@ -556,9 +595,9 @@ fun RewardTransactionRow(
             .fillMaxWidth()
             .clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = RewardsTheme.cardBackground),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFF1F5F9))
+        border = androidx.compose.foundation.BorderStroke(1.dp, RewardsTheme.softBorder)
     ) {
         Row(
             modifier = Modifier
@@ -587,7 +626,7 @@ fun RewardTransactionRow(
                         text = transaction.title,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
-                        color = RewardsTextPrimary,
+                        color = RewardsTheme.textPrimary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -595,7 +634,7 @@ fun RewardTransactionRow(
                     Text(
                         text = transaction.timestamp,
                         fontSize = 12.sp,
-                        color = RewardsTextSecondary
+                        color = RewardsTheme.textSecondary
                     )
                 }
             }
@@ -628,11 +667,11 @@ fun RewardBadgeCard(
     modifier: Modifier = Modifier
 ) {
     val isUnlocked = achievement.isUnlocked
-    val cardBg = if (isUnlocked) RewardsGoldSurface else RewardsLavenderSurface
+    val cardBg = if (isUnlocked) RewardsTheme.goldBadgeSurface else RewardsTheme.lockedBadgeSurface
     val border = if (isUnlocked) {
         androidx.compose.foundation.BorderStroke(1.5.dp, GoldPrimary.copy(alpha = 0.5f))
     } else {
-        androidx.compose.foundation.BorderStroke(1.dp, RewardsTextSecondary.copy(alpha = 0.15f))
+        androidx.compose.foundation.BorderStroke(1.dp, RewardsTheme.softBorder)
     }
 
     Card(
@@ -701,7 +740,7 @@ fun RewardBadgeCard(
                 text = achievement.title,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
-                color = RewardsTextPrimary,
+                color = RewardsTheme.textPrimary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 textAlign = TextAlign.Center
@@ -716,13 +755,13 @@ fun RewardBadgeCard(
                     text = "${achievement.currentProgress} / ${achievement.maxProgress}",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
-                    color = RewardsTextSecondary
+                    color = RewardsTheme.textSecondary
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 RewardProgressBar(
                     progress = achievement.currentProgress.toFloat() / achievement.maxProgress.toFloat(),
                     color = RoyalPurple,
-                    trackColor = RewardsTextSecondary.copy(alpha = 0.2f),
+                    trackColor = RewardsTheme.textSecondary.copy(alpha = 0.2f),
                     modifier = Modifier.fillMaxWidth(0.85f)
                 )
             }
