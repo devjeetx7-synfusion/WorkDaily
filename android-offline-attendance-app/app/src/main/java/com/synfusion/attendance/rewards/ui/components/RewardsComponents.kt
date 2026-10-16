@@ -43,22 +43,29 @@ import java.util.Locale
 
 // Centralized Rewards UI Design Tokens & Theme Accessors (Section 3)
 
-// Primary Purple Palette
-val DeepIndigo = Color(0xFF4F35E8)
-val RoyalPurple = Color(0xFF6737F5)
-val VibrantViolet = Color(0xFF873FFF)
-val ElectricPurple = Color(0xFFA64CFF)
-val HighlightLavender = Color(0xFFCA7BFF)
+// WorkDaily Primary Emerald/Mint Brand Palette
+val WorkDailyBrandPrimary = Color(0xFF0F9F7A)
+val WorkDailyBrandPrimaryDark = Color(0xFF0B6B52)
+val WorkDailyBrandPrimaryLight = Color(0xFF10B981)
+val WorkDailyBrandAccent = Color(0xFF2563EB)
+val WorkDailyBrandContainer = Color(0xFFE6F7F3)
+
+// Legacy alias compatibility mapping to WorkDaily Brand Primary
+val DeepIndigo = WorkDailyBrandPrimary
+val RoyalPurple = WorkDailyBrandPrimary
+val VibrantViolet = Color(0xFF10B981)
+val ElectricPurple = Color(0xFF34D399)
+val HighlightLavender = Color(0xFFA7F3D0)
 
 // Primary Hero Gradients
 val RewardsPrimaryGradient = Brush.linearGradient(
-    colors = listOf(Color(0xFF4F35E8), Color(0xFF873FFF), Color(0xFFBD5CFA))
+    colors = listOf(Color(0xFF0F9F7A), Color(0xFF0D8566), Color(0xFF064E3B))
 )
 val RewardsSecondaryGradient = Brush.linearGradient(
-    colors = listOf(Color(0xFF5135E9), Color(0xFF8744F6), Color(0xFFBC65FC))
+    colors = listOf(Color(0xFF10B981), Color(0xFF0F9F7A), Color(0xFF047857))
 )
 val RewardsReferralGradient = Brush.linearGradient(
-    colors = listOf(Color(0xFFF8DFFF), Color(0xFFFFF4FD), Color(0xFFF0E8FF))
+    colors = listOf(Color(0xFFECFDF5), Color(0xFFF0FDF4), Color(0xFFD1FAE5))
 )
 
 // Gold Palette
@@ -79,28 +86,28 @@ val RewardsBronzeGradient = Brush.verticalGradient(
 )
 
 // Static Fallback Surfaces
-val RewardsScreenBg = Color(0xFFF8F9FD)
+val RewardsScreenBg = Color(0xFFF8FAFB)
 val RewardsCardBg = Color(0xFFFFFFFF)
-val RewardsLavenderSurface = Color(0xFFF4EBFF)
-val RewardsSoftPurple = Color(0xFFEEE5FF)
-val RewardsSoftPink = Color(0xFFFFEAFB)
+val RewardsLavenderSurface = Color(0xFFE6F7F3)
+val RewardsSoftPurple = Color(0xFFD1FAE5)
+val RewardsSoftPink = Color(0xFFFEF3C7)
 val RewardsGoldSurface = Color(0xFFFFF8DE)
 
 // Text Colors
-val RewardsTextPrimary = Color(0xFF11152F)
-val RewardsTextSecondary = Color(0xFF647086)
-val RewardsPurpleAccent = Color(0xFF8745F5)
+val RewardsTextPrimary = Color(0xFF0F172A)
+val RewardsTextSecondary = Color(0xFF475569)
+val RewardsPurpleAccent = WorkDailyBrandPrimary
 
 // Status & Indicators
-val RewardsSuccessGreen = Color(0xFF07994C)
-val RewardsSuccessBg = Color(0xFFE2F8EA)
-val StatusOrange = Color(0xFFE88A08)
+val RewardsSuccessGreen = Color(0xFF0F9F7A)
+val RewardsSuccessBg = Color(0xFFECFDF5)
+val StatusOrange = Color(0xFFEA580C)
 val StatusRed = Color(0xFFDC2626)
 
 // Legacy alias compatibility
-val RewardsPurple = Color(0xFF873FFF)
-val RewardsPurpleDark = Color(0xFF4F35E8)
-val RewardsPurpleContainer = Color(0xFFF4EBFF)
+val RewardsPurple = WorkDailyBrandPrimary
+val RewardsPurpleDark = WorkDailyBrandPrimaryDark
+val RewardsPurpleContainer = WorkDailyBrandContainer
 val RewardsGold = Color(0xFFFFBE0B)
 val RewardsGoldDark = Color(0xFFE88A08)
 val RewardsGoldContainer = Color(0xFFFFF8DE)
@@ -119,10 +126,10 @@ object RewardsTheme {
         @Composable get() = MaterialTheme.colorScheme.surface
 
     val elevatedSurface: Color
-        @Composable get() = if (isDark) Color(0xFF202640) else Color(0xFFF4F0FF)
+        @Composable get() = if (isDark) Color(0xFF0F172A) else Color(0xFFF1F5F9)
 
     val inputBackground: Color
-        @Composable get() = if (isDark) Color(0xFF1B2035) else Color(0xFFF1F5F9)
+        @Composable get() = if (isDark) Color(0xFF1E293B) else Color(0xFFF8FAFC)
 
     val textPrimary: Color
         @Composable get() = MaterialTheme.colorScheme.onBackground
@@ -137,13 +144,13 @@ object RewardsTheme {
         @Composable get() = if (isDark) Color(0xFF2C2210) else Color(0xFFFFF8DE)
 
     val lockedBadgeSurface: Color
-        @Composable get() = if (isDark) Color(0xFF1F1D32) else Color(0xFFF4EBFF)
+        @Composable get() = if (isDark) Color(0xFF1E293B) else Color(0xFFF1F5F9)
 
     val referralBannerGradient: Brush
         @Composable get() = if (isDark) {
-            Brush.linearGradient(listOf(Color(0xFF2A1C44), Color(0xFF201833), Color(0xFF331B47)))
+            Brush.linearGradient(listOf(Color(0xFF064E3B), Color(0xFF022C22), Color(0xFF0F766E)))
         } else {
-            Brush.linearGradient(listOf(Color(0xFFF8DFFF), Color(0xFFFFF4FD), Color(0xFFF0E8FF)))
+            Brush.linearGradient(listOf(Color(0xFFECFDF5), Color(0xFFF0FDF4), Color(0xFFD1FAE5)))
         }
 
     val isDark: Boolean

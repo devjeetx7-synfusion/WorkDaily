@@ -26,6 +26,7 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
@@ -377,7 +378,13 @@ fun DashboardScreen(
                                                                     onEarningsClick = { dashboardViewModel.openDrillDown(DrillDownType.EARNINGS) }
                                                                 )
                                                                 AllTimePassbookButton(onNavigate = { bottomNavController.navigate("all_time_passbook") })
-                                                                RewardsHubHomeCard(onNavigate = { bottomNavController.navigate("rewards_hub") })
+                                                                SmartDailyRewardsWidget(
+                                                                    rewardsViewModel = rewardsViewModel,
+                                                                    onNavigateHub = { bottomNavController.navigate("rewards_hub") },
+                                                                    onNavigateDailyCheckIn = { bottomNavController.navigate("rewards_daily_checkin") },
+                                                                    onNavigateSpin = { bottomNavController.navigate("rewards_spin") },
+                                                                    onNavigateAchievements = { bottomNavController.navigate("rewards_achievements") }
+                                                                )
                                                                 PersonalQuickActions(currencyCode = settingsState.currencyCode,
                                                                     todayAdvanceAmount = dashboardState.todayAdvanceAmount,
                                                                     onAddAdvance = { showAdvanceDialog = true }
@@ -419,7 +426,13 @@ fun DashboardScreen(
                                                                         onEarningsClick = { dashboardViewModel.openDrillDown(DrillDownType.EARNINGS) }
                                                                     )
                                                                     AllTimePassbookButton(onNavigate = { bottomNavController.navigate("all_time_passbook") })
-                                                                    RewardsHubHomeCard(onNavigate = { bottomNavController.navigate("rewards_hub") })
+                                                                    SmartDailyRewardsWidget(
+                                                                        rewardsViewModel = rewardsViewModel,
+                                                                        onNavigateHub = { bottomNavController.navigate("rewards_hub") },
+                                                                        onNavigateDailyCheckIn = { bottomNavController.navigate("rewards_daily_checkin") },
+                                                                        onNavigateSpin = { bottomNavController.navigate("rewards_spin") },
+                                                                        onNavigateAchievements = { bottomNavController.navigate("rewards_achievements") }
+                                                                    )
                                                                     PersonalQuickActions(currencyCode = settingsState.currencyCode,
                                                                         todayAdvanceAmount = dashboardState.todayAdvanceAmount,
                                                                         onAddAdvance = { showAdvanceDialog = true }
@@ -902,36 +915,46 @@ fun HeaderSection(
                     }
                 }
                 Spacer(modifier = Modifier.width(12.dp))
-                Column {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
                         Text(
                             text = "Hi, ",
-                            fontSize = 20.sp,
+                            fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onBackground
                         )
                         Text(
                             text = firstName,
-                            fontSize = 20.sp,
+                            fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onBackground
+                            color = MaterialTheme.colorScheme.onBackground,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false)
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
                         Icon(
                             imageVector = WavingHandIcon,
                             contentDescription = "Greeting",
                             tint = MaterialTheme.colorScheme.onBackground,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(18.dp)
                         )
                     }
                     Text(
                         text = todayFullDate,
-                        fontSize = 13.sp,
+                        fontSize = 12.sp,
                         fontWeight = FontWeight.Normal,
-                        color = Color.Gray
+                        color = Color.Gray,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
+
+            Spacer(modifier = Modifier.width(8.dp))
 
             // Real Coin Balance Header Pill: [WORKDAILY COIN ICON] [COIN AMOUNT] [CHEVRON]
             Surface(
@@ -942,9 +965,9 @@ fun HeaderSection(
                 border = androidx.compose.foundation.BorderStroke(1.dp, RewardsPurple.copy(alpha = 0.25f))
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     RewardCoinBalance(
                         amount = coinBalance,
@@ -964,66 +987,236 @@ fun HeaderSection(
 }
 
 @Composable
-fun RewardsHubHomeCard(onNavigate: () -> Unit) {
+fun SmartDailyRewardsWidget(
+    rewardsViewModel: RewardsViewModel,
+    onNavigateHub: () -> Unit,
+    onNavigateDailyCheckIn: () -> Unit,
+    onNavigateSpin: () -> Unit,
+    onNavigateAchievements: () -> Unit
+) {
+    val checkInState by rewardsViewModel.dailyCheckInState.collectAsState()
+    val streakState by rewardsViewModel.streakState.collectAsState()
+    val spinTokens by rewardsViewModel.spinTokens.collectAsState()
+    val achievements by rewardsViewModel.achievements.collectAsState()
+
+    val isCheckInClaimed = checkInState.isTodayClaimed
+    val hasSpins = spinTokens.availableSpins > 0
+
+    val dynamicSubtitle = when {
+        !isCheckInClaimed -> "Your daily reward is ready!"
+        hasSpins -> "Your spin is waiting!"
+        else -> "You're all caught up today!"
+    }
+
+    val unlockedCount = remember(achievements) { achievements.count { it.isUnlocked } }
+    val totalCount = achievements.size
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onNavigate),
-        shape = RoundedCornerShape(16.dp),
+            .clickable(onClick = onNavigateHub),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = androidx.compose.foundation.BorderStroke(1.dp, RewardsPurple.copy(alpha = 0.35f))
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
+            // Header Row
             Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(44.dp)
-                        .clip(CircleShape)
-                        .background(RewardsPurple.copy(alpha = 0.12f)),
-                    contentAlignment = Alignment.Center
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f)
                 ) {
-                    Text(text = "🏆", fontSize = 22.sp)
-                }
-                Spacer(modifier = Modifier.width(12.dp))
-                Column {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = "🏆 🎁 REWARDS HUB",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = RewardsPurple,
-                            letterSpacing = 0.5.sp
+                    Box(
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(CircleShape)
+                            .background(RewardsPurple.copy(alpha = 0.12f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.EmojiEvents,
+                            contentDescription = "Rewards",
+                            tint = RewardsPurple,
+                            modifier = Modifier.size(20.dp)
                         )
                     }
-                    Spacer(modifier = Modifier.height(2.dp))
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column {
+                        Text(
+                            text = "Today's Rewards",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = dynamicSubtitle,
+                            fontSize = 12.sp,
+                            color = if (!isCheckInClaimed || hasSpins) com.synfusion.attendance.rewards.ui.components.RewardsSuccessGreen else MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = if (!isCheckInClaimed || hasSpins) FontWeight.Bold else FontWeight.Medium
+                        )
+                    }
+                }
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.clickable { onNavigateHub() }
+                ) {
                     Text(
-                        text = "Earn Coins & Get Rewards",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        text = "Complete tasks, refer friends & more",
+                        text = "Explore All",
                         fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        fontWeight = FontWeight.Bold,
+                        color = RewardsPurple
+                    )
+                    Spacer(modifier = Modifier.width(2.dp))
+                    Icon(
+                        imageVector = Icons.Default.ChevronRight,
+                        contentDescription = "Explore",
+                        tint = RewardsPurple,
+                        modifier = Modifier.size(16.dp)
                     )
                 }
             }
-            Icon(
-                imageVector = Icons.Default.ArrowForward,
-                contentDescription = "Open Rewards Hub",
-                tint = RewardsPurple,
-                modifier = Modifier.size(18.dp)
-            )
+
+            // Two Mini Action Cards Side by Side
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                // Mini Action 1: Daily Check-in
+                Surface(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(14.dp))
+                        .clickable { onNavigateDailyCheckIn() },
+                    color = if (!isCheckInClaimed) RewardsPurple.copy(alpha = 0.08f) else MaterialTheme.colorScheme.background,
+                    border = androidx.compose.foundation.BorderStroke(
+                        1.dp,
+                        if (!isCheckInClaimed) RewardsPurple.copy(alpha = 0.35f) else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                    ),
+                    shape = RoundedCornerShape(14.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        androidx.compose.foundation.Image(
+                            painter = androidx.compose.ui.res.painterResource(id = com.synfusion.attendance.R.drawable.ic_wd_daily_checkin),
+                            contentDescription = "Daily Check-in",
+                            modifier = Modifier.size(28.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text(
+                                text = "Daily Check-in",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = if (isCheckInClaimed) "Claimed" else "Ready +5 🪙",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = if (isCheckInClaimed) com.synfusion.attendance.rewards.ui.components.RewardsSuccessGreen else RewardsPurple
+                            )
+                        }
+                    }
+                }
+
+                // Mini Action 2: Builder's Spin
+                Surface(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(14.dp))
+                        .clickable { onNavigateSpin() },
+                    color = if (hasSpins) com.synfusion.attendance.rewards.ui.components.GoldPrimary.copy(alpha = 0.12f) else MaterialTheme.colorScheme.background,
+                    border = androidx.compose.foundation.BorderStroke(
+                        1.dp,
+                        if (hasSpins) com.synfusion.attendance.rewards.ui.components.GoldPrimary.copy(alpha = 0.4f) else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                    ),
+                    shape = RoundedCornerShape(14.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        androidx.compose.foundation.Image(
+                            painter = androidx.compose.ui.res.painterResource(id = com.synfusion.attendance.R.drawable.ic_wd_builder_spin),
+                            contentDescription = "Builder's Spin",
+                            modifier = Modifier.size(28.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text(
+                                text = "Builder's Spin",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = if (hasSpins) "${spinTokens.availableSpins} Spin Ready" else "0 Spins Left",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = if (hasSpins) com.synfusion.attendance.rewards.ui.components.GoldSecondary else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Contextual Achievement / Streak Strip
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable { onNavigateAchievements() },
+                color = MaterialTheme.colorScheme.background,
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f))
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "🔥 ${streakState.currentStreak} Day Streak",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = RewardsPurple
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "•",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Badges: $unlockedCount / $totalCount",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+
+                    Icon(
+                        imageVector = Icons.Default.ArrowForward,
+                        contentDescription = "View Badges",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(14.dp)
+                    )
+                }
+            }
         }
     }
 }
