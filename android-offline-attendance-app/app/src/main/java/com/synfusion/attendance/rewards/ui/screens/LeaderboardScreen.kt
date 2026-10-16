@@ -218,9 +218,13 @@ private fun LeaderboardPodiumSlot3D(
 ) {
     if (user == null) return
 
+    val topOverhang = artworkSize - 18.dp
+
     Box(
         contentAlignment = Alignment.BottomCenter,
-        modifier = Modifier.width(102.dp)
+        modifier = Modifier
+            .width(102.dp)
+            .padding(top = topOverhang)
     ) {
         // Layer 1: Metallic Cylinder Podium
         LeaderboardCanvasPodium(
@@ -234,7 +238,7 @@ private fun LeaderboardPodiumSlot3D(
             contentAlignment = Alignment.Center,
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .offset(y = (-artworkSize / 2f + 12.dp))
+                .offset(y = -topOverhang)
                 .zIndex(2f)
         ) {
             if (rankNum == 1) {
@@ -258,12 +262,12 @@ private fun LeaderboardPodiumSlot3D(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .padding(top = 22.dp, start = 4.dp, end = 4.dp)
+                .padding(top = 24.dp, start = 4.dp, end = 4.dp)
                 .zIndex(3f)
         ) {
             Text(
                 text = user.name,
-                fontSize = if (rankNum == 1) 14.sp else 12.sp,
+                fontSize = if (rankNum == 1) 13.sp else 11.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = if (rankNum == 1) Color(0xFF3B1D00) else Color(0xFF0F172A),
                 maxLines = 1,
@@ -277,11 +281,11 @@ private fun LeaderboardPodiumSlot3D(
                 modifier = Modifier
                     .clip(RoundedCornerShape(8.dp))
                     .background(Color.Black.copy(alpha = 0.22f))
-                    .padding(horizontal = 8.dp, vertical = 3.dp)
+                    .padding(horizontal = 6.dp, vertical = 2.dp)
             ) {
                 Text(
                     text = "${user.xp} XP",
-                    fontSize = 11.sp,
+                    fontSize = 10.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = Color.White
                 )

@@ -261,20 +261,12 @@ fun RewardsHubScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Box(
-                                    contentAlignment = Alignment.Center,
-                                    modifier = Modifier
-                                        .size(38.dp)
-                                        .clip(CircleShape)
-                                        .background(RoyalPurple.copy(alpha = 0.12f))
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.CalendarToday,
-                                        contentDescription = "Daily Check-in",
-                                        tint = RoyalPurple,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                }
+                                Image(
+                                    painter = painterResource(id = R.drawable.ic_wd_daily_checkin),
+                                    contentDescription = "Daily Check-in",
+                                    modifier = Modifier.size(38.dp),
+                                    contentScale = ContentScale.Fit
+                                )
                                 Box(
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(8.dp))
@@ -330,15 +322,12 @@ fun RewardsHubScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Box(
-                                    contentAlignment = Alignment.Center,
-                                    modifier = Modifier
-                                        .size(38.dp)
-                                        .clip(CircleShape)
-                                        .background(GoldPrimary.copy(alpha = 0.18f))
-                                ) {
-                                    Text(text = "🎯", fontSize = 18.sp)
-                                }
+                                Image(
+                                    painter = painterResource(id = R.drawable.ic_wd_builder_spin),
+                                    contentDescription = "Builder's Spin",
+                                    modifier = Modifier.size(38.dp),
+                                    contentScale = ContentScale.Fit
+                                )
                                 Box(
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(8.dp))
