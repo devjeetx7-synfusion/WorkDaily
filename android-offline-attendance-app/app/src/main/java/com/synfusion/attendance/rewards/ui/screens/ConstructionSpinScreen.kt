@@ -121,7 +121,7 @@ fun ConstructionSpinScreen(
                         Icon(
                             imageVector = Icons.Default.Info,
                             contentDescription = "Possible Rewards Info",
-                            tint = RoyalPurple
+                            tint = WorkDailyBrandPrimary
                         )
                     }
                     IconButton(onClick = {
@@ -130,12 +130,12 @@ fun ConstructionSpinScreen(
                         Icon(
                             imageVector = if (audioSettings.isSoundEnabled) Icons.Default.VolumeUp else Icons.Default.VolumeMute,
                             contentDescription = "Mute Sound",
-                            tint = RoyalPurple
+                            tint = WorkDailyBrandPrimary
                         )
                     }
                     Surface(
                         shape = RoundedCornerShape(20.dp),
-                        color = RoyalPurple.copy(alpha = 0.12f),
+                        color = WorkDailyBrandPrimary.copy(alpha = 0.12f),
                         modifier = Modifier.padding(end = 12.dp)
                     ) {
                         Row(
@@ -145,7 +145,7 @@ fun ConstructionSpinScreen(
                             RewardCoinBalance(
                                 amount = walletSummary.totalBalance,
                                 fontSize = 13,
-                                textColor = RoyalPurple,
+                                textColor = WorkDailyBrandPrimary,
                                 coinSize = 16.dp
                             )
                         }
@@ -176,7 +176,7 @@ fun ConstructionSpinScreen(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Spin and collect WorkDaily Rewards!",
+                    text = "Spin the wheel to win construction rewards!",
                     fontSize = 13.sp,
                     color = RewardsTheme.textSecondary
                 )
@@ -186,7 +186,7 @@ fun ConstructionSpinScreen(
                 // Available Spins Capsule Indicator
                 Surface(
                     shape = RoundedCornerShape(20.dp),
-                    color = RoyalPurple,
+                    color = WorkDailyBrandPrimary,
                     contentColor = Color.White
                 ) {
                     Row(
@@ -231,11 +231,16 @@ fun ConstructionSpinScreen(
                         val segmentCount = segments.size
                         val sweepAngle = 360f / segmentCount
 
+                        // Alternating WorkDaily brand emerald & soft gold sector palette
                         val sectorColors = listOf(
-                            Color(0xFF6737F5), // Royal Purple
-                            Color(0xFFFFBE0B), // Rich Gold
-                            Color(0xFF873FFF), // Vibrant Violet
-                            Color(0xFFF59E0B)  // Deep Yellow
+                            Color(0xFF0F9F7A), // WorkDaily Primary Emerald
+                            Color(0xFFFFBE0B), // Warm Gold
+                            Color(0xFF0B6B52), // Deep Emerald
+                            Color(0xFFF59E0B), // Rich Gold Accent
+                            Color(0xFF10B981), // Soft Mint
+                            Color(0xFFE88A08), // Deep Gold
+                            Color(0xFF047857), // Forest Teal
+                            Color(0xFFFFD54A)  // Bright Gold
                         )
 
                         for (i in 0 until segmentCount) {
@@ -258,18 +263,18 @@ fun ConstructionSpinScreen(
                                 y = center.y + radius * sin(lineRad)
                             )
                             drawLine(
-                                color = Color.White.copy(alpha = 0.65f),
+                                color = Color.White.copy(alpha = 0.75f),
                                 start = center,
                                 end = lineEnd,
                                 strokeWidth = 2.dp.toPx()
                             )
 
-                            // Draw Sector Illustration near outer-middle
+                            // Draw ONLY Construction Tool Illustration on Wheel Segment (No numbers or text on wheel)
                             val midAngleRad = ((startAngle + sweepAngle / 2f) * PI / 180f).toFloat()
-                            val iconRadius = radius * 0.68f
+                            val iconRadius = radius * 0.58f
                             val iconX = center.x + iconRadius * cos(midAngleRad)
                             val iconY = center.y + iconRadius * sin(midAngleRad)
-                            val itemSize = 28.dp.toPx()
+                            val itemSize = 32.dp.toPx()
 
                             when (segments[i].id) {
                                 1 -> drawSafetyHelmet(iconX, iconY, itemSize)
@@ -281,32 +286,6 @@ fun ConstructionSpinScreen(
                                 7 -> drawGoldenBlueprint(iconX, iconY, itemSize)
                                 8 -> drawForemansPass(iconX, iconY, itemSize)
                             }
-
-                            // Draw Sector Reward Label near inner portion
-                            val labelRadius = radius * 0.38f
-                            val labelX = center.x + labelRadius * cos(midAngleRad)
-                            val labelY = center.y + labelRadius * sin(midAngleRad)
-
-                            val seg = segments[i]
-                            val labelText = when (val r = seg.rewardType) {
-                                is SpinRewardType.Coins -> "+${r.amount}"
-                                is SpinRewardType.BonusSpin -> "+1 Spin"
-                            }
-
-                            val textPaint = android.graphics.Paint().apply {
-                                color = android.graphics.Color.WHITE
-                                textSize = 11.dp.toPx()
-                                isFakeBoldText = true
-                                textAlign = android.graphics.Paint.Align.CENTER
-                                isAntiAlias = true
-                            }
-
-                            drawContext.canvas.nativeCanvas.drawText(
-                                labelText,
-                                labelX,
-                                labelY + 4.dp.toPx(),
-                                textPaint
-                            )
                         }
 
                         // Outer Golden Rim Frame
@@ -320,10 +299,10 @@ fun ConstructionSpinScreen(
                         )
                     }
 
-                    // Center Hub
+                    // Center Hub with WorkDaily "W" logo
                     drawCircle(color = GoldPrimary, radius = 28.dp.toPx(), center = center)
                     drawCircle(color = Color.White, radius = 24.dp.toPx(), center = center)
-                    drawCircle(color = RoyalPurple, radius = 20.dp.toPx(), center = center)
+                    drawCircle(color = WorkDailyBrandPrimary, radius = 20.dp.toPx(), center = center)
 
                     val hubPaint = android.graphics.Paint().apply {
                         color = android.graphics.Color.WHITE
@@ -335,7 +314,7 @@ fun ConstructionSpinScreen(
                     drawContext.canvas.nativeCanvas.drawText("W", center.x, center.y + 6.dp.toPx(), hubPaint)
                 }
 
-                // Top Pointer Arrow (Fixed)
+                // Top Pointer Arrow
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopCenter)
@@ -365,7 +344,7 @@ fun ConstructionSpinScreen(
                         .fillMaxWidth()
                         .height(52.dp),
                     enabled = !isSpinning,
-                    containerColor = RoyalPurple,
+                    containerColor = WorkDailyBrandPrimary,
                     contentColor = Color.White
                 )
             } else {
@@ -422,7 +401,7 @@ fun ConstructionSpinScreen(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Spin the wheel to earn construction rewards & bonus coins",
+                    text = "See what you can win from Builder's Spin",
                     fontSize = 13.sp,
                     color = RewardsTheme.textSecondary,
                     textAlign = TextAlign.Center
@@ -484,7 +463,7 @@ fun ConstructionSpinScreen(
                                             },
                                             fontSize = 11.sp,
                                             fontWeight = FontWeight.ExtraBold,
-                                            color = RoyalPurple
+                                            color = WorkDailyBrandPrimary
                                         )
                                     }
                                 }
@@ -573,7 +552,7 @@ fun ConstructionSpinScreen(
                             text = "YOU WON +1 BONUS SPIN TOKEN!",
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
-                            color = RoyalPurple
+                            color = WorkDailyBrandPrimary
                         )
                     }
                 }
@@ -598,7 +577,7 @@ fun ConstructionSpinScreen(
                                 startSpin()
                             },
                             modifier = Modifier.weight(1f),
-                            containerColor = RoyalPurple,
+                            containerColor = WorkDailyBrandPrimary,
                             contentColor = Color.White
                         )
                     }
