@@ -7,13 +7,9 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.*
@@ -27,20 +23,20 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.synfusion.attendance.R
 import com.synfusion.attendance.rewards.data.*
 import com.synfusion.attendance.rewards.ui.components.*
 import com.synfusion.attendance.rewards.viewmodel.RewardsViewModel
-import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun DailyCheckInScreen(
     viewModel: RewardsViewModel,
@@ -70,7 +66,7 @@ fun DailyCheckInScreen(
                 actions = {
                     Surface(
                         shape = RoundedCornerShape(20.dp),
-                        color = RoyalPurple.copy(alpha = 0.12f),
+                        color = WorkDailyBrandPrimary.copy(alpha = 0.12f),
                         modifier = Modifier.padding(end = 12.dp)
                     ) {
                         Row(
@@ -80,7 +76,7 @@ fun DailyCheckInScreen(
                             RewardCoinBalance(
                                 amount = walletSummary.totalBalance,
                                 fontSize = 13,
-                                textColor = RoyalPurple,
+                                textColor = WorkDailyBrandPrimary,
                                 coinSize = 16.dp
                             )
                         }
@@ -95,14 +91,14 @@ fun DailyCheckInScreen(
                 .fillMaxSize()
                 .padding(paddingValues),
             contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(18.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // A. Streak Hero Card
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(26.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                    shape = RoundedCornerShape(24.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                     colors = CardDefaults.cardColors(containerColor = Color.Transparent)
                 ) {
                     Box(modifier = Modifier.fillMaxWidth()) {
@@ -117,7 +113,7 @@ fun DailyCheckInScreen(
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(20.dp)
+                                .padding(18.dp)
                         ) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -125,70 +121,112 @@ fun DailyCheckInScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = "DAILY STREAK",
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.ExtraBold,
-                                        letterSpacing = 1.2.sp,
-                                        color = HighlightLavender
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Row(verticalAlignment = Alignment.Bottom) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(
+                                            imageVector = Icons.Default.LocalFireDepartment,
+                                            contentDescription = "Streak",
+                                            tint = GoldPrimary,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(
+                                            text = "DAILY STREAK",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.ExtraBold,
+                                            letterSpacing = 1.2.sp,
+                                            color = HighlightLavender
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
                                         Text(
                                             text = "${streakState.currentStreak}",
                                             fontSize = 38.sp,
                                             fontWeight = FontWeight.Black,
                                             color = Color.White
                                         )
-                                        Spacer(modifier = Modifier.width(6.dp))
                                         Text(
-                                            text = "Days 🔥",
+                                            text = "Days",
                                             fontSize = 20.sp,
                                             fontWeight = FontWeight.Bold,
-                                            color = GoldPrimary,
-                                            modifier = Modifier.padding(bottom = 6.dp)
+                                            color = GoldPrimary
                                         )
                                     }
-                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Spacer(modifier = Modifier.height(4.dp))
                                     Text(
-                                        text = if (checkInState.isTodayClaimed) "Today's check-in complete!" else "Check in today to keep your streak!",
+                                        text = if (checkInState.isTodayClaimed) "Today's check-in completed!" else "Check in today to keep your streak!",
                                         fontSize = 12.sp,
-                                        color = Color.White.copy(alpha = 0.9f)
+                                        fontWeight = FontWeight.Medium,
+                                        color = Color.White.copy(alpha = 0.95f)
                                     )
                                 }
 
                                 Image(
                                     painter = painterResource(id = R.drawable.rewards_hub_worker),
-                                    contentDescription = "Construction Worker",
-                                    modifier = Modifier.size(100.dp),
+                                    contentDescription = "Worker Illustration",
+                                    modifier = Modifier.size(92.dp),
                                     contentScale = ContentScale.Fit
                                 )
                             }
 
-                            Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(14.dp))
 
-                            // Streak Stats Inset
+                            // Streak Stats Inset Row
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(16.dp))
                                     .background(Color.White.copy(alpha = 0.95f))
-                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                                    .padding(horizontal = 16.dp, vertical = 10.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
-                                    Text(text = "Longest Streak", fontSize = 11.sp, color = RewardsTextSecondary, fontWeight = FontWeight.Medium)
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text(
+                                        text = "Longest Streak",
+                                        fontSize = 11.sp,
+                                        color = RewardsTextSecondary,
+                                        fontWeight = FontWeight.Medium
+                                    )
                                     Spacer(modifier = Modifier.height(2.dp))
-                                    Text(text = "${streakState.longestStreak} Days", fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = DeepIndigo)
+                                    Text(
+                                        text = "${streakState.longestStreak} Days",
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = WorkDailyBrandPrimary
+                                    )
                                 }
 
-                                Box(modifier = Modifier.height(24.dp).width(1.dp).background(Color(0xFFCBD5E1)))
+                                Box(
+                                    modifier = Modifier
+                                        .height(24.dp)
+                                        .width(1.dp)
+                                        .background(Color(0xFFCBD5E1))
+                                )
 
-                                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
-                                    Text(text = "Total Days", fontSize = 11.sp, color = RewardsTextSecondary, fontWeight = FontWeight.Medium)
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text(
+                                        text = "Total Days",
+                                        fontSize = 11.sp,
+                                        color = RewardsTextSecondary,
+                                        fontWeight = FontWeight.Medium
+                                    )
                                     Spacer(modifier = Modifier.height(2.dp))
-                                    Text(text = "${streakState.totalCheckInDays} Days", fontSize = 14.sp, fontWeight = FontWeight.ExtraBold, color = RoyalPurple)
+                                    Text(
+                                        text = "${streakState.totalCheckInDays} Days",
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = WorkDailyBrandPrimaryDark
+                                    )
                                 }
                             }
                         }
@@ -196,7 +234,129 @@ fun DailyCheckInScreen(
                 }
             }
 
-            // B. Seven-Day Check-in Strip
+            // B. Today's Reward Card (Compact, Responsive, No letter wrapping)
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = RewardsTheme.cardBackground),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, RewardsTheme.softBorder)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                    ) {
+                        // Header Title & Subtitle + Reward Chips
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.Top
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Today's Reward",
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = RewardsTheme.textPrimary
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = if (checkInState.isTodayClaimed) "Already claimed today" else "Keep your streak going!",
+                                    fontSize = 12.sp,
+                                    color = RewardsTheme.textSecondary
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.width(8.dp))
+
+                            // FlowRow for chips so each chip wraps intact as a whole unit
+                            FlowRow(
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Surface(
+                                    shape = RoundedCornerShape(10.dp),
+                                    color = GoldPrimary.copy(alpha = 0.15f),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, GoldPrimary.copy(alpha = 0.3f))
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        RewardCoinBalance(
+                                            amount = 5,
+                                            fontSize = 12,
+                                            textColor = GoldSecondary,
+                                            coinSize = 14.dp
+                                        )
+                                    }
+                                }
+
+                                Surface(
+                                    shape = RoundedCornerShape(10.dp),
+                                    color = WorkDailyBrandPrimary.copy(alpha = 0.12f),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, WorkDailyBrandPrimary.copy(alpha = 0.25f))
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Casino,
+                                            contentDescription = "Bonus Spin",
+                                            tint = WorkDailyBrandPrimary,
+                                            modifier = Modifier.size(13.dp)
+                                        )
+                                        Text(
+                                            text = "+1 Spin",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = WorkDailyBrandPrimary,
+                                            maxLines = 1
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        // Compact CTA Button
+                        if (checkInState.isTodayClaimed) {
+                            RewardSecondaryButton(
+                                text = "Claimed Today ✓",
+                                onClick = { },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(min = 48.dp),
+                                enabled = false,
+                                containerColor = RewardsTheme.inputBackground,
+                                contentColor = RewardsTheme.textSecondary,
+                                borderColor = RewardsTheme.softBorder
+                            )
+                        } else {
+                            RewardPrimaryButton(
+                                text = "Claim Reward",
+                                onClick = {
+                                    if (viewModel.claimDailyCheckIn()) {
+                                        showSuccessDialog = true
+                                    }
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(min = 48.dp),
+                                containerColor = WorkDailyBrandPrimary,
+                                contentColor = Color.White,
+                                icon = Icons.Default.CheckCircle
+                            )
+                        }
+                    }
+                }
+            }
+
+            // C. Seven-Day Check-in Strip
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -225,6 +385,8 @@ fun DailyCheckInScreen(
                                 val dateStr = dateCell.format(DateTimeFormatter.ISO_LOCAL_DATE)
                                 val isClaimed = checkInState.claimedDates.contains(dateStr)
                                 val isToday = dateCell.isEqual(todayDate)
+                                val isPast = dateCell.isBefore(todayDate)
+                                val isMissed = isPast && !isClaimed
                                 val dayName = dateCell.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault())
 
                                 Column(
@@ -235,18 +397,19 @@ fun DailyCheckInScreen(
                                         text = dayName,
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.SemiBold,
-                                        color = if (isToday) RoyalPurple else RewardsTheme.textSecondary
+                                        color = if (isToday) WorkDailyBrandPrimary else RewardsTheme.textSecondary
                                     )
 
                                     Box(
                                         contentAlignment = Alignment.Center,
                                         modifier = Modifier
-                                            .size(38.dp)
+                                            .size(36.dp)
                                             .clip(CircleShape)
                                             .background(
                                                 when {
                                                     isClaimed -> RewardsSuccessGreen
-                                                    isToday -> RoyalPurple.copy(alpha = 0.15f)
+                                                    isMissed -> StatusRed.copy(alpha = 0.1f)
+                                                    isToday -> WorkDailyBrandPrimary.copy(alpha = 0.15f)
                                                     else -> RewardsTheme.inputBackground
                                                 }
                                             )
@@ -254,7 +417,8 @@ fun DailyCheckInScreen(
                                                 width = if (isToday) 2.dp else 1.dp,
                                                 color = when {
                                                     isClaimed -> RewardsSuccessGreen
-                                                    isToday -> RoyalPurple
+                                                    isMissed -> StatusRed.copy(alpha = 0.3f)
+                                                    isToday -> WorkDailyBrandPrimary
                                                     else -> RewardsTheme.softBorder
                                                 },
                                                 shape = CircleShape
@@ -265,107 +429,26 @@ fun DailyCheckInScreen(
                                                 imageVector = Icons.Default.Check,
                                                 contentDescription = "Claimed",
                                                 tint = Color.White,
-                                                modifier = Modifier.size(20.dp)
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                        } else if (isMissed) {
+                                            Icon(
+                                                imageVector = Icons.Default.Close,
+                                                contentDescription = "Missed",
+                                                tint = StatusRed,
+                                                modifier = Modifier.size(16.dp)
                                             )
                                         } else {
                                             Text(
                                                 text = "${dateCell.dayOfMonth}",
                                                 fontSize = 12.sp,
                                                 fontWeight = FontWeight.Bold,
-                                                color = if (isToday) RoyalPurple else RewardsTheme.textPrimary
+                                                color = if (isToday) WorkDailyBrandPrimary else RewardsTheme.textPrimary
                                             )
                                         }
                                     }
                                 }
                             }
-                        }
-                    }
-                }
-            }
-
-            // C. Today's Reward Card
-            item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(containerColor = RewardsTheme.cardBackground),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, RewardsTheme.softBorder)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(18.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column {
-                                Text(
-                                    text = "Today's Reward",
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    color = RewardsTheme.textPrimary
-                                )
-                                Text(
-                                    text = if (checkInState.isTodayClaimed) "Already claimed today" else "Claim now to get bonus coins & free spin",
-                                    fontSize = 12.sp,
-                                    color = RewardsTheme.textSecondary
-                                )
-                            }
-
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Surface(
-                                    shape = RoundedCornerShape(12.dp),
-                                    color = GoldPrimary.copy(alpha = 0.15f)
-                                ) {
-                                    Row(
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        RewardCoinBalance(amount = 5, fontSize = 12, textColor = GoldSecondary, coinSize = 14.dp)
-                                    }
-                                }
-
-                                Surface(
-                                    shape = RoundedCornerShape(12.dp),
-                                    color = RoyalPurple.copy(alpha = 0.15f)
-                                ) {
-                                    Row(
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Text(text = "+1 Spin 🎯", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = RoyalPurple)
-                                    }
-                                }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        if (checkInState.isTodayClaimed) {
-                            RewardSecondaryButton(
-                                text = "CLAIMED TODAY ✓",
-                                onClick = { },
-                                modifier = Modifier.fillMaxWidth(),
-                                enabled = false,
-                                containerColor = RewardsTheme.inputBackground,
-                                contentColor = RewardsTheme.textSecondary,
-                                borderColor = RewardsTheme.softBorder
-                            )
-                        } else {
-                            RewardPrimaryButton(
-                                text = "CLAIM DAILY REWARD (+5 COINS & 1 SPIN)",
-                                onClick = {
-                                    if (viewModel.claimDailyCheckIn()) {
-                                        showSuccessDialog = true
-                                    }
-                                },
-                                modifier = Modifier.fillMaxWidth(),
-                                containerColor = RoyalPurple,
-                                contentColor = Color.White,
-                                icon = Icons.Default.CheckCircle
-                            )
                         }
                     }
                 }
@@ -402,7 +485,7 @@ fun DailyCheckInScreen(
                                     text = selectedCalendarMonth.format(DateTimeFormatter.ofPattern("MMM yyyy")),
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = RoyalPurple
+                                    color = WorkDailyBrandPrimary
                                 )
                                 IconButton(onClick = { selectedCalendarMonth = selectedCalendarMonth.plusMonths(1) }) {
                                     Icon(imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Next Month", tint = RewardsTheme.textPrimary)
@@ -463,13 +546,13 @@ fun DailyCheckInScreen(
                                                     .background(
                                                         when {
                                                             isClaimed -> RewardsSuccessGreen.copy(alpha = 0.2f)
-                                                            isTodayCell -> RoyalPurple.copy(alpha = 0.15f)
+                                                            isTodayCell -> WorkDailyBrandPrimary.copy(alpha = 0.15f)
                                                             else -> Color.Transparent
                                                         }
                                                     )
                                                     .border(
                                                         width = if (isTodayCell) 1.5.dp else 0.dp,
-                                                        color = if (isTodayCell) RoyalPurple else Color.Transparent,
+                                                        color = if (isTodayCell) WorkDailyBrandPrimary else Color.Transparent,
                                                         shape = CircleShape
                                                     )
                                             ) {
@@ -479,7 +562,7 @@ fun DailyCheckInScreen(
                                                     fontWeight = if (isTodayCell || isClaimed) FontWeight.Bold else FontWeight.Normal,
                                                     color = when {
                                                         isClaimed -> RewardsSuccessGreen
-                                                        isTodayCell -> RoyalPurple
+                                                        isTodayCell -> WorkDailyBrandPrimary
                                                         else -> RewardsTheme.textPrimary
                                                     }
                                                 )
@@ -522,15 +605,15 @@ fun DailyCheckInScreen(
                                 Box(
                                     contentAlignment = Alignment.Center,
                                     modifier = Modifier
-                                        .size(46.dp)
+                                        .size(44.dp)
                                         .clip(CircleShape)
-                                        .background(RoyalPurple.copy(alpha = 0.12f))
+                                        .background(WorkDailyBrandPrimary.copy(alpha = 0.12f))
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.EmojiEvents,
                                         contentDescription = milestone.title,
-                                        tint = RoyalPurple,
-                                        modifier = Modifier.size(24.dp)
+                                        tint = WorkDailyBrandPrimary,
+                                        modifier = Modifier.size(22.dp)
                                     )
                                 }
 
@@ -557,7 +640,7 @@ fun DailyCheckInScreen(
                                             .fillMaxWidth()
                                             .height(6.dp)
                                             .clip(RoundedCornerShape(3.dp)),
-                                        color = RoyalPurple,
+                                        color = WorkDailyBrandPrimary,
                                         trackColor = RewardsTheme.inputBackground
                                     )
 
@@ -584,7 +667,7 @@ fun DailyCheckInScreen(
                                                     text = " +${milestone.bonusSpins} Spin",
                                                     fontSize = 10.sp,
                                                     fontWeight = FontWeight.Bold,
-                                                    color = RoyalPurple
+                                                    color = WorkDailyBrandPrimary
                                                 )
                                             }
                                         }
@@ -597,7 +680,7 @@ fun DailyCheckInScreen(
                                     MilestoneStatus.CLAIMABLE -> {
                                         Button(
                                             onClick = { viewModel.claimMilestone(milestone.id) },
-                                            colors = ButtonDefaults.buttonColors(containerColor = GoldPrimary, contentColor = DeepIndigo),
+                                            colors = ButtonDefaults.buttonColors(containerColor = GoldPrimary, contentColor = WorkDailyBrandPrimaryDark),
                                             shape = RoundedCornerShape(12.dp),
                                             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
                                         ) {
@@ -666,7 +749,7 @@ fun DailyCheckInScreen(
                 Spacer(modifier = Modifier.height(6.dp))
 
                 Text(
-                    text = "You earned +5 Demo Coins and 1 Free Spin Token!",
+                    text = "You earned +5 Coins and 1 Free Spin Token!",
                     fontSize = 13.sp,
                     color = RewardsTheme.textSecondary,
                     textAlign = TextAlign.Center
@@ -684,13 +767,13 @@ fun DailyCheckInScreen(
                         modifier = Modifier.weight(1f)
                     )
                     RewardPrimaryButton(
-                        text = "SPIN NOW 🎯",
+                        text = "SPIN NOW",
                         onClick = {
                             showSuccessDialog = false
                             onNavigateSpin()
                         },
                         modifier = Modifier.weight(1f),
-                        containerColor = RoyalPurple,
+                        containerColor = WorkDailyBrandPrimary,
                         contentColor = Color.White
                     )
                 }
