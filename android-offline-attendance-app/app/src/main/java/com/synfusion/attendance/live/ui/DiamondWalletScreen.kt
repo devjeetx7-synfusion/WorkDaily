@@ -79,7 +79,7 @@ fun DiamondWalletScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(22.dp),
-                    colors = CardDefaults.cardColors(containerColor = LiveSurfaceDark),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                     border = androidx.compose.foundation.BorderStroke(1.dp, LiveDiamondColor.copy(alpha = 0.4f))
                 ) {
                     Column(
@@ -98,7 +98,7 @@ fun DiamondWalletScreen(
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     Icon(Icons.Default.Diamond, contentDescription = null, tint = LiveDiamondColor, modifier = Modifier.size(32.dp))
-                                    Text("${wallet.diamondBalance}", fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
+                                    Text("${wallet.diamondBalance}", fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.onSurface)
                                 }
                             }
 
@@ -117,14 +117,14 @@ fun DiamondWalletScreen(
                             }
                         }
 
-                        HorizontalDivider(color = Color.Gray.copy(alpha = 0.2f))
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text("Total Purchased: ${wallet.totalPurchased} 💎", fontSize = 12.sp, color = Color.LightGray)
-                            Text("Total Spent: ${wallet.totalSpent} 💎", fontSize = 12.sp, color = Color.LightGray)
+                            Text("Total Purchased: ${wallet.totalPurchased} 💎", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("Total Spent: ${wallet.totalSpent} 💎", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }
@@ -140,7 +140,7 @@ fun DiamondWalletScreen(
                 )
             }
 
-            // Top-Up Package Cards with Permanent Responsive Row Layout
+            // Top-Up Package Cards
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     packages.forEach { pkg ->
@@ -153,13 +153,12 @@ fun DiamondWalletScreen(
                                     Toast.makeText(context, "Added $totalToAdd Diamonds (₹${pkg.priceRupees} Simulated)!", Toast.LENGTH_SHORT).show()
                                 },
                             shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(containerColor = LiveSurfaceDark),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                             border = androidx.compose.foundation.BorderStroke(
                                 1.dp,
-                                if (pkg.isPopular) LiveGold else LivePrimaryEmerald.copy(alpha = 0.25f)
+                                if (pkg.isPopular) LiveGold else MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)
                             )
                         ) {
-                            // Responsive Row: LEFT (Icon), CENTER (Diamonds + Bonus in dedicated vertical column), RIGHT (Price CTA)
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -167,7 +166,6 @@ fun DiamondWalletScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                // LEFT + CENTER
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -196,7 +194,7 @@ fun DiamondWalletScreen(
                                                 text = "${pkg.diamonds} Diamonds",
                                                 fontSize = 15.sp,
                                                 fontWeight = FontWeight.Bold,
-                                                color = Color.White,
+                                                color = MaterialTheme.colorScheme.onSurface,
                                                 maxLines = 1,
                                                 overflow = TextOverflow.Ellipsis
                                             )
@@ -209,14 +207,13 @@ fun DiamondWalletScreen(
                                             if (pkg.bonusDiamonds > 0) {
                                                 LiveBadge(text = "+${pkg.bonusDiamonds} BONUS", bgColor = LiveGold)
                                             }
-                                            Text("Instant demo credit", fontSize = 11.sp, color = Color.Gray, maxLines = 1)
+                                            Text("Instant demo credit", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
                                         }
                                     }
                                 }
 
                                 Spacer(modifier = Modifier.width(12.dp))
 
-                                // RIGHT: Dedicated Price Button with Minimum Width
                                 Button(
                                     onClick = {
                                         val totalToAdd = pkg.diamonds + pkg.bonusDiamonds
@@ -257,14 +254,14 @@ fun DiamondWalletScreen(
 
             if (giftTransactions.isEmpty()) {
                 item {
-                    Text("No gift transactions yet. Send gifts in live streams!", fontSize = 12.sp, color = Color.Gray)
+                    Text("No gift transactions yet. Send gifts in live streams!", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             } else {
                 items(giftTransactions.take(5)) { tx ->
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
-                        colors = CardDefaults.cardColors(containerColor = LiveSurfaceDark)
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                     ) {
                         Row(
                             modifier = Modifier
@@ -276,8 +273,8 @@ fun DiamondWalletScreen(
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                                 Icon(Icons.Default.CardGiftcard, contentDescription = null, tint = LiveGold)
                                 Column {
-                                    Text("Sent ${tx.giftName} (x${tx.quantity})", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                                    Text("Room: ${tx.roomId}", fontSize = 11.sp, color = Color.Gray)
+                                    Text("Sent ${tx.giftName} (x${tx.quantity})", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                                    Text("Room: ${tx.roomId}", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
 

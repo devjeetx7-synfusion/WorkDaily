@@ -71,9 +71,29 @@ class DemoLiveRepository(context: Context? = null) {
     private val _hapticsEnabled = MutableStateFlow(true)
     val hapticsEnabled: StateFlow<Boolean> = _hapticsEnabled.asStateFlow()
 
+    // Social Community State
+    private val _publicUsers = MutableStateFlow(buildInitialPublicUsers())
+    val publicUsers: StateFlow<List<DemoPublicUser>> = _publicUsers.asStateFlow()
+
+    private val _friendRequests = MutableStateFlow(buildInitialFriendRequests())
+    val friendRequests: StateFlow<List<DemoFriendRequest>> = _friendRequests.asStateFlow()
+
+    private val _friendships = MutableStateFlow(buildInitialFriendships())
+    val friendships: StateFlow<List<DemoFriendship>> = _friendships.asStateFlow()
+
+    private val _conversations = MutableStateFlow(buildInitialConversations())
+    val conversations: StateFlow<List<DemoConversation>> = _conversations.asStateFlow()
+
+    private val _privateMessagesMap = MutableStateFlow<Map<String, List<DemoPrivateMessage>>>(buildInitialPrivateMessages())
+    val privateMessagesMap: StateFlow<Map<String, List<DemoPrivateMessage>>> = _privateMessagesMap.asStateFlow()
+
+    private val _socialNotifications = MutableStateFlow(buildInitialSocialNotifications())
+    val socialNotifications: StateFlow<List<DemoSocialNotification>> = _socialNotifications.asStateFlow()
+
     init {
         syncFollowStateToCreators()
         syncActiveRoomsToCreators()
+        syncSocialStateToUsers()
     }
 
     private fun syncFollowStateToCreators() {
@@ -92,6 +112,36 @@ class DemoLiveRepository(context: Context? = null) {
                 activeRoomId = room?.id
             )
         }
+    }
+
+    private fun syncSocialStateToUsers() {
+        val followed = _followedCreatorIds.value
+        val friends = getFriendUserIds("current_user")
+        val requests = _friendRequests.value
+
+        _publicUsers.value = _publicUsers.value.map { user ->
+            val isFollow = followed.contains(user.id)
+            val isFr = friends.contains(user.id)
+            val req = requests.find {
+                (it.senderId == "current_user" && it.receiverId == user.id) ||
+                (it.senderId == user.id && it.receiverId == "current_user")
+            }
+            user.copy(
+                isFollowing = isFollow,
+                isFriend = isFr,
+                friendRequestStatus = req?.status
+            )
+        }
+    }
+
+    private fun getFriendUserIds(userId: String): Set<String> {
+        return _friendships.value.flatMap {
+            when {
+                it.userId1 == userId -> listOf(it.userId2)
+                it.userId2 == userId -> listOf(it.userId1)
+                else -> emptyList()
+            }
+        }.toSet()
     }
 
     private fun loadWallet(): DemoWallet {
@@ -145,9 +195,11 @@ class DemoLiveRepository(context: Context? = null) {
         prefs?.edit()?.putStringSet(KEY_FOLLOWED_CREATORS, followed)?.apply()
         inMemoryPrefs[KEY_FOLLOWED_CREATORS] = followed
         syncFollowStateToCreators()
+        syncSocialStateToUsers()
     }
 
     fun toggleFollowCreator(creatorId: String) {
+        if (creatorId == "current_user") return
         val current = _followedCreatorIds.value.toMutableSet()
         val isNowFollowing = !current.contains(creatorId)
         if (isNowFollowing) {
@@ -162,6 +214,151 @@ class DemoLiveRepository(context: Context? = null) {
             current.remove(creatorId)
         }
         saveFollowedCreatorIds(current)
+    }
+
+    // Friend Requests & Relationships
+    fun sendFriendRequest(targetUserId: String): Boolean {
+        if (targetUserId == "current_user" || _blockedUserIds.value.contains(targetUserId)) return false
+        val friends = getFriendUserIds("current_user")
+        if (friends.contains(targetUserId)) return false
+
+        val existing = _friendRequests.value.find {
+            (it.senderId == "current_user" && it.receiverId == targetUserId) ||
+            (it.senderId == targetUserId && it.receiverId == "current_user")
+        }
+        if (existing != null && existing.status == FriendRequestStatus.PENDING) return false
+
+        val user = _publicUsers.value.find { it.id == targetUserId } ?: return false
+        val req = DemoFriendRequest(
+            id = UUID.randomUUID().toString(),
+            senderId = "current_user",
+            senderName = "You",
+            senderProfession = "Site Engineer",
+            receiverId = targetUserId,
+            receiverName = user.name,
+            status = FriendRequestStatus.PENDING
+        )
+        _friendRequests.value = listOf(req) + _friendRequests.value
+        syncSocialStateToUsers()
+        return true
+    }
+
+    fun acceptFriendRequest(requestId: String): Boolean {
+        val req = _friendRequests.value.find { it.id == requestId } ?: return false
+        if (req.status != FriendRequestStatus.PENDING) return false
+
+        val otherUserId = if (req.senderId == "current_user") req.receiverId else req.senderId
+        if (_blockedUserIds.value.contains(otherUserId)) return false
+
+        _friendRequests.value = _friendRequests.value.map {
+            if (it.id == requestId) it.copy(status = FriendRequestStatus.ACCEPTED) else it
+        }
+
+        val friendship = DemoFriendship(
+            id = UUID.randomUUID().toString(),
+            userId1 = req.senderId,
+            userId2 = req.receiverId
+        )
+        _friendships.value = listOf(friendship) + _friendships.value
+
+        // Create or get conversation
+        ensureConversation(otherUserId)
+
+        syncSocialStateToUsers()
+        return true
+    }
+
+    fun declineFriendRequest(requestId: String) {
+        _friendRequests.value = _friendRequests.value.map {
+            if (it.id == requestId) it.copy(status = FriendRequestStatus.DECLINED) else it
+        }
+        syncSocialStateToUsers()
+    }
+
+    fun cancelFriendRequest(requestId: String) {
+        _friendRequests.value = _friendRequests.value.filterNot { it.id == requestId }
+        syncSocialStateToUsers()
+    }
+
+    fun unfriendUser(targetUserId: String) {
+        _friendships.value = _friendships.value.filterNot {
+            (it.userId1 == "current_user" && it.userId2 == targetUserId) ||
+            (it.userId1 == targetUserId && it.userId2 == "current_user")
+        }
+        _friendRequests.value = _friendRequests.value.filterNot {
+            (it.senderId == "current_user" && it.receiverId == targetUserId) ||
+            (it.senderId == targetUserId && it.receiverId == "current_user")
+        }
+        syncSocialStateToUsers()
+    }
+
+    private fun ensureConversation(friendId: String): DemoConversation {
+        val friend = _publicUsers.value.find { it.id == friendId }
+        val existing = _conversations.value.find { it.friendId == friendId }
+        if (existing != null) return existing
+
+        val newConv = DemoConversation(
+            id = "conv_" + UUID.randomUUID().toString().take(8),
+            friendId = friendId,
+            friendName = friend?.name ?: "Worker Friend",
+            friendAvatar = friend?.avatar ?: "",
+            friendProfession = friend?.profession ?: "Site Pro",
+            lastMessage = "You are now connected as friends!",
+            lastMessageTime = System.currentTimeMillis()
+        )
+        _conversations.value = listOf(newConv) + _conversations.value
+        return newConv
+    }
+
+    fun sendPrivateMessage(friendId: String, text: String): Boolean {
+        if (text.isBlank()) return false
+        val friends = getFriendUserIds("current_user")
+        if (!friends.contains(friendId) || _blockedUserIds.value.contains(friendId)) {
+            return false
+        }
+
+        val conv = ensureConversation(friendId)
+        val msg = DemoPrivateMessage(
+            id = UUID.randomUUID().toString(),
+            conversationId = conv.id,
+            senderId = "current_user",
+            senderName = "You",
+            receiverId = friendId,
+            message = text.trim(),
+            timestamp = System.currentTimeMillis(),
+            isRead = true
+        )
+
+        val currentMap = _privateMessagesMap.value.toMutableMap()
+        val list = currentMap[conv.id]?.toMutableList() ?: mutableListOf()
+        list.add(msg)
+        currentMap[conv.id] = list
+        _privateMessagesMap.value = currentMap
+
+        // Update conversation summary
+        _conversations.value = _conversations.value.map {
+            if (it.id == conv.id) {
+                it.copy(
+                    lastMessage = msg.message,
+                    lastMessageTime = msg.timestamp
+                )
+            } else it
+        }
+
+        return true
+    }
+
+    fun deletePrivateMessage(conversationId: String, messageId: String) {
+        val currentMap = _privateMessagesMap.value.toMutableMap()
+        val list = currentMap[conversationId]?.filterNot { it.id == messageId } ?: emptyList()
+        currentMap[conversationId] = list
+        _privateMessagesMap.value = currentMap
+    }
+
+    fun clearConversation(conversationId: String) {
+        val currentMap = _privateMessagesMap.value.toMutableMap()
+        currentMap[conversationId] = emptyList()
+        _privateMessagesMap.value = currentMap
     }
 
     fun topUpDiamonds(amount: Int) {
@@ -538,7 +735,13 @@ class DemoLiveRepository(context: Context? = null) {
     }
 
     fun blockUser(userId: String) {
+        if (userId == "current_user") return
         _blockedUserIds.value = _blockedUserIds.value + userId
+        unfriendUser(userId)
+    }
+
+    fun unblockUser(userId: String) {
+        _blockedUserIds.value = _blockedUserIds.value - userId
     }
 
     fun muteUserInRoom(roomId: String, userId: String) {
@@ -646,6 +849,16 @@ class DemoLiveRepository(context: Context? = null) {
         }
     }
 
+    fun resetSocialDemoData() {
+        _friendRequests.value = buildInitialFriendRequests()
+        _friendships.value = buildInitialFriendships()
+        _conversations.value = buildInitialConversations()
+        _privateMessagesMap.value = buildInitialPrivateMessages()
+        _blockedUserIds.value = emptySet()
+        _socialNotifications.value = buildInitialSocialNotifications()
+        syncSocialStateToUsers()
+    }
+
     fun resetDemoData() {
         prefs?.edit()?.clear()?.apply()
         inMemoryPrefs.clear()
@@ -662,6 +875,7 @@ class DemoLiveRepository(context: Context? = null) {
         _notifications.value = buildInitialNotifications()
         _liveGoals.value = buildInitialLiveGoals()
         _lastEndSummary.value = null
+        resetSocialDemoData()
         syncFollowStateToCreators()
         syncActiveRoomsToCreators()
     }
@@ -713,6 +927,40 @@ class DemoLiveRepository(context: Context? = null) {
             LiveCreator("creator_3", "Vikram Singh", "", "Master Mason & Structural Concrete Artisan", "Master Mason", 950, 95, false, 1900, "Masonry", true, true, "room_3"),
             LiveCreator("creator_4", "Pooja Verma", "", "Safety Auditor & Site Compliance Inspector", "Safety Auditor", 3100, 410, false, 8200, "Engineering", true, true, "room_4"),
             LiveCreator("creator_5", "Suresh Patel", "", "Labor Contractor & Payroll Lead", "Contractor", 1850, 310, false, 2600, "Contractor", true, true, "room_5")
+        )
+
+        private fun buildInitialPublicUsers(): List<DemoPublicUser> = listOf(
+            DemoPublicUser("creator_1", "Rajesh Sharma", "", "Senior Civil Site Engineer | 12 yrs site experience", "Civil Engineer", 1420, 240, 85, isFollowing = true, isFriend = true, isVerified = true, isLiveNow = true, activeRoomId = "room_1"),
+            DemoPublicUser("creator_2", "Amit Kumar", "", "Heavy Equipment Specialist & Operator", "Machinery Operator", 2890, 180, 110, isFollowing = true, isFriend = false, isVerified = true, isLiveNow = true, activeRoomId = "room_2"),
+            DemoPublicUser("creator_3", "Vikram Singh", "", "Master Mason & Structural Concrete Artisan", "Master Mason", 950, 95, 42, isFollowing = false, isFriend = false, isVerified = true, isLiveNow = true, activeRoomId = "room_3"),
+            DemoPublicUser("creator_4", "Pooja Verma", "", "Safety Auditor & Site Compliance Inspector", "Safety Auditor", 3100, 410, 150, isFollowing = false, isFriend = false, isVerified = true, isLiveNow = true, activeRoomId = "room_4"),
+            DemoPublicUser("creator_5", "Suresh Patel", "", "Labor Contractor & Payroll Lead", "Contractor", 1850, 310, 90, isFollowing = false, isFriend = false, isVerified = true, isLiveNow = true, activeRoomId = "room_5"),
+            DemoPublicUser("user_101", "Sunil Mason", "", "Plaster & Brickwork Expert", "Site Mason", 340, 50, 20, isFollowing = false, isFriend = false, friendRequestStatus = FriendRequestStatus.PENDING),
+            DemoPublicUser("user_102", "Deepak Plumber", "", "Commercial Plumbing Specialist", "Plumbing Lead", 510, 80, 35, isFollowing = false, isFriend = false)
+        )
+
+        private fun buildInitialFriendRequests(): List<DemoFriendRequest> = listOf(
+            DemoFriendRequest("freq_1", "user_101", "Sunil Mason", "", "Site Mason", "current_user", "You", FriendRequestStatus.PENDING)
+        )
+
+        private fun buildInitialFriendships(): List<DemoFriendship> = listOf(
+            DemoFriendship("fship_1", "current_user", "creator_1")
+        )
+
+        private fun buildInitialConversations(): List<DemoConversation> = listOf(
+            DemoConversation("conv_1", "creator_1", "Rajesh Sharma", "", "Civil Engineer", "Thanks for joining the civil foundation live stream!", System.currentTimeMillis() - 1800000, 0)
+        )
+
+        private fun buildInitialPrivateMessages(): Map<String, List<DemoPrivateMessage>> = mapOf(
+            "conv_1" to listOf(
+                DemoPrivateMessage("pm_1", "conv_1", "creator_1", "Rajesh Sharma", "current_user", "Hello! Great to connect with fellow site engineers.", System.currentTimeMillis() - 3600000, true),
+                DemoPrivateMessage("pm_2", "conv_1", "current_user", "You", "creator_1", "Thanks Rajesh sir! Your concrete mix ratio tip was very helpful.", System.currentTimeMillis() - 2700000, true),
+                DemoPrivateMessage("pm_3", "conv_1", "creator_1", "Rajesh Sharma", "current_user", "Thanks for joining the civil foundation live stream!", System.currentTimeMillis() - 1800000, true)
+            )
+        )
+
+        private fun buildInitialSocialNotifications(): List<DemoSocialNotification> = listOf(
+            DemoSocialNotification("snotif_1", "New Friend Request", "Sunil Mason sent you a friend request.", NotificationType.FRIEND_REQUEST, System.currentTimeMillis() - 360000, false, targetUserId = "user_101")
         )
 
         private fun buildInitialLiveRooms(): List<LiveRoom> = listOf(

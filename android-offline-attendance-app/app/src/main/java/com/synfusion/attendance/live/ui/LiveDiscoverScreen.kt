@@ -1,14 +1,11 @@
 package com.synfusion.attendance.live.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -39,37 +36,29 @@ fun LiveDiscoverScreen(
     onNavigateStudio: () -> Unit,
     onNavigateLeaderboard: () -> Unit,
     onNavigateProfile: () -> Unit,
-    onNavigateDemoControls: () -> Unit
+    onNavigatePeople: () -> Unit = {},
+    onNavigateMessages: () -> Unit = {},
+    onNavigateDemoControls: () -> Unit = {}
 ) {
     val liveRooms by viewModel.liveRooms.collectAsState()
-    val wallet by viewModel.wallet.collectAsState()
     val followedCreatorIds by viewModel.followedCreatorIds.collectAsState()
     val notifications by viewModel.notifications.collectAsState()
 
-    var selectedTab by remember { mutableStateOf("For You") }
-    var selectedCategory by remember { mutableStateOf("All") }
+    var selectedTab by remember { mutableStateOf("Explore") }
     var showSearchSheet by remember { mutableStateOf(false) }
     var showNotificationsSheet by remember { mutableStateOf(false) }
 
-    val tabs = listOf("For You", "Following", "Audio", "Video")
-    val categories = listOf("All", "Site Safety", "Machinery", "Masonry", "Engineering", "Contractor")
-
+    val tabs = listOf("Explore", "Following")
     val unreadNotificationsCount = remember(notifications) { notifications.count { !it.isRead } }
 
-    val filteredRooms = remember(liveRooms, selectedTab, selectedCategory, followedCreatorIds) {
+    val filteredRooms = remember(liveRooms, selectedTab, followedCreatorIds) {
         liveRooms.filter { room ->
             val matchesTab = when (selectedTab) {
-                "For You" -> true
+                "Explore" -> true
                 "Following" -> followedCreatorIds.contains(room.creatorId)
-                "Audio" -> room.type == LiveRoomType.AUDIO
-                "Video" -> room.type == LiveRoomType.VIDEO
                 else -> true
             }
-
-            val matchesCategory = if (selectedCategory == "All") true
-            else room.category.equals(selectedCategory, ignoreCase = true)
-
-            matchesTab && matchesCategory && room.isLive
+            matchesTab && room.isLive
         }
     }
 
@@ -77,10 +66,11 @@ fun LiveDiscoverScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("WorkDaily Live", fontWeight = FontWeight.Bold)
-                        LiveBadge(text = "DEMO", bgColor = LivePrimaryEmerald)
-                    }
+                    Text(
+                        text = "Live",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
@@ -92,6 +82,14 @@ fun LiveDiscoverScreen(
                         Icon(Icons.Default.Search, contentDescription = "Search Live")
                     }
 
+                    IconButton(onClick = onNavigatePeople) {
+                        Icon(Icons.Default.People, contentDescription = "People & Friends")
+                    }
+
+                    IconButton(onClick = onNavigateMessages) {
+                        Icon(Icons.Default.Chat, contentDescription = "Messages")
+                    }
+
                     Box {
                         IconButton(onClick = { showNotificationsSheet = true }) {
                             Icon(Icons.Default.Notifications, contentDescription = "Notifications")
@@ -101,20 +99,11 @@ fun LiveDiscoverScreen(
                                 modifier = Modifier
                                     .align(Alignment.TopEnd)
                                     .padding(top = 8.dp, end = 8.dp)
-                                    .size(10.dp)
+                                    .size(8.dp)
                                     .clip(CircleShape)
                                     .background(LiveRed)
                             )
                         }
-                    }
-
-                    DiamondBalanceChip(
-                        balance = wallet.diamondBalance,
-                        onClick = onNavigateWallet
-                    )
-
-                    IconButton(onClick = onNavigateStudio) {
-                        Icon(Icons.Default.VideoCall, contentDescription = "Creator Studio", tint = LivePrimaryMint)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -142,9 +131,9 @@ fun LiveDiscoverScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
                 .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // WorkDaily Custom Pill Tabs (For You, Following, Audio, Video)
+            // Clean Explore / Following Pill Tabs
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -161,12 +150,12 @@ fun LiveDiscoverScreen(
                             .clip(RoundedCornerShape(12.dp))
                             .background(if (isSelected) LivePrimaryEmerald else Color.Transparent)
                             .clickable { selectedTab = tab }
-                            .padding(vertical = 8.dp),
+                            .padding(vertical = 10.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
                             text = tab,
-                            fontSize = 12.sp,
+                            fontSize = 13.sp,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                             color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -174,60 +163,7 @@ fun LiveDiscoverScreen(
                 }
             }
 
-            // Category Filter Scrollable Chips
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(categories) { cat ->
-                    val isSelected = selectedCategory == cat
-                    FilterChip(
-                        selected = isSelected,
-                        onClick = { selectedCategory = cat },
-                        label = { Text(cat, fontSize = 12.sp, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = LivePrimaryEmerald.copy(alpha = 0.15f),
-                            selectedLabelColor = LivePrimaryEmerald,
-                            containerColor = MaterialTheme.colorScheme.surface,
-                            labelColor = MaterialTheme.colorScheme.onSurfaceVariant
-                        ),
-                        border = FilterChipDefaults.filterChipBorder(
-                            borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f),
-                            selectedBorderColor = LivePrimaryEmerald,
-                            enabled = true,
-                            selected = isSelected
-                        )
-                    )
-                }
-            }
-
-            // Featured Quick Banner
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onNavigateWallet() },
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = LiveSurfaceDark),
-                border = androidx.compose.foundation.BorderStroke(1.dp, LiveGold.copy(alpha = 0.35f))
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Icon(Icons.Default.Diamond, contentDescription = null, tint = LiveDiamondColor, modifier = Modifier.size(22.dp))
-                        Column {
-                            Text("Construction Gifts & Diamonds", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                            Text("Support site engineers & workers with 20+ gifts", fontSize = 11.sp, color = Color.LightGray)
-                        }
-                    }
-                    Icon(Icons.Default.ChevronRight, contentDescription = null, tint = LiveGold)
-                }
-            }
-
-            // Responsive 2-Column Grid
+            // 2-Column Responsive Grid Cards
             if (filteredRooms.isEmpty()) {
                 Box(
                     modifier = Modifier
@@ -252,7 +188,7 @@ fun LiveDiscoverScreen(
                     contentPadding = PaddingValues(bottom = 80.dp)
                 ) {
                     items(filteredRooms) { room ->
-                        LiveRoomGridCard(
+                        CleanLiveRoomGridCard(
                             room = room,
                             onClick = { onNavigateLiveRoom(room.id) }
                         )
@@ -294,7 +230,7 @@ fun DemoNotificationsSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = LiveDarkBg,
+        containerColor = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
     ) {
         Column(
@@ -309,12 +245,12 @@ fun DemoNotificationsSheet(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Icon(Icons.Default.Notifications, contentDescription = null, tint = LivePrimaryMint)
-                    Text("Live Demo Notifications", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    Icon(Icons.Default.Notifications, contentDescription = null, tint = LivePrimaryEmerald)
+                    Text("Live Notifications", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                 }
 
                 IconButton(onClick = onDismiss) {
-                    Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.Gray)
+                    Icon(Icons.Default.Close, contentDescription = "Close")
                 }
             }
 
@@ -325,7 +261,7 @@ fun DemoNotificationsSheet(
                         .height(180.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("No live notifications yet", color = Color.Gray, fontSize = 13.sp)
+                    Text("No notifications yet", color = Color.Gray, fontSize = 13.sp)
                 }
             } else {
                 notifications.forEach { notif ->
@@ -340,7 +276,7 @@ fun DemoNotificationsSheet(
                                 }
                             },
                         shape = RoundedCornerShape(12.dp),
-                        colors = CardDefaults.cardColors(containerColor = LiveSurfaceDark)
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                     ) {
                         Row(
                             modifier = Modifier
@@ -350,15 +286,15 @@ fun DemoNotificationsSheet(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(notif.title, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                                Text(notif.message, fontSize = 11.sp, color = Color.LightGray)
+                                Text(notif.title, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                                Text(notif.message, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                             if (!notif.isRead) {
                                 Box(
                                     modifier = Modifier
                                         .size(8.dp)
                                         .clip(CircleShape)
-                                        .background(LivePrimaryMint)
+                                        .background(LivePrimaryEmerald)
                                 )
                             }
                         }
@@ -372,77 +308,117 @@ fun DemoNotificationsSheet(
 }
 
 @Composable
-fun LiveRoomGridCard(
+fun CleanLiveRoomGridCard(
     room: LiveRoom,
     onClick: () -> Unit
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(175.dp)
+            .height(230.dp)
             .clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = LiveSurfaceDark),
-        border = androidx.compose.foundation.BorderStroke(1.dp, LivePrimaryEmerald.copy(alpha = 0.25f))
+        colors = CardDefaults.cardColors(containerColor = LiveSurfaceDark)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            Column(
+            // Simulated Video Preview Canvas / Background Gradient
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(10.dp),
-                verticalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    LiveBadge(
-                        text = if (room.type == LiveRoomType.AUDIO) "AUDIO" else "LIVE",
-                        bgColor = if (room.type == LiveRoomType.AUDIO) LivePurple else LiveRed
+                    .background(
+                        androidx.compose.ui.graphics.Brush.verticalGradient(
+                            listOf(
+                                Color(0xFF2C3E50),
+                                Color(0xFF000000)
+                            )
+                        )
                     )
-                    ViewerCountChip(count = room.viewerCount)
+            )
+
+            // Top Badges Overlay
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(10.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Live Badge with Red Dot
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color.Black.copy(alpha = 0.5f))
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(6.dp)
+                            .clip(CircleShape)
+                            .background(LiveRed)
+                    )
+                    Text(
+                        text = "LIVE",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color.White
+                    )
                 }
 
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        PulsingLiveAvatar(
-                            name = room.creatorName,
-                            size = 28.dp,
-                            isLive = room.isLive
-                        )
-                        Text(
-                            text = room.creatorName,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = LivePrimaryMint,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-
-                    Text(
-                        text = room.title,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        lineHeight = 15.sp
-                    )
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RoomCategoryChip(category = room.category)
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                            Icon(Icons.Default.Diamond, contentDescription = null, tint = LiveDiamondColor, modifier = Modifier.size(11.dp))
-                            Text("${room.diamondEarnings}", fontSize = 10.sp, color = LiveDiamondColor, fontWeight = FontWeight.Bold)
+                // Viewer Count and optional Audio Mic icon
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    if (room.type == LiveRoomType.AUDIO) {
+                        Box(
+                            modifier = Modifier
+                                .clip(CircleShape)
+                                .background(Color.Black.copy(alpha = 0.5f))
+                                .padding(4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Mic,
+                                contentDescription = "Audio Stream",
+                                tint = Color.White,
+                                modifier = Modifier.size(12.dp)
+                            )
                         }
                     }
+
+                    ViewerCountChip(count = room.viewerCount)
                 }
+            }
+
+            // Bottom Creator Overlay (Avatar + Display Name ONLY)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.BottomStart)
+                    .background(
+                        androidx.compose.ui.graphics.Brush.verticalGradient(
+                            listOf(Color.Transparent, Color.Black.copy(alpha = 0.85f))
+                        )
+                    )
+                    .padding(10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                PulsingLiveAvatar(
+                    name = room.creatorName,
+                    size = 32.dp,
+                    isLive = room.isLive
+                )
+
+                Text(
+                    text = room.creatorName,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
         }
     }
