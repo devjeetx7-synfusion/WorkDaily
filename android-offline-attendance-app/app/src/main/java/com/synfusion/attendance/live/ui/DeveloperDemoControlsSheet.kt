@@ -1,7 +1,6 @@
 package com.synfusion.attendance.live.ui
 
 import android.widget.Toast
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -156,23 +155,22 @@ fun DeveloperDemoControlsSheet(
 
             HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
 
-            // Quick Actions
-            Button(
+            // Social & General Demo Resets
+            Text("Reset Actions", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+
+            OutlinedButton(
                 onClick = {
-                    viewModel.addFreeDiamonds(1000)
-                    diamondsInput = (wallet.diamondBalance + 1000).toString()
-                    Toast.makeText(context, "+1000 Demo Diamonds Added! 💎", Toast.LENGTH_SHORT).show()
+                    viewModel.resetSocialDemoData()
+                    Toast.makeText(context, "Social demo data (friends, chat, requests) reset!", Toast.LENGTH_SHORT).show()
                 },
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = LivePrimaryEmerald, contentColor = Color.White),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Icon(Icons.Default.AddCircle, contentDescription = null, modifier = Modifier.size(18.dp))
+                Icon(Icons.Default.People, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Add +1000 Diamonds", fontWeight = FontWeight.Bold)
+                Text("Reset Social Demo Data Only", fontWeight = FontWeight.Bold)
             }
 
-            // Reset Demo Data
             OutlinedButton(
                 onClick = {
                     viewModel.resetDemoData()

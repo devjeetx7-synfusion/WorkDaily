@@ -12,13 +12,97 @@ enum class GuestRequestStatus {
     CANCELLED
 }
 
+enum class FriendRequestStatus {
+    PENDING,
+    ACCEPTED,
+    DECLINED,
+    CANCELLED
+}
+
 enum class NotificationType {
     LIVE_START,
     NEW_FOLLOWER,
     GIFT_RECEIVED,
     GUEST_APPROVED,
-    LIVE_ENDED
+    LIVE_ENDED,
+    FRIEND_REQUEST,
+    FRIEND_ACCEPT,
+    PRIVATE_MESSAGE
 }
+
+data class DemoPublicUser(
+    val id: String,
+    val name: String,
+    val avatar: String = "",
+    val bio: String = "",
+    val profession: String = "Site Worker",
+    val followerCount: Int = 0,
+    val followingCount: Int = 0,
+    val friendsCount: Int = 0,
+    val isFollowing: Boolean = false,
+    val isFriend: Boolean = false,
+    val friendRequestStatus: FriendRequestStatus? = null,
+    val isVerified: Boolean = false,
+    val isLiveNow: Boolean = false,
+    val activeRoomId: String? = null
+)
+
+data class DemoFriendRequest(
+    val id: String,
+    val senderId: String,
+    val senderName: String,
+    val senderAvatar: String = "",
+    val senderProfession: String = "Site Worker",
+    val receiverId: String,
+    val receiverName: String,
+    val status: FriendRequestStatus = FriendRequestStatus.PENDING,
+    val timestamp: Long = System.currentTimeMillis()
+)
+
+data class DemoFriendship(
+    val id: String,
+    val userId1: String,
+    val userId2: String,
+    val createdAt: Long = System.currentTimeMillis()
+)
+
+data class DemoConversation(
+    val id: String,
+    val friendId: String,
+    val friendName: String,
+    val friendAvatar: String = "",
+    val friendProfession: String = "",
+    val lastMessage: String = "",
+    val lastMessageTime: Long = System.currentTimeMillis(),
+    val unreadCount: Int = 0
+)
+
+data class DemoPrivateMessage(
+    val id: String,
+    val conversationId: String,
+    val senderId: String,
+    val senderName: String,
+    val receiverId: String,
+    val message: String,
+    val timestamp: Long = System.currentTimeMillis(),
+    val isRead: Boolean = false
+)
+
+data class DemoSocialNotification(
+    val id: String,
+    val title: String,
+    val message: String,
+    val type: NotificationType,
+    val timestamp: Long = System.currentTimeMillis(),
+    val isRead: Boolean = false,
+    val targetUserId: String? = null,
+    val targetRoomId: String? = null
+)
+
+data class DemoBlockedUser(
+    val userId: String,
+    val blockedAt: Long = System.currentTimeMillis()
+)
 
 data class LiveRoom(
     val id: String,

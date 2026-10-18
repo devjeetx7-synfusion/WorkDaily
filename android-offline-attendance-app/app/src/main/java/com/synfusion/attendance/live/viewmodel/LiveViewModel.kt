@@ -32,6 +32,54 @@ class LiveViewModel(application: Application) : AndroidViewModel(application) {
     val soundEnabled: StateFlow<Boolean> = repository.soundEnabled
     val hapticsEnabled: StateFlow<Boolean> = repository.hapticsEnabled
 
+    // Social Flow Proxies
+    val publicUsers: StateFlow<List<DemoPublicUser>> = repository.publicUsers
+    val friendRequests: StateFlow<List<DemoFriendRequest>> = repository.friendRequests
+    val friendships: StateFlow<List<DemoFriendship>> = repository.friendships
+    val conversations: StateFlow<List<DemoConversation>> = repository.conversations
+    val privateMessagesMap: StateFlow<Map<String, List<DemoPrivateMessage>>> = repository.privateMessagesMap
+    val socialNotifications: StateFlow<List<DemoSocialNotification>> = repository.socialNotifications
+
+    fun sendFriendRequest(targetUserId: String): Boolean {
+        return repository.sendFriendRequest(targetUserId)
+    }
+
+    fun acceptFriendRequest(requestId: String): Boolean {
+        return repository.acceptFriendRequest(requestId)
+    }
+
+    fun declineFriendRequest(requestId: String) {
+        repository.declineFriendRequest(requestId)
+    }
+
+    fun cancelFriendRequest(requestId: String) {
+        repository.cancelFriendRequest(requestId)
+    }
+
+    fun unfriendUser(targetUserId: String) {
+        repository.unfriendUser(targetUserId)
+    }
+
+    fun sendPrivateMessage(friendId: String, text: String): Boolean {
+        return repository.sendPrivateMessage(friendId, text)
+    }
+
+    fun deletePrivateMessage(conversationId: String, messageId: String) {
+        repository.deletePrivateMessage(conversationId, messageId)
+    }
+
+    fun clearConversation(conversationId: String) {
+        repository.clearConversation(conversationId)
+    }
+
+    fun unblockUser(userId: String) {
+        repository.unblockUser(userId)
+    }
+
+    fun resetSocialDemoData() {
+        repository.resetSocialDemoData()
+    }
+
     fun toggleFollowCreator(creatorId: String) {
         repository.toggleFollowCreator(creatorId)
     }

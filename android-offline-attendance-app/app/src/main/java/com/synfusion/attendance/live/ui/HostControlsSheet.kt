@@ -2,7 +2,6 @@ package com.synfusion.attendance.live.ui
 
 import android.widget.Toast
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -48,7 +47,7 @@ fun HostControlsSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = LiveDarkBg,
+        containerColor = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
     ) {
         Column(
@@ -64,12 +63,12 @@ fun HostControlsSheet(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Icon(Icons.Default.Tune, contentDescription = null, tint = LivePrimaryMint)
-                    Text("Host Stream Controls", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    Icon(Icons.Default.Tune, contentDescription = null, tint = LivePrimaryEmerald)
+                    Text("Host Stream Controls", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                 }
 
                 IconButton(onClick = onDismiss) {
-                    Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.Gray)
+                    Icon(Icons.Default.Close, contentDescription = "Close")
                 }
             }
 
@@ -78,7 +77,7 @@ fun HostControlsSheet(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
-                    .background(LiveSurfaceDark)
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
                     .padding(4.dp)
             ) {
                 tabs.forEach { tab ->
@@ -97,7 +96,7 @@ fun HostControlsSheet(
                             text = tab,
                             fontSize = 12.sp,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                            color = if (isSelected) Color.White else Color.Gray
+                            color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -115,16 +114,16 @@ fun HostControlsSheet(
                                 .weight(1f)
                                 .clip(RoundedCornerShape(14.dp))
                                 .clickable { micEnabled = !micEnabled },
-                            color = if (micEnabled) LivePrimaryEmerald.copy(alpha = 0.2f) else LiveSurfaceDark,
-                            border = androidx.compose.foundation.BorderStroke(1.dp, if (micEnabled) LivePrimaryMint else Color.Gray)
+                            color = if (micEnabled) LivePrimaryEmerald.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant,
+                            border = androidx.compose.foundation.BorderStroke(1.dp, if (micEnabled) LivePrimaryEmerald else Color.Gray)
                         ) {
                             Row(
                                 modifier = Modifier.padding(14.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                Icon(if (micEnabled) Icons.Default.Mic else Icons.Default.MicOff, contentDescription = null, tint = LivePrimaryMint)
-                                Text(if (micEnabled) "Mic On" else "Mic Muted", fontSize = 13.sp, color = Color.White, fontWeight = FontWeight.Bold)
+                                Icon(if (micEnabled) Icons.Default.Mic else Icons.Default.MicOff, contentDescription = null, tint = LivePrimaryEmerald)
+                                Text(if (micEnabled) "Mic On" else "Mic Muted", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
                             }
                         }
 
@@ -134,16 +133,16 @@ fun HostControlsSheet(
                                     .weight(1f)
                                     .clip(RoundedCornerShape(14.dp))
                                     .clickable { cameraEnabled = !cameraEnabled },
-                                color = if (cameraEnabled) LivePrimaryEmerald.copy(alpha = 0.2f) else LiveSurfaceDark,
-                                border = androidx.compose.foundation.BorderStroke(1.dp, if (cameraEnabled) LivePrimaryMint else Color.Gray)
+                                color = if (cameraEnabled) LivePrimaryEmerald.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant,
+                                border = androidx.compose.foundation.BorderStroke(1.dp, if (cameraEnabled) LivePrimaryEmerald else Color.Gray)
                             ) {
                                 Row(
                                     modifier = Modifier.padding(14.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
-                                    Icon(if (cameraEnabled) Icons.Default.Videocam else Icons.Default.VideocamOff, contentDescription = null, tint = LivePrimaryMint)
-                                    Text(if (cameraEnabled) "Cam On" else "Cam Off", fontSize = 13.sp, color = Color.White, fontWeight = FontWeight.Bold)
+                                    Icon(if (cameraEnabled) Icons.Default.Videocam else Icons.Default.VideocamOff, contentDescription = null, tint = LivePrimaryEmerald)
+                                    Text(if (cameraEnabled) "Cam On" else "Cam Off", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
@@ -154,14 +153,14 @@ fun HostControlsSheet(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(14.dp))
-                            .background(LiveSurfaceDark)
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
                             .padding(14.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            Icon(Icons.Default.Chat, contentDescription = null, tint = LivePrimaryMint)
-                            Text("Allow Viewers Chat", fontSize = 14.sp, color = Color.White, fontWeight = FontWeight.Bold)
+                            Icon(Icons.Default.Chat, contentDescription = null, tint = LivePrimaryEmerald)
+                            Text("Allow Viewers Chat", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
                         }
                         Switch(
                             checked = room.isChatEnabled,
@@ -203,7 +202,7 @@ fun HostControlsSheet(
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(12.dp),
-                                colors = CardDefaults.cardColors(containerColor = LiveSurfaceDark)
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                             ) {
                                 Row(
                                     modifier = Modifier
@@ -213,8 +212,8 @@ fun HostControlsSheet(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Column {
-                                        Text(req.userName, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                                        Text(req.userProfession, fontSize = 11.sp, color = Color.LightGray)
+                                        Text(req.userName, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                                        Text(req.userProfession, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
 
                                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -250,7 +249,7 @@ fun HostControlsSheet(
             } else {
                 // Moderation Options
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text("Chat & Room Moderation Actions", fontSize = 13.sp, color = Color.LightGray)
+                    Text("Chat & Room Moderation Actions", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
                     Button(
                         onClick = {
@@ -258,7 +257,7 @@ fun HostControlsSheet(
                             Toast.makeText(context, if (room.isChatEnabled) "Chat Disabled" else "Chat Enabled", Toast.LENGTH_SHORT).show()
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = LiveSurfaceDark, contentColor = Color.White),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurface),
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Icon(if (room.isChatEnabled) Icons.Default.SpeakerNotesOff else Icons.Default.Chat, contentDescription = null)
@@ -272,7 +271,7 @@ fun HostControlsSheet(
                             Toast.makeText(context, "Unpinned active comment", Toast.LENGTH_SHORT).show()
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = LiveSurfaceDark, contentColor = Color.White),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurface),
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Icon(Icons.Default.PushPin, contentDescription = null)

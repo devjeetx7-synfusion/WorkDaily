@@ -104,4 +104,48 @@ class WorkDailyLiveTest {
         assertEquals(creatorEarningBefore.totalDiamondsReceived - 200, creatorEarningAfter.totalDiamondsReceived)
         assertEquals(1, creatorEarningAfter.cashoutHistory.size)
     }
+
+    @Test
+    fun testFriendRequestAndMessagingFlow() {
+        val targetUserId = "user_102"
+
+        // 1. Cannot send private message before becoming friends
+        val preMessageSuccess = repository.sendPrivateMessage(targetUserId, "Hello!")
+        assertFalse("Messaging non-friends should fail", preMessageSuccess)
+
+        // 2. Send friend request
+        val requestSent = repository.sendFriendRequest(targetUserId)
+        assertTrue("Friend request should be sent", requestSent)
+
+        // 3. Find pending request and accept it
+        val req = repository.friendRequests.value.first { it.receiverId == targetUserId || it.senderId == targetUserId }
+        val accepted = repository.acceptFriendRequest(req.id)
+        assertTrue("Friend request acceptance should succeed", accepted)
+
+        // 4. Send private message now that users are friends
+        val postMessageSuccess = repository.sendPrivateMessage(targetUserId, "Hello friend!")
+        assertTrue("Messaging friends should succeed", postMessageSuccess)
+
+        // 5. Verify conversation and message content
+        val conv = repository.conversations.value.first { it.friendId == targetUserId }
+        val messages = repository.privateMessagesMap.value[conv.id] ?: emptyList()
+        assertEquals(1, messages.size)
+        assertEquals("Hello friend!", messages.first().message)
+    }
+
+    @Test
+    fun testBlockUserDisablesMessagingAndFriendship() {
+        val friendId = "creator_1" // Initial friend in seed data
+
+        // 1. Initial messaging works
+        val msgSent = repository.sendPrivateMessage(friendId, "Hey Rajesh!")
+        assertTrue("Initial message to friend should succeed", msgSent)
+
+        // 2. Block user
+        repository.blockUser(friendId)
+
+        // 3. Subsequent messaging fails
+        val blockedMsgSent = repository.sendPrivateMessage(friendId, "Are you there?")
+        assertFalse("Messaging blocked user should fail", blockedMsgSent)
+    }
 }

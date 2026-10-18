@@ -387,7 +387,8 @@ fun DashboardScreen(
                                                                     creators = liveCreators,
                                                                     followedCreatorIds = followedCreatorIds,
                                                                     onNavigateLiveDiscover = { bottomNavController.navigate("live_discover") },
-                                                                    onNavigateLiveRoom = { roomId -> bottomNavController.navigate("live_room/$roomId") }
+                                                                    onNavigateLiveRoom = { roomId -> bottomNavController.navigate("live_room/$roomId") },
+                                                                    onCreatorLongPress = { creator -> bottomNavController.navigate("live_profile?userId=${creator.id}") }
                                                                 )
                                                                 PersonalStatsGrid(currencyCode = settingsState.currencyCode,
                                                                     state = dashboardState,
@@ -442,7 +443,8 @@ fun DashboardScreen(
                                                                         creators = liveCreators,
                                                                         followedCreatorIds = followedCreatorIds,
                                                                         onNavigateLiveDiscover = { bottomNavController.navigate("live_discover") },
-                                                                        onNavigateLiveRoom = { roomId -> bottomNavController.navigate("live_room/$roomId") }
+                                                                        onNavigateLiveRoom = { roomId -> bottomNavController.navigate("live_room/$roomId") },
+                                                                        onCreatorLongPress = { creator -> bottomNavController.navigate("live_profile?userId=${creator.id}") }
                                                                     )
                                                                     PersonalStatsGrid(currencyCode = settingsState.currencyCode,
                                                                         state = dashboardState,
@@ -597,9 +599,11 @@ fun DashboardScreen(
                     onNavigateBack = { bottomNavController.navigateUp() },
                     onNavigateLiveRoom = { roomId -> bottomNavController.navigate("live_room/$roomId") },
                     onNavigateWallet = { bottomNavController.navigate("live_wallet") },
-                    onNavigateStudio = { bottomNavController.navigate("live_studio") },
+                    onNavigateStudio = { bottomNavController.navigate("live_setup") },
                     onNavigateLeaderboard = { bottomNavController.navigate("live_leaderboard") },
                     onNavigateProfile = { bottomNavController.navigate("live_profile") },
+                    onNavigatePeople = { bottomNavController.navigate("live_people") },
+                    onNavigateMessages = { bottomNavController.navigate("live_private_chat/creator_1") },
                     onNavigateDemoControls = { bottomNavController.navigate("live_demo_controls") }
                 )
             }
@@ -613,6 +617,26 @@ fun DashboardScreen(
                     viewModel = liveViewModel,
                     onNavigateBack = { bottomNavController.navigateUp() },
                     onNavigateWallet = { bottomNavController.navigate("live_wallet") }
+                )
+            }
+            composable("live_people") {
+                PeopleAndFriendsScreen(
+                    viewModel = liveViewModel,
+                    onNavigateBack = { bottomNavController.navigateUp() },
+                    onNavigateProfile = { userId -> bottomNavController.navigate("live_profile?userId=$userId") },
+                    onNavigatePrivateChat = { friendId -> bottomNavController.navigate("live_private_chat/$friendId") }
+                )
+            }
+            composable(
+                route = "live_private_chat/{friendId}",
+                arguments = listOf(navArgument("friendId") { defaultValue = "creator_1" })
+            ) { backStackEntry ->
+                val friendId = backStackEntry.arguments?.getString("friendId") ?: "creator_1"
+                PrivateChatScreen(
+                    friendId = friendId,
+                    viewModel = liveViewModel,
+                    onNavigateBack = { bottomNavController.navigateUp() },
+                    onNavigateProfile = { userId -> bottomNavController.navigate("live_profile?userId=$userId") }
                 )
             }
             composable("live_wallet") {
@@ -656,13 +680,20 @@ fun DashboardScreen(
                     onNavigateBack = { bottomNavController.navigateUp() }
                 )
             }
-            composable("live_profile") {
+            composable(
+                route = "live_profile?userId={userId}",
+                arguments = listOf(navArgument("userId") { defaultValue = "current_user" })
+            ) { backStackEntry ->
+                val userId = backStackEntry.arguments?.getString("userId") ?: "current_user"
                 LiveProfileScreen(
                     viewModel = liveViewModel,
+                    userId = userId,
                     onNavigateBack = { bottomNavController.navigateUp() },
                     onNavigateWallet = { bottomNavController.navigate("live_wallet") },
                     onNavigateEarnings = { bottomNavController.navigate("live_earnings") },
                     onNavigateStudio = { bottomNavController.navigate("live_setup") },
+                    onNavigateLiveRoom = { roomId -> bottomNavController.navigate("live_room/$roomId") },
+                    onNavigatePrivateChat = { friendId -> bottomNavController.navigate("live_private_chat/$friendId") },
                     onNavigateDemoControls = { bottomNavController.navigate("live_demo_controls") }
                 )
             }
