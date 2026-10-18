@@ -83,151 +83,71 @@ fun RewardsHubScreen(
                     colors = CardDefaults.cardColors(containerColor = Color.Transparent)
                 ) {
                     Box(
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(WorkDailyBrandPrimary)
                     ) {
-                        RewardsHeroBackground(
-                            modifier = Modifier.matchParentSize(),
-                            baseGradient = RewardsPrimaryGradient,
-                            showGlow = true,
-                            glowColor = GoldPrimary,
-                            showSparkles = true
-                        )
-
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(18.dp)
+                                .padding(16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Text(
-                                        text = stringResource(id = R.string.my_workdaily_coins).uppercase(),
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.ExtraBold,
-                                        letterSpacing = 1.2.sp,
-                                        color = HighlightLavender
-                                    )
-                                    Spacer(modifier = Modifier.height(6.dp))
-                                    RewardCoinBalance(
-                                        amount = walletSummary.totalBalance,
-                                        fontSize = 30,
-                                        textColor = Color.White,
-                                        coinSize = 32.dp
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = "Keep earning, keep growing!",
-                                        fontSize = 12.sp,
-                                        color = Color.White.copy(alpha = 0.85f),
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                }
+                            Text(
+                                text = "WORKDAILY COINS",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White.copy(alpha = 0.8f)
+                            )
 
-                                Box(
-                                    contentAlignment = Alignment.Center,
-                                    modifier = Modifier.size(110.dp)
-                                ) {
-                                    RewardsRadialGlow(
-                                        glowColor = GoldPrimary,
-                                        alpha = 0.35f
-                                    )
-                                    Image(
-                                        painter = painterResource(id = R.drawable.rewards_hub_worker),
-                                        contentDescription = "Rewards Worker",
-                                        modifier = Modifier.size(105.dp),
-                                        contentScale = ContentScale.Fit
-                                    )
-                                }
-                            }
+                            RewardCoinBalance(
+                                amount = walletSummary.totalBalance,
+                                fontSize = 36,
+                                textColor = Color.White,
+                                coinSize = 32.dp
+                            )
 
-                            Spacer(modifier = Modifier.height(14.dp))
-
-                            // Available & Pending Inset Summary Panel
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clip(RoundedCornerShape(14.dp))
-                                    .background(Color.White.copy(alpha = 0.95f))
-                                    .padding(horizontal = 14.dp, vertical = 10.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(Color.Black.copy(alpha = 0.15f))
+                                    .padding(12.dp),
+                                horizontalArrangement = Arrangement.SpaceEvenly
                             ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Text(
-                                        text = stringResource(id = R.string.available),
-                                        fontSize = 11.sp,
-                                        color = RewardsTextSecondary,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    RewardCoinBalance(
-                                        amount = walletSummary.availableCoins,
-                                        fontSize = 13,
-                                        textColor = RewardsSuccessGreen,
-                                        coinSize = 14.dp
-                                    )
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text("Available", color = Color.White.copy(alpha = 0.7f), fontSize = 11.sp)
+                                    RewardCoinBalance(amount = walletSummary.availableCoins, fontSize = 14, textColor = Color.White, coinSize = 12.dp)
                                 }
-
-                                Box(
-                                    modifier = Modifier
-                                        .height(18.dp)
-                                        .width(1.dp)
-                                        .background(Color(0xFFCBD5E1))
-                                )
-
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.End,
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Text(
-                                        text = stringResource(id = R.string.pending),
-                                        fontSize = 11.sp,
-                                        color = RewardsTextSecondary,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    RewardCoinBalance(
-                                        amount = walletSummary.pendingCoins,
-                                        fontSize = 13,
-                                        textColor = StatusOrange,
-                                        coinSize = 14.dp
-                                    )
+                                Box(modifier = Modifier.width(1.dp).height(24.dp).background(Color.White.copy(alpha = 0.2f)))
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text("Pending", color = Color.White.copy(alpha = 0.7f), fontSize = 11.sp)
+                                    RewardCoinBalance(amount = walletSummary.pendingCoins, fontSize = 14, textColor = Color.White, coinSize = 12.dp)
                                 }
                             }
 
-                            Spacer(modifier = Modifier.height(14.dp))
-
-                            // Action Buttons
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
-                                RewardSecondaryButton(
-                                    text = stringResource(id = R.string.view_wallet),
+                                Button(
                                     onClick = onNavigateWallet,
-                                    modifier = Modifier.weight(1f),
-                                    borderColor = Color.White,
-                                    contentColor = DeepIndigo,
-                                    containerColor = Color.White
-                                )
-                                RewardPrimaryButton(
-                                    text = stringResource(id = R.string.redeem),
+                                    modifier = Modifier.weight(1f).height(44.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.2f), contentColor = Color.White),
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Text("Wallet", fontWeight = FontWeight.Bold)
+                                }
+
+                                Button(
                                     onClick = onNavigateRedeem,
-                                    modifier = Modifier.weight(1f),
-                                    containerColor = RoyalPurple,
-                                    contentColor = Color.White,
-                                    icon = Icons.Default.CardGiftcard
-                                )
+                                    modifier = Modifier.weight(1f).height(44.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = WorkDailyBrandPrimary),
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Text("Redeem", fontWeight = FontWeight.Bold)
+                                }
                             }
                         }
                     }
@@ -244,12 +164,12 @@ fun RewardsHubScreen(
                     Card(
                         modifier = Modifier
                             .weight(1f)
-                            .height(120.dp)
+                            .height(100.dp)
                             .clickable { onNavigateDailyCheckIn() },
-                        shape = RoundedCornerShape(18.dp),
+                        shape = RoundedCornerShape(16.dp),
                         colors = CardDefaults.cardColors(containerColor = RewardsTheme.cardBackground),
                         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, RoyalPurple.copy(alpha = 0.3f))
+                        border = androidx.compose.foundation.BorderStroke(1.dp, RewardsTheme.softBorder)
                     ) {
                         Column(
                             modifier = Modifier
@@ -262,15 +182,10 @@ fun RewardsHubScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Image(
-                                    painter = painterResource(id = R.drawable.ic_wd_daily_checkin),
-                                    contentDescription = "Daily Check-in",
-                                    modifier = Modifier.size(34.dp),
-                                    contentScale = ContentScale.Fit
-                                )
+                                Icon(Icons.Default.CalendarMonth, contentDescription = null, tint = RoyalPurple, modifier = Modifier.size(24.dp))
                                 Box(
                                     modifier = Modifier
-                                        .clip(RoundedCornerShape(8.dp))
+                                        .clip(RoundedCornerShape(6.dp))
                                         .background(if (checkInState.isTodayClaimed) RewardsSuccessGreen.copy(alpha = 0.15f) else GoldPrimary.copy(alpha = 0.2f))
                                         .padding(horizontal = 6.dp, vertical = 2.dp)
                                 ) {
@@ -293,7 +208,7 @@ fun RewardsHubScreen(
                                 Text(
                                     text = "${streakState.currentStreak} Day Streak 🔥",
                                     fontSize = 11.sp,
-                                    color = RoyalPurple,
+                                    color = RewardsTheme.textSecondary,
                                     fontWeight = FontWeight.Bold
                                 )
                             }
@@ -304,12 +219,12 @@ fun RewardsHubScreen(
                     Card(
                         modifier = Modifier
                             .weight(1f)
-                            .height(120.dp)
+                            .height(100.dp)
                             .clickable { onNavigateSpin() },
-                        shape = RoundedCornerShape(18.dp),
+                        shape = RoundedCornerShape(16.dp),
                         colors = CardDefaults.cardColors(containerColor = RewardsTheme.cardBackground),
                         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, GoldPrimary.copy(alpha = 0.4f))
+                        border = androidx.compose.foundation.BorderStroke(1.dp, RewardsTheme.softBorder)
                     ) {
                         Column(
                             modifier = Modifier
@@ -322,15 +237,10 @@ fun RewardsHubScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Image(
-                                    painter = painterResource(id = R.drawable.ic_wd_builder_spin),
-                                    contentDescription = "Builder's Spin",
-                                    modifier = Modifier.size(34.dp),
-                                    contentScale = ContentScale.Fit
-                                )
+                                Icon(Icons.Default.Casino, contentDescription = null, tint = GoldPrimary, modifier = Modifier.size(24.dp))
                                 Box(
                                     modifier = Modifier
-                                        .clip(RoundedCornerShape(8.dp))
+                                        .clip(RoundedCornerShape(6.dp))
                                         .background(RoyalPurple.copy(alpha = 0.12f))
                                         .padding(horizontal = 6.dp, vertical = 2.dp)
                                 ) {
@@ -353,7 +263,7 @@ fun RewardsHubScreen(
                                 Text(
                                     text = "Spin & Win Coins 🪙",
                                     fontSize = 11.sp,
-                                    color = GoldSecondary,
+                                    color = RewardsTheme.textSecondary,
                                     fontWeight = FontWeight.Bold
                                 )
                             }
@@ -364,71 +274,49 @@ fun RewardsHubScreen(
 
             // 3. LIVE DIAMONDS & CREATOR EARNINGS
             item {
-                Row(
+                Card(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = RewardsTheme.cardBackground),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, RewardsTheme.softBorder)
                 ) {
-                    Card(
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(68.dp)
-                            .clickable { onNavigateLiveWallet() },
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFF0F172A)),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF00E5FF).copy(alpha = 0.4f))
-                    ) {
+                    Column(modifier = Modifier.fillMaxWidth()) {
                         Row(
                             modifier = Modifier
-                                .fillMaxSize()
-                                .padding(horizontal = 12.dp),
+                                .fillMaxWidth()
+                                .clickable { onNavigateLiveWallet() }
+                                .padding(16.dp),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(32.dp)
-                                    .clip(CircleShape)
-                                    .background(Color(0xFF00E5FF).copy(alpha = 0.2f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(Icons.Default.Diamond, contentDescription = null, tint = Color(0xFF00E5FF), modifier = Modifier.size(18.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Icon(Icons.Default.Diamond, contentDescription = null, tint = Color(0xFF00E5FF), modifier = Modifier.size(20.dp))
+                                Column {
+                                    Text("Live Diamonds", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = RewardsTheme.textPrimary)
+                                    Text("Gifts Wallet 💎", fontSize = 11.sp, color = RewardsTheme.textSecondary)
+                                }
                             }
-                            Column {
-                                Text("Live Diamonds", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                                Text("Gifts Wallet 💎", fontSize = 10.sp, color = Color(0xFF00E5FF))
-                            }
+                            Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = RewardsTheme.textSecondary, modifier = Modifier.size(16.dp))
                         }
-                    }
 
-                    Card(
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(68.dp)
-                            .clickable { onNavigateLiveEarnings() },
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFF0F172A)),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF10B981).copy(alpha = 0.4f))
-                    ) {
+                        HorizontalDivider(color = RewardsTheme.softBorder.copy(alpha = 0.5f))
+
                         Row(
                             modifier = Modifier
-                                .fillMaxSize()
-                                .padding(horizontal = 12.dp),
+                                .fillMaxWidth()
+                                .clickable { onNavigateLiveEarnings() }
+                                .padding(16.dp),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(32.dp)
-                                    .clip(CircleShape)
-                                    .background(Color(0xFF0F9F7A).copy(alpha = 0.2f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(Icons.Default.AccountBalanceWallet, contentDescription = null, tint = Color(0xFF10B981), modifier = Modifier.size(18.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Icon(Icons.Default.AccountBalanceWallet, contentDescription = null, tint = Color(0xFF10B981), modifier = Modifier.size(20.dp))
+                                Column {
+                                    Text("Creator Earnings", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = RewardsTheme.textPrimary)
+                                    Text("Cashout Demo 💵", fontSize = 11.sp, color = RewardsTheme.textSecondary)
+                                }
                             }
-                            Column {
-                                Text("Creator Earnings", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                                Text("Cashout Demo 💵", fontSize = 10.sp, color = Color(0xFF10B981))
-                            }
+                            Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = RewardsTheme.textSecondary, modifier = Modifier.size(16.dp))
                         }
                     }
                 }

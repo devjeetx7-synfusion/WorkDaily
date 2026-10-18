@@ -313,8 +313,9 @@ fun LiveRoomScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.BottomCenter)
-                    .navigationBarsPadding()
                     .imePadding()
+                    .navigationBarsPadding()
+
                     .padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -343,10 +344,10 @@ fun LiveRoomScreen(
                     state = chatListState,
                     modifier = Modifier
                         .fillMaxWidth(if (isKeyboardVisible) 1.0f else 0.82f)
-                        .heightIn(max = if (isKeyboardVisible) 110.dp else 160.dp),
+                        .weight(1f, fill = false),
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    items(chatMessages.takeLast(16)) { msg ->
+                    items(chatMessages) { msg ->
                         ChatMessageBubble(message = msg)
                     }
                 }

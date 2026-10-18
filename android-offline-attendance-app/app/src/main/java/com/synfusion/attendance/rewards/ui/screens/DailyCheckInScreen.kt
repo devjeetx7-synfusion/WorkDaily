@@ -93,141 +93,35 @@ fun DailyCheckInScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // A. Streak Hero Card
+            // A. Compact Hero Section
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(24.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.Transparent)
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = WorkDailyBrandPrimary)
                 ) {
-                    Box(modifier = Modifier.fillMaxWidth()) {
-                        RewardsHeroBackground(
-                            modifier = Modifier.matchParentSize(),
-                            baseGradient = RewardsPrimaryGradient,
-                            showGlow = true,
-                            glowColor = GoldPrimary,
-                            showSparkles = true
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(
+                            text = "My Daily Check-in Streak",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
                         )
-
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(18.dp)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(
-                                            imageVector = Icons.Default.LocalFireDepartment,
-                                            contentDescription = "Streak",
-                                            tint = GoldPrimary,
-                                            modifier = Modifier.size(16.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text(
-                                            text = "DAILY STREAK",
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.ExtraBold,
-                                            letterSpacing = 1.2.sp,
-                                            color = HighlightLavender
-                                        )
-                                    }
-                                    Spacer(modifier = Modifier.height(6.dp))
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                    ) {
-                                        Text(
-                                            text = "${streakState.currentStreak}",
-                                            fontSize = 38.sp,
-                                            fontWeight = FontWeight.Black,
-                                            color = Color.White
-                                        )
-                                        Text(
-                                            text = "Days",
-                                            fontSize = 20.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = GoldPrimary
-                                        )
-                                    }
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = if (checkInState.isTodayClaimed) "Today's check-in completed!" else "Check in today to keep your streak!",
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.Medium,
-                                        color = Color.White.copy(alpha = 0.95f)
-                                    )
-                                }
-
-                                Image(
-                                    painter = painterResource(id = R.drawable.checkin_calendar),
-                                    contentDescription = "Worker Illustration",
-                                    modifier = Modifier.size(92.dp),
-                                    contentScale = ContentScale.Fit
-                                )
+                            Column {
+                                Text("${streakState.currentStreak} Days", fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
+                                Text("Current Streak", fontSize = 12.sp, color = Color.White.copy(alpha = 0.8f))
                             }
-
-                            Spacer(modifier = Modifier.height(14.dp))
-
-                            // Streak Stats Inset Row
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(16.dp))
-                                    .background(Color.White.copy(alpha = 0.95f))
-                                    .padding(horizontal = 16.dp, vertical = 10.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Text(
-                                        text = "Longest Streak",
-                                        fontSize = 11.sp,
-                                        color = RewardsTextSecondary,
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                    Spacer(modifier = Modifier.height(2.dp))
-                                    Text(
-                                        text = "${streakState.longestStreak} Days",
-                                        fontSize = 14.sp,
-                                        fontWeight = FontWeight.ExtraBold,
-                                        color = WorkDailyBrandPrimary
-                                    )
-                                }
-
-                                Box(
-                                    modifier = Modifier
-                                        .height(24.dp)
-                                        .width(1.dp)
-                                        .background(Color(0xFFCBD5E1))
-                                )
-
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Text(
-                                        text = "Total Days",
-                                        fontSize = 11.sp,
-                                        color = RewardsTextSecondary,
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                    Spacer(modifier = Modifier.height(2.dp))
-                                    Text(
-                                        text = "${streakState.totalCheckInDays} Days",
-                                        fontSize = 14.sp,
-                                        fontWeight = FontWeight.ExtraBold,
-                                        color = WorkDailyBrandPrimaryDark
-                                    )
-                                }
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text("${streakState.longestStreak} Days", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                Text("Longest Streak", fontSize = 12.sp, color = Color.White.copy(alpha = 0.8f))
                             }
                         }
                     }
