@@ -5,9 +5,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -21,8 +21,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.synfusion.attendance.live.ui.components.*
 import com.synfusion.attendance.live.viewmodel.LiveViewModel
-import java.text.SimpleDateFormat
-import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,64 +31,51 @@ fun CreatorEarningsScreen(
     val creatorEarning by viewModel.creatorEarning.collectAsState()
     val context = LocalContext.current
 
-    var showCashoutDialog by remember { mutableStateOf(false) }
-
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Creator Stream Earnings", fontWeight = FontWeight.Bold) },
+                title = { Text("Demo Creator Earnings", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = LiveDarkBg, titleContentColor = Color.White)
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface
+                )
             )
         },
-        containerColor = LiveDarkBg
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
                 .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
+            verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
-            // Earnings Summary Banner
+            // Earnings Hero
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(22.dp),
                     colors = CardDefaults.cardColors(containerColor = LiveSurfaceDark),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, LivePrimaryMint.copy(alpha = 0.4f))
+                    border = androidx.compose.foundation.BorderStroke(1.dp, LiveGold.copy(alpha = 0.4f))
                 ) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(20.dp),
-                        verticalArrangement = Arrangement.spacedBy(14.dp)
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column {
-                                Text("ESTIMATED EARNINGS", fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = LivePrimaryMint)
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text("₹${String.format(Locale.getDefault(), "%.2f", creatorEarning.totalRupeesEarned)}", fontSize = 30.sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
-                            }
-
-                            Box(
-                                modifier = Modifier
-                                    .size(48.dp)
-                                    .clip(CircleShape)
-                                    .background(LivePrimaryEmerald.copy(alpha = 0.2f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(Icons.Default.AccountBalanceWallet, contentDescription = null, tint = LivePrimaryMint, modifier = Modifier.size(24.dp))
-                            }
+                        Text("TOTAL CREATOR DIAMONDS RECEIVED", fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = LiveGold)
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Icon(Icons.Default.Diamond, contentDescription = null, tint = LiveGold, modifier = Modifier.size(32.dp))
+                            Text("${creatorEarning.totalDiamondsReceived}", fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
                         }
+
+                        Text("Total Rupee Value: ≈ ₹${creatorEarning.totalRupeesEarned}", fontSize = 13.sp, color = LivePrimaryMint, fontWeight = FontWeight.Bold)
 
                         HorizontalDivider(color = Color.Gray.copy(alpha = 0.2f))
 
@@ -99,18 +84,24 @@ fun CreatorEarningsScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                Icon(Icons.Default.Diamond, contentDescription = null, tint = LiveDiamondColor, modifier = Modifier.size(16.dp))
-                                Text("${creatorEarning.totalDiamondsReceived} Received Diamonds", fontSize = 13.sp, color = Color.LightGray)
+                            Column {
+                                Text("Available: ${creatorEarning.availableDiamonds} 💎", fontSize = 12.sp, color = Color.White, fontWeight = FontWeight.Bold)
+                                Text("Pending: ${creatorEarning.pendingDiamonds} 💎", fontSize = 11.sp, color = Color.Gray)
                             }
 
                             Button(
-                                onClick = { showCashoutDialog = true },
-                                colors = ButtonDefaults.buttonColors(containerColor = LivePrimaryEmerald, contentColor = Color.White),
-                                enabled = creatorEarning.totalDiamondsReceived > 0,
+                                onClick = {
+                                    val success = viewModel.cashoutEarnings(200)
+                                    if (success) {
+                                        Toast.makeText(context, "Converted 200 Diamonds into ₹100 Demo Cashout!", Toast.LENGTH_SHORT).show()
+                                    } else {
+                                        Toast.makeText(context, "Insufficient available diamonds!", Toast.LENGTH_SHORT).show()
+                                    }
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = LiveGold, contentColor = Color.Black),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
-                                Text("Cashout Demo", fontWeight = FontWeight.Bold)
+                                Text("Cashout 200 💎", fontWeight = FontWeight.Bold, fontSize = 12.sp)
                             }
                         }
                     }
@@ -119,70 +110,37 @@ fun CreatorEarningsScreen(
 
             // Cashout History Section
             item {
-                Text("Cashout History", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Text("Demo Cashout History", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
             }
 
             if (creatorEarning.cashoutHistory.isEmpty()) {
                 item {
-                    Text("No cashout records yet. Host live streams and receive gifts to earn!", fontSize = 12.sp, color = Color.Gray)
+                    Text("No cashouts requested yet.", fontSize = 12.sp, color = Color.Gray)
                 }
             } else {
                 items(creatorEarning.cashoutHistory) { record ->
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(14.dp),
+                        shape = RoundedCornerShape(12.dp),
                         colors = CardDefaults.cardColors(containerColor = LiveSurfaceDark)
                     ) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(14.dp),
+                                .padding(12.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                Icon(Icons.Default.CheckCircle, contentDescription = null, tint = LivePrimaryMint)
-                                Column {
-                                    Text("Cashout ${record.diamondsConverted} 💎", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                                    val dateStr = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault()).format(Date(record.timestamp))
-                                    Text(dateStr, fontSize = 11.sp, color = Color.Gray)
-                                }
+                            Column {
+                                Text("Converted ${record.diamondsConverted} 💎", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                Text("Status: ${record.status}", fontSize = 11.sp, color = LivePrimaryMint)
                             }
 
-                            Text("₹${String.format(Locale.getDefault(), "%.2f", record.amountRupees)}", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = LivePrimaryMint)
+                            Text("₹${record.amountRupees}", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = LiveGold)
                         }
                     }
                 }
             }
-        }
-
-        if (showCashoutDialog) {
-            AlertDialog(
-                onDismissRequest = { showCashoutDialog = false },
-                title = { Text("Simulate Creator Cashout", fontWeight = FontWeight.Bold) },
-                text = {
-                    Text("Convert ${creatorEarning.totalDiamondsReceived} 💎 to ₹${String.format(Locale.getDefault(), "%.2f", creatorEarning.totalRupeesEarned)} in simulated bank account?")
-                },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            val success = viewModel.cashoutEarnings(creatorEarning.totalDiamondsReceived)
-                            if (success) {
-                                Toast.makeText(context, "Cashout successful! 💵", Toast.LENGTH_SHORT).show()
-                            }
-                            showCashoutDialog = false
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = LivePrimaryEmerald)
-                    ) {
-                        Text("Confirm Cashout")
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showCashoutDialog = false }) {
-                        Text("Cancel")
-                    }
-                }
-            )
         }
     }
 }

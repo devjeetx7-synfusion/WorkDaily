@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -13,6 +12,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -42,28 +42,34 @@ fun LiveDiscoverScreen(
     onNavigateDemoControls: () -> Unit
 ) {
     val liveRooms by viewModel.liveRooms.collectAsState()
-    val creators by viewModel.creators.collectAsState()
     val wallet by viewModel.wallet.collectAsState()
+    val followedCreatorIds by viewModel.followedCreatorIds.collectAsState()
+    val notifications by viewModel.notifications.collectAsState()
 
-    var searchQuery by remember { mutableStateOf("") }
+    var selectedTab by remember { mutableStateOf("For You") }
     var selectedCategory by remember { mutableStateOf("All") }
+    var showSearchSheet by remember { mutableStateOf(false) }
+    var showNotificationsSheet by remember { mutableStateOf(false) }
 
-    val categories = listOf("All", "Video", "Audio Stage", "Site Safety", "Machinery", "Masonry", "Contractor")
+    val tabs = listOf("For You", "Following", "Audio", "Video")
+    val categories = listOf("All", "Site Safety", "Machinery", "Masonry", "Engineering", "Contractor")
 
-    val filteredRooms = remember(liveRooms, searchQuery, selectedCategory) {
+    val unreadNotificationsCount = remember(notifications) { notifications.count { !it.isRead } }
+
+    val filteredRooms = remember(liveRooms, selectedTab, selectedCategory, followedCreatorIds) {
         liveRooms.filter { room ->
-            val matchesSearch = searchQuery.isBlank() ||
-                    room.title.contains(searchQuery, ignoreCase = true) ||
-                    room.creatorName.contains(searchQuery, ignoreCase = true)
-
-            val matchesCategory = when (selectedCategory) {
-                "All" -> true
+            val matchesTab = when (selectedTab) {
+                "For You" -> true
+                "Following" -> followedCreatorIds.contains(room.creatorId)
+                "Audio" -> room.type == LiveRoomType.AUDIO
                 "Video" -> room.type == LiveRoomType.VIDEO
-                "Audio Stage" -> room.type == LiveRoomType.AUDIO
-                else -> room.category.equals(selectedCategory, ignoreCase = true)
+                else -> true
             }
 
-            matchesSearch && matchesCategory
+            val matchesCategory = if (selectedCategory == "All") true
+            else room.category.equals(selectedCategory, ignoreCase = true)
+
+            matchesTab && matchesCategory && room.isLive
         }
     }
 
@@ -72,31 +78,49 @@ fun LiveDiscoverScreen(
             TopAppBar(
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("WorkDaily LIVE", fontWeight = FontWeight.Bold)
+                        Text("WorkDaily Live", fontWeight = FontWeight.Bold)
                         LiveBadge(text = "DEMO", bgColor = LivePrimaryEmerald)
                     }
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 actions = {
+                    IconButton(onClick = { showSearchSheet = true }) {
+                        Icon(Icons.Default.Search, contentDescription = "Search Live")
+                    }
+
+                    Box {
+                        IconButton(onClick = { showNotificationsSheet = true }) {
+                            Icon(Icons.Default.Notifications, contentDescription = "Notifications")
+                        }
+                        if (unreadNotificationsCount > 0) {
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .padding(top = 8.dp, end = 8.dp)
+                                    .size(10.dp)
+                                    .clip(CircleShape)
+                                    .background(LiveRed)
+                            )
+                        }
+                    }
+
                     DiamondBalanceChip(
                         balance = wallet.diamondBalance,
                         onClick = onNavigateWallet
                     )
-                    IconButton(onClick = onNavigateLeaderboard) {
-                        Icon(Icons.Default.EmojiEvents, contentDescription = "Leaderboard", tint = LiveGold)
-                    }
-                    IconButton(onClick = onNavigateProfile) {
-                        Icon(Icons.Default.Person, contentDescription = "Profile")
-                    }
-                    IconButton(onClick = onNavigateDemoControls) {
-                        Icon(Icons.Default.BugReport, contentDescription = "Developer Controls", tint = LivePrimaryMint)
+
+                    IconButton(onClick = onNavigateStudio) {
+                        Icon(Icons.Default.VideoCall, contentDescription = "Creator Studio", tint = LivePrimaryMint)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = LiveDarkBg, titleContentColor = Color.White)
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface
+                )
             )
         },
         floatingActionButton = {
@@ -104,47 +128,53 @@ fun LiveDiscoverScreen(
                 onClick = onNavigateStudio,
                 containerColor = LivePrimaryEmerald,
                 contentColor = Color.White,
-                icon = { Icon(Icons.Default.Videocam, contentDescription = null) },
-                text = { Text("Go Live", fontWeight = FontWeight.Bold) }
+                icon = { Icon(Icons.Default.Videocam, contentDescription = "Go Live") },
+                text = { Text("Go Live", fontWeight = FontWeight.Bold) },
+                shape = RoundedCornerShape(24.dp),
+                elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 4.dp),
+                modifier = Modifier.padding(bottom = 16.dp, end = 8.dp)
             )
         },
-        containerColor = LiveDarkBg
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
                 .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // Search Bar
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                placeholder = { Text("Search live site discussions & creators...", color = Color.Gray) },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color.Gray) },
-                trailingIcon = {
-                    if (searchQuery.isNotEmpty()) {
-                        IconButton(onClick = { searchQuery = "" }) {
-                            Icon(Icons.Default.Clear, contentDescription = "Clear", tint = Color.Gray)
-                        }
-                    }
-                },
+            // WorkDaily Custom Pill Tabs (For You, Following, Audio, Video)
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(14.dp)),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = LivePrimaryMint,
-                    unfocusedBorderColor = LivePrimaryEmerald.copy(alpha = 0.3f),
-                    focusedContainerColor = LiveSurfaceDark,
-                    unfocusedContainerColor = LiveSurfaceDark,
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White
-                ),
-                singleLine = true
-            )
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(MaterialTheme.colorScheme.surface)
+                    .padding(4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                tabs.forEach { tab ->
+                    val isSelected = selectedTab == tab
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(if (isSelected) LivePrimaryEmerald else Color.Transparent)
+                            .clickable { selectedTab = tab }
+                            .padding(vertical = 8.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = tab,
+                            fontSize = 12.sp,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                            color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
 
-            // Category Filter Tabs
+            // Category Filter Scrollable Chips
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -153,16 +183,16 @@ fun LiveDiscoverScreen(
                     FilterChip(
                         selected = isSelected,
                         onClick = { selectedCategory = cat },
-                        label = { Text(cat, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal) },
+                        label = { Text(cat, fontSize = 12.sp, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal) },
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = LivePrimaryEmerald,
-                            selectedLabelColor = Color.White,
-                            containerColor = LiveSurfaceDark,
-                            labelColor = Color.LightGray
+                            selectedContainerColor = LivePrimaryEmerald.copy(alpha = 0.15f),
+                            selectedLabelColor = LivePrimaryEmerald,
+                            containerColor = MaterialTheme.colorScheme.surface,
+                            labelColor = MaterialTheme.colorScheme.onSurfaceVariant
                         ),
                         border = FilterChipDefaults.filterChipBorder(
-                            borderColor = LivePrimaryEmerald.copy(alpha = 0.3f),
-                            selectedBorderColor = LivePrimaryMint,
+                            borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f),
+                            selectedBorderColor = LivePrimaryEmerald,
                             enabled = true,
                             selected = isSelected
                         )
@@ -170,7 +200,7 @@ fun LiveDiscoverScreen(
                 }
             }
 
-            // Featured Stream Banner / Quick Shortcuts Bar
+            // Featured Quick Banner
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -182,22 +212,22 @@ fun LiveDiscoverScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(14.dp),
+                        .padding(12.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Icon(Icons.Default.Diamond, contentDescription = null, tint = LiveDiamondColor, modifier = Modifier.size(24.dp))
+                        Icon(Icons.Default.Diamond, contentDescription = null, tint = LiveDiamondColor, modifier = Modifier.size(22.dp))
                         Column {
                             Text("Construction Gifts & Diamonds", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                            Text("Support creators with 20+ site tools gifts", fontSize = 11.sp, color = Color.LightGray)
+                            Text("Support site engineers & workers with 20+ gifts", fontSize = 11.sp, color = Color.LightGray)
                         }
                     }
                     Icon(Icons.Default.ChevronRight, contentDescription = null, tint = LiveGold)
                 }
             }
 
-            // Live Rooms Section
+            // Responsive 2-Column Grid
             if (filteredRooms.isEmpty()) {
                 Box(
                     modifier = Modifier
@@ -205,9 +235,12 @@ fun LiveDiscoverScreen(
                         .weight(1f),
                     contentAlignment = Alignment.Center
                 ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
                         Icon(Icons.Default.LiveTv, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(48.dp))
-                        Text("No live streams found in this category", color = Color.Gray, fontSize = 14.sp)
+                        Text("No live streams found in '$selectedTab'", color = Color.Gray, fontSize = 14.sp)
                     }
                 }
             } else {
@@ -215,7 +248,8 @@ fun LiveDiscoverScreen(
                     columns = GridCells.Fixed(2),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(bottom = 80.dp)
                 ) {
                     items(filteredRooms) { room ->
                         LiveRoomGridCard(
@@ -225,6 +259,114 @@ fun LiveDiscoverScreen(
                     }
                 }
             }
+        }
+
+        // Global Search Bottom Sheet
+        if (showSearchSheet) {
+            LiveSearchSheet(
+                viewModel = viewModel,
+                onDismiss = { showSearchSheet = false },
+                onNavigateLiveRoom = onNavigateLiveRoom,
+                onNavigateProfile = onNavigateProfile
+            )
+        }
+
+        // Demo Notifications Sheet
+        if (showNotificationsSheet) {
+            DemoNotificationsSheet(
+                viewModel = viewModel,
+                onDismiss = { showNotificationsSheet = false },
+                onNavigateLiveRoom = onNavigateLiveRoom
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DemoNotificationsSheet(
+    viewModel: LiveViewModel,
+    onDismiss: () -> Unit,
+    onNavigateLiveRoom: (String) -> Unit
+) {
+    val notifications by viewModel.notifications.collectAsState()
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = LiveDarkBg,
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Icon(Icons.Default.Notifications, contentDescription = null, tint = LivePrimaryMint)
+                    Text("Live Demo Notifications", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                }
+
+                IconButton(onClick = onDismiss) {
+                    Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.Gray)
+                }
+            }
+
+            if (notifications.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(180.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("No live notifications yet", color = Color.Gray, fontSize = 13.sp)
+                }
+            } else {
+                notifications.forEach { notif ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                viewModel.markNotificationRead(notif.id)
+                                notif.targetRoomId?.let {
+                                    onDismiss()
+                                    onNavigateLiveRoom(it)
+                                }
+                            },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = LiveSurfaceDark)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(notif.title, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                Text(notif.message, fontSize = 11.sp, color = Color.LightGray)
+                            }
+                            if (!notif.isRead) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(8.dp)
+                                        .clip(CircleShape)
+                                        .background(LivePrimaryMint)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
@@ -237,9 +379,9 @@ fun LiveRoomGridCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(180.dp)
+            .height(175.dp)
             .clickable { onClick() },
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = LiveSurfaceDark),
         border = androidx.compose.foundation.BorderStroke(1.dp, LivePrimaryEmerald.copy(alpha = 0.25f))
     ) {
@@ -247,7 +389,7 @@ fun LiveRoomGridCard(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(12.dp),
+                    .padding(10.dp),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
                 Row(
@@ -262,11 +404,11 @@ fun LiveRoomGridCard(
                     ViewerCountChip(count = room.viewerCount)
                 }
 
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         PulsingLiveAvatar(
                             name = room.creatorName,
-                            size = 32.dp,
+                            size = 28.dp,
                             isLive = room.isLive
                         )
                         Text(
@@ -281,12 +423,12 @@ fun LiveRoomGridCard(
 
                     Text(
                         text = room.title,
-                        fontSize = 13.sp,
+                        fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
-                        lineHeight = 16.sp
+                        lineHeight = 15.sp
                     )
 
                     Row(
@@ -296,7 +438,7 @@ fun LiveRoomGridCard(
                     ) {
                         RoomCategoryChip(category = room.category)
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                            Icon(Icons.Default.Diamond, contentDescription = null, tint = LiveDiamondColor, modifier = Modifier.size(12.dp))
+                            Icon(Icons.Default.Diamond, contentDescription = null, tint = LiveDiamondColor, modifier = Modifier.size(11.dp))
                             Text("${room.diamondEarnings}", fontSize = 10.sp, color = LiveDiamondColor, fontWeight = FontWeight.Bold)
                         }
                     }

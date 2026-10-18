@@ -11,7 +11,6 @@ import java.util.UUID
 class DemoLiveRepository(context: Context? = null) {
 
     private val inMemoryPrefs = HashMap<String, Any>()
-
     private val prefs: SharedPreferences? = context?.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
     private val _gifts = MutableStateFlow(buildDefaultGifts())
@@ -41,14 +40,57 @@ class DemoLiveRepository(context: Context? = null) {
     private val _giftTransactions = MutableStateFlow<List<GiftTransaction>>(emptyList())
     val giftTransactions: StateFlow<List<GiftTransaction>> = _giftTransactions.asStateFlow()
 
+    private val _guestRequestsMap = MutableStateFlow<Map<String, List<GuestRequest>>>(buildInitialGuestRequests())
+    val guestRequestsMap: StateFlow<Map<String, List<GuestRequest>>> = _guestRequestsMap.asStateFlow()
+
+    private val _audioSeatsMap = MutableStateFlow<Map<String, List<AudioSeat>>>(buildInitialAudioSeats())
+    val audioSeatsMap: StateFlow<Map<String, List<AudioSeat>>> = _audioSeatsMap.asStateFlow()
+
+    private val _blockedUserIds = MutableStateFlow<Set<String>>(emptySet())
+    val blockedUserIds: StateFlow<Set<String>> = _blockedUserIds.asStateFlow()
+
+    private val _mutedUserIdsMap = MutableStateFlow<Map<String, Set<String>>>(emptyMap())
+    val mutedUserIdsMap: StateFlow<Map<String, Set<String>>> = _mutedUserIdsMap.asStateFlow()
+
+    private val _notifications = MutableStateFlow(buildInitialNotifications())
+    val notifications: StateFlow<List<DemoNotification>> = _notifications.asStateFlow()
+
+    private val _liveGoals = MutableStateFlow(buildInitialLiveGoals())
+    val liveGoals: StateFlow<List<LiveGoal>> = _liveGoals.asStateFlow()
+
+    private val _giftOverlayEvents = MutableStateFlow<List<LiveGiftOverlayEvent>>(emptyList())
+    val giftOverlayEvents: StateFlow<List<LiveGiftOverlayEvent>> = _giftOverlayEvents.asStateFlow()
+
+    private val _lastEndSummary = MutableStateFlow<LiveEndSummary?>(null)
+    val lastEndSummary: StateFlow<LiveEndSummary?> = _lastEndSummary.asStateFlow()
+
+    // Sound preferences
+    private val _soundEnabled = MutableStateFlow(true)
+    val soundEnabled: StateFlow<Boolean> = _soundEnabled.asStateFlow()
+
+    private val _hapticsEnabled = MutableStateFlow(true)
+    val hapticsEnabled: StateFlow<Boolean> = _hapticsEnabled.asStateFlow()
+
     init {
         syncFollowStateToCreators()
+        syncActiveRoomsToCreators()
     }
 
     private fun syncFollowStateToCreators() {
         val followed = _followedCreatorIds.value
         _creators.value = _creators.value.map { creator ->
             creator.copy(isFollowing = followed.contains(creator.id))
+        }
+    }
+
+    private fun syncActiveRoomsToCreators() {
+        val activeRooms = _liveRooms.value.filter { it.isLive }
+        _creators.value = _creators.value.map { creator ->
+            val room = activeRooms.find { it.creatorId == creator.id }
+            creator.copy(
+                isLiveNow = room != null,
+                activeRoomId = room?.id
+            )
         }
     }
 
@@ -74,7 +116,14 @@ class DemoLiveRepository(context: Context? = null) {
     private fun loadCreatorEarning(): DemoCreatorEarning {
         val diamonds = prefs?.getInt(KEY_CREATOR_DIAMONDS, 1200) ?: (inMemoryPrefs[KEY_CREATOR_DIAMONDS] as? Int ?: 1200)
         val rupees = diamonds * RUPEES_PER_DIAMOND
-        return DemoCreatorEarning(totalDiamondsReceived = diamonds, totalRupeesEarned = rupees)
+        val pending = (diamonds * 0.25).toInt()
+        val available = diamonds - pending
+        return DemoCreatorEarning(
+            totalDiamondsReceived = diamonds,
+            totalRupeesEarned = rupees,
+            pendingDiamonds = pending,
+            availableDiamonds = available
+        )
     }
 
     private fun saveCreatorEarning(earning: DemoCreatorEarning) {
@@ -100,15 +149,23 @@ class DemoLiveRepository(context: Context? = null) {
 
     fun toggleFollowCreator(creatorId: String) {
         val current = _followedCreatorIds.value.toMutableSet()
-        if (current.contains(creatorId)) {
-            current.remove(creatorId)
-        } else {
+        val isNowFollowing = !current.contains(creatorId)
+        if (isNowFollowing) {
             current.add(creatorId)
+            addNotification(
+                title = "New Follow",
+                message = "You are now following creator",
+                type = NotificationType.NEW_FOLLOWER,
+                targetCreatorId = creatorId
+            )
+        } else {
+            current.remove(creatorId)
         }
         saveFollowedCreatorIds(current)
     }
 
     fun topUpDiamonds(amount: Int) {
+        if (amount <= 0) return
         val current = _wallet.value
         val updated = current.copy(
             diamondBalance = current.diamondBalance + amount,
@@ -121,16 +178,18 @@ class DemoLiveRepository(context: Context? = null) {
         topUpDiamonds(amount)
     }
 
-    fun sendGift(roomId: String, gift: LiveGift): Boolean {
+    fun sendGift(roomId: String, gift: LiveGift, quantity: Int = 1): Boolean {
+        if (quantity <= 0) return false
+        val totalCost = gift.diamondCost * quantity
         val currentWallet = _wallet.value
-        if (currentWallet.diamondBalance < gift.diamondCost) {
+        if (currentWallet.diamondBalance < totalCost) {
             return false
         }
 
-        // Deduct diamonds from wallet
+        // Deduct diamonds
         val updatedWallet = currentWallet.copy(
-            diamondBalance = currentWallet.diamondBalance - gift.diamondCost,
-            totalSpent = currentWallet.totalSpent + gift.diamondCost
+            diamondBalance = currentWallet.diamondBalance - totalCost,
+            totalSpent = currentWallet.totalSpent + totalCost
         )
         saveWallet(updatedWallet)
 
@@ -142,53 +201,92 @@ class DemoLiveRepository(context: Context? = null) {
             senderName = "You",
             giftId = gift.id,
             giftName = gift.name,
-            diamondCost = gift.diamondCost
+            diamondCost = totalCost,
+            quantity = quantity
         )
         _giftTransactions.value = listOf(tx) + _giftTransactions.value
 
         // Update Room Diamond Earnings
         _liveRooms.value = _liveRooms.value.map { room ->
             if (room.id == roomId) {
-                room.copy(diamondEarnings = room.diamondEarnings + gift.diamondCost)
+                room.copy(diamondEarnings = room.diamondEarnings + totalCost)
             } else room
         }
 
         if (_activeRoom.value?.id == roomId) {
             val currentActive = _activeRoom.value
             if (currentActive != null) {
-                _activeRoom.value = currentActive.copy(diamondEarnings = currentActive.diamondEarnings + gift.diamondCost)
+                _activeRoom.value = currentActive.copy(diamondEarnings = currentActive.diamondEarnings + totalCost)
             }
         }
 
-        // Credit Creator Earnings (if stream is by creator)
+        // Credit Creator Earnings
         val room = _liveRooms.value.find { it.id == roomId }
         if (room != null) {
             val currentEarning = _creatorEarning.value
-            val newTotalDiamonds = currentEarning.totalDiamondsReceived + gift.diamondCost
+            val newTotalDiamonds = currentEarning.totalDiamondsReceived + totalCost
             val newTotalRupees = newTotalDiamonds * RUPEES_PER_DIAMOND
+            val newPending = (newTotalDiamonds * 0.25).toInt()
             saveCreatorEarning(currentEarning.copy(
                 totalDiamondsReceived = newTotalDiamonds,
-                totalRupeesEarned = newTotalRupees
+                totalRupeesEarned = newTotalRupees,
+                pendingDiamonds = newPending,
+                availableDiamonds = newTotalDiamonds - newPending
             ))
         }
 
-        // Post chat gift announcement
+        // Post Chat Announcement
+        val quantityText = if (quantity > 1) " x$quantity" else ""
         val announcement = ChatMessage(
             id = UUID.randomUUID().toString(),
             roomId = roomId,
             senderName = "You",
-            message = "sent ${gift.name} (${gift.diamondCost} 💎)",
+            message = "sent ${gift.name}$quantityText ($totalCost 💎)",
             isGiftAnnouncement = true,
             giftName = gift.name,
-            giftDiamondCost = gift.diamondCost
+            giftDiamondCost = totalCost
         )
         addChatMessageInternal(roomId, announcement)
+
+        // Trigger Gift Overlay Event
+        val overlayEvent = LiveGiftOverlayEvent(
+            id = UUID.randomUUID().toString(),
+            roomId = roomId,
+            giftName = gift.name,
+            senderName = "You",
+            quantity = quantity,
+            comboCount = if (quantity >= 5) quantity else 1,
+            diamondCost = totalCost
+        )
+        _giftOverlayEvents.value = listOf(overlayEvent) + _giftOverlayEvents.value
+
+        // Update Goals
+        updateGoalProgress(typeText = "GIFTS", amount = quantity)
 
         return true
     }
 
+    fun sendHearts(roomId: String, count: Int = 1) {
+        if (count <= 0) return
+        _liveRooms.value = _liveRooms.value.map { room ->
+            if (room.id == roomId) {
+                room.copy(likeCount = room.likeCount + count)
+            } else room
+        }
+        if (_activeRoom.value?.id == roomId) {
+            val active = _activeRoom.value
+            if (active != null) {
+                _activeRoom.value = active.copy(likeCount = active.likeCount + count)
+            }
+        }
+        updateGoalProgress(typeText = "HEARTS", amount = count)
+    }
+
     fun sendChatMessage(roomId: String, messageText: String, senderName: String = "You") {
         if (messageText.isBlank()) return
+        val room = _liveRooms.value.find { it.id == roomId }
+        if (room != null && !room.isChatEnabled) return
+
         val msg = ChatMessage(
             id = UUID.randomUUID().toString(),
             roomId = roomId,
@@ -206,6 +304,62 @@ class DemoLiveRepository(context: Context? = null) {
         _chatMessagesMap.value = currentMap
     }
 
+    fun pinChatMessage(roomId: String, messageId: String) {
+        val currentMap = _chatMessagesMap.value.toMutableMap()
+        val list = currentMap[roomId]?.map { msg ->
+            if (msg.id == messageId) msg.copy(isPinned = true) else msg.copy(isPinned = false)
+        } ?: emptyList()
+        currentMap[roomId] = list
+        _chatMessagesMap.value = currentMap
+
+        val pinnedMsg = list.find { it.id == messageId }
+        _liveRooms.value = _liveRooms.value.map { room ->
+            if (room.id == roomId) room.copy(pinnedMessage = pinnedMsg) else room
+        }
+        if (_activeRoom.value?.id == roomId) {
+            val active = _activeRoom.value
+            if (active != null) {
+                _activeRoom.value = active.copy(pinnedMessage = pinnedMsg)
+            }
+        }
+    }
+
+    fun unpinChatMessage(roomId: String) {
+        val currentMap = _chatMessagesMap.value.toMutableMap()
+        val list = currentMap[roomId]?.map { msg -> msg.copy(isPinned = false) } ?: emptyList()
+        currentMap[roomId] = list
+        _chatMessagesMap.value = currentMap
+
+        _liveRooms.value = _liveRooms.value.map { room ->
+            if (room.id == roomId) room.copy(pinnedMessage = null) else room
+        }
+        if (_activeRoom.value?.id == roomId) {
+            val active = _activeRoom.value
+            if (active != null) {
+                _activeRoom.value = active.copy(pinnedMessage = null)
+            }
+        }
+    }
+
+    fun deleteChatMessage(roomId: String, messageId: String) {
+        val currentMap = _chatMessagesMap.value.toMutableMap()
+        val list = currentMap[roomId]?.filterNot { it.id == messageId } ?: emptyList()
+        currentMap[roomId] = list
+        _chatMessagesMap.value = currentMap
+    }
+
+    fun toggleChatEnabled(roomId: String) {
+        _liveRooms.value = _liveRooms.value.map { room ->
+            if (room.id == roomId) room.copy(isChatEnabled = !room.isChatEnabled) else room
+        }
+        if (_activeRoom.value?.id == roomId) {
+            val active = _activeRoom.value
+            if (active != null) {
+                _activeRoom.value = active.copy(isChatEnabled = !active.isChatEnabled)
+            }
+        }
+    }
+
     fun setActiveRoom(roomId: String?) {
         if (roomId == null) {
             _activeRoom.value = null
@@ -219,41 +373,223 @@ class DemoLiveRepository(context: Context? = null) {
         title: String,
         category: String,
         type: LiveRoomType,
-        tags: List<String>
+        tags: List<String>,
+        description: String = "",
+        isPublic: Boolean = true,
+        allowGuestRequests: Boolean = true,
+        showGifts: Boolean = true
     ): LiveRoom {
         val newRoom = LiveRoom(
             id = "room_" + UUID.randomUUID().toString().take(8),
-            title = title.ifBlank { "Live Construction Workday" },
+            title = title.ifBlank { "Live Site Workday Discussion" },
             creatorId = "creator_me",
             creatorName = "You (Host)",
             creatorAvatar = "",
-            category = category,
+            creatorProfession = "Site Engineer Lead",
+            category = category.ifBlank { "Site Safety" },
             type = type,
             viewerCount = 1,
+            peakViewerCount = 1,
             diamondEarnings = 0,
+            likeCount = 0,
             isLive = true,
-            tags = tags.ifEmpty { listOf("LiveWork", "Construction") }
+            isHost = true,
+            hostUserId = "creator_me",
+            tags = tags.ifEmpty { listOf("LiveWork", "SiteSafety") },
+            description = description,
+            isPublic = isPublic,
+            allowGuestRequests = allowGuestRequests,
+            showGifts = showGifts
         )
         _liveRooms.value = listOf(newRoom) + _liveRooms.value
         _activeRoom.value = newRoom
 
+        // Initialize Audio seats if audio
+        if (type == LiveRoomType.AUDIO) {
+            _audioSeatsMap.value = _audioSeatsMap.value.toMutableMap().apply {
+                put(newRoom.id, buildDefaultAudioSeats(hostName = "You (Host)"))
+            }
+        }
+
         // Initial welcome chat message
-        sendChatMessage(newRoom.id, "Welcome to the live stream! Ask questions in chat.", "System")
+        sendChatMessage(newRoom.id, "Welcome to your live stream! Attendees can comment and send gifts.", "System")
+
+        // Notification
+        addNotification(
+            title = "Live Stream Started",
+            message = "Your stream '${newRoom.title}' is now live!",
+            type = NotificationType.LIVE_START,
+            targetRoomId = newRoom.id
+        )
+
+        syncActiveRoomsToCreators()
         return newRoom
     }
 
-    fun endLiveStream(roomId: String) {
-        _liveRooms.value = _liveRooms.value.map { room ->
-            if (room.id == roomId) room.copy(isLive = false) else room
+    fun endLiveStream(roomId: String): LiveEndSummary? {
+        val room = _liveRooms.value.find { it.id == roomId } ?: return null
+        val durationSeconds = ((System.currentTimeMillis() - room.startTimeMillis) / 1000).coerceAtLeast(10)
+        val rupeesEarned = room.diamondEarnings * RUPEES_PER_DIAMOND
+
+        val summary = LiveEndSummary(
+            roomId = room.id,
+            title = room.title,
+            creatorName = room.creatorName,
+            durationSeconds = durationSeconds,
+            peakViewers = (room.viewerCount * 1.5).toInt().coerceAtLeast(room.viewerCount),
+            totalViewers = (room.viewerCount * 2.5).toInt().coerceAtLeast(room.viewerCount + 10),
+            heartsReceived = room.likeCount,
+            newFollowersCount = 12,
+            giftsReceivedCount = (room.diamondEarnings / 20).coerceAtLeast(2),
+            diamondsEarned = room.diamondEarnings,
+            rupeesEarned = rupeesEarned
+        )
+        _lastEndSummary.value = summary
+
+        _liveRooms.value = _liveRooms.value.map { r ->
+            if (r.id == roomId) r.copy(isLive = false) else r
         }
         if (_activeRoom.value?.id == roomId) {
             _activeRoom.value = null
+        }
+
+        addNotification(
+            title = "Live Session Ended",
+            message = "Your stream ended. Total Diamonds earned: ${summary.diamondsEarned} 💎",
+            type = NotificationType.LIVE_ENDED,
+            targetRoomId = roomId
+        )
+
+        syncActiveRoomsToCreators()
+        return summary
+    }
+
+    fun requestToJoinGuest(roomId: String, userName: String = "You"): GuestRequest {
+        val req = GuestRequest(
+            id = UUID.randomUUID().toString(),
+            roomId = roomId,
+            userId = "current_user",
+            userName = userName,
+            status = GuestRequestStatus.PENDING
+        )
+        val currentMap = _guestRequestsMap.value.toMutableMap()
+        val list = currentMap[roomId]?.toMutableList() ?: mutableListOf()
+        list.add(req)
+        currentMap[roomId] = list
+        _guestRequestsMap.value = currentMap
+        return req
+    }
+
+    fun approveGuestRequest(roomId: String, requestId: String) {
+        updateGuestRequestStatus(roomId, requestId, GuestRequestStatus.APPROVED)
+    }
+
+    fun rejectGuestRequest(roomId: String, requestId: String) {
+        updateGuestRequestStatus(roomId, requestId, GuestRequestStatus.REJECTED)
+    }
+
+    private fun updateGuestRequestStatus(roomId: String, requestId: String, status: GuestRequestStatus) {
+        val currentMap = _guestRequestsMap.value.toMutableMap()
+        val list = currentMap[roomId]?.map { req ->
+            if (req.id == requestId) req.copy(status = status) else req
+        } ?: emptyList()
+        currentMap[roomId] = list
+        _guestRequestsMap.value = currentMap
+    }
+
+    fun occupyAudioSeat(roomId: String, seatIndex: Int, userId: String, userName: String) {
+        val currentMap = _audioSeatsMap.value.toMutableMap()
+        val seats = currentMap[roomId]?.toMutableList() ?: buildDefaultAudioSeats().toMutableList()
+        if (seatIndex in seats.indices) {
+            seats[seatIndex] = seats[seatIndex].copy(userId = userId, userName = userName, isSpeaking = true)
+        }
+        currentMap[roomId] = seats
+        _audioSeatsMap.value = currentMap
+    }
+
+    fun leaveAudioSeat(roomId: String, seatIndex: Int) {
+        val currentMap = _audioSeatsMap.value.toMutableMap()
+        val seats = currentMap[roomId]?.toMutableList() ?: return
+        if (seatIndex in seats.indices && !seats[seatIndex].isHostSeat) {
+            seats[seatIndex] = seats[seatIndex].copy(userId = null, userName = null, isSpeaking = false)
+        }
+        currentMap[roomId] = seats
+        _audioSeatsMap.value = currentMap
+    }
+
+    fun toggleAudioSeatMute(roomId: String, seatIndex: Int) {
+        val currentMap = _audioSeatsMap.value.toMutableMap()
+        val seats = currentMap[roomId]?.toMutableList() ?: return
+        if (seatIndex in seats.indices) {
+            seats[seatIndex] = seats[seatIndex].copy(isMuted = !seats[seatIndex].isMuted)
+        }
+        currentMap[roomId] = seats
+        _audioSeatsMap.value = currentMap
+    }
+
+    fun toggleLockSeat(roomId: String, seatIndex: Int) {
+        val currentMap = _audioSeatsMap.value.toMutableMap()
+        val seats = currentMap[roomId]?.toMutableList() ?: return
+        if (seatIndex in seats.indices) {
+            seats[seatIndex] = seats[seatIndex].copy(isLocked = !seats[seatIndex].isLocked)
+        }
+        currentMap[roomId] = seats
+        _audioSeatsMap.value = currentMap
+    }
+
+    fun blockUser(userId: String) {
+        _blockedUserIds.value = _blockedUserIds.value + userId
+    }
+
+    fun muteUserInRoom(roomId: String, userId: String) {
+        val map = _mutedUserIdsMap.value.toMutableMap()
+        val currentMuted = map[roomId]?.toMutableSet() ?: mutableSetOf()
+        currentMuted.add(userId)
+        map[roomId] = currentMuted
+        _mutedUserIdsMap.value = map
+    }
+
+    fun addNotification(title: String, message: String, type: NotificationType, targetRoomId: String? = null, targetCreatorId: String? = null) {
+        val notif = DemoNotification(
+            id = UUID.randomUUID().toString(),
+            title = title,
+            message = message,
+            type = type,
+            targetRoomId = targetRoomId,
+            targetCreatorId = targetCreatorId
+        )
+        _notifications.value = listOf(notif) + _notifications.value
+    }
+
+    fun markNotificationRead(id: String) {
+        _notifications.value = _notifications.value.map { notif ->
+            if (notif.id == id) notif.copy(isRead = true) else notif
+        }
+    }
+
+    fun toggleSoundEnabled() {
+        _soundEnabled.value = !_soundEnabled.value
+    }
+
+    fun toggleHapticsEnabled() {
+        _hapticsEnabled.value = !_hapticsEnabled.value
+    }
+
+    private fun updateGoalProgress(typeText: String, amount: Int) {
+        _liveGoals.value = _liveGoals.value.map { goal ->
+            if (goal.unitText.contains(typeText, ignoreCase = true) && !goal.isCompleted) {
+                val newCurrent = goal.current + amount
+                goal.copy(
+                    current = newCurrent,
+                    isCompleted = newCurrent >= goal.target
+                )
+            } else goal
         }
     }
 
     fun cashoutEarnings(diamondsToCashout: Int): Boolean {
         val currentEarning = _creatorEarning.value
-        if (diamondsToCashout <= 0 || currentEarning.totalDiamondsReceived < diamondsToCashout) {
+        if (diamondsToCashout <= 0 || currentEarning.availableDiamonds < diamondsToCashout) {
             return false
         }
 
@@ -268,10 +604,46 @@ class DemoLiveRepository(context: Context? = null) {
         val updated = currentEarning.copy(
             totalDiamondsReceived = currentEarning.totalDiamondsReceived - diamondsToCashout,
             totalRupeesEarned = (currentEarning.totalDiamondsReceived - diamondsToCashout) * RUPEES_PER_DIAMOND,
+            availableDiamonds = currentEarning.availableDiamonds - diamondsToCashout,
             cashoutHistory = listOf(newRecord) + currentEarning.cashoutHistory
         )
         saveCreatorEarning(updated)
         return true
+    }
+
+    fun updateDemoDataOverrides(
+        diamonds: Int? = null,
+        creatorDiamonds: Int? = null,
+        followersCount: Int? = null,
+        viewerCount: Int? = null,
+        likeCount: Int? = null
+    ) {
+        diamonds?.let {
+            saveWallet(_wallet.value.copy(diamondBalance = it))
+        }
+        creatorDiamonds?.let {
+            saveCreatorEarning(_creatorEarning.value.copy(
+                totalDiamondsReceived = it,
+                totalRupeesEarned = it * RUPEES_PER_DIAMOND,
+                availableDiamonds = (it * 0.75).toInt(),
+                pendingDiamonds = (it * 0.25).toInt()
+            ))
+        }
+        followersCount?.let { count ->
+            _creators.value = _creators.value.mapIndexed { idx, creator ->
+                if (idx == 0) creator.copy(followerCount = count) else creator
+            }
+        }
+        viewerCount?.let { count ->
+            _liveRooms.value = _liveRooms.value.map { room ->
+                room.copy(viewerCount = count)
+            }
+        }
+        likeCount?.let { count ->
+            _liveRooms.value = _liveRooms.value.map { room ->
+                room.copy(likeCount = count)
+            }
+        }
     }
 
     fun resetDemoData() {
@@ -285,7 +657,13 @@ class DemoLiveRepository(context: Context? = null) {
         _chatMessagesMap.value = buildInitialChatMessages()
         _giftTransactions.value = emptyList()
         _activeRoom.value = null
+        _guestRequestsMap.value = buildInitialGuestRequests()
+        _audioSeatsMap.value = buildInitialAudioSeats()
+        _notifications.value = buildInitialNotifications()
+        _liveGoals.value = buildInitialLiveGoals()
+        _lastEndSummary.value = null
         syncFollowStateToCreators()
+        syncActiveRoomsToCreators()
     }
 
     companion object {
@@ -330,11 +708,11 @@ class DemoLiveRepository(context: Context? = null) {
         )
 
         private fun buildInitialCreators(): List<LiveCreator> = listOf(
-            LiveCreator("creator_1", "Rajesh Sharma", "", "Senior Civil Site Engineer | 12 yrs site experience", 1420, true, 3400, "Site Safety"),
-            LiveCreator("creator_2", "Amit Kumar", "", "Heavy Equipment Specialist & Operator", 2890, true, 5800, "Machinery"),
-            LiveCreator("creator_3", "Vikram Singh", "", "Master Mason & Structural Concrete Artisan", 950, false, 1900, "Masonry"),
-            LiveCreator("creator_4", "Pooja Verma", "", "Safety Auditor & Site Compliance Inspector", 3100, false, 8200, "Engineering"),
-            LiveCreator("creator_5", "Suresh Patel", "", "Labor Contractor & Payroll Lead", 1850, false, 2600, "Contractor")
+            LiveCreator("creator_1", "Rajesh Sharma", "", "Senior Civil Site Engineer | 12 yrs site experience", "Civil Engineer", 1420, 240, true, 3400, "Site Safety", true, true, "room_1"),
+            LiveCreator("creator_2", "Amit Kumar", "", "Heavy Equipment Specialist & Operator", "Machinery Operator", 2890, 180, true, 5800, "Machinery", true, true, "room_2"),
+            LiveCreator("creator_3", "Vikram Singh", "", "Master Mason & Structural Concrete Artisan", "Master Mason", 950, 95, false, 1900, "Masonry", true, true, "room_3"),
+            LiveCreator("creator_4", "Pooja Verma", "", "Safety Auditor & Site Compliance Inspector", "Safety Auditor", 3100, 410, false, 8200, "Engineering", true, true, "room_4"),
+            LiveCreator("creator_5", "Suresh Patel", "", "Labor Contractor & Payroll Lead", "Contractor", 1850, 310, false, 2600, "Contractor", true, true, "room_5")
         )
 
         private fun buildInitialLiveRooms(): List<LiveRoom> = listOf(
@@ -344,12 +722,16 @@ class DemoLiveRepository(context: Context? = null) {
                 creatorId = "creator_1",
                 creatorName = "Rajesh Sharma",
                 creatorAvatar = "",
+                creatorProfession = "Senior Site Engineer",
                 category = "Site Safety",
                 type = LiveRoomType.VIDEO,
                 viewerCount = 348,
+                peakViewerCount = 420,
                 diamondEarnings = 1250,
+                likeCount = 890,
                 isLive = true,
-                tags = listOf("Foundation", "Concrete", "CivilSite")
+                tags = listOf("Foundation", "Concrete", "CivilSite"),
+                description = "Live inspection of concrete mix ratio and slab foundation pouring."
             ),
             LiveRoom(
                 id = "room_2",
@@ -357,12 +739,16 @@ class DemoLiveRepository(context: Context? = null) {
                 creatorId = "creator_2",
                 creatorName = "Amit Kumar",
                 creatorAvatar = "",
+                creatorProfession = "Machinery Specialist",
                 category = "Machinery",
                 type = LiveRoomType.VIDEO,
                 viewerCount = 512,
+                peakViewerCount = 610,
                 diamondEarnings = 2400,
+                likeCount = 1420,
                 isLive = true,
-                tags = listOf("Excavator", "Machinery", "Operator")
+                tags = listOf("Excavator", "Machinery", "Operator"),
+                description = "Demonstration of hydraulic earthmoving controls and safety perimeters."
             ),
             LiveRoom(
                 id = "room_3",
@@ -370,12 +756,16 @@ class DemoLiveRepository(context: Context? = null) {
                 creatorId = "creator_3",
                 creatorName = "Vikram Singh",
                 creatorAvatar = "",
+                creatorProfession = "Master Mason",
                 category = "Masonry",
                 type = LiveRoomType.AUDIO,
                 viewerCount = 184,
+                peakViewerCount = 210,
                 diamondEarnings = 680,
+                likeCount = 450,
                 isLive = true,
-                tags = listOf("Masonry", "Plaster", "AudioStage")
+                tags = listOf("Masonry", "Plaster", "AudioStage"),
+                description = "Open voice Q&A on finishing, mortar ratios, and tile alignment."
             ),
             LiveRoom(
                 id = "room_4",
@@ -383,12 +773,16 @@ class DemoLiveRepository(context: Context? = null) {
                 creatorId = "creator_4",
                 creatorName = "Pooja Verma",
                 creatorAvatar = "",
+                creatorProfession = "Safety Auditor",
                 category = "Engineering",
                 type = LiveRoomType.VIDEO,
                 viewerCount = 420,
+                peakViewerCount = 500,
                 diamondEarnings = 3100,
+                likeCount = 2100,
                 isLive = true,
-                tags = listOf("SafetyFirst", "PPE", "Inspection")
+                tags = listOf("SafetyFirst", "PPE", "Inspection"),
+                description = "Comprehensive walk-through of PPE equipment and site safety compliance."
             ),
             LiveRoom(
                 id = "room_5",
@@ -396,28 +790,71 @@ class DemoLiveRepository(context: Context? = null) {
                 creatorId = "creator_5",
                 creatorName = "Suresh Patel",
                 creatorAvatar = "",
+                creatorProfession = "Contractor Lead",
                 category = "Contractor",
                 type = LiveRoomType.AUDIO,
                 viewerCount = 275,
+                peakViewerCount = 310,
                 diamondEarnings = 1450,
+                likeCount = 680,
                 isLive = true,
-                tags = listOf("WageRate", "Contractor", "AudioDiscussion")
+                tags = listOf("WageRate", "Contractor", "AudioDiscussion"),
+                description = "Group voice panel discussing daily wage calculations and attendance logs."
             )
         )
 
         private fun buildInitialChatMessages(): Map<String, List<ChatMessage>> = mapOf(
             "room_1" to listOf(
-                ChatMessage("c1", "room_1", "Sunil (Mason)", "", "How many bags of cement per cubic meter for M25?"),
-                ChatMessage("c2", "room_1", "Rajesh Sharma", "", "For M25, use 1:1:2 ratio, about 11 bags per cum."),
-                ChatMessage("c3", "room_1", "Ramesh", "", "Great live session sir!")
+                ChatMessage("c1", "room_1", "u101", "Sunil (Mason)", "", "How many bags of cement per cubic meter for M25?"),
+                ChatMessage("c2", "room_1", "creator_1", "Rajesh Sharma", "", "For M25, use 1:1:2 ratio, about 11 bags per cum."),
+                ChatMessage("c3", "room_1", "u102", "Ramesh", "", "Great live session sir!")
             ),
             "room_2" to listOf(
-                ChatMessage("c4", "room_2", "Deepak", "", "What is the hourly hydraulic pressure check interval?"),
-                ChatMessage("c5", "room_2", "Amit Kumar", "", "Check oil level daily before start, pressure monthly.")
+                ChatMessage("c4", "room_2", "u103", "Deepak", "", "What is the hourly hydraulic pressure check interval?"),
+                ChatMessage("c5", "room_2", "creator_2", "Amit Kumar", "", "Check oil level daily before start, pressure monthly.")
             ),
             "room_3" to listOf(
-                ChatMessage("c6", "room_3", "Rohan", "", "Audio is clear! Voice stage working perfectly.")
+                ChatMessage("c6", "room_3", "u104", "Rohan", "", "Audio is clear! Voice stage working perfectly.")
             )
+        )
+
+        private fun buildInitialGuestRequests(): Map<String, List<GuestRequest>> = mapOf(
+            "room_3" to listOf(
+                GuestRequest("g1", "room_3", "u201", "Sunil Plumber", "", "Plumbing Master", GuestRequestStatus.PENDING),
+                GuestRequest("g2", "room_3", "u202", "Dinesh Mason", "", "Site Mason", GuestRequestStatus.APPROVED)
+            )
+        )
+
+        private fun buildInitialAudioSeats(): Map<String, List<AudioSeat>> = mapOf(
+            "room_3" to listOf(
+                AudioSeat(0, "creator_3", "Vikram Singh (Host)", "", isHostSeat = true, isSpeaking = true),
+                AudioSeat(1, "u202", "Dinesh Mason", "", isHostSeat = false, isSpeaking = false),
+                AudioSeat(2, null, null, "", isHostSeat = false),
+                AudioSeat(3, null, null, "", isHostSeat = false),
+                AudioSeat(4, null, null, "", isHostSeat = false),
+                AudioSeat(5, null, null, "", isHostSeat = false)
+            ),
+            "room_5" to buildDefaultAudioSeats(hostName = "Suresh Patel (Host)")
+        )
+
+        private fun buildDefaultAudioSeats(hostName: String = "Host"): List<AudioSeat> = listOf(
+            AudioSeat(0, "host", hostName, "", isHostSeat = true, isSpeaking = true),
+            AudioSeat(1, null, null, "", isHostSeat = false),
+            AudioSeat(2, null, null, "", isHostSeat = false),
+            AudioSeat(3, null, null, "", isHostSeat = false),
+            AudioSeat(4, null, null, "", isHostSeat = false),
+            AudioSeat(5, null, null, "", isHostSeat = false)
+        )
+
+        private fun buildInitialNotifications(): List<DemoNotification> = listOf(
+            DemoNotification("n1", "Rajesh Sharma started LIVE", "Civil Site Foundation & Concrete Pouring is live now!", NotificationType.LIVE_START, System.currentTimeMillis() - 300000, false, "room_1", "creator_1"),
+            DemoNotification("n2", "New Supporter", "Amit Kumar sent you a Power Drill gift!", NotificationType.GIFT_RECEIVED, System.currentTimeMillis() - 1200000, true)
+        )
+
+        private fun buildInitialLiveGoals(): List<LiveGoal> = listOf(
+            LiveGoal("goal_1", "Heart Goal", 1000, 890, "HEARTS"),
+            LiveGoal("goal_2", "Gifts Goal", 20, 12, "GIFTS"),
+            LiveGoal("goal_3", "Followers Goal", 20, 14, "FOLLOWERS")
         )
     }
 }
