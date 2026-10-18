@@ -98,7 +98,7 @@ fun RedeemRewardsScreen(
                             Box(contentAlignment = Alignment.Center) {
                                 RewardsRadialGlow(glowColor = GoldBright, alpha = 0.4f, modifier = Modifier.size(90.dp))
                                 Image(
-                                    painter = painterResource(id = R.drawable.redeem_rewards),
+                                    painter = painterResource(id = R.drawable.redeem_voucher),
                                     contentDescription = "Redeem Vouchers",
                                     modifier = Modifier.size(85.dp)
                                 )
@@ -140,7 +140,7 @@ fun RedeemRewardsScreen(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Image(
-                                    painter = painterResource(id = R.drawable.redeem_rewards),
+                                    painter = painterResource(id = R.drawable.redeem_voucher),
                                     contentDescription = null,
                                     modifier = Modifier.size(32.dp)
                                 )
