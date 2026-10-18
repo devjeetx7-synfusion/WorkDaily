@@ -35,7 +35,8 @@ fun GiftStoreBottomSheet(
     roomId: String,
     viewModel: LiveViewModel,
     onDismiss: () -> Unit,
-    onNavigateWallet: () -> Unit
+    onNavigateWallet: () -> Unit,
+    onGiftSent: (LiveGift, Int) -> Unit = { _, _ -> }
 ) {
     val gifts by viewModel.gifts.collectAsState()
     val wallet by viewModel.wallet.collectAsState()
@@ -267,6 +268,7 @@ fun GiftStoreBottomSheet(
                             onClick = {
                                 val success = viewModel.sendGift(roomId, activeGift, selectedQuantity)
                                 if (success) {
+                                    onGiftSent(activeGift, selectedQuantity)
                                     showCongratulationsDialog = Pair(activeGift, selectedQuantity)
                                 } else {
                                     Toast.makeText(context, "Insufficient diamonds balance!", Toast.LENGTH_SHORT).show()

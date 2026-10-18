@@ -2,12 +2,16 @@ package com.synfusion.attendance.live.ui
 
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -20,7 +24,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -43,7 +49,6 @@ fun LiveRoomScreen(
     val followedCreatorIds by viewModel.followedCreatorIds.collectAsState()
     val wallet by viewModel.wallet.collectAsState()
     val audioSeatsMap by viewModel.audioSeatsMap.collectAsState()
-    val guestRequestsMap by viewModel.guestRequestsMap.collectAsState()
 
     val room = liveRooms.find { it.id == roomId } ?: liveRooms.firstOrNull() ?: LiveRoom(
         id = roomId,
@@ -67,16 +72,29 @@ fun LiveRoomScreen(
 
     var chatInput by remember { mutableStateOf("") }
     var triggerHeartSignal by remember { mutableLongStateOf(0L) }
-    var showGiftSentDialog by remember { mutableStateOf<LiveGift?>(null) }
+    var showGiftSentDialog by remember { mutableStateOf<Pair<LiveGift, Int>?>(null) }
 
     val context = LocalContext.current
+    val density = LocalDensity.current
+
+    // IME / Keyboard Visibility Detection
+    val isKeyboardVisible = WindowInsets.ime.asPaddingValues().calculateBottomPadding() > 0.dp
+
+    val chatListState = rememberLazyListState()
 
     LaunchedEffect(room.id) {
         viewModel.setActiveRoom(room.id)
     }
 
+    // Auto-scroll chat feed to latest message
+    LaunchedEffect(chatMessages.size) {
+        if (chatMessages.isNotEmpty()) {
+            chatListState.animateScrollToItem(chatMessages.size - 1)
+        }
+    }
+
     Scaffold(
-        contentWindowInsets = WindowInsets.navigationBars,
+        contentWindowInsets = WindowInsets(0.dp),
         containerColor = LiveDarkBg
     ) { paddingValues ->
         Box(
@@ -84,25 +102,37 @@ fun LiveRoomScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Simulated Stream Background / Stage Canvas
-            if (room.type == LiveRoomType.VIDEO) {
-                VideoStageCanvas(room = room)
-            } else {
-                AudioStageCanvas(
-                    room = room,
-                    seats = audioSeats,
-                    onSeatClick = { seatIndex ->
-                        if (isHost) {
-                            viewModel.toggleAudioSeatMute(room.id, seatIndex)
-                        } else {
-                            viewModel.occupyAudioSeat(room.id, seatIndex, "user_me", "You")
-                            Toast.makeText(context, "Joined Audio Seat #${seatIndex + 1}!", Toast.LENGTH_SHORT).show()
-                        }
+            // Simulated Stream Background / Stage Canvas with Double-Tap Reaction Gesture
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .pointerInput(Unit) {
+                        detectTapGestures(
+                            onDoubleTap = {
+                                triggerHeartSignal = System.currentTimeMillis()
+                            }
+                        )
                     }
-                )
+            ) {
+                if (room.type == LiveRoomType.VIDEO) {
+                    VideoStageCanvas(room = room)
+                } else {
+                    AudioStageCanvas(
+                        room = room,
+                        seats = audioSeats,
+                        onSeatClick = { seatIndex ->
+                            if (isHost) {
+                                viewModel.toggleAudioSeatMute(room.id, seatIndex)
+                            } else {
+                                viewModel.occupyAudioSeat(room.id, seatIndex, "user_me", "You")
+                                Toast.makeText(context, "Joined Audio Seat #${seatIndex + 1}!", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    )
+                }
             }
 
-            // Floating Heart Particle Overlay (Taps anywhere on canvas trigger hearts)
+            // Floating Heart Particle Overlay
             FloatingHeartWaveOverlay(
                 triggerHeartSignal = triggerHeartSignal,
                 onSendHearts = { count ->
@@ -110,7 +140,7 @@ fun LiveRoomScreen(
                 }
             )
 
-            // TOP OVERLAY BAR: Compact Header (Avatar, Ellipsized Name, Follow, Viewer Count, Close)
+            // TOP OVERLAY BAR: Compact Header (Avatar, Ellipsized Name, Follow/Host, Viewer Count, Exit)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -209,76 +239,83 @@ fun LiveRoomScreen(
                 }
             }
 
-            // RIGHT SIDE ACTION BUTTONS: Love Hearts, Gift Store, Share, More
-            Column(
+            // RIGHT SIDE ACTION BUTTONS: Hide completely when keyboard is visible to prevent layout jumps & overlaps
+            AnimatedVisibility(
+                visible = !isKeyboardVisible,
+                enter = fadeIn(),
+                exit = fadeOut(),
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
-                    .padding(end = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .padding(end = 12.dp)
             ) {
-                // Heart Wave Trigger Button
-                IconButton(
-                    onClick = {
-                        triggerHeartSignal = System.currentTimeMillis()
-                    },
-                    modifier = Modifier
-                        .size(42.dp)
-                        .clip(CircleShape)
-                        .background(LiveRed)
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(14.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Icon(Icons.Default.Favorite, contentDescription = "Send Heart", tint = Color.White, modifier = Modifier.size(20.dp))
-                }
-
-                // Gift Store Trigger Button
-                IconButton(
-                    onClick = { showGiftSheet = true },
-                    modifier = Modifier
-                        .size(42.dp)
-                        .clip(CircleShape)
-                        .background(LiveGold)
-                ) {
-                    Icon(Icons.Default.CardGiftcard, contentDescription = "Gift Store", tint = Color.Black, modifier = Modifier.size(20.dp))
-                }
-
-                // Raise Hand (Audio) / Request Guest Button for Viewers
-                if (!isHost) {
+                    // Heart Wave Trigger Button
                     IconButton(
                         onClick = {
-                            viewModel.requestToJoinGuest(room.id)
-                            Toast.makeText(context, "Guest join request sent to host!", Toast.LENGTH_SHORT).show()
+                            triggerHeartSignal = System.currentTimeMillis()
+                        },
+                        modifier = Modifier
+                            .size(42.dp)
+                            .clip(CircleShape)
+                            .background(LiveRed)
+                    ) {
+                        Icon(Icons.Default.Favorite, contentDescription = "Send Heart", tint = Color.White, modifier = Modifier.size(20.dp))
+                    }
+
+                    // Gift Store Trigger Button
+                    IconButton(
+                        onClick = { showGiftSheet = true },
+                        modifier = Modifier
+                            .size(42.dp)
+                            .clip(CircleShape)
+                            .background(LiveGold)
+                    ) {
+                        Icon(Icons.Default.CardGiftcard, contentDescription = "Gift Store", tint = Color.Black, modifier = Modifier.size(20.dp))
+                    }
+
+                    // Raise Hand (Audio) / Request Guest Button for Viewers
+                    if (!isHost) {
+                        IconButton(
+                            onClick = {
+                                viewModel.requestToJoinGuest(room.id)
+                                Toast.makeText(context, "Guest join request sent to host!", Toast.LENGTH_SHORT).show()
+                            },
+                            modifier = Modifier
+                                .size(42.dp)
+                                .clip(CircleShape)
+                                .background(Color.Black.copy(alpha = 0.65f))
+                                .border(1.dp, LivePrimaryMint, CircleShape)
+                        ) {
+                            Icon(Icons.Default.PanTool, contentDescription = "Raise Hand", tint = LivePrimaryMint, modifier = Modifier.size(18.dp))
+                        }
+                    }
+
+                    // Share Button
+                    IconButton(
+                        onClick = {
+                            Toast.makeText(context, "Stream link copied to clipboard! 🔗", Toast.LENGTH_SHORT).show()
                         },
                         modifier = Modifier
                             .size(42.dp)
                             .clip(CircleShape)
                             .background(Color.Black.copy(alpha = 0.65f))
-                            .border(1.dp, LivePrimaryMint, CircleShape)
                     ) {
-                        Icon(Icons.Default.PanTool, contentDescription = "Raise Hand", tint = LivePrimaryMint, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Default.Share, contentDescription = "Share", tint = Color.White, modifier = Modifier.size(18.dp))
                     }
-                }
-
-                // Share Button
-                IconButton(
-                    onClick = {
-                        Toast.makeText(context, "Stream link copied to clipboard! 🔗", Toast.LENGTH_SHORT).show()
-                    },
-                    modifier = Modifier
-                        .size(42.dp)
-                        .clip(CircleShape)
-                        .background(Color.Black.copy(alpha = 0.65f))
-                ) {
-                    Icon(Icons.Default.Share, contentDescription = "Share", tint = Color.White, modifier = Modifier.size(18.dp))
                 }
             }
 
-            // BOTTOM OVERLAY: Chat Feed + Compact Single-Line Input Bar
+            // BOTTOM OVERLAY: Transparent Floating Chat Feed + Composer
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.BottomCenter)
-                    .padding(horizontal = 12.dp, vertical = 10.dp)
-                    .imePadding(),
+                    .navigationBarsPadding()
+                    .imePadding()
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 // Pinned Comment Banner if present
@@ -301,19 +338,20 @@ fun LiveRoomScreen(
                     }
                 }
 
-                // Chat Feed overlay with max height
+                // Chat Feed overlay with smooth auto-scrolling
                 LazyColumn(
+                    state = chatListState,
                     modifier = Modifier
-                        .fillMaxWidth(0.82f)
-                        .height(160.dp),
+                        .fillMaxWidth(if (isKeyboardVisible) 1.0f else 0.82f)
+                        .heightIn(max = if (isKeyboardVisible) 110.dp else 160.dp),
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    items(chatMessages.takeLast(12)) { msg ->
+                    items(chatMessages.takeLast(16)) { msg ->
                         ChatMessageBubble(message = msg)
                     }
                 }
 
-                // Single-line Compact Input Bar
+                // Input Bar: Single clean row docked above keyboard
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -350,16 +388,19 @@ fun LiveRoomScreen(
                         singleLine = true
                     )
 
-                    Button(
-                        onClick = { showGiftSheet = true },
-                        colors = ButtonDefaults.buttonColors(containerColor = LiveGold, contentColor = Color.Black),
-                        shape = RoundedCornerShape(24.dp),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-                        modifier = Modifier.height(44.dp)
-                    ) {
-                        Icon(Icons.Default.CardGiftcard, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Gift", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    // Secondary Gift Button in bottom row - visible ONLY when keyboard is CLOSED to avoid duplication
+                    if (!isKeyboardVisible) {
+                        Button(
+                            onClick = { showGiftSheet = true },
+                            colors = ButtonDefaults.buttonColors(containerColor = LiveGold, contentColor = Color.Black),
+                            shape = RoundedCornerShape(24.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                            modifier = Modifier.height(44.dp)
+                        ) {
+                            Icon(Icons.Default.CardGiftcard, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Gift", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                        }
                     }
                 }
             }
@@ -370,7 +411,10 @@ fun LiveRoomScreen(
                     roomId = room.id,
                     viewModel = viewModel,
                     onDismiss = { showGiftSheet = false },
-                    onNavigateWallet = onNavigateWallet
+                    onNavigateWallet = onNavigateWallet,
+                    onGiftSent = { gift, qty ->
+                        showGiftSentDialog = Pair(gift, qty)
+                    }
                 )
             }
 
@@ -393,6 +437,17 @@ fun LiveRoomScreen(
                     room = room,
                     viewModel = viewModel,
                     onDismiss = { showViewerListSheet = false }
+                )
+            }
+
+            // Gift Celebration Dialog
+            showGiftSentDialog?.let { (gift, qty) ->
+                GiftCongratulationsDialog(
+                    gift = gift,
+                    quantity = qty,
+                    recipientName = room.creatorName,
+                    totalDiamondsSpent = gift.diamondCost * qty,
+                    onDismiss = { showGiftSentDialog = null }
                 )
             }
         }

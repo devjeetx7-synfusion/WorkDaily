@@ -14,7 +14,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.LiveTv
-import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -24,6 +23,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.synfusion.attendance.live.model.LiveCreator
@@ -52,7 +52,7 @@ fun HomeFollowingLiveSection(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 78.dp, max = 92.dp),
+            .heightIn(min = 82.dp, max = 98.dp),
         color = Color.Transparent
     ) {
         if (sortedRooms.isEmpty()) {
@@ -115,7 +115,7 @@ fun HomeFollowingLiveSection(
                 }
             }
         } else {
-            // Horizontal scrolling row of compact avatar stories
+            // Horizontal scrolling row of compact story avatars with names below
             LazyRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(14.dp),
@@ -142,12 +142,12 @@ fun HomeFollowingLiveSection(
                 item {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center,
-                        modifier = Modifier.padding(start = 2.dp)
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier.width(56.dp)
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(52.dp)
+                                .size(54.dp)
                                 .clip(CircleShape)
                                 .background(MaterialTheme.colorScheme.surface)
                                 .border(
@@ -165,6 +165,12 @@ fun HomeFollowingLiveSection(
                                 modifier = Modifier.size(22.dp)
                             )
                         }
+                        Text(
+                            text = "See All",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
             }
@@ -199,76 +205,74 @@ fun LiveStoryAvatarItem(
         else "WD"
     }
 
-    Box(
-        modifier = Modifier
-            .combinedClickable(
-                onClick = onClick,
-                onLongClick = onLongClick
-            ),
-        contentAlignment = Alignment.Center
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = Modifier.width(62.dp)
     ) {
-        // Outer Breathing Gradient Live Ring
         Box(
             modifier = Modifier
-                .size(56.dp)
-                .scale(pulseScale)
-                .clip(CircleShape)
-                .background(
-                    Brush.sweepGradient(
-                        listOf(
-                            LiveRed,
-                            Color(0xFFFF2D55),
-                            LiveRed,
-                            Color(0xFFFF5252),
-                            LiveRed
-                        )
-                    )
-                )
-                .padding(2.5.dp) // Ring thickness
+                .size(54.dp)
+                .combinedClickable(
+                    onClick = onClick,
+                    onLongClick = onLongClick
+                ),
+            contentAlignment = Alignment.Center
         ) {
-            // Inner gap background
+            // Outer Breathing Gradient Live Ring
             Box(
                 modifier = Modifier
                     .fillMaxSize()
+                    .scale(pulseScale)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.background)
-                    .padding(2.dp) // Gap between ring and photo
+                    .background(
+                        Brush.sweepGradient(
+                            listOf(
+                                LiveRed,
+                                Color(0xFFFF2D55),
+                                LiveRed,
+                                Color(0xFFFF5252),
+                                LiveRed
+                            )
+                        )
+                    )
+                    .padding(2.5.dp)
             ) {
-                // Profile Avatar Photo / Fallback Initials
+                // Inner gap background
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .clip(CircleShape)
-                        .background(LivePrimaryEmerald.copy(alpha = 0.2f)),
-                    contentAlignment = Alignment.Center
+                        .background(MaterialTheme.colorScheme.background)
+                        .padding(2.dp)
                 ) {
-                    Text(
-                        text = initials,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = LivePrimaryEmerald
-                    )
+                    // Profile Avatar Photo / Fallback Initials
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape)
+                            .background(LivePrimaryEmerald.copy(alpha = 0.2f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = initials,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = LivePrimaryEmerald
+                        )
+                    }
                 }
             }
         }
 
-        // Attached Small LIVE Indicator Badge
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .offset(y = 2.dp)
-                .clip(RoundedCornerShape(6.dp))
-                .background(LiveRed)
-                .padding(horizontal = 5.dp, vertical = 1.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "LIVE",
-                fontSize = 8.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = Color.White,
-                letterSpacing = 0.5.sp
-            )
-        }
+        // Creator Name Text Below Avatar
+        Text(
+            text = creator.name.split(" ").firstOrNull() ?: creator.name,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
