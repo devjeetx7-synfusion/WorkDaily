@@ -52,6 +52,17 @@ fun RewardsHubScreen(
     val checkInState by viewModel.dailyCheckInState.collectAsState()
     val streakState by viewModel.streakState.collectAsState()
     val spinTokens by viewModel.spinTokens.collectAsState()
+    val tasks by viewModel.tasks.collectAsState()
+    val achievements by viewModel.achievements.collectAsState()
+    val leaderboardState = remember(viewModel) { viewModel.getLeaderboard() }
+    val leaderboard by leaderboardState.collectAsState()
+
+    val availableTasksCount = remember(tasks) { tasks.count { it.status == TaskStatus.CLAIMABLE || it.status == TaskStatus.IN_PROGRESS } }
+    val unlockedBadgesCount = remember(achievements) { achievements.count { it.isUnlocked } }
+    val userRankText = remember(leaderboard) {
+        val userRank = leaderboard.find { it.isCurrentUser }?.rank
+        if (userRank != null) "Rank #$userRank this week" else "Weekly Leaderboard"
+    }
 
     Scaffold(
         topBar = {
@@ -74,12 +85,12 @@ fun RewardsHubScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // 1. HERO BANNER: Main Reward Coin Wallet Hero
+            // 1. HERO BANNER: Available Balance as Primary Actionable Balance
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(24.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                     colors = CardDefaults.cardColors(containerColor = Color.Transparent)
                 ) {
                     Box(
@@ -92,38 +103,40 @@ fun RewardsHubScreen(
                                 .fillMaxWidth()
                                 .padding(16.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                            verticalArrangement = Arrangement.spacedBy(14.dp)
                         ) {
                             Text(
-                                text = "WORKDAILY COINS",
-                                fontSize = 12.sp,
+                                text = "AVAILABLE COINS",
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color.White.copy(alpha = 0.8f)
+                                color = Color.White.copy(alpha = 0.85f)
                             )
 
+                            // Primary Actionable Balance: Available Coins
                             RewardCoinBalance(
-                                amount = walletSummary.totalBalance,
+                                amount = walletSummary.availableCoins,
                                 fontSize = 36,
                                 textColor = Color.White,
                                 coinSize = 32.dp
                             )
 
+                            // Supporting Balance Info: Pending & Total
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(12.dp))
                                     .background(Color.Black.copy(alpha = 0.15f))
-                                    .padding(12.dp),
+                                    .padding(10.dp),
                                 horizontalArrangement = Arrangement.SpaceEvenly
                             ) {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text("Available", color = Color.White.copy(alpha = 0.7f), fontSize = 11.sp)
-                                    RewardCoinBalance(amount = walletSummary.availableCoins, fontSize = 14, textColor = Color.White, coinSize = 12.dp)
+                                    Text("Pending", color = Color.White.copy(alpha = 0.75f), fontSize = 11.sp)
+                                    RewardCoinBalance(amount = walletSummary.pendingCoins, fontSize = 13, textColor = Color.White, coinSize = 12.dp)
                                 }
-                                Box(modifier = Modifier.width(1.dp).height(24.dp).background(Color.White.copy(alpha = 0.2f)))
+                                Box(modifier = Modifier.width(1.dp).height(22.dp).background(Color.White.copy(alpha = 0.2f)))
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text("Pending", color = Color.White.copy(alpha = 0.7f), fontSize = 11.sp)
-                                    RewardCoinBalance(amount = walletSummary.pendingCoins, fontSize = 14, textColor = Color.White, coinSize = 12.dp)
+                                    Text("Total Earned", color = Color.White.copy(alpha = 0.75f), fontSize = 11.sp)
+                                    RewardCoinBalance(amount = walletSummary.totalBalance, fontSize = 13, textColor = Color.White, coinSize = 12.dp)
                                 }
                             }
 
@@ -133,20 +146,20 @@ fun RewardsHubScreen(
                             ) {
                                 Button(
                                     onClick = onNavigateWallet,
-                                    modifier = Modifier.weight(1f).height(44.dp),
+                                    modifier = Modifier.weight(1f).height(42.dp),
                                     colors = ButtonDefaults.buttonColors(containerColor = Color.White.copy(alpha = 0.2f), contentColor = Color.White),
                                     shape = RoundedCornerShape(12.dp)
                                 ) {
-                                    Text("Wallet", fontWeight = FontWeight.Bold)
+                                    Text("Wallet", fontWeight = FontWeight.Bold, fontSize = 13.sp)
                                 }
 
                                 Button(
                                     onClick = onNavigateRedeem,
-                                    modifier = Modifier.weight(1f).height(44.dp),
+                                    modifier = Modifier.weight(1f).height(42.dp),
                                     colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = WorkDailyBrandPrimary),
                                     shape = RoundedCornerShape(12.dp)
                                 ) {
-                                    Text("Redeem", fontWeight = FontWeight.Bold)
+                                    Text("Redeem", fontWeight = FontWeight.Bold, fontSize = 13.sp)
                                 }
                             }
                         }
@@ -154,7 +167,7 @@ fun RewardsHubScreen(
                 }
             }
 
-            // 2. DAILY CHECK-IN & BUILDER'S SPIN WHEEL
+            // 2. DAILY CHECK-IN & BUILDER'S SPIN WHEEL (Adaptive Height Cards)
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -164,11 +177,11 @@ fun RewardsHubScreen(
                     Card(
                         modifier = Modifier
                             .weight(1f)
-                            .height(100.dp)
+                            .heightIn(min = 96.dp)
                             .clickable { onNavigateDailyCheckIn() },
                         shape = RoundedCornerShape(16.dp),
                         colors = CardDefaults.cardColors(containerColor = RewardsTheme.cardBackground),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
                         border = androidx.compose.foundation.BorderStroke(1.dp, RewardsTheme.softBorder)
                     ) {
                         Column(
@@ -182,7 +195,7 @@ fun RewardsHubScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(Icons.Default.CalendarMonth, contentDescription = null, tint = RoyalPurple, modifier = Modifier.size(24.dp))
+                                Icon(Icons.Default.CalendarMonth, contentDescription = null, tint = RoyalPurple, modifier = Modifier.size(22.dp))
                                 Box(
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(6.dp))
@@ -219,11 +232,11 @@ fun RewardsHubScreen(
                     Card(
                         modifier = Modifier
                             .weight(1f)
-                            .height(100.dp)
+                            .heightIn(min = 96.dp)
                             .clickable { onNavigateSpin() },
                         shape = RoundedCornerShape(16.dp),
                         colors = CardDefaults.cardColors(containerColor = RewardsTheme.cardBackground),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
                         border = androidx.compose.foundation.BorderStroke(1.dp, RewardsTheme.softBorder)
                     ) {
                         Column(
@@ -237,7 +250,7 @@ fun RewardsHubScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(Icons.Default.Casino, contentDescription = null, tint = GoldPrimary, modifier = Modifier.size(24.dp))
+                                Icon(Icons.Default.Casino, contentDescription = null, tint = GoldPrimary, modifier = Modifier.size(22.dp))
                                 Box(
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(6.dp))
@@ -285,14 +298,14 @@ fun RewardsHubScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable { onNavigateLiveWallet() }
-                                .padding(16.dp),
+                                .padding(14.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                 Icon(Icons.Default.Diamond, contentDescription = null, tint = Color(0xFF00E5FF), modifier = Modifier.size(20.dp))
                                 Column {
-                                    Text("Live Diamonds", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = RewardsTheme.textPrimary)
+                                    Text("Live Diamonds", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = RewardsTheme.textPrimary)
                                     Text("Gifts Wallet 💎", fontSize = 11.sp, color = RewardsTheme.textSecondary)
                                 }
                             }
@@ -305,14 +318,14 @@ fun RewardsHubScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable { onNavigateLiveEarnings() }
-                                .padding(16.dp),
+                                .padding(14.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                 Icon(Icons.Default.AccountBalanceWallet, contentDescription = null, tint = Color(0xFF10B981), modifier = Modifier.size(20.dp))
                                 Column {
-                                    Text("Creator Earnings", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = RewardsTheme.textPrimary)
+                                    Text("Creator Earnings", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = RewardsTheme.textPrimary)
                                     Text("Cashout Demo 💵", fontSize = 11.sp, color = RewardsTheme.textSecondary)
                                 }
                             }
@@ -322,7 +335,7 @@ fun RewardsHubScreen(
                 }
             }
 
-            // 4. COMPACT ACTION ROWS: REFER & EARN, TASKS, ACHIEVEMENTS, LEADERBOARD
+            // 4. DYNAMIC ACTION ROWS: REFER & EARN, TASKS, ACHIEVEMENTS, LEADERBOARD
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -336,41 +349,41 @@ fun RewardsHubScreen(
                             .fillMaxWidth()
                             .padding(horizontal = 14.dp, vertical = 6.dp)
                     ) {
-                        // Compact Action Row 1: Refer & Earn
+                        // Action Row 1: Refer & Earn
                         CompactActionRow(
                             iconRes = R.drawable.refer_workers,
                             title = stringResource(id = R.string.refer_and_earn),
-                            subtitle = "Earn up to 500 🪙 per friend",
+                            subtitle = "Invite & earn coins together",
                             onClick = onNavigateRefer
                         )
 
                         HorizontalDivider(color = RewardsTheme.softBorder.copy(alpha = 0.5f))
 
-                        // Compact Action Row 2: Tasks
+                        // Action Row 2: Tasks (Dynamic task count subtitle)
                         CompactActionRow(
                             iconRes = R.drawable.task_daily,
                             title = stringResource(id = R.string.tasks),
-                            subtitle = "3 daily tasks available",
+                            subtitle = if (availableTasksCount > 0) "$availableTasksCount tasks available" else "All tasks completed!",
                             onClick = onNavigateTasks
                         )
 
                         HorizontalDivider(color = RewardsTheme.softBorder.copy(alpha = 0.5f))
 
-                        // Compact Action Row 3: Achievements
+                        // Action Row 3: Achievements (Dynamic unlocked count subtitle)
                         CompactActionRow(
                             iconRes = R.drawable.badge_work_pro,
                             title = stringResource(id = R.string.achievements),
-                            subtitle = "8 badges unlocked",
+                            subtitle = "$unlockedBadgesCount badges unlocked",
                             onClick = onNavigateAchievements
                         )
 
                         HorizontalDivider(color = RewardsTheme.softBorder.copy(alpha = 0.5f))
 
-                        // Compact Action Row 4: Leaderboard
+                        // Action Row 4: Leaderboard (Dynamic rank subtitle)
                         CompactActionRow(
                             iconRes = R.drawable.leaderboard_first,
                             title = stringResource(id = R.string.leaderboard),
-                            subtitle = "Rank #128 this week",
+                            subtitle = userRankText,
                             onClick = onNavigateLeaderboard
                         )
                     }

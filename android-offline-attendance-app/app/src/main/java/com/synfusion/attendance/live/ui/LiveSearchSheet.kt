@@ -99,6 +99,7 @@ fun LiveSearchSheet(
                 .fillMaxWidth()
                 .fillMaxHeight(0.88f)
                 .imePadding()
+                .navigationBarsPadding()
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
@@ -322,7 +323,9 @@ fun LiveSearchSheet(
                                                     text = creator.name,
                                                     fontSize = 13.sp,
                                                     fontWeight = FontWeight.Bold,
-                                                    color = MaterialTheme.colorScheme.onSurface
+                                                    color = MaterialTheme.colorScheme.onSurface,
+                                                    maxLines = 1,
+                                                    overflow = TextOverflow.Ellipsis
                                                 )
                                                 if (creator.isLiveNow) {
                                                     LiveBadge(text = "LIVE", bgColor = LiveRed)
