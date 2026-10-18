@@ -44,7 +44,9 @@ fun RewardsHubScreen(
     onNavigateInfo: () -> Unit,
     onNavigateDailyCheckIn: () -> Unit,
     onNavigateSpin: () -> Unit,
-    onSelectTransaction: (RewardTransaction) -> Unit
+    onSelectTransaction: (RewardTransaction) -> Unit,
+    onNavigateLiveWallet: () -> Unit = {},
+    onNavigateLiveEarnings: () -> Unit = {}
 ) {
     val walletSummary by viewModel.walletSummary.collectAsState()
     val transactions by viewModel.transactions.collectAsState()
@@ -451,6 +453,78 @@ fun RewardsHubScreen(
                                     tint = Color.White,
                                     modifier = Modifier.size(18.dp)
                                 )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Live Feature Shortcuts Row
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Card(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(72.dp)
+                            .clickable { onNavigateLiveWallet() },
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF0F172A)),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF00E5FF).copy(alpha = 0.4f))
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFF00E5FF).copy(alpha = 0.2f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Default.Diamond, contentDescription = null, tint = Color(0xFF00E5FF), modifier = Modifier.size(20.dp))
+                            }
+                            Column {
+                                Text("Live Diamonds", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                Text("Gifts Wallet 💎", fontSize = 11.sp, color = Color(0xFF00E5FF))
+                            }
+                        }
+                    }
+
+                    Card(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(72.dp)
+                            .clickable { onNavigateLiveEarnings() },
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF0F172A)),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF10B981).copy(alpha = 0.4f))
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFF0F9F7A).copy(alpha = 0.2f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Default.AccountBalanceWallet, contentDescription = null, tint = Color(0xFF10B981), modifier = Modifier.size(20.dp))
+                            }
+                            Column {
+                                Text("Creator Earnings", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                Text("Cashout Demo 💵", fontSize = 11.sp, color = Color(0xFF10B981))
                             }
                         }
                     }
