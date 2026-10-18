@@ -67,6 +67,11 @@ import com.synfusion.attendance.rewards.viewmodel.RewardsViewModelFactory
 import com.synfusion.attendance.rewards.ui.screens.*
 import com.synfusion.attendance.rewards.ui.components.RewardsPurple
 import com.synfusion.attendance.rewards.ui.components.RewardCoinBalance
+
+import com.synfusion.attendance.live.viewmodel.LiveViewModel
+import com.synfusion.attendance.live.viewmodel.LiveViewModelFactory
+import com.synfusion.attendance.live.ui.*
+import com.synfusion.attendance.live.ui.components.*
 import com.synfusion.attendance.data.DrillDownType
 import com.synfusion.attendance.ui.components.DrillDownBottomSheet
 import com.synfusion.attendance.ui.components.FloatingBottomNavigation
@@ -104,9 +109,12 @@ fun DashboardScreen(
     val calendarViewModel: OfflineCalendarViewModel = viewModel(factory = factory)
     val statsViewModel: OfflineStatsViewModel = viewModel(factory = factory)
     val rewardsViewModel: RewardsViewModel = viewModel(factory = RewardsViewModelFactory(context.applicationContext as android.app.Application))
+    val liveViewModel: LiveViewModel = viewModel(factory = LiveViewModelFactory(context.applicationContext as android.app.Application))
 
     val dashboardState by dashboardViewModel.dashboardState.collectAsStateWithLifecycle(initialValue = OfflineDashboardState(isLoading = true))
     val walletSummary by rewardsViewModel.walletSummary.collectAsState()
+    val liveRooms by liveViewModel.liveRooms.collectAsState()
+    val liveWallet by liveViewModel.wallet.collectAsState()
     val bottomNavController = rememberNavController()
     val navBackStackEntry by bottomNavController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route ?: "main_pager"
@@ -372,6 +380,13 @@ fun DashboardScreen(
                                                                 verticalArrangement = Arrangement.spacedBy(16.dp)
                                                             ) {
                                                                 HomeFestivalBanner(state = dashboardState)
+                                                                HomeFollowingLiveSection(
+                                                                    liveRooms = liveRooms,
+                                                                    diamondBalance = liveWallet.diamondBalance,
+                                                                    onNavigateLiveDiscover = { bottomNavController.navigate("live_discover") },
+                                                                    onNavigateLiveRoom = { roomId -> bottomNavController.navigate("live_room/$roomId") },
+                                                                    onNavigateWallet = { bottomNavController.navigate("live_wallet") }
+                                                                )
                                                                 PersonalStatsGrid(currencyCode = settingsState.currencyCode,
                                                                     state = dashboardState,
                                                                     onNavigatePassbook = { bottomNavController.navigate("passbook") },
@@ -420,6 +435,13 @@ fun DashboardScreen(
                                                                     verticalArrangement = Arrangement.spacedBy(16.dp)
                                                                 ) {
                                                                     HomeFestivalBanner(state = dashboardState)
+                                                                    HomeFollowingLiveSection(
+                                                                        liveRooms = liveRooms,
+                                                                        diamondBalance = liveWallet.diamondBalance,
+                                                                        onNavigateLiveDiscover = { bottomNavController.navigate("live_discover") },
+                                                                        onNavigateLiveRoom = { roomId -> bottomNavController.navigate("live_room/$roomId") },
+                                                                        onNavigateWallet = { bottomNavController.navigate("live_wallet") }
+                                                                    )
                                                                     PersonalStatsGrid(currencyCode = settingsState.currencyCode,
                                                                         state = dashboardState,
                                                                         onNavigatePassbook = { bottomNavController.navigate("passbook") },
@@ -562,7 +584,74 @@ fun DashboardScreen(
                     onNavigateInfo = { bottomNavController.navigate("rewards_info") },
                     onNavigateDailyCheckIn = { bottomNavController.navigate("rewards_daily_checkin") },
                     onNavigateSpin = { bottomNavController.navigate("rewards_spin") },
-                    onSelectTransaction = { bottomNavController.navigate("rewards_transaction_detail") }
+                    onSelectTransaction = { bottomNavController.navigate("rewards_transaction_detail") },
+                    onNavigateLiveWallet = { bottomNavController.navigate("live_wallet") },
+                    onNavigateLiveEarnings = { bottomNavController.navigate("live_earnings") }
+                )
+            }
+            composable("live_discover") {
+                LiveDiscoverScreen(
+                    viewModel = liveViewModel,
+                    onNavigateBack = { bottomNavController.navigateUp() },
+                    onNavigateLiveRoom = { roomId -> bottomNavController.navigate("live_room/$roomId") },
+                    onNavigateWallet = { bottomNavController.navigate("live_wallet") },
+                    onNavigateStudio = { bottomNavController.navigate("live_studio") },
+                    onNavigateLeaderboard = { bottomNavController.navigate("live_leaderboard") },
+                    onNavigateProfile = { bottomNavController.navigate("live_profile") },
+                    onNavigateDemoControls = { bottomNavController.navigate("live_demo_controls") }
+                )
+            }
+            composable(
+                route = "live_room/{roomId}",
+                arguments = listOf(navArgument("roomId") { defaultValue = "room_1" })
+            ) { backStackEntry ->
+                val roomId = backStackEntry.arguments?.getString("roomId") ?: "room_1"
+                LiveRoomScreen(
+                    roomId = roomId,
+                    viewModel = liveViewModel,
+                    onNavigateBack = { bottomNavController.navigateUp() },
+                    onNavigateWallet = { bottomNavController.navigate("live_wallet") }
+                )
+            }
+            composable("live_wallet") {
+                DiamondWalletScreen(
+                    viewModel = liveViewModel,
+                    onNavigateBack = { bottomNavController.navigateUp() }
+                )
+            }
+            composable("live_earnings") {
+                CreatorEarningsScreen(
+                    viewModel = liveViewModel,
+                    onNavigateBack = { bottomNavController.navigateUp() }
+                )
+            }
+            composable("live_studio") {
+                CreatorStudioScreen(
+                    viewModel = liveViewModel,
+                    onNavigateBack = { bottomNavController.navigateUp() },
+                    onNavigateLiveRoom = { roomId -> bottomNavController.navigate("live_room/$roomId") }
+                )
+            }
+            composable("live_leaderboard") {
+                LiveLeaderboardScreen(
+                    viewModel = liveViewModel,
+                    onNavigateBack = { bottomNavController.navigateUp() }
+                )
+            }
+            composable("live_profile") {
+                LiveProfileScreen(
+                    viewModel = liveViewModel,
+                    onNavigateBack = { bottomNavController.navigateUp() },
+                    onNavigateWallet = { bottomNavController.navigate("live_wallet") },
+                    onNavigateEarnings = { bottomNavController.navigate("live_earnings") },
+                    onNavigateStudio = { bottomNavController.navigate("live_studio") },
+                    onNavigateDemoControls = { bottomNavController.navigate("live_demo_controls") }
+                )
+            }
+            composable("live_demo_controls") {
+                DeveloperDemoControlsSheet(
+                    viewModel = liveViewModel,
+                    onDismiss = { bottomNavController.navigateUp() }
                 )
             }
             composable("rewards_daily_checkin") {
