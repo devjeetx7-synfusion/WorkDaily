@@ -21,6 +21,16 @@ class LiveViewModel(application: Application) : AndroidViewModel(application) {
     val chatMessagesMap: StateFlow<Map<String, List<ChatMessage>>> = repository.chatMessagesMap
     val giftTransactions: StateFlow<List<GiftTransaction>> = repository.giftTransactions
     val followedCreatorIds: StateFlow<Set<String>> = repository.followedCreatorIds
+    val guestRequestsMap: StateFlow<Map<String, List<GuestRequest>>> = repository.guestRequestsMap
+    val audioSeatsMap: StateFlow<Map<String, List<AudioSeat>>> = repository.audioSeatsMap
+    val notifications: StateFlow<List<DemoNotification>> = repository.notifications
+    val liveGoals: StateFlow<List<LiveGoal>> = repository.liveGoals
+    val giftOverlayEvents: StateFlow<List<LiveGiftOverlayEvent>> = repository.giftOverlayEvents
+    val lastEndSummary: StateFlow<LiveEndSummary?> = repository.lastEndSummary
+    val blockedUserIds: StateFlow<Set<String>> = repository.blockedUserIds
+    val mutedUserIdsMap: StateFlow<Map<String, Set<String>>> = repository.mutedUserIdsMap
+    val soundEnabled: StateFlow<Boolean> = repository.soundEnabled
+    val hapticsEnabled: StateFlow<Boolean> = repository.hapticsEnabled
 
     fun toggleFollowCreator(creatorId: String) {
         repository.toggleFollowCreator(creatorId)
@@ -34,12 +44,32 @@ class LiveViewModel(application: Application) : AndroidViewModel(application) {
         repository.addFreeDiamonds(amount)
     }
 
-    fun sendGift(roomId: String, gift: LiveGift): Boolean {
-        return repository.sendGift(roomId, gift)
+    fun sendGift(roomId: String, gift: LiveGift, quantity: Int = 1): Boolean {
+        return repository.sendGift(roomId, gift, quantity)
+    }
+
+    fun sendHearts(roomId: String, count: Int = 1) {
+        repository.sendHearts(roomId, count)
     }
 
     fun sendChatMessage(roomId: String, text: String, senderName: String = "You") {
         repository.sendChatMessage(roomId, text, senderName)
+    }
+
+    fun pinChatMessage(roomId: String, messageId: String) {
+        repository.pinChatMessage(roomId, messageId)
+    }
+
+    fun unpinChatMessage(roomId: String) {
+        repository.unpinChatMessage(roomId)
+    }
+
+    fun deleteChatMessage(roomId: String, messageId: String) {
+        repository.deleteChatMessage(roomId, messageId)
+    }
+
+    fun toggleChatEnabled(roomId: String) {
+        repository.toggleChatEnabled(roomId)
     }
 
     fun setActiveRoom(roomId: String?) {
@@ -50,17 +80,81 @@ class LiveViewModel(application: Application) : AndroidViewModel(application) {
         title: String,
         category: String,
         type: LiveRoomType,
-        tags: List<String>
+        tags: List<String>,
+        description: String = "",
+        isPublic: Boolean = true,
+        allowGuestRequests: Boolean = true,
+        showGifts: Boolean = true
     ): LiveRoom {
-        return repository.startLiveStream(title, category, type, tags)
+        return repository.startLiveStream(
+            title, category, type, tags, description, isPublic, allowGuestRequests, showGifts
+        )
     }
 
-    fun endLiveStream(roomId: String) {
-        repository.endLiveStream(roomId)
+    fun endLiveStream(roomId: String): LiveEndSummary? {
+        return repository.endLiveStream(roomId)
+    }
+
+    fun requestToJoinGuest(roomId: String, userName: String = "You"): GuestRequest {
+        return repository.requestToJoinGuest(roomId, userName)
+    }
+
+    fun approveGuestRequest(roomId: String, requestId: String) {
+        repository.approveGuestRequest(roomId, requestId)
+    }
+
+    fun rejectGuestRequest(roomId: String, requestId: String) {
+        repository.rejectGuestRequest(roomId, requestId)
+    }
+
+    fun occupyAudioSeat(roomId: String, seatIndex: Int, userId: String, userName: String) {
+        repository.occupyAudioSeat(roomId, seatIndex, userId, userName)
+    }
+
+    fun leaveAudioSeat(roomId: String, seatIndex: Int) {
+        repository.leaveAudioSeat(roomId, seatIndex)
+    }
+
+    fun toggleAudioSeatMute(roomId: String, seatIndex: Int) {
+        repository.toggleAudioSeatMute(roomId, seatIndex)
+    }
+
+    fun toggleLockSeat(roomId: String, seatIndex: Int) {
+        repository.toggleLockSeat(roomId, seatIndex)
+    }
+
+    fun blockUser(userId: String) {
+        repository.blockUser(userId)
+    }
+
+    fun muteUserInRoom(roomId: String, userId: String) {
+        repository.muteUserInRoom(roomId, userId)
+    }
+
+    fun markNotificationRead(id: String) {
+        repository.markNotificationRead(id)
+    }
+
+    fun toggleSoundEnabled() {
+        repository.toggleSoundEnabled()
+    }
+
+    fun toggleHapticsEnabled() {
+        repository.toggleHapticsEnabled()
     }
 
     fun cashoutEarnings(diamonds: Int): Boolean {
         return repository.cashoutEarnings(diamonds)
+    }
+
+    fun updateDemoDataOverrides(
+        diamonds: Int? = null,
+        creatorDiamonds: Int? = null,
+        followersCount: Int? = null,
+        viewerCount: Int? = null,
+        likeCount: Int? = null
+    ) {
+        repository.updateDemoDataOverrides(diamonds, creatorDiamonds, followersCount, viewerCount, likeCount)
     }
 
     fun resetDemoData() {

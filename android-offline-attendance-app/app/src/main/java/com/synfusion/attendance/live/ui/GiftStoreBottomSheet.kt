@@ -5,9 +5,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -37,16 +39,30 @@ fun GiftStoreBottomSheet(
 ) {
     val gifts by viewModel.gifts.collectAsState()
     val wallet by viewModel.wallet.collectAsState()
+    val liveRooms by viewModel.liveRooms.collectAsState()
+
+    val currentRoom = liveRooms.find { it.id == roomId }
+    val recipientName = currentRoom?.creatorName ?: "Host"
+
     val context = LocalContext.current
 
     var selectedGift by remember { mutableStateOf<LiveGift?>(gifts.firstOrNull()) }
-    var selectedCategory by remember { mutableStateOf("All") }
+    var selectedCategory by remember { mutableStateOf("Construction") }
+    var selectedQuantity by remember { mutableStateOf(1) }
+    var showCongratulationsDialog by remember { mutableStateOf<Pair<LiveGift, Int>?>(null) }
 
-    val categories = listOf("All", "Site Tools", "Machinery", "Heavy Equipment", "Trophies")
+    val categories = listOf("Construction", "Site Tools", "Love", "Celebration", "Premium")
+    val quantityMultipliers = listOf(1, 5, 10, 99)
 
     val filteredGifts = remember(gifts, selectedCategory) {
-        if (selectedCategory == "All") gifts
-        else gifts.filter { it.category.equals(selectedCategory, ignoreCase = true) }
+        when (selectedCategory) {
+            "Construction" -> gifts.filter { it.category == "Site Tools" || it.category == "Materials" || it.category == "Masonry" }
+            "Site Tools" -> gifts.filter { it.category == "Site Tools" || it.category == "Tools" || it.category == "Power Tools" }
+            "Love" -> gifts.filter { it.category == "Green Energy" || it.category == "Design" || it.diamondCost <= 50 }
+            "Celebration" -> gifts.filter { it.category == "VIP Gifts" || it.category == "Trophies" || it.diamondCost in 50..1000 }
+            "Premium" -> gifts.filter { it.diamondCost >= 500 }
+            else -> gifts
+        }
     }
 
     ModalBottomSheet(
@@ -60,7 +76,7 @@ fun GiftStoreBottomSheet(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             // Header Row: Title & Diamond Balance
             Row(
@@ -71,11 +87,11 @@ fun GiftStoreBottomSheet(
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Icon(
                         imageVector = Icons.Default.CardGiftcard,
-                        contentDescription = "Construction Gifts",
+                        contentDescription = "Gifts Catalog",
                         tint = LiveGold,
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(22.dp)
                     )
-                    Text("Construction Gifts (20+)", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    Text("Construction Gifts", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
                 }
 
                 DiamondBalanceChip(
@@ -87,7 +103,7 @@ fun GiftStoreBottomSheet(
                 )
             }
 
-            // Category Filter Scrollable Chips
+            // Category Filter Scrollable Tabs
             ScrollableTabRow(
                 selectedTabIndex = categories.indexOf(selectedCategory).coerceAtLeast(0),
                 containerColor = Color.Transparent,
@@ -103,7 +119,8 @@ fun GiftStoreBottomSheet(
                             Text(
                                 text = cat,
                                 fontWeight = if (selectedCategory == cat) FontWeight.Bold else FontWeight.Normal,
-                                color = if (selectedCategory == cat) LivePrimaryMint else Color.Gray
+                                color = if (selectedCategory == cat) LivePrimaryMint else Color.Gray,
+                                fontSize = 13.sp
                             )
                         }
                     )
@@ -117,11 +134,12 @@ fun GiftStoreBottomSheet(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(280.dp)
+                    .height(260.dp)
             ) {
                 items(filteredGifts) { gift ->
                     val isSelected = selectedGift?.id == gift.id
-                    val canAfford = wallet.diamondBalance >= gift.diamondCost
+                    val totalCost = gift.diamondCost * selectedQuantity
+                    val canAfford = wallet.diamondBalance >= totalCost
 
                     Card(
                         modifier = Modifier
@@ -134,7 +152,7 @@ fun GiftStoreBottomSheet(
                         ),
                         border = androidx.compose.foundation.BorderStroke(
                             1.dp,
-                            if (isSelected) LivePrimaryMint else if (!canAfford) Color.Gray.copy(alpha = 0.3f) else LivePrimaryEmerald.copy(alpha = 0.2f)
+                            if (isSelected) LivePrimaryMint else if (!canAfford) Color.Gray.copy(alpha = 0.2f) else LivePrimaryEmerald.copy(alpha = 0.2f)
                         )
                     ) {
                         Column(
@@ -146,7 +164,7 @@ fun GiftStoreBottomSheet(
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(36.dp)
+                                    .size(34.dp)
                                     .clip(CircleShape)
                                     .background(LiveGold.copy(alpha = 0.15f)),
                                 contentAlignment = Alignment.Center
@@ -190,10 +208,41 @@ fun GiftStoreBottomSheet(
                 }
             }
 
-            // Bottom Action Row: Selected Gift Details & Send CTA Button
+            // Quantity Multiplier Pills Bar
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Quantity:", fontSize = 12.sp, color = Color.LightGray, fontWeight = FontWeight.Medium)
+
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    quantityMultipliers.forEach { qty ->
+                        val isSelected = selectedQuantity == qty
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(if (isSelected) LiveGold else LiveSurfaceDark)
+                                .clickable { selectedQuantity = qty }
+                                .padding(horizontal = 12.dp, vertical = 6.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "x$qty",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isSelected) Color.Black else Color.White
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Bottom Action Bar: Gift Total & Send CTA
             val activeGift = selectedGift
             if (activeGift != null) {
-                val canAfford = wallet.diamondBalance >= activeGift.diamondCost
+                val totalCost = activeGift.diamondCost * selectedQuantity
+                val canAfford = wallet.diamondBalance >= totalCost
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -202,13 +251,13 @@ fun GiftStoreBottomSheet(
                 ) {
                     Column {
                         Text(
-                            text = activeGift.name,
+                            text = "${activeGift.name} (x$selectedQuantity)",
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
                         )
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text("Cost: ${activeGift.diamondCost}", fontSize = 12.sp, color = LiveDiamondColor, fontWeight = FontWeight.Bold)
+                            Text("Total: $totalCost", fontSize = 12.sp, color = LiveDiamondColor, fontWeight = FontWeight.Bold)
                             Icon(Icons.Default.Diamond, contentDescription = null, tint = LiveDiamondColor, modifier = Modifier.size(12.dp))
                         }
                     }
@@ -216,16 +265,15 @@ fun GiftStoreBottomSheet(
                     if (canAfford) {
                         Button(
                             onClick = {
-                                val success = viewModel.sendGift(roomId, activeGift)
+                                val success = viewModel.sendGift(roomId, activeGift, selectedQuantity)
                                 if (success) {
-                                    Toast.makeText(context, "Sent ${activeGift.name}! 🎉", Toast.LENGTH_SHORT).show()
-                                    onDismiss()
+                                    showCongratulationsDialog = Pair(activeGift, selectedQuantity)
                                 } else {
                                     Toast.makeText(context, "Insufficient diamonds balance!", Toast.LENGTH_SHORT).show()
                                 }
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = LivePrimaryEmerald, contentColor = Color.White),
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(14.dp)
                         ) {
                             Icon(Icons.Default.Send, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(6.dp))
@@ -238,7 +286,7 @@ fun GiftStoreBottomSheet(
                                 onNavigateWallet()
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = LiveGold, contentColor = Color.Black),
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(14.dp)
                         ) {
                             Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(6.dp))
@@ -250,26 +298,18 @@ fun GiftStoreBottomSheet(
 
             Spacer(modifier = Modifier.height(16.dp))
         }
-    }
-}
 
-fun getGiftIcon(giftName: String): androidx.compose.ui.graphics.vector.ImageVector {
-    return when {
-        giftName.contains("Helmet", ignoreCase = true) || giftName.contains("Hardhat", ignoreCase = true) -> Icons.Default.Shield
-        giftName.contains("Tape", ignoreCase = true) -> Icons.Default.Straighten
-        giftName.contains("Brick", ignoreCase = true) -> Icons.Default.HomeWork
-        giftName.contains("Trowel", ignoreCase = true) -> Icons.Default.Construction
-        giftName.contains("Drill", ignoreCase = true) -> Icons.Default.Build
-        giftName.contains("Scaffold", ignoreCase = true) -> Icons.Default.Apartment
-        giftName.contains("Truck", ignoreCase = true) || giftName.contains("Hauler", ignoreCase = true) -> Icons.Default.LocalShipping
-        giftName.contains("Mixer", ignoreCase = true) -> Icons.Default.Autorenew
-        giftName.contains("Excavator", ignoreCase = true) || giftName.contains("Bulldozer", ignoreCase = true) -> Icons.Default.Agriculture
-        giftName.contains("Crane", ignoreCase = true) -> Icons.Default.Architecture
-        giftName.contains("Saw", ignoreCase = true) -> Icons.Default.ContentCut
-        giftName.contains("Solar", ignoreCase = true) -> Icons.Default.WbSunny
-        giftName.contains("Beam", ignoreCase = true) -> Icons.Default.HorizontalRule
-        giftName.contains("Compass", ignoreCase = true) -> Icons.Default.Explore
-        giftName.contains("Trophy", ignoreCase = true) -> Icons.Default.EmojiEvents
-        else -> Icons.Default.Construction
+        showCongratulationsDialog?.let { (gift, qty) ->
+            GiftCongratulationsDialog(
+                gift = gift,
+                quantity = qty,
+                recipientName = recipientName,
+                totalDiamondsSpent = gift.diamondCost * qty,
+                onDismiss = {
+                    showCongratulationsDialog = null
+                    onDismiss()
+                }
+            )
+        }
     }
 }

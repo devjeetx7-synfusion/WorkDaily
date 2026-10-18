@@ -227,11 +227,15 @@ fun LiveBadge(
 }
 
 @Composable
-fun ViewerCountChip(count: Int) {
+fun ViewerCountChip(
+    count: Int,
+    onClick: (() -> Unit)? = null
+) {
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(12.dp))
             .background(Color.Black.copy(alpha = 0.5f))
+            .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
             .padding(horizontal = 8.dp, vertical = 4.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -265,5 +269,26 @@ fun RoomCategoryChip(category: String) {
             color = LivePrimaryMint,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
         )
+    }
+}
+
+fun getGiftIcon(giftName: String): androidx.compose.ui.graphics.vector.ImageVector {
+    return when {
+        giftName.contains("Helmet", ignoreCase = true) || giftName.contains("Hardhat", ignoreCase = true) -> Icons.Default.Shield
+        giftName.contains("Tape", ignoreCase = true) -> Icons.Default.Straighten
+        giftName.contains("Brick", ignoreCase = true) -> Icons.Default.HomeWork
+        giftName.contains("Trowel", ignoreCase = true) -> Icons.Default.Construction
+        giftName.contains("Drill", ignoreCase = true) -> Icons.Default.Build
+        giftName.contains("Scaffold", ignoreCase = true) -> Icons.Default.Apartment
+        giftName.contains("Truck", ignoreCase = true) || giftName.contains("Hauler", ignoreCase = true) -> Icons.Default.LocalShipping
+        giftName.contains("Mixer", ignoreCase = true) -> Icons.Default.Autorenew
+        giftName.contains("Excavator", ignoreCase = true) || giftName.contains("Bulldozer", ignoreCase = true) -> Icons.Default.Agriculture
+        giftName.contains("Crane", ignoreCase = true) -> Icons.Default.Architecture
+        giftName.contains("Saw", ignoreCase = true) -> Icons.Default.ContentCut
+        giftName.contains("Solar", ignoreCase = true) -> Icons.Default.WbSunny
+        giftName.contains("Beam", ignoreCase = true) -> Icons.Default.HorizontalRule
+        giftName.contains("Compass", ignoreCase = true) -> Icons.Default.Explore
+        giftName.contains("Trophy", ignoreCase = true) -> Icons.Default.EmojiEvents
+        else -> Icons.Default.Construction
     }
 }

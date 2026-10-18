@@ -1,7 +1,7 @@
 package com.synfusion.attendance.live.ui
 
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -19,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -33,12 +35,15 @@ fun LiveRoomScreen(
     roomId: String,
     viewModel: LiveViewModel,
     onNavigateBack: () -> Unit,
-    onNavigateWallet: () -> Unit
+    onNavigateWallet: () -> Unit,
+    onNavigateSummary: (String) -> Unit = {}
 ) {
     val liveRooms by viewModel.liveRooms.collectAsState()
     val chatMessagesMap by viewModel.chatMessagesMap.collectAsState()
     val followedCreatorIds by viewModel.followedCreatorIds.collectAsState()
     val wallet by viewModel.wallet.collectAsState()
+    val audioSeatsMap by viewModel.audioSeatsMap.collectAsState()
+    val guestRequestsMap by viewModel.guestRequestsMap.collectAsState()
 
     val room = liveRooms.find { it.id == roomId } ?: liveRooms.firstOrNull() ?: LiveRoom(
         id = roomId,
@@ -53,16 +58,25 @@ fun LiveRoomScreen(
 
     val chatMessages = chatMessagesMap[room.id] ?: emptyList()
     val isFollowing = followedCreatorIds.contains(room.creatorId)
+    val isHost = room.isHost || room.creatorId == "creator_me"
+    val audioSeats = audioSeatsMap[room.id] ?: emptyList()
 
     var showGiftSheet by remember { mutableStateOf(false) }
+    var showHostControlsSheet by remember { mutableStateOf(false) }
+    var showViewerListSheet by remember { mutableStateOf(false) }
+
     var chatInput by remember { mutableStateOf("") }
-    var likeCount by remember { mutableStateOf(128) }
+    var triggerHeartSignal by remember { mutableLongStateOf(0L) }
+    var showGiftSentDialog by remember { mutableStateOf<LiveGift?>(null) }
+
+    val context = LocalContext.current
 
     LaunchedEffect(room.id) {
         viewModel.setActiveRoom(room.id)
     }
 
     Scaffold(
+        contentWindowInsets = WindowInsets.navigationBars,
         containerColor = LiveDarkBg
     ) { paddingValues ->
         Box(
@@ -74,62 +88,93 @@ fun LiveRoomScreen(
             if (room.type == LiveRoomType.VIDEO) {
                 VideoStageCanvas(room = room)
             } else {
-                AudioStageCanvas(room = room)
+                AudioStageCanvas(
+                    room = room,
+                    seats = audioSeats,
+                    onSeatClick = { seatIndex ->
+                        if (isHost) {
+                            viewModel.toggleAudioSeatMute(room.id, seatIndex)
+                        } else {
+                            viewModel.occupyAudioSeat(room.id, seatIndex, "user_me", "You")
+                            Toast.makeText(context, "Joined Audio Seat #${seatIndex + 1}!", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                )
             }
 
-            // Top Overlay Bar: Creator Header, Viewer Count, Diamond Balance, Leave Room
+            // Floating Heart Particle Overlay (Taps anywhere on canvas trigger hearts)
+            FloatingHeartWaveOverlay(
+                triggerHeartSignal = triggerHeartSignal,
+                onSendHearts = { count ->
+                    viewModel.sendHearts(room.id, count)
+                }
+            )
+
+            // TOP OVERLAY BAR: Compact Header (Avatar, Ellipsized Name, Follow, Viewer Count, Close)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.TopCenter)
-                    .padding(16.dp),
+                    .statusBarsPadding()
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Creator Profile Header + Follow Button
+                // Left Pill: Creator Profile + Ellipsized Name + Follow
                 Surface(
                     shape = RoundedCornerShape(20.dp),
-                    color = Color.Black.copy(alpha = 0.6f),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, LivePrimaryMint.copy(alpha = 0.3f))
+                    color = Color.Black.copy(alpha = 0.65f),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, LivePrimaryMint.copy(alpha = 0.35f)),
+                    modifier = Modifier.weight(1f, fill = false)
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         PulsingLiveAvatar(
                             name = room.creatorName,
-                            size = 32.dp,
+                            size = 30.dp,
                             isLive = room.isLive
                         )
 
-                        Column {
+                        Column(modifier = Modifier.widthIn(max = 110.dp)) {
                             Text(
                                 text = room.creatorName,
-                                fontSize = 12.sp,
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White,
-                                maxLines = 1
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                                Icon(Icons.Default.Diamond, contentDescription = null, tint = LiveDiamondColor, modifier = Modifier.size(10.dp))
-                                Text("${room.diamondEarnings}", fontSize = 10.sp, color = LiveDiamondColor, fontWeight = FontWeight.Bold)
+                                Icon(Icons.Default.Diamond, contentDescription = null, tint = LiveDiamondColor, modifier = Modifier.size(9.dp))
+                                Text("${room.diamondEarnings}", fontSize = 9.sp, color = LiveDiamondColor, fontWeight = FontWeight.Bold)
                             }
                         }
 
-                        FollowButton(
-                            isFollowing = isFollowing,
-                            onToggle = { viewModel.toggleFollowCreator(room.creatorId) }
-                        )
+                        if (!isHost) {
+                            FollowButton(
+                                isFollowing = isFollowing,
+                                onToggle = { viewModel.toggleFollowCreator(room.creatorId) }
+                            )
+                        } else {
+                            LiveBadge(text = "HOST", bgColor = LivePrimaryEmerald)
+                        }
                     }
                 }
 
-                // Right Controls: Viewer Count & Exit
+                Spacer(modifier = Modifier.width(6.dp))
+
+                // Right Controls: Viewer Count, Diamond Balance, Host / Exit Action
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    ViewerCountChip(count = room.viewerCount)
+                    ViewerCountChip(
+                        count = room.viewerCount,
+                        onClick = { showViewerListSheet = true }
+                    )
 
                     DiamondBalanceChip(
                         balance = wallet.diamondBalance,
@@ -137,104 +182,189 @@ fun LiveRoomScreen(
                         fontSize = 11
                     )
 
+                    if (isHost) {
+                        IconButton(
+                            onClick = { showHostControlsSheet = true },
+                            modifier = Modifier
+                                .size(34.dp)
+                                .clip(CircleShape)
+                                .background(LivePrimaryEmerald)
+                        ) {
+                            Icon(Icons.Default.Tune, contentDescription = "Host Controls", tint = Color.White, modifier = Modifier.size(18.dp))
+                        }
+                    }
+
                     IconButton(
                         onClick = {
                             viewModel.setActiveRoom(null)
                             onNavigateBack()
                         },
                         modifier = Modifier
-                            .size(36.dp)
+                            .size(34.dp)
                             .clip(CircleShape)
-                            .background(Color.Black.copy(alpha = 0.6f))
+                            .background(Color.Black.copy(alpha = 0.65f))
                     ) {
-                        Icon(Icons.Default.Close, contentDescription = "Leave Stream", tint = Color.White)
+                        Icon(Icons.Default.Close, contentDescription = "Leave Stream", tint = Color.White, modifier = Modifier.size(18.dp))
                     }
                 }
             }
 
-            // Bottom Chat Messages & Controls Overlay
+            // RIGHT SIDE ACTION BUTTONS: Love Hearts, Gift Store, Share, More
+            Column(
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .padding(end = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Heart Wave Trigger Button
+                IconButton(
+                    onClick = {
+                        triggerHeartSignal = System.currentTimeMillis()
+                    },
+                    modifier = Modifier
+                        .size(42.dp)
+                        .clip(CircleShape)
+                        .background(LiveRed)
+                ) {
+                    Icon(Icons.Default.Favorite, contentDescription = "Send Heart", tint = Color.White, modifier = Modifier.size(20.dp))
+                }
+
+                // Gift Store Trigger Button
+                IconButton(
+                    onClick = { showGiftSheet = true },
+                    modifier = Modifier
+                        .size(42.dp)
+                        .clip(CircleShape)
+                        .background(LiveGold)
+                ) {
+                    Icon(Icons.Default.CardGiftcard, contentDescription = "Gift Store", tint = Color.Black, modifier = Modifier.size(20.dp))
+                }
+
+                // Raise Hand (Audio) / Request Guest Button for Viewers
+                if (!isHost) {
+                    IconButton(
+                        onClick = {
+                            viewModel.requestToJoinGuest(room.id)
+                            Toast.makeText(context, "Guest join request sent to host!", Toast.LENGTH_SHORT).show()
+                        },
+                        modifier = Modifier
+                            .size(42.dp)
+                            .clip(CircleShape)
+                            .background(Color.Black.copy(alpha = 0.65f))
+                            .border(1.dp, LivePrimaryMint, CircleShape)
+                    ) {
+                        Icon(Icons.Default.PanTool, contentDescription = "Raise Hand", tint = LivePrimaryMint, modifier = Modifier.size(18.dp))
+                    }
+                }
+
+                // Share Button
+                IconButton(
+                    onClick = {
+                        Toast.makeText(context, "Stream link copied to clipboard! 🔗", Toast.LENGTH_SHORT).show()
+                    },
+                    modifier = Modifier
+                        .size(42.dp)
+                        .clip(CircleShape)
+                        .background(Color.Black.copy(alpha = 0.65f))
+                ) {
+                    Icon(Icons.Default.Share, contentDescription = "Share", tint = Color.White, modifier = Modifier.size(18.dp))
+                }
+            }
+
+            // BOTTOM OVERLAY: Chat Feed + Compact Single-Line Input Bar
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.BottomCenter)
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                    .padding(horizontal = 12.dp, vertical = 10.dp)
+                    .imePadding(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Chat Messages Feed
+                // Pinned Comment Banner if present
+                room.pinnedMessage?.let { pinnedMsg ->
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        color = LiveGold.copy(alpha = 0.2f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, LiveGold.copy(alpha = 0.4f))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Icon(Icons.Default.PushPin, contentDescription = null, tint = LiveGold, modifier = Modifier.size(14.dp))
+                            Text("PINNED: ", fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, color = LiveGold)
+                            Text("${pinnedMsg.senderName}: ${pinnedMsg.message}", fontSize = 11.sp, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
+                    }
+                }
+
+                // Chat Feed overlay with max height
                 LazyColumn(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(180.dp),
+                        .fillMaxWidth(0.82f)
+                        .height(160.dp),
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    items(chatMessages.takeLast(10)) { msg ->
+                    items(chatMessages.takeLast(12)) { msg ->
                         ChatMessageBubble(message = msg)
                     }
                 }
 
-                // Chat Input & Floating Action Controls Row
+                // Single-line Compact Input Bar
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    // Chat Input Box
                     OutlinedTextField(
                         value = chatInput,
                         onValueChange = { chatInput = it },
-                        placeholder = { Text("Comment in live stream...", color = Color.Gray, fontSize = 13.sp) },
+                        placeholder = { Text("Say something...", color = Color.Gray, fontSize = 12.sp) },
                         modifier = Modifier
                             .weight(1f)
+                            .height(48.dp)
                             .clip(RoundedCornerShape(24.dp)),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = Color.Black.copy(alpha = 0.6f),
-                            unfocusedContainerColor = Color.Black.copy(alpha = 0.6f),
+                            focusedContainerColor = Color.Black.copy(alpha = 0.65f),
+                            unfocusedContainerColor = Color.Black.copy(alpha = 0.65f),
                             focusedBorderColor = LivePrimaryMint,
-                            unfocusedBorderColor = Color.Gray.copy(alpha = 0.4f),
+                            unfocusedBorderColor = Color.Gray.copy(alpha = 0.35f),
                             focusedTextColor = Color.White,
                             unfocusedTextColor = Color.White
                         ),
                         trailingIcon = {
                             if (chatInput.isNotBlank()) {
-                                IconButton(onClick = {
-                                    viewModel.sendChatMessage(room.id, chatInput)
-                                    chatInput = ""
-                                }) {
-                                    Icon(Icons.Default.Send, contentDescription = "Send Chat", tint = LivePrimaryMint)
+                                IconButton(
+                                    onClick = {
+                                        viewModel.sendChatMessage(room.id, chatInput)
+                                        chatInput = ""
+                                    }
+                                ) {
+                                    Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send", tint = LivePrimaryMint, modifier = Modifier.size(18.dp))
                                 }
                             }
                         },
                         singleLine = true
                     )
 
-                    // Like Floating Heart Button
-                    IconButton(
-                        onClick = { likeCount++ },
-                        modifier = Modifier
-                            .size(44.dp)
-                            .clip(CircleShape)
-                            .background(LiveRed.copy(alpha = 0.85f))
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Favorite, contentDescription = "Like", tint = Color.White, modifier = Modifier.size(20.dp))
-                        }
-                    }
-
-                    // Gift Store Button
                     Button(
                         onClick = { showGiftSheet = true },
                         colors = ButtonDefaults.buttonColors(containerColor = LiveGold, contentColor = Color.Black),
-                        shape = RoundedCornerShape(22.dp),
-                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp)
+                        shape = RoundedCornerShape(24.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                        modifier = Modifier.height(44.dp)
                     ) {
-                        Icon(Icons.Default.CardGiftcard, contentDescription = "Gift Store", modifier = Modifier.size(18.dp))
+                        Icon(Icons.Default.CardGiftcard, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Gift", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        Text("Gift", fontWeight = FontWeight.Bold, fontSize = 12.sp)
                     }
                 }
             }
 
-            // Gift Store Modal Bottom Sheet
+            // Gift Store Bottom Sheet
             if (showGiftSheet) {
                 GiftStoreBottomSheet(
                     roomId = room.id,
@@ -243,20 +373,34 @@ fun LiveRoomScreen(
                     onNavigateWallet = onNavigateWallet
                 )
             }
+
+            // Host Controls Bottom Sheet
+            if (showHostControlsSheet) {
+                HostControlsSheet(
+                    room = room,
+                    viewModel = viewModel,
+                    onDismiss = { showHostControlsSheet = false },
+                    onEndLiveConfirmed = {
+                        val summary = viewModel.endLiveStream(room.id)
+                        onNavigateBack()
+                    }
+                )
+            }
+
+            // Viewer List Bottom Sheet
+            if (showViewerListSheet) {
+                ViewerListSheet(
+                    room = room,
+                    viewModel = viewModel,
+                    onDismiss = { showViewerListSheet = false }
+                )
+            }
         }
     }
 }
 
 @Composable
 fun VideoStageCanvas(room: LiveRoom) {
-    val infiniteTransition = rememberInfiniteTransition(label = "videoAnim")
-    val angle by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(tween(20000, easing = LinearEasing)),
-        label = "gradientRotation"
-    )
-
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -273,11 +417,11 @@ fun VideoStageCanvas(room: LiveRoom) {
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             Box(
                 modifier = Modifier
-                    .size(100.dp)
+                    .size(90.dp)
                     .clip(CircleShape)
                     .background(LivePrimaryEmerald.copy(alpha = 0.2f))
                     .border(2.dp, LivePrimaryMint, CircleShape),
@@ -287,13 +431,13 @@ fun VideoStageCanvas(room: LiveRoom) {
                     imageVector = Icons.Default.Videocam,
                     contentDescription = null,
                     tint = LivePrimaryMint,
-                    modifier = Modifier.size(48.dp)
+                    modifier = Modifier.size(44.dp)
                 )
             }
 
             Text(
                 text = room.title,
-                fontSize = 18.sp,
+                fontSize = 17.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White,
                 modifier = Modifier.padding(horizontal = 32.dp)
@@ -302,7 +446,7 @@ fun VideoStageCanvas(room: LiveRoom) {
             RoomCategoryChip(category = room.category)
 
             Text(
-                text = "Simulated Live Site Feed • 1080p 60fps",
+                text = "DEMO LIVE • Simulated Site Broadcast",
                 fontSize = 11.sp,
                 color = Color.LightGray.copy(alpha = 0.7f)
             )
@@ -311,14 +455,11 @@ fun VideoStageCanvas(room: LiveRoom) {
 }
 
 @Composable
-fun AudioStageCanvas(room: LiveRoom) {
-    val speakers = listOf(
-        Pair(room.creatorName, true),
-        Pair("Amit Engineer", false),
-        Pair("Suresh Contractor", false),
-        Pair("Pooja Safety", true)
-    )
-
+fun AudioStageCanvas(
+    room: LiveRoom,
+    seats: List<AudioSeat>,
+    onSeatClick: (Int) -> Unit
+) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -334,58 +475,137 @@ fun AudioStageCanvas(room: LiveRoom) {
         contentAlignment = Alignment.Center
     ) {
         Column(
-            modifier = Modifier.padding(24.dp),
+            modifier = Modifier.padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(20.dp)
+            verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Icon(Icons.Default.Mic, contentDescription = null, tint = LivePurple, modifier = Modifier.size(24.dp))
-                Text("Audio Stage Discussion", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = LivePurple)
+                Text("Audio Stage Discussion", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = LivePurple)
             }
 
             Text(
                 text = room.title,
-                fontSize = 18.sp,
+                fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White
             )
 
-            // Speaker Stage Grid (4 Seats)
+            // 6-Seat Speaker Grid
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                seats.chunked(3).forEach { rowSeats ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        rowSeats.forEach { seat ->
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(4.dp),
+                                modifier = Modifier.clickable { onSeatClick(seat.seatIndex) }
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    if (seat.userName != null) {
+                                        PulsingLiveAvatar(
+                                            name = seat.userName,
+                                            size = 48.dp,
+                                            isLive = seat.isSpeaking
+                                        )
+                                        if (seat.isMuted) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .align(Alignment.BottomEnd)
+                                                    .size(16.dp)
+                                                    .clip(CircleShape)
+                                                    .background(LiveRed),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Icon(Icons.Default.MicOff, contentDescription = null, tint = Color.White, modifier = Modifier.size(10.dp))
+                                            }
+                                        }
+                                    } else {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(48.dp)
+                                                .clip(CircleShape)
+                                                .background(Color.White.copy(alpha = 0.1f))
+                                                .border(1.dp, LivePurple.copy(alpha = 0.4f), CircleShape),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(Icons.Default.Add, contentDescription = "Empty Seat", tint = LivePurple, modifier = Modifier.size(20.dp))
+                                        }
+                                    }
+                                }
+
+                                Text(
+                                    text = seat.userName?.split(" ")?.firstOrNull() ?: "Seat ${seat.seatIndex + 1}",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (seat.userName != null) Color.White else Color.Gray
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ViewerListSheet(
+    room: LiveRoom,
+    viewModel: LiveViewModel,
+    onDismiss: () -> Unit
+) {
+    val creators by viewModel.creators.collectAsState()
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = LiveDarkBg,
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                speakers.forEach { (speakerName, isSpeaking) ->
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                Text("Room Viewers (${room.viewerCount})", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                IconButton(onClick = onDismiss) {
+                    Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.Gray)
+                }
+            }
+
+            LazyColumn(
+                modifier = Modifier.height(220.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(creators) { creator ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(LiveSurfaceDark)
+                            .padding(10.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            PulsingLiveAvatar(
-                                name = speakerName,
-                                size = 52.dp,
-                                isLive = isSpeaking
-                            )
-                            if (isSpeaking) {
-                                Box(
-                                    modifier = Modifier
-                                        .align(Alignment.BottomEnd)
-                                        .size(18.dp)
-                                        .clip(CircleShape)
-                                        .background(LivePrimaryMint),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(Icons.Default.GraphicEq, contentDescription = null, tint = Color.Black, modifier = Modifier.size(12.dp))
-                                }
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            PulsingLiveAvatar(name = creator.name, size = 32.dp, isLive = false)
+                            Column {
+                                Text(creator.name, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                Text(creator.profession, fontSize = 10.sp, color = Color.Gray)
                             }
                         }
 
-                        Text(
-                            text = speakerName.split(" ").firstOrNull() ?: speakerName,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
+                        LiveBadge(text = "VIEWER", bgColor = LivePrimaryEmerald)
                     }
                 }
             }
@@ -401,13 +621,13 @@ fun ChatMessageBubble(message: ChatMessage) {
                 .clip(RoundedCornerShape(12.dp))
                 .background(LiveGold.copy(alpha = 0.2f))
                 .border(1.dp, LiveGold.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
-                .padding(horizontal = 10.dp, vertical = 6.dp)
+                .padding(horizontal = 10.dp, vertical = 5.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 Icon(Icons.Default.CardGiftcard, contentDescription = null, tint = LiveGold, modifier = Modifier.size(14.dp))
                 Text(
                     text = "${message.senderName} ${message.message}",
-                    fontSize = 12.sp,
+                    fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     color = LiveGold
                 )
@@ -417,8 +637,8 @@ fun ChatMessageBubble(message: ChatMessage) {
         Box(
             modifier = Modifier
                 .clip(RoundedCornerShape(12.dp))
-                .background(Color.Black.copy(alpha = 0.5f))
-                .padding(horizontal = 10.dp, vertical = 6.dp)
+                .background(Color.Black.copy(alpha = 0.55f))
+                .padding(horizontal = 10.dp, vertical = 5.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(

@@ -114,6 +114,8 @@ fun DashboardScreen(
     val dashboardState by dashboardViewModel.dashboardState.collectAsStateWithLifecycle(initialValue = OfflineDashboardState(isLoading = true))
     val walletSummary by rewardsViewModel.walletSummary.collectAsState()
     val liveRooms by liveViewModel.liveRooms.collectAsState()
+    val liveCreators by liveViewModel.creators.collectAsState()
+    val followedCreatorIds by liveViewModel.followedCreatorIds.collectAsState()
     val liveWallet by liveViewModel.wallet.collectAsState()
     val bottomNavController = rememberNavController()
     val navBackStackEntry by bottomNavController.currentBackStackEntryAsState()
@@ -382,10 +384,10 @@ fun DashboardScreen(
                                                                 HomeFestivalBanner(state = dashboardState)
                                                                 HomeFollowingLiveSection(
                                                                     liveRooms = liveRooms,
-                                                                    diamondBalance = liveWallet.diamondBalance,
+                                                                    creators = liveCreators,
+                                                                    followedCreatorIds = followedCreatorIds,
                                                                     onNavigateLiveDiscover = { bottomNavController.navigate("live_discover") },
-                                                                    onNavigateLiveRoom = { roomId -> bottomNavController.navigate("live_room/$roomId") },
-                                                                    onNavigateWallet = { bottomNavController.navigate("live_wallet") }
+                                                                    onNavigateLiveRoom = { roomId -> bottomNavController.navigate("live_room/$roomId") }
                                                                 )
                                                                 PersonalStatsGrid(currencyCode = settingsState.currencyCode,
                                                                     state = dashboardState,
@@ -437,10 +439,10 @@ fun DashboardScreen(
                                                                     HomeFestivalBanner(state = dashboardState)
                                                                     HomeFollowingLiveSection(
                                                                         liveRooms = liveRooms,
-                                                                        diamondBalance = liveWallet.diamondBalance,
+                                                                        creators = liveCreators,
+                                                                        followedCreatorIds = followedCreatorIds,
                                                                         onNavigateLiveDiscover = { bottomNavController.navigate("live_discover") },
-                                                                        onNavigateLiveRoom = { roomId -> bottomNavController.navigate("live_room/$roomId") },
-                                                                        onNavigateWallet = { bottomNavController.navigate("live_wallet") }
+                                                                        onNavigateLiveRoom = { roomId -> bottomNavController.navigate("live_room/$roomId") }
                                                                     )
                                                                     PersonalStatsGrid(currencyCode = settingsState.currencyCode,
                                                                         state = dashboardState,
@@ -629,6 +631,22 @@ fun DashboardScreen(
                 CreatorStudioScreen(
                     viewModel = liveViewModel,
                     onNavigateBack = { bottomNavController.navigateUp() },
+                    onNavigateLiveRoom = { roomId -> bottomNavController.navigate("live_room/$roomId") },
+                    onNavigateSetup = { bottomNavController.navigate("live_setup") }
+                )
+            }
+            composable("live_summary") {
+                LiveEndSummaryScreen(
+                    viewModel = liveViewModel,
+                    onNavigateBack = { bottomNavController.navigateUp() },
+                    onNavigateStudio = { bottomNavController.navigate("live_studio") },
+                    onNavigateSetup = { bottomNavController.navigate("live_setup") }
+                )
+            }
+            composable("live_setup") {
+                LiveSetupScreen(
+                    viewModel = liveViewModel,
+                    onNavigateBack = { bottomNavController.navigateUp() },
                     onNavigateLiveRoom = { roomId -> bottomNavController.navigate("live_room/$roomId") }
                 )
             }
@@ -644,7 +662,7 @@ fun DashboardScreen(
                     onNavigateBack = { bottomNavController.navigateUp() },
                     onNavigateWallet = { bottomNavController.navigate("live_wallet") },
                     onNavigateEarnings = { bottomNavController.navigate("live_earnings") },
-                    onNavigateStudio = { bottomNavController.navigate("live_studio") },
+                    onNavigateStudio = { bottomNavController.navigate("live_setup") },
                     onNavigateDemoControls = { bottomNavController.navigate("live_demo_controls") }
                 )
             }
