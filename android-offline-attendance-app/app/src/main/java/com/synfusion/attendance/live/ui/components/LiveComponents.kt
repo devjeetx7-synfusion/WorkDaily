@@ -100,23 +100,6 @@ fun PulsingLiveAvatar(
             }
         }
 
-        if (isLive) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .offset(y = 4.dp)
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(LiveRed)
-                    .padding(horizontal = 6.dp, vertical = 1.dp)
-            ) {
-                Text(
-                    text = "LIVE",
-                    fontSize = 9.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Color.White
-                )
-            }
-        }
     }
 }
 

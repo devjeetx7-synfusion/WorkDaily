@@ -1,7 +1,6 @@
 package com.synfusion.attendance.live.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -10,7 +9,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -22,8 +20,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.synfusion.attendance.live.model.LiveCreator
-import com.synfusion.attendance.live.model.LiveRoom
 import com.synfusion.attendance.live.model.LiveRoomType
 import com.synfusion.attendance.live.ui.components.*
 import com.synfusion.attendance.live.viewmodel.LiveViewModel
@@ -93,7 +89,7 @@ fun LiveSearchSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = LiveDarkBg,
+        containerColor = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
         dragHandle = { BottomSheetDefaults.DragHandle() }
     ) {
@@ -104,32 +100,43 @@ fun LiveSearchSheet(
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // Top Bar
+            // Top Header Bar
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Icon(Icons.Default.Search, contentDescription = null, tint = LivePrimaryMint)
-                    Text("Search Live & Creators", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    Icon(Icons.Default.Search, contentDescription = null, tint = LivePrimaryEmerald)
+                    Text(
+                        text = "Search Live & Creators",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
                 }
 
                 IconButton(onClick = onDismiss) {
-                    Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.Gray)
+                    Icon(Icons.Default.Close, contentDescription = "Close", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
 
-            // Search Bar Input Field
+            // Search Bar Input Field - Theme-Aware
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
-                placeholder = { Text("Search by name, stream title, category, profession...", color = Color.Gray, fontSize = 13.sp) },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = LivePrimaryMint) },
+                placeholder = {
+                    Text(
+                        "Search by name, stream title, category, profession...",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                        fontSize = 13.sp
+                    )
+                },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = LivePrimaryEmerald) },
                 trailingIcon = {
                     if (searchQuery.isNotEmpty()) {
                         IconButton(onClick = { searchQuery = "" }) {
-                            Icon(Icons.Default.Clear, contentDescription = "Clear", tint = Color.Gray)
+                            Icon(Icons.Default.Clear, contentDescription = "Clear", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 },
@@ -137,12 +144,12 @@ fun LiveSearchSheet(
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(16.dp)),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = LivePrimaryMint,
-                    unfocusedBorderColor = LivePrimaryEmerald.copy(alpha = 0.35f),
-                    focusedContainerColor = LiveSurfaceDark,
-                    unfocusedContainerColor = LiveSurfaceDark,
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White
+                    focusedBorderColor = LivePrimaryEmerald,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f),
+                    focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface
                 ),
                 singleLine = true
             )
@@ -160,11 +167,11 @@ fun LiveSearchSheet(
                         colors = FilterChipDefaults.filterChipColors(
                             selectedContainerColor = LivePrimaryEmerald,
                             selectedLabelColor = Color.White,
-                            containerColor = LiveSurfaceDark,
-                            labelColor = Color.LightGray
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            labelColor = MaterialTheme.colorScheme.onSurfaceVariant
                         ),
                         border = FilterChipDefaults.filterChipBorder(
-                            borderColor = LivePrimaryEmerald.copy(alpha = 0.3f),
+                            borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
                             selectedBorderColor = LivePrimaryMint,
                             enabled = true,
                             selected = isSelected
@@ -185,8 +192,8 @@ fun LiveSearchSheet(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Icon(Icons.Default.SearchOff, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(48.dp))
-                        Text("No matching creators or live streams found", color = Color.Gray, fontSize = 14.sp)
+                        Icon(Icons.Default.SearchOff, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(48.dp))
+                        Text("No matching creators or live streams found", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                     }
                 }
             } else {
@@ -197,7 +204,12 @@ fun LiveSearchSheet(
                     // Active Live Streams Matching Results
                     if (matchingRooms.isNotEmpty()) {
                         item {
-                            Text("ACTIVE LIVE STREAMS (${matchingRooms.size})", fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = LivePrimaryMint)
+                            Text(
+                                "ACTIVE LIVE STREAMS (${matchingRooms.size})",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = LivePrimaryEmerald
+                            )
                         }
 
                         items(matchingRooms) { room ->
@@ -209,8 +221,8 @@ fun LiveSearchSheet(
                                         onNavigateLiveRoom(room.id)
                                     },
                                 shape = RoundedCornerShape(14.dp),
-                                colors = CardDefaults.cardColors(containerColor = LiveSurfaceDark),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, LivePrimaryEmerald.copy(alpha = 0.3f))
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, LivePrimaryEmerald.copy(alpha = 0.25f))
                             ) {
                                 Row(
                                     modifier = Modifier
@@ -226,7 +238,7 @@ fun LiveSearchSheet(
                                     ) {
                                         PulsingLiveAvatar(
                                             name = room.creatorName,
-                                            size = 40.dp,
+                                            size = 38.dp,
                                             isLive = room.isLive
                                         )
 
@@ -235,14 +247,14 @@ fun LiveSearchSheet(
                                                 text = room.title,
                                                 fontSize = 13.sp,
                                                 fontWeight = FontWeight.Bold,
-                                                color = Color.White,
+                                                color = MaterialTheme.colorScheme.onSurface,
                                                 maxLines = 1,
                                                 overflow = TextOverflow.Ellipsis
                                             )
                                             Text(
                                                 text = "${room.creatorName} • ${room.category}",
                                                 fontSize = 11.sp,
-                                                color = Color.LightGray
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
                                         }
                                     }
@@ -267,7 +279,12 @@ fun LiveSearchSheet(
                     if (matchingCreators.isNotEmpty()) {
                         item {
                             Spacer(modifier = Modifier.height(6.dp))
-                            Text("CREATORS (${matchingCreators.size})", fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = LivePrimaryMint)
+                            Text(
+                                "CREATORS (${matchingCreators.size})",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = LivePrimaryEmerald
+                            )
                         }
 
                         items(matchingCreators) { creator ->
@@ -276,8 +293,8 @@ fun LiveSearchSheet(
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(14.dp),
-                                colors = CardDefaults.cardColors(containerColor = LiveSurfaceDark),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, Color.Gray.copy(alpha = 0.2f))
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
                             ) {
                                 Row(
                                     modifier = Modifier
@@ -293,7 +310,7 @@ fun LiveSearchSheet(
                                     ) {
                                         PulsingLiveAvatar(
                                             name = creator.name,
-                                            size = 40.dp,
+                                            size = 38.dp,
                                             isLive = creator.isLiveNow
                                         )
 
@@ -303,7 +320,7 @@ fun LiveSearchSheet(
                                                     text = creator.name,
                                                     fontSize = 13.sp,
                                                     fontWeight = FontWeight.Bold,
-                                                    color = Color.White
+                                                    color = MaterialTheme.colorScheme.onSurface
                                                 )
                                                 if (creator.isLiveNow) {
                                                     LiveBadge(text = "LIVE", bgColor = LiveRed)
@@ -312,7 +329,7 @@ fun LiveSearchSheet(
                                             Text(
                                                 text = "${creator.profession} • ${creator.followerCount} followers",
                                                 fontSize = 11.sp,
-                                                color = Color.LightGray,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                                 maxLines = 1,
                                                 overflow = TextOverflow.Ellipsis
                                             )
