@@ -158,7 +158,7 @@ fun LiveProfileScreen(
                             )
                         }
 
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+                        Spacer(modifier = Modifier.height(8.dp))
 
                         // Stats Row (Followers, Following, Friends)
                         Row(
@@ -170,7 +170,7 @@ fun LiveProfileScreen(
                                     text = "${if (isSelf) followedIds.size else targetUser?.followerCount ?: 0}",
                                     fontSize = 18.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = LivePrimaryEmerald
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Text("Followers", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
@@ -180,7 +180,7 @@ fun LiveProfileScreen(
                                     text = "${if (isSelf) 240 else targetUser?.followingCount ?: 0}",
                                     fontSize = 18.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = LivePrimaryEmerald
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Text("Following", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
@@ -190,7 +190,7 @@ fun LiveProfileScreen(
                                     text = "${if (isSelf) 15 else targetUser?.friendsCount ?: 0}",
                                     fontSize = 18.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = LivePrimaryEmerald
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Text("Friends", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
@@ -202,108 +202,74 @@ fun LiveProfileScreen(
             // Actions Section for Other Users
             if (!isSelf && targetUser != null) {
                 item {
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        // Follow / Following Button
+                        Button(
+                            onClick = { viewModel.toggleFollowCreator(targetUser.id) },
+                            modifier = Modifier.weight(1f).height(38.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (targetUser.isFollowing) MaterialTheme.colorScheme.surfaceVariant else LivePrimaryEmerald,
+                                contentColor = if (targetUser.isFollowing) MaterialTheme.colorScheme.onSurface else Color.White
+                            ),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(0.dp)
                         ) {
-                            // Follow / Following Button
-                            Button(
-                                onClick = { viewModel.toggleFollowCreator(targetUser.id) },
-                                modifier = Modifier.weight(1f).height(46.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (targetUser.isFollowing) MaterialTheme.colorScheme.surfaceVariant else LivePrimaryEmerald,
-                                    contentColor = if (targetUser.isFollowing) MaterialTheme.colorScheme.onSurfaceVariant else Color.White
-                                ),
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
-                                Icon(if (targetUser.isFollowing) Icons.Default.Check else Icons.Default.PersonAdd, contentDescription = null, modifier = Modifier.size(16.dp))
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(if (targetUser.isFollowing) "Following" else "Follow", fontWeight = FontWeight.Bold)
-                            }
-
-                            // Friend Status Button
-                            when {
-                                targetUser.isFriend -> {
-                                    Button(
-                                        onClick = { viewModel.unfriendUser(targetUser.id) },
-                                        modifier = Modifier.weight(1f).height(46.dp),
-                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant, contentColor = LivePrimaryEmerald),
-                                        shape = RoundedCornerShape(12.dp)
-                                    ) {
-                                        Icon(Icons.Default.People, contentDescription = null, modifier = Modifier.size(16.dp))
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        Text("Friends", fontWeight = FontWeight.Bold)
-                                    }
-                                }
-                                targetUser.friendRequestStatus == FriendRequestStatus.PENDING -> {
-                                    val incomingReq = friendRequests.find { it.senderId == targetUser.id && it.status == FriendRequestStatus.PENDING }
-                                    if (incomingReq != null) {
-                                        Button(
-                                            onClick = { viewModel.acceptFriendRequest(incomingReq.id) },
-                                            modifier = Modifier.weight(1f).height(46.dp),
-                                            colors = ButtonDefaults.buttonColors(containerColor = LivePrimaryEmerald, contentColor = Color.White),
-                                            shape = RoundedCornerShape(12.dp)
-                                        ) {
-                                            Text("Accept Friend", fontWeight = FontWeight.Bold)
-                                        }
-                                    } else {
-                                        OutlinedButton(
-                                            onClick = {
-                                                val req = friendRequests.find { it.senderId == "current_user" && it.receiverId == targetUser.id }
-                                                if (req != null) viewModel.cancelFriendRequest(req.id)
-                                            },
-                                            modifier = Modifier.weight(1f).height(46.dp),
-                                            shape = RoundedCornerShape(12.dp)
-                                        ) {
-                                            Text("Request Sent", fontWeight = FontWeight.Bold)
-                                        }
-                                    }
-                                }
-                                else -> {
-                                    Button(
-                                        onClick = {
-                                            val sent = viewModel.sendFriendRequest(targetUser.id)
-                                            if (sent) Toast.makeText(context, "Friend request sent!", Toast.LENGTH_SHORT).show()
-                                        },
-                                        modifier = Modifier.weight(1f).height(46.dp),
-                                        colors = ButtonDefaults.buttonColors(containerColor = LivePrimaryEmerald, contentColor = Color.White),
-                                        shape = RoundedCornerShape(12.dp)
-                                    ) {
-                                        Icon(Icons.Default.GroupAdd, contentDescription = null, modifier = Modifier.size(16.dp))
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        Text("Add Friend", fontWeight = FontWeight.Bold)
-                                    }
-                                }
-                            }
+                            Text(if (targetUser.isFollowing) "Following" else "Follow", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                         }
 
-                        // Private Message Action (When Friends)
-                        if (targetUser.isFriend) {
-                            Button(
-                                onClick = { onNavigatePrivateChat(targetUser.id) },
-                                modifier = Modifier.fillMaxWidth().height(46.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = LivePrimaryEmerald, contentColor = Color.White),
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
-                                Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = null, modifier = Modifier.size(16.dp))
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("Send Message", fontWeight = FontWeight.Bold)
-                            }
+                        // Message Action
+                        Button(
+                            onClick = { onNavigatePrivateChat(targetUser.id) },
+                            modifier = Modifier.weight(1f).height(38.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurface),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(0.dp)
+                        ) {
+                            Text("Message", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                         }
 
-                        // Watch Live Action if user is active live
-                        if (targetUser.isLiveNow && targetUser.activeRoomId != null) {
-                            Button(
-                                onClick = { onNavigateLiveRoom(targetUser.activeRoomId) },
-                                modifier = Modifier.fillMaxWidth().height(46.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = LiveRed, contentColor = Color.White),
-                                shape = RoundedCornerShape(12.dp)
+                        // Add Friend Button
+                        if (!targetUser.isFriend && targetUser.friendRequestStatus != FriendRequestStatus.PENDING) {
+                            IconButton(
+                                onClick = {
+                                    viewModel.sendFriendRequest(targetUser.id)
+                                    Toast.makeText(context, "Friend request sent!", Toast.LENGTH_SHORT).show()
+                                },
+                                modifier = Modifier
+                                    .size(38.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(MaterialTheme.colorScheme.surfaceVariant)
                             ) {
-                                Icon(Icons.Default.LiveTv, contentDescription = null, modifier = Modifier.size(16.dp))
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("Watch Live Stream 🔴", fontWeight = FontWeight.Bold)
+                                Icon(Icons.Default.PersonAdd, contentDescription = "Add Friend", modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurface)
                             }
+                        } else if (targetUser.isFriend) {
+                            IconButton(
+                                onClick = { viewModel.unfriendUser(targetUser.id) },
+                                modifier = Modifier
+                                    .size(38.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                            ) {
+                                Icon(Icons.Default.People, contentDescription = "Friends", modifier = Modifier.size(20.dp), tint = LivePrimaryEmerald)
+                            }
+                        }
+                    }
+                }
+
+                if (targetUser.isLiveNow && targetUser.activeRoomId != null) {
+                    item {
+                        Button(
+                            onClick = { onNavigateLiveRoom(targetUser.activeRoomId) },
+                            modifier = Modifier.fillMaxWidth().height(42.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = LiveRed, contentColor = Color.White),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Icon(Icons.Default.LiveTv, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Watch Live", fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -312,28 +278,26 @@ fun LiveProfileScreen(
                 item {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         Button(
                             onClick = onNavigateWallet,
-                            modifier = Modifier.weight(1f).height(46.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = LiveDiamondColor.copy(alpha = 0.2f), contentColor = LiveDiamondColor),
-                            shape = RoundedCornerShape(12.dp)
+                            modifier = Modifier.weight(1f).height(38.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurface),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(0.dp)
                         ) {
-                            Icon(Icons.Default.Diamond, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Wallet", fontWeight = FontWeight.Bold)
+                            Text("Wallet", fontWeight = FontWeight.SemiBold)
                         }
 
                         Button(
                             onClick = onNavigateEarnings,
-                            modifier = Modifier.weight(1f).height(46.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = LivePrimaryEmerald, contentColor = Color.White),
-                            shape = RoundedCornerShape(12.dp)
+                            modifier = Modifier.weight(1f).height(38.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurface),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(0.dp)
                         ) {
-                            Icon(Icons.Default.AccountBalanceWallet, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Earnings", fontWeight = FontWeight.Bold)
+                            Text("Earnings", fontWeight = FontWeight.SemiBold)
                         }
                     }
                 }

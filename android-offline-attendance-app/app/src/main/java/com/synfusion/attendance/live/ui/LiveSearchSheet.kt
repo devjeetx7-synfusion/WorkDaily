@@ -39,7 +39,7 @@ fun LiveSearchSheet(
     var searchQuery by remember { mutableStateOf("") }
     var selectedFilter by remember { mutableStateOf("All") }
 
-    val filters = listOf("All", "Live", "Users", "Audio", "Video", "Following")
+    val filters = listOf("All", "Live", "Users")
 
     // Filter creators and rooms based on searchQuery and selectedFilter
     val matchingCreators = remember(creators, searchQuery, selectedFilter, followedCreatorIds) {
@@ -90,6 +90,7 @@ fun LiveSearchSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = MaterialTheme.colorScheme.surface,
+        windowInsets = WindowInsets(0.dp),
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
         dragHandle = { BottomSheetDefaults.DragHandle() }
     ) {
@@ -97,6 +98,7 @@ fun LiveSearchSheet(
             modifier = Modifier
                 .fillMaxWidth()
                 .fillMaxHeight(0.88f)
+                .imePadding()
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
