@@ -165,7 +165,7 @@ fun DailyCheckInScreen(
                                 }
 
                                 Image(
-                                    painter = painterResource(id = R.drawable.rewards_hub_worker),
+                                    painter = painterResource(id = R.drawable.checkin_calendar),
                                     contentDescription = "Worker Illustration",
                                     modifier = Modifier.size(92.dp),
                                     contentScale = ContentScale.Fit
