@@ -16,6 +16,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -163,7 +164,7 @@ fun LiveDiscoverScreen(
                 }
             }
 
-            // 2-Column Responsive Grid Cards
+            // 2-Column Responsive Grid Cards with Aspect Ratio Sizing
             if (filteredRooms.isEmpty()) {
                 Box(
                     modifier = Modifier
@@ -315,7 +316,7 @@ fun CleanLiveRoomGridCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(230.dp)
+            .aspectRatio(0.75f)
             .clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = LiveSurfaceDark)
@@ -326,7 +327,7 @@ fun CleanLiveRoomGridCard(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(
-                        androidx.compose.ui.graphics.Brush.verticalGradient(
+                        Brush.verticalGradient(
                             listOf(
                                 Color(0xFF2C3E50),
                                 Color(0xFF000000)
@@ -339,7 +340,7 @@ fun CleanLiveRoomGridCard(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(10.dp),
+                    .padding(8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -350,17 +351,17 @@ fun CleanLiveRoomGridCard(
                     modifier = Modifier
                         .clip(RoundedCornerShape(12.dp))
                         .background(Color.Black.copy(alpha = 0.5f))
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                        .padding(horizontal = 6.dp, vertical = 3.dp)
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(6.dp)
+                            .size(5.dp)
                             .clip(CircleShape)
                             .background(LiveRed)
                     )
                     Text(
                         text = "LIVE",
-                        fontSize = 10.sp,
+                        fontSize = 9.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = Color.White
                     )
@@ -382,7 +383,7 @@ fun CleanLiveRoomGridCard(
                                 imageVector = Icons.Default.Mic,
                                 contentDescription = "Audio Stream",
                                 tint = Color.White,
-                                modifier = Modifier.size(12.dp)
+                                modifier = Modifier.size(11.dp)
                             )
                         }
                     }
@@ -397,23 +398,23 @@ fun CleanLiveRoomGridCard(
                     .fillMaxWidth()
                     .align(Alignment.BottomStart)
                     .background(
-                        androidx.compose.ui.graphics.Brush.verticalGradient(
+                        Brush.verticalGradient(
                             listOf(Color.Transparent, Color.Black.copy(alpha = 0.85f))
                         )
                     )
-                    .padding(10.dp),
+                    .padding(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 PulsingLiveAvatar(
                     name = room.creatorName,
-                    size = 32.dp,
+                    size = 28.dp,
                     isLive = room.isLive
                 )
 
                 Text(
                     text = room.creatorName,
-                    fontSize = 13.sp,
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
                     maxLines = 1,

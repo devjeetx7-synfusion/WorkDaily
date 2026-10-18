@@ -1,6 +1,7 @@
 package com.synfusion.attendance.live.ui
 
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -24,9 +25,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -34,6 +37,7 @@ import androidx.compose.ui.unit.sp
 import com.synfusion.attendance.live.model.*
 import com.synfusion.attendance.live.ui.components.*
 import com.synfusion.attendance.live.viewmodel.LiveViewModel
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -75,20 +79,52 @@ fun LiveRoomScreen(
     var showGiftSentDialog by remember { mutableStateOf<Pair<LiveGift, Int>?>(null) }
 
     val context = LocalContext.current
-    val density = LocalDensity.current
+    val focusManager = LocalFocusManager.current
+    val coroutineScope = rememberCoroutineScope()
 
     // IME / Keyboard Visibility Detection
     val isKeyboardVisible = WindowInsets.ime.asPaddingValues().calculateBottomPadding() > 0.dp
 
+    // Intercept back key when keyboard is open to dismiss focus first
+    BackHandler(enabled = isKeyboardVisible) {
+        focusManager.clearFocus()
+    }
+
     val chatListState = rememberLazyListState()
+
+    // Derived state for intelligent auto-scroll
+    val isAtBottom by remember {
+        derivedStateOf {
+            val layoutInfo = chatListState.layoutInfo
+            val totalItems = layoutInfo.totalItemsCount
+            if (totalItems == 0) true
+            else {
+                val lastVisibleItem = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+                lastVisibleItem >= totalItems - 2
+            }
+        }
+    }
+
+    var userScrolledUp by remember { mutableStateOf(false) }
 
     LaunchedEffect(room.id) {
         viewModel.setActiveRoom(room.id)
     }
 
-    // Auto-scroll chat feed to latest message
+    // Detect user manual scroll upward
+    LaunchedEffect(chatListState.isScrollInProgress) {
+        if (chatListState.isScrollInProgress) {
+            if (!isAtBottom) {
+                userScrolledUp = true
+            } else {
+                userScrolledUp = false
+            }
+        }
+    }
+
+    // Intelligent Auto-scroll
     LaunchedEffect(chatMessages.size) {
-        if (chatMessages.isNotEmpty()) {
+        if (chatMessages.isNotEmpty() && !userScrolledUp) {
             chatListState.animateScrollToItem(chatMessages.size - 1)
         }
     }
@@ -140,47 +176,69 @@ fun LiveRoomScreen(
                 }
             )
 
-            // TOP OVERLAY BAR: Compact Header (Avatar, Ellipsized Name, Follow/Host, Viewer Count, Exit)
+            // TOP OVERLAY BAR: Minimal Instagram-Inspired Live Header
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.TopCenter)
                     .statusBarsPadding()
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Left Pill: Creator Profile + Ellipsized Name + Follow
+                // Left: Minimal Creator Identity Pill
                 Surface(
                     shape = RoundedCornerShape(20.dp),
-                    color = Color.Black.copy(alpha = 0.65f),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, LivePrimaryMint.copy(alpha = 0.35f)),
+                    color = Color.Black.copy(alpha = 0.45f),
                     modifier = Modifier.weight(1f, fill = false)
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        PulsingLiveAvatar(
-                            name = room.creatorName,
-                            size = 30.dp,
-                            isLive = room.isLive
-                        )
+                        // 30dp Compact Circular Avatar
+                        val initials = remember(room.creatorName) {
+                            val parts = room.creatorName.trim().split(" ")
+                            if (parts.size >= 2) "${parts[0].take(1)}${parts[1].take(1)}".uppercase()
+                            else if (room.creatorName.isNotEmpty()) room.creatorName.take(2).uppercase()
+                            else "WD"
+                        }
+                        Box(
+                            modifier = Modifier
+                                .size(30.dp)
+                                .clip(CircleShape)
+                                .background(LivePrimaryEmerald),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = initials,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
 
-                        Column(modifier = Modifier.widthIn(max = 110.dp)) {
+                        // Creator Name & Tiny Red LIVE Dot
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            modifier = Modifier.widthIn(max = 110.dp)
+                        ) {
                             Text(
                                 text = room.creatorName,
-                                fontSize = 11.sp,
+                                fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                                Icon(Icons.Default.Diamond, contentDescription = null, tint = LiveDiamondColor, modifier = Modifier.size(9.dp))
-                                Text("${room.diamondEarnings}", fontSize = 9.sp, color = LiveDiamondColor, fontWeight = FontWeight.Bold)
-                            }
+                            Box(
+                                modifier = Modifier
+                                    .size(6.dp)
+                                    .clip(CircleShape)
+                                    .background(LiveRed)
+                            )
                         }
 
                         if (!isHost) {
@@ -188,15 +246,13 @@ fun LiveRoomScreen(
                                 isFollowing = isFollowing,
                                 onToggle = { viewModel.toggleFollowCreator(room.creatorId) }
                             )
-                        } else {
-                            LiveBadge(text = "HOST", bgColor = LivePrimaryEmerald)
                         }
                     }
                 }
 
                 Spacer(modifier = Modifier.width(6.dp))
 
-                // Right Controls: Viewer Count, Diamond Balance, Host / Exit Action
+                // Right Controls: Viewer Count, Host Controls / Exit Action
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -216,11 +272,11 @@ fun LiveRoomScreen(
                         IconButton(
                             onClick = { showHostControlsSheet = true },
                             modifier = Modifier
-                                .size(34.dp)
+                                .size(32.dp)
                                 .clip(CircleShape)
-                                .background(LivePrimaryEmerald)
+                                .background(Color.Black.copy(alpha = 0.45f))
                         ) {
-                            Icon(Icons.Default.Tune, contentDescription = "Host Controls", tint = Color.White, modifier = Modifier.size(18.dp))
+                            Icon(Icons.Default.Tune, contentDescription = "Host Controls", tint = Color.White, modifier = Modifier.size(16.dp))
                         }
                     }
 
@@ -230,93 +286,23 @@ fun LiveRoomScreen(
                             onNavigateBack()
                         },
                         modifier = Modifier
-                            .size(34.dp)
+                            .size(32.dp)
                             .clip(CircleShape)
-                            .background(Color.Black.copy(alpha = 0.65f))
+                            .background(Color.Black.copy(alpha = 0.45f))
                     ) {
-                        Icon(Icons.Default.Close, contentDescription = "Leave Stream", tint = Color.White, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Default.Close, contentDescription = "Leave Stream", tint = Color.White, modifier = Modifier.size(16.dp))
                     }
                 }
             }
 
-            // RIGHT SIDE ACTION BUTTONS: Hide completely when keyboard is visible to prevent layout jumps & overlaps
-            AnimatedVisibility(
-                visible = !isKeyboardVisible,
-                enter = fadeIn(),
-                exit = fadeOut(),
-                modifier = Modifier
-                    .align(Alignment.CenterEnd)
-                    .padding(end = 12.dp)
-            ) {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(14.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    // Heart Wave Trigger Button
-                    IconButton(
-                        onClick = {
-                            triggerHeartSignal = System.currentTimeMillis()
-                        },
-                        modifier = Modifier
-                            .size(42.dp)
-                            .clip(CircleShape)
-                            .background(LiveRed)
-                    ) {
-                        Icon(Icons.Default.Favorite, contentDescription = "Send Heart", tint = Color.White, modifier = Modifier.size(20.dp))
-                    }
-
-                    // Gift Store Trigger Button
-                    IconButton(
-                        onClick = { showGiftSheet = true },
-                        modifier = Modifier
-                            .size(42.dp)
-                            .clip(CircleShape)
-                            .background(LiveGold)
-                    ) {
-                        Icon(Icons.Default.CardGiftcard, contentDescription = "Gift Store", tint = Color.Black, modifier = Modifier.size(20.dp))
-                    }
-
-                    // Raise Hand (Audio) / Request Guest Button for Viewers
-                    if (!isHost) {
-                        IconButton(
-                            onClick = {
-                                viewModel.requestToJoinGuest(room.id)
-                                Toast.makeText(context, "Guest join request sent to host!", Toast.LENGTH_SHORT).show()
-                            },
-                            modifier = Modifier
-                                .size(42.dp)
-                                .clip(CircleShape)
-                                .background(Color.Black.copy(alpha = 0.65f))
-                                .border(1.dp, LivePrimaryMint, CircleShape)
-                        ) {
-                            Icon(Icons.Default.PanTool, contentDescription = "Raise Hand", tint = LivePrimaryMint, modifier = Modifier.size(18.dp))
-                        }
-                    }
-
-                    // Share Button
-                    IconButton(
-                        onClick = {
-                            Toast.makeText(context, "Stream link copied to clipboard! 🔗", Toast.LENGTH_SHORT).show()
-                        },
-                        modifier = Modifier
-                            .size(42.dp)
-                            .clip(CircleShape)
-                            .background(Color.Black.copy(alpha = 0.65f))
-                    ) {
-                        Icon(Icons.Default.Share, contentDescription = "Share", tint = Color.White, modifier = Modifier.size(18.dp))
-                    }
-                }
-            }
-
-            // BOTTOM OVERLAY: Transparent Floating Chat Feed + Composer
+            // BOTTOM OVERLAY: Transparent Floating Chat Feed + Scrim + New Messages Indicator + Composer
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.BottomCenter)
                     .imePadding()
                     .navigationBarsPadding()
-
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 // Pinned Comment Banner if present
@@ -339,68 +325,149 @@ fun LiveRoomScreen(
                     }
                 }
 
-                // Chat Feed overlay with smooth auto-scrolling
-                LazyColumn(
-                    state = chatListState,
+                // Chat Feed overlay with subtle shared gradient scrim
+                Box(
                     modifier = Modifier
-                        .fillMaxWidth(if (isKeyboardVisible) 1.0f else 0.82f)
-                        .weight(1f, fill = false),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                        .fillMaxWidth()
+                        .heightIn(max = 220.dp)
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    Color.Transparent,
+                                    Color.Black.copy(alpha = 0.35f)
+                                )
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        .padding(horizontal = 6.dp, vertical = 4.dp)
                 ) {
-                    items(chatMessages) { msg ->
-                        ChatMessageBubble(message = msg)
+                    LazyColumn(
+                        state = chatListState,
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        items(
+                            items = chatMessages,
+                            key = { it.id }
+                        ) { msg ->
+                            ChatMessageBubble(message = msg)
+                        }
+                    }
+
+                    // Compact "New Messages ↓" pill indicator
+                    if (userScrolledUp && !isAtBottom) {
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = LivePrimaryEmerald,
+                            shadowElevation = 4.dp,
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .padding(bottom = 4.dp)
+                                .clickable {
+                                    userScrolledUp = false
+                                    coroutineScope.launch {
+                                        if (chatMessages.isNotEmpty()) {
+                                            chatListState.animateScrollToItem(chatMessages.size - 1)
+                                        }
+                                    }
+                                }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Text("New Messages", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
+                            }
+                        }
                     }
                 }
 
-                // Input Bar: Single clean row docked above keyboard
+                // Input Bar Row: Multiline Content-Adaptive Field + Action Icons
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     OutlinedTextField(
                         value = chatInput,
                         onValueChange = { chatInput = it },
-                        placeholder = { Text("Say something...", color = Color.Gray, fontSize = 12.sp) },
+                        placeholder = { Text("Add a comment...", color = Color.LightGray.copy(alpha = 0.7f), fontSize = 12.sp) },
                         modifier = Modifier
                             .weight(1f)
-                            .height(48.dp)
-                            .clip(RoundedCornerShape(24.dp)),
+                            .heightIn(min = 42.dp, max = 110.dp)
+                            .clip(RoundedCornerShape(22.dp)),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedContainerColor = Color.Black.copy(alpha = 0.65f),
-                            unfocusedContainerColor = Color.Black.copy(alpha = 0.65f),
+                            unfocusedContainerColor = Color.Black.copy(alpha = 0.5f),
                             focusedBorderColor = LivePrimaryMint,
-                            unfocusedBorderColor = Color.Gray.copy(alpha = 0.35f),
+                            unfocusedBorderColor = Color.White.copy(alpha = 0.25f),
                             focusedTextColor = Color.White,
                             unfocusedTextColor = Color.White
                         ),
-                        trailingIcon = {
-                            if (chatInput.isNotBlank()) {
-                                IconButton(
-                                    onClick = {
-                                        viewModel.sendChatMessage(room.id, chatInput)
-                                        chatInput = ""
-                                    }
-                                ) {
-                                    Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send", tint = LivePrimaryMint, modifier = Modifier.size(18.dp))
-                                }
-                            }
-                        },
-                        singleLine = true
+                        minLines = 1,
+                        maxLines = 4,
+                        textStyle = TextStyle(fontSize = 13.sp)
                     )
 
-                    // Secondary Gift Button in bottom row - visible ONLY when keyboard is CLOSED to avoid duplication
-                    if (!isKeyboardVisible) {
-                        Button(
-                            onClick = { showGiftSheet = true },
-                            colors = ButtonDefaults.buttonColors(containerColor = LiveGold, contentColor = Color.Black),
-                            shape = RoundedCornerShape(24.dp),
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-                            modifier = Modifier.height(44.dp)
+                    // If keyboard is VISIBLE or typing, show Send action button
+                    if (isKeyboardVisible || chatInput.isNotBlank()) {
+                        IconButton(
+                            onClick = {
+                                if (chatInput.isNotBlank()) {
+                                    viewModel.sendChatMessage(room.id, chatInput.trim())
+                                    chatInput = ""
+                                    userScrolledUp = false
+                                }
+                            },
+                            enabled = chatInput.isNotBlank(),
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .background(if (chatInput.isNotBlank()) LivePrimaryEmerald else Color.Gray.copy(alpha = 0.3f))
                         ) {
-                            Icon(Icons.Default.CardGiftcard, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Gift", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.Send,
+                                contentDescription = "Send",
+                                tint = Color.White,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+
+                    // If keyboard is CLOSED and input is blank, show compact Icon Actions [Gift, Share, Heart]
+                    if (!isKeyboardVisible && chatInput.isBlank()) {
+                        IconButton(
+                            onClick = { showGiftSheet = true },
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .background(Color.Black.copy(alpha = 0.45f))
+                        ) {
+                            Icon(Icons.Default.CardGiftcard, contentDescription = "Gift Store", tint = LiveGold, modifier = Modifier.size(20.dp))
+                        }
+
+                        IconButton(
+                            onClick = {
+                                Toast.makeText(context, "Stream link copied to clipboard! 🔗", Toast.LENGTH_SHORT).show()
+                            },
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .background(Color.Black.copy(alpha = 0.45f))
+                        ) {
+                            Icon(Icons.Default.Share, contentDescription = "Share", tint = Color.White, modifier = Modifier.size(18.dp))
+                        }
+
+                        IconButton(
+                            onClick = { triggerHeartSignal = System.currentTimeMillis() },
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .background(Color.Black.copy(alpha = 0.45f))
+                        ) {
+                            Icon(Icons.Default.Favorite, contentDescription = "Send Heart", tint = LiveRed, modifier = Modifier.size(20.dp))
                         }
                     }
                 }
@@ -671,44 +738,51 @@ fun ViewerListSheet(
 
 @Composable
 fun ChatMessageBubble(message: ChatMessage) {
+    val textShadow = Shadow(
+        color = Color.Black.copy(alpha = 0.8f),
+        blurRadius = 4f
+    )
+
     if (message.isGiftAnnouncement) {
         Box(
             modifier = Modifier
-                .clip(RoundedCornerShape(12.dp))
-                .background(LiveGold.copy(alpha = 0.2f))
-                .border(1.dp, LiveGold.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
-                .padding(horizontal = 10.dp, vertical = 5.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(LiveGold.copy(alpha = 0.15f))
+                .border(1.dp, LiveGold.copy(alpha = 0.35f), RoundedCornerShape(10.dp))
+                .padding(horizontal = 8.dp, vertical = 4.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Icon(Icons.Default.CardGiftcard, contentDescription = null, tint = LiveGold, modifier = Modifier.size(14.dp))
+                Icon(Icons.Default.CardGiftcard, contentDescription = null, tint = LiveGold, modifier = Modifier.size(13.dp))
                 Text(
                     text = "${message.senderName} ${message.message}",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
-                    color = LiveGold
+                    color = LiveGold,
+                    style = TextStyle(shadow = textShadow)
                 )
             }
         }
     } else {
-        Box(
-            modifier = Modifier
-                .clip(RoundedCornerShape(12.dp))
-                .background(Color.Black.copy(alpha = 0.55f))
-                .padding(horizontal = 10.dp, vertical = 5.dp)
+        Row(
+            verticalAlignment = Alignment.Top,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(
-                    text = message.senderName,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = LivePrimaryMint
-                )
-                Text(
-                    text = message.message,
-                    fontSize = 12.sp,
-                    color = Color.White
-                )
-            }
+            Text(
+                text = "${message.senderName}:",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = LivePrimaryMint,
+                style = TextStyle(shadow = textShadow)
+            )
+            Text(
+                text = message.message,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Normal,
+                color = Color.White,
+                style = TextStyle(shadow = textShadow),
+                softWrap = true
+            )
         }
     }
 }
