@@ -54,6 +54,18 @@ val LiveEmeraldGradient = Brush.horizontalGradient(
 )
 
 /**
+ * Extracts the user's first name for compact Live headers and chips.
+ * Prioritizes the first name (e.g. "Rajesh Sharma" -> "Rajesh", "Mohammed Abdul Rahman" -> "Mohammed").
+ * Preserves unicode, single-word names, and non-Latin scripts cleanly.
+ */
+fun extractFirstName(fullName: String?): String {
+    if (fullName.isNullOrBlank()) return "User"
+    val trimmed = fullName.trim()
+    val parts = trimmed.split(Regex("\\s+"))
+    return parts.firstOrNull { it.isNotBlank() } ?: "User"
+}
+
+/**
  * Animated Live Ring: Continuous subtle pulse wave around live broadcasting avatars.
  */
 @Composable
@@ -402,36 +414,47 @@ fun FollowButton(
     if (isFollowing) {
         OutlinedButton(
             onClick = onToggle,
-            modifier = modifier.height(32.dp),
-            shape = RoundedCornerShape(16.dp),
-            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
+            modifier = modifier
+                .height(28.dp)
+                .defaultMinSize(minWidth = 64.dp),
+            shape = RoundedCornerShape(14.dp),
+            border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.35f)),
             colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = MaterialTheme.colorScheme.onSurface
+                containerColor = Color.White.copy(alpha = 0.15f),
+                contentColor = Color.White
             ),
-            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp)
+            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp)
         ) {
             Text(
-                "Following",
-                fontSize = 12.sp,
+                text = "Following",
+                fontSize = 11.sp,
                 fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                softWrap = false,
+                overflow = TextOverflow.Clip,
                 style = TextStyle(platformStyle = PlatformTextStyle(includeFontPadding = false))
             )
         }
     } else {
         Button(
             onClick = onToggle,
-            modifier = modifier.height(32.dp),
-            shape = RoundedCornerShape(16.dp),
+            modifier = modifier
+                .height(28.dp)
+                .defaultMinSize(minWidth = 56.dp),
+            shape = RoundedCornerShape(14.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = LivePrimaryEmerald,
                 contentColor = Color.White
             ),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp)
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
         ) {
             Text(
-                "Follow",
-                fontSize = 12.sp,
+                text = "Follow",
+                fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                softWrap = false,
+                overflow = TextOverflow.Clip,
                 style = TextStyle(platformStyle = PlatformTextStyle(includeFontPadding = false))
             )
         }

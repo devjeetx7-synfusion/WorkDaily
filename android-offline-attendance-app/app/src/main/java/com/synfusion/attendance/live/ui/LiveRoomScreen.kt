@@ -209,45 +209,50 @@ fun LiveRoomScreen(
                     )
             )
 
-            // Layer 3: Floating Creator Header Bar (Clean & Compact)
+            // Layer 3: Floating Creator Header Bar (Clean, Compact, Dynamic First-Name)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.TopCenter)
                     .statusBarsPadding()
-                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                    .padding(horizontal = 10.dp, vertical = 6.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Left: Host Profile Chip
+                // Left: Compact Host Profile Chip [Avatar] [First Name] [Follow]
                 Surface(
-                    shape = RoundedCornerShape(20.dp),
-                    color = Color.Black.copy(alpha = 0.5f),
+                    shape = RoundedCornerShape(22.dp),
+                    color = Color.Black.copy(alpha = 0.45f),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.15f)),
                     modifier = Modifier
                         .weight(1f, fill = false)
                         .clickable { selectedProfileUserId = room.creatorId }
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         WorkDailyLiveAvatar(
                             name = room.creatorName,
                             avatarUrl = room.creatorAvatar,
-                            size = 30.dp,
+                            size = 32.dp,
                             isLive = room.isLive,
                             showBadge = false
                         )
 
+                        val firstName = remember(room.creatorName) {
+                            extractFirstName(room.creatorName)
+                        }
+
                         Text(
-                            text = room.creatorName,
+                            text = firstName,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.widthIn(max = 120.dp)
+                            modifier = Modifier.widthIn(max = 95.dp)
                         )
 
                         if (!isHost) {
@@ -259,12 +264,12 @@ fun LiveRoomScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.width(6.dp))
+                Spacer(modifier = Modifier.width(4.dp))
 
                 // Right Actions: Viewer Count + Share + Host Controls + Close Button
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     ViewerCountChip(
                         count = room.viewerCount,
@@ -286,9 +291,9 @@ fun LiveRoomScreen(
                         modifier = Modifier
                             .size(32.dp)
                             .clip(CircleShape)
-                            .background(Color.Black.copy(alpha = 0.5f))
+                            .background(Color.Black.copy(alpha = 0.45f))
                     ) {
-                        Icon(Icons.Default.Share, contentDescription = "Share Stream", tint = Color.White, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.Share, contentDescription = "Share Stream", tint = Color.White, modifier = Modifier.size(15.dp))
                     }
 
                     if (isHost) {
@@ -297,9 +302,9 @@ fun LiveRoomScreen(
                             modifier = Modifier
                                 .size(32.dp)
                                 .clip(CircleShape)
-                                .background(Color.Black.copy(alpha = 0.5f))
+                                .background(Color.Black.copy(alpha = 0.45f))
                         ) {
-                            Icon(Icons.Default.Tune, contentDescription = "Host Controls", tint = Color.White, modifier = Modifier.size(16.dp))
+                            Icon(Icons.Default.Tune, contentDescription = "Host Controls", tint = Color.White, modifier = Modifier.size(15.dp))
                         }
                     }
 
@@ -315,9 +320,9 @@ fun LiveRoomScreen(
                         modifier = Modifier
                             .size(32.dp)
                             .clip(CircleShape)
-                            .background(Color.Black.copy(alpha = 0.5f))
+                            .background(Color.Black.copy(alpha = 0.45f))
                     ) {
-                        Icon(Icons.Default.Close, contentDescription = "Close Stream", tint = Color.White, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.Close, contentDescription = "Close Stream", tint = Color.White, modifier = Modifier.size(15.dp))
                     }
                 }
             }
@@ -392,12 +397,15 @@ fun LiveRoomScreen(
                     }
                 }
 
-                // Compact Floating Inline Gift Tray directly above comment composer
-                if (showInlineGiftTray && !isKeyboardVisible) {
-                    InlineGiftTray(
+                // Expandable Frosted-Glass Gift Panel directly above comment composer
+                if ((showInlineGiftTray || showGiftSheet) && !isKeyboardVisible) {
+                    ExpandableGiftPanel(
                         roomId = room.id,
                         viewModel = viewModel,
-                        onClose = { showInlineGiftTray = false },
+                        onClose = {
+                            showInlineGiftTray = false
+                            showGiftSheet = false
+                        },
                         onNavigateWallet = onNavigateWallet,
                         onGiftSent = { gift, qty ->
                             showGiftSentDialog = Pair(gift, qty)
