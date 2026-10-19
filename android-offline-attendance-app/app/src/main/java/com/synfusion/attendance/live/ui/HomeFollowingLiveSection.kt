@@ -1,10 +1,7 @@
 package com.synfusion.attendance.live.ui
 
-import androidx.compose.animation.core.*
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
@@ -19,18 +16,15 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.synfusion.attendance.live.model.LiveCreator
 import com.synfusion.attendance.live.model.LiveRoom
 import com.synfusion.attendance.live.ui.components.LivePrimaryEmerald
 import com.synfusion.attendance.live.ui.components.LivePrimaryMint
-import com.synfusion.attendance.live.ui.components.LiveRed
+import com.synfusion.attendance.live.ui.components.LiveStoryAvatar
 
 @Composable
 fun HomeFollowingLiveSection(
@@ -115,14 +109,14 @@ fun HomeFollowingLiveSection(
                 }
             }
         } else {
-            // Horizontal scrolling row of compact story avatars with names below
+            // Horizontal scrolling row sharing the unified LiveStoryAvatar composable
             LazyRow(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 contentPadding = PaddingValues(horizontal = 2.dp, vertical = 4.dp)
             ) {
-                items(sortedRooms) { room ->
+                items(sortedRooms, key = { it.id }) { room ->
                     val creator = creators.find { it.id == room.creatorId } ?: LiveCreator(
                         id = room.creatorId,
                         name = room.creatorName,
@@ -130,9 +124,11 @@ fun HomeFollowingLiveSection(
                         bio = room.description
                     )
 
-                    LiveStoryAvatarItem(
-                        room = room,
-                        creator = creator,
+                    LiveStoryAvatar(
+                        name = room.creatorName,
+                        avatarUrl = room.creatorAvatar,
+                        size = 56.dp,
+                        isLive = room.isLive,
                         onClick = { onNavigateLiveRoom(room.id) },
                         onLongClick = { onCreatorLongPress(creator) }
                     )
@@ -147,7 +143,7 @@ fun HomeFollowingLiveSection(
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(54.dp)
+                                .size(56.dp)
                                 .clip(CircleShape)
                                 .background(MaterialTheme.colorScheme.surface)
                                 .border(
@@ -175,104 +171,5 @@ fun HomeFollowingLiveSection(
                 }
             }
         }
-    }
-}
-
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-fun LiveStoryAvatarItem(
-    room: LiveRoom,
-    creator: LiveCreator,
-    onClick: () -> Unit,
-    onLongClick: () -> Unit
-) {
-    // Breathing/Pulsing LIVE Ring Animation
-    val infiniteTransition = rememberInfiniteTransition(label = "liveRing")
-    val pulseScale by infiniteTransition.animateFloat(
-        initialValue = 0.98f,
-        targetValue = 1.05f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1200, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulseScale"
-    )
-
-    val initials = remember(creator.name) {
-        val parts = creator.name.trim().split(" ")
-        if (parts.size >= 2) "${parts[0].take(1)}${parts[1].take(1)}".uppercase()
-        else if (creator.name.isNotEmpty()) creator.name.take(2).uppercase()
-        else "WD"
-    }
-
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(4.dp),
-        modifier = Modifier.width(62.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(54.dp)
-                .combinedClickable(
-                    onClick = onClick,
-                    onLongClick = onLongClick
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            // Outer Breathing Gradient Live Ring
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .scale(pulseScale)
-                    .clip(CircleShape)
-                    .background(
-                        Brush.sweepGradient(
-                            listOf(
-                                LiveRed,
-                                Color(0xFFFF2D55),
-                                LiveRed,
-                                Color(0xFFFF5252),
-                                LiveRed
-                            )
-                        )
-                    )
-                    .padding(2.5.dp)
-            ) {
-                // Inner gap background
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.background)
-                        .padding(2.dp)
-                ) {
-                    // Profile Avatar Photo / Fallback Initials
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clip(CircleShape)
-                            .background(LivePrimaryEmerald.copy(alpha = 0.2f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = initials,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = LivePrimaryEmerald
-                        )
-                    }
-                }
-            }
-        }
-
-        // Creator Name Text Below Avatar
-        Text(
-            text = creator.name.split(" ").firstOrNull() ?: creator.name,
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
     }
 }

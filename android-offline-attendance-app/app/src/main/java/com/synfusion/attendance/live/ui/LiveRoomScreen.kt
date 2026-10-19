@@ -2,9 +2,6 @@ package com.synfusion.attendance.live.ui
 
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -25,7 +22,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
@@ -82,10 +78,10 @@ fun LiveRoomScreen(
     val focusManager = LocalFocusManager.current
     val coroutineScope = rememberCoroutineScope()
 
-    // IME / Keyboard Visibility Detection
+    // Keyboard Visibility Detection
     val isKeyboardVisible = WindowInsets.ime.asPaddingValues().calculateBottomPadding() > 0.dp
 
-    // Intercept back key when keyboard is open to dismiss focus first
+    // Intercept back key when keyboard is open to clear focus first
     BackHandler(enabled = isKeyboardVisible) {
         focusManager.clearFocus()
     }
@@ -122,7 +118,7 @@ fun LiveRoomScreen(
         }
     }
 
-    // Intelligent Auto-scroll
+    // Intelligent Auto-scroll to latest comments
     LaunchedEffect(chatMessages.size) {
         if (chatMessages.isNotEmpty() && !userScrolledUp) {
             chatListState.animateScrollToItem(chatMessages.size - 1)
@@ -138,7 +134,7 @@ fun LiveRoomScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Simulated Stream Background / Stage Canvas with Double-Tap Reaction Gesture
+            // Layer 1: Edge-to-Edge Full-Screen Video / Audio Broadcast Stage
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -168,15 +164,23 @@ fun LiveRoomScreen(
                 }
             }
 
-            // Floating Heart Particle Overlay
-            FloatingHeartWaveOverlay(
-                triggerHeartSignal = triggerHeartSignal,
-                onSendHearts = { count ->
-                    viewModel.sendHearts(room.id, count)
-                }
+            // Layer 2: Top Readability Scrim
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(110.dp)
+                    .align(Alignment.TopCenter)
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Black.copy(alpha = 0.6f),
+                                Color.Transparent
+                            )
+                        )
+                    )
             )
 
-            // TOP OVERLAY BAR: Minimal Instagram-Inspired Live Header
+            // Layer 3: Minimal Creator Top Header Bar
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -186,7 +190,7 @@ fun LiveRoomScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Left: Minimal Creator Identity Pill
+                // Left: Compact Creator Identity Surface (Avatar + Creator Name + Red Live Indicator + Follow Button)
                 Surface(
                     shape = RoundedCornerShape(20.dp),
                     color = Color.Black.copy(alpha = 0.45f),
@@ -197,33 +201,32 @@ fun LiveRoomScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        // 30dp Compact Circular Avatar
                         val initials = remember(room.creatorName) {
                             val parts = room.creatorName.trim().split(" ")
                             if (parts.size >= 2) "${parts[0].take(1)}${parts[1].take(1)}".uppercase()
-                            else if (room.creatorName.isNotEmpty()) room.creatorName.take(2).uppercase()
+                            else if (room.creatorName.isNotBlank()) room.creatorName.take(2).uppercase()
                             else "WD"
                         }
+
                         Box(
                             modifier = Modifier
-                                .size(30.dp)
+                                .size(32.dp)
                                 .clip(CircleShape)
                                 .background(LivePrimaryEmerald),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
                                 text = initials,
-                                fontSize = 12.sp,
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
                             )
                         }
 
-                        // Creator Name & Tiny Red LIVE Dot
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            modifier = Modifier.widthIn(max = 110.dp)
+                            modifier = Modifier.widthIn(max = 100.dp)
                         ) {
                             Text(
                                 text = room.creatorName,
@@ -235,7 +238,7 @@ fun LiveRoomScreen(
                             )
                             Box(
                                 modifier = Modifier
-                                    .size(6.dp)
+                                    .size(5.dp)
                                     .clip(CircleShape)
                                     .background(LiveRed)
                             )
@@ -252,7 +255,7 @@ fun LiveRoomScreen(
 
                 Spacer(modifier = Modifier.width(6.dp))
 
-                // Right Controls: Viewer Count, Host Controls / Exit Action
+                // Right Actions: Viewer Counter + Close Action Button
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -260,12 +263,6 @@ fun LiveRoomScreen(
                     ViewerCountChip(
                         count = room.viewerCount,
                         onClick = { showViewerListSheet = true }
-                    )
-
-                    DiamondBalanceChip(
-                        balance = wallet.diamondBalance,
-                        onClick = onNavigateWallet,
-                        fontSize = 11
                     )
 
                     if (isHost) {
@@ -290,12 +287,20 @@ fun LiveRoomScreen(
                             .clip(CircleShape)
                             .background(Color.Black.copy(alpha = 0.45f))
                     ) {
-                        Icon(Icons.Default.Close, contentDescription = "Leave Stream", tint = Color.White, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.Close, contentDescription = "Close Stream", tint = Color.White, modifier = Modifier.size(16.dp))
                     }
                 }
             }
 
-            // BOTTOM OVERLAY: Transparent Floating Chat Feed + Scrim + New Messages Indicator + Composer
+            // Layer 4: Floating Hearts Particle Canvas
+            FloatingHeartWaveOverlay(
+                triggerHeartSignal = triggerHeartSignal,
+                onSendHearts = { count ->
+                    viewModel.sendHearts(room.id, count)
+                }
+            )
+
+            // Layer 5: Transparent Floating Live Chat Feed & Bottom Composer
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -305,56 +310,27 @@ fun LiveRoomScreen(
                     .padding(horizontal = 12.dp, vertical = 6.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Pinned Comment Banner if present
-                room.pinnedMessage?.let { pinnedMsg ->
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        color = LiveGold.copy(alpha = 0.2f),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, LiveGold.copy(alpha = 0.4f))
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Icon(Icons.Default.PushPin, contentDescription = null, tint = LiveGold, modifier = Modifier.size(14.dp))
-                            Text("PINNED: ", fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, color = LiveGold)
-                            Text("${pinnedMsg.senderName}: ${pinnedMsg.message}", fontSize = 11.sp, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        }
-                    }
-                }
-
-                // Chat Feed overlay with subtle shared gradient scrim
+                // Floating Comments Feed overlay with subtle bottom scrim
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth()
+                        .fillMaxWidth(0.85f)
                         .heightIn(max = 220.dp)
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(
-                                    Color.Transparent,
-                                    Color.Black.copy(alpha = 0.35f)
-                                )
-                            ),
-                            shape = RoundedCornerShape(12.dp)
-                        )
-                        .padding(horizontal = 6.dp, vertical = 4.dp)
+                        .padding(horizontal = 4.dp, vertical = 2.dp)
                 ) {
                     LazyColumn(
                         state = chatListState,
                         modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         items(
                             items = chatMessages,
                             key = { it.id }
                         ) { msg ->
-                            ChatMessageBubble(message = msg)
+                            LiveCommentItem(message = msg)
                         }
                     }
 
-                    // Compact "New Messages ↓" pill indicator
+                    // Compact "New Messages ↓" pill indicator when scrolled up
                     if (userScrolledUp && !isAtBottom) {
                         Surface(
                             shape = RoundedCornerShape(16.dp),
@@ -384,7 +360,7 @@ fun LiveRoomScreen(
                     }
                 }
 
-                // Input Bar Row: Multiline Content-Adaptive Field + Action Icons
+                // Bottom Composer Row: Multiline Input + Compact Action Icons
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -393,25 +369,25 @@ fun LiveRoomScreen(
                     OutlinedTextField(
                         value = chatInput,
                         onValueChange = { chatInput = it },
-                        placeholder = { Text("Add a comment...", color = Color.LightGray.copy(alpha = 0.7f), fontSize = 12.sp) },
+                        placeholder = { Text("Leave a comment...", color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp) },
                         modifier = Modifier
                             .weight(1f)
-                            .heightIn(min = 42.dp, max = 110.dp)
-                            .clip(RoundedCornerShape(22.dp)),
+                            .heightIn(min = 40.dp, max = 100.dp)
+                            .clip(RoundedCornerShape(20.dp)),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = Color.Black.copy(alpha = 0.65f),
-                            unfocusedContainerColor = Color.Black.copy(alpha = 0.5f),
-                            focusedBorderColor = LivePrimaryMint,
-                            unfocusedBorderColor = Color.White.copy(alpha = 0.25f),
+                            focusedContainerColor = Color.Black.copy(alpha = 0.45f),
+                            unfocusedContainerColor = Color.Black.copy(alpha = 0.35f),
+                            focusedBorderColor = Color.White.copy(alpha = 0.5f),
+                            unfocusedBorderColor = Color.White.copy(alpha = 0.2f),
                             focusedTextColor = Color.White,
                             unfocusedTextColor = Color.White
                         ),
                         minLines = 1,
-                        maxLines = 4,
-                        textStyle = TextStyle(fontSize = 13.sp)
+                        maxLines = 3,
+                        textStyle = TextStyle(fontSize = 12.sp)
                     )
 
-                    // If keyboard is VISIBLE or typing, show Send action button
+                    // If typing or keyboard active, present Send action button
                     if (isKeyboardVisible || chatInput.isNotBlank()) {
                         IconButton(
                             onClick = {
@@ -423,57 +399,45 @@ fun LiveRoomScreen(
                             },
                             enabled = chatInput.isNotBlank(),
                             modifier = Modifier
-                                .size(40.dp)
+                                .size(38.dp)
                                 .clip(CircleShape)
-                                .background(if (chatInput.isNotBlank()) LivePrimaryEmerald else Color.Gray.copy(alpha = 0.3f))
+                                .background(if (chatInput.isNotBlank()) LiveRed else Color.Gray.copy(alpha = 0.3f))
                         ) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.Send,
-                                contentDescription = "Send",
+                                contentDescription = "Send Comment",
                                 tint = Color.White,
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(16.dp)
                             )
                         }
                     }
 
-                    // If keyboard is CLOSED and input is blank, show compact Icon Actions [Gift, Share, Heart]
+                    // Secondary Compact Action Triggers [Gift, Heart] when idle
                     if (!isKeyboardVisible && chatInput.isBlank()) {
                         IconButton(
                             onClick = { showGiftSheet = true },
                             modifier = Modifier
-                                .size(40.dp)
+                                .size(38.dp)
                                 .clip(CircleShape)
                                 .background(Color.Black.copy(alpha = 0.45f))
                         ) {
-                            Icon(Icons.Default.CardGiftcard, contentDescription = "Gift Store", tint = LiveGold, modifier = Modifier.size(20.dp))
-                        }
-
-                        IconButton(
-                            onClick = {
-                                Toast.makeText(context, "Stream link copied to clipboard! 🔗", Toast.LENGTH_SHORT).show()
-                            },
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(CircleShape)
-                                .background(Color.Black.copy(alpha = 0.45f))
-                        ) {
-                            Icon(Icons.Default.Share, contentDescription = "Share", tint = Color.White, modifier = Modifier.size(18.dp))
+                            Icon(Icons.Default.CardGiftcard, contentDescription = "Gift Store", tint = LiveGold, modifier = Modifier.size(18.dp))
                         }
 
                         IconButton(
                             onClick = { triggerHeartSignal = System.currentTimeMillis() },
                             modifier = Modifier
-                                .size(40.dp)
+                                .size(38.dp)
                                 .clip(CircleShape)
                                 .background(Color.Black.copy(alpha = 0.45f))
                         ) {
-                            Icon(Icons.Default.Favorite, contentDescription = "Send Heart", tint = LiveRed, modifier = Modifier.size(20.dp))
+                            Icon(Icons.Default.Favorite, contentDescription = "Send Heart", tint = LiveRed, modifier = Modifier.size(18.dp))
                         }
                     }
                 }
             }
 
-            // Gift Store Bottom Sheet
+            // Layer 6: Temporary Gift Bottom Sheet
             if (showGiftSheet) {
                 GiftStoreBottomSheet(
                     roomId = room.id,
@@ -532,49 +496,11 @@ fun VideoStageCanvas(room: LiveRoom) {
                     colors = listOf(
                         LiveDarkBg,
                         Color(0xFF1E1B4B),
-                        Color(0xFF064E3B)
+                        Color(0xFF0F172A)
                     )
                 )
-            ),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(90.dp)
-                    .clip(CircleShape)
-                    .background(LivePrimaryEmerald.copy(alpha = 0.2f))
-                    .border(2.dp, LivePrimaryMint, CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Videocam,
-                    contentDescription = null,
-                    tint = LivePrimaryMint,
-                    modifier = Modifier.size(44.dp)
-                )
-            }
-
-            Text(
-                text = room.title,
-                fontSize = 17.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
-                modifier = Modifier.padding(horizontal = 32.dp)
             )
-
-            RoomCategoryChip(category = room.category)
-
-            Text(
-                text = "DEMO LIVE • Simulated Site Broadcast",
-                fontSize = 11.sp,
-                color = Color.LightGray.copy(alpha = 0.7f)
-            )
-        }
-    }
+    )
 }
 
 @Composable
@@ -732,57 +658,6 @@ fun ViewerListSheet(
                     }
                 }
             }
-        }
-    }
-}
-
-@Composable
-fun ChatMessageBubble(message: ChatMessage) {
-    val textShadow = Shadow(
-        color = Color.Black.copy(alpha = 0.8f),
-        blurRadius = 4f
-    )
-
-    if (message.isGiftAnnouncement) {
-        Box(
-            modifier = Modifier
-                .clip(RoundedCornerShape(10.dp))
-                .background(LiveGold.copy(alpha = 0.15f))
-                .border(1.dp, LiveGold.copy(alpha = 0.35f), RoundedCornerShape(10.dp))
-                .padding(horizontal = 8.dp, vertical = 4.dp)
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Icon(Icons.Default.CardGiftcard, contentDescription = null, tint = LiveGold, modifier = Modifier.size(13.dp))
-                Text(
-                    text = "${message.senderName} ${message.message}",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = LiveGold,
-                    style = TextStyle(shadow = textShadow)
-                )
-            }
-        }
-    } else {
-        Row(
-            verticalAlignment = Alignment.Top,
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-        ) {
-            Text(
-                text = "${message.senderName}:",
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                color = LivePrimaryMint,
-                style = TextStyle(shadow = textShadow)
-            )
-            Text(
-                text = message.message,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Normal,
-                color = Color.White,
-                style = TextStyle(shadow = textShadow),
-                softWrap = true
-            )
         }
     }
 }
