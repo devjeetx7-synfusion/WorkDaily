@@ -14,6 +14,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -132,7 +133,9 @@ fun CompactLiveBadge(
 /**
  * WorkDaily Global User / Live Avatar component.
  * Displays photo with center-crop or fallback initials, subtle border,
- * subtle animated live ring when broadcasting, and compact live badge.
+ * subtle animated live ring when broadcasting.
+ *
+ * CRITICAL RULE: Animated Live avatar ring = NO extra LIVE text badge beside or below avatar.
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -141,7 +144,7 @@ fun WorkDailyLiveAvatar(
     avatarUrl: String? = null,
     size: Dp = 56.dp,
     isLive: Boolean = false,
-    showBadge: Boolean = true,
+    showBadge: Boolean = false, // Universal Rule: Animated LIVE avatar ring = no extra LIVE text badge
     onClick: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
@@ -229,8 +232,8 @@ fun WorkDailyLiveAvatar(
             }
         }
 
-        // Small Red LIVE indicator near the bottom
-        if (isLive && showBadge) {
+        // Only draw extra text badge if explicitly requested and NOT live
+        if (!isLive && showBadge) {
             CompactLiveBadge(
                 modifier = Modifier.align(Alignment.BottomCenter).offset(y = 3.dp)
             )
@@ -260,7 +263,7 @@ fun LiveStoryAvatar(
             avatarUrl = avatarUrl,
             size = size,
             isLive = isLive,
-            showBadge = true,
+            showBadge = false,
             onClick = onClick,
             onLongClick = onLongClick
         )
@@ -292,7 +295,7 @@ fun PulsingLiveAvatar(
         avatarUrl = avatarUrl,
         size = size,
         isLive = isLive,
-        showBadge = isLive,
+        showBadge = false,
         onClick = onClick
     )
 }
@@ -597,7 +600,8 @@ fun LiveProfileBottomSheet(
                     name = targetUser.name,
                     avatarUrl = targetUser.avatar,
                     size = 64.dp,
-                    isLive = targetUser.isLiveNow
+                    isLive = targetUser.isLiveNow,
+                    showBadge = false
                 )
 
                 Row(
@@ -692,7 +696,7 @@ fun LiveProfileBottomSheet(
                         shape = RoundedCornerShape(21.dp)
                     ) {
                         Icon(
-                            imageVector = if (targetUser.isFriend) Icons.Default.Chat else Icons.Default.PersonAdd,
+                            imageVector = if (targetUser.isFriend) Icons.AutoMirrored.Filled.Chat else Icons.Default.PersonAdd,
                             contentDescription = null,
                             modifier = Modifier.size(16.dp)
                         )
@@ -723,7 +727,7 @@ fun LiveProfileBottomSheet(
 }
 
 /**
- * Live Viewers Scrollable Bottom Sheet with search and profile integration.
+ * Live Viewers Scrollable Bottom Sheet with room-specific participant presence.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -733,26 +737,33 @@ fun LiveViewerListBottomSheet(
     onDismiss: () -> Unit,
     onSelectViewerProfile: (String) -> Unit
 ) {
-    val creators by viewModel.creators.collectAsState()
+    val roomParticipantsMap by viewModel.roomParticipantsMap.collectAsState()
     val publicUsers by viewModel.publicUsers.collectAsState()
     val followedIds by viewModel.followedCreatorIds.collectAsState()
 
     var searchQuery by remember { mutableStateOf("") }
 
-    val allViewers = remember(creators, publicUsers) {
-        val list = mutableListOf<DemoPublicUser>()
-        creators.forEach { c ->
-            list.add(DemoPublicUser(id = c.id, name = c.name, avatar = c.avatar, profession = c.profession, followerCount = c.followerCount, isLiveNow = c.isLiveNow))
+    val roomParticipants = remember(roomParticipantsMap, room.id, publicUsers) {
+        val specificList = roomParticipantsMap[room.id]
+        if (!specificList.isNullOrEmpty()) {
+            specificList
+        } else {
+            publicUsers.map { u ->
+                RoomParticipant(
+                    id = u.id,
+                    name = u.name,
+                    avatar = u.avatar,
+                    profession = u.profession,
+                    followerCount = u.followerCount,
+                    isLiveNow = u.isLiveNow
+                )
+            }
         }
-        publicUsers.forEach { p ->
-            if (list.none { it.id == p.id }) list.add(p)
-        }
-        list
     }
 
-    val filteredViewers = remember(allViewers, searchQuery) {
-        if (searchQuery.isBlank()) allViewers
-        else allViewers.filter {
+    val filteredViewers = remember(roomParticipants, searchQuery) {
+        if (searchQuery.isBlank()) roomParticipants
+        else roomParticipants.filter {
             it.name.contains(searchQuery, ignoreCase = true) || it.profession.contains(searchQuery, ignoreCase = true)
         }
     }
@@ -775,7 +786,7 @@ fun LiveViewerListBottomSheet(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Icon(Icons.Default.Visibility, contentDescription = null, tint = LivePrimaryMint)
-                    Text("Live Viewers (${room.viewerCount})", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    Text("Live Viewers (${filteredViewers.size})", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
                 }
 
                 IconButton(onClick = onDismiss) {
@@ -799,7 +810,7 @@ fun LiveViewerListBottomSheet(
                 ) {
                     Icon(Icons.Default.Search, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(18.dp))
                     if (searchQuery.isEmpty()) {
-                        Text("Search viewers by name...", fontSize = 12.sp, color = Color.Gray)
+                        Text("Search room viewers...", fontSize = 12.sp, color = Color.Gray)
                     }
                 }
                 BasicTextField(
@@ -838,18 +849,30 @@ fun LiveViewerListBottomSheet(
                                 avatarUrl = viewer.avatar,
                                 size = 36.dp,
                                 isLive = viewer.isLiveNow,
-                                showBadge = viewer.isLiveNow
+                                showBadge = false
                             )
                             Column {
-                                Text(viewer.name, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    Text(viewer.name, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    if (viewer.isHost) {
+                                        Surface(
+                                            shape = RoundedCornerShape(4.dp),
+                                            color = LivePrimaryEmerald
+                                        ) {
+                                            Text("HOST", fontSize = 8.sp, fontWeight = FontWeight.ExtraBold, color = Color.White, modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp))
+                                        }
+                                    }
+                                }
                                 Text(viewer.profession, fontSize = 11.sp, color = Color.Gray)
                             }
                         }
 
-                        FollowButton(
-                            isFollowing = isFollowing,
-                            onToggle = { viewModel.toggleFollowCreator(viewer.id) }
-                        )
+                        if (!viewer.isHost && viewer.id != "current_user") {
+                            FollowButton(
+                                isFollowing = isFollowing,
+                                onToggle = { viewModel.toggleFollowCreator(viewer.id) }
+                            )
+                        }
                     }
                 }
             }

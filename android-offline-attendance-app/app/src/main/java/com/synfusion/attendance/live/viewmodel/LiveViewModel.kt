@@ -23,6 +23,7 @@ class LiveViewModel(application: Application) : AndroidViewModel(application) {
     val followedCreatorIds: StateFlow<Set<String>> = repository.followedCreatorIds
     val guestRequestsMap: StateFlow<Map<String, List<GuestRequest>>> = repository.guestRequestsMap
     val audioSeatsMap: StateFlow<Map<String, List<AudioSeat>>> = repository.audioSeatsMap
+    val roomParticipantsMap: StateFlow<Map<String, List<RoomParticipant>>> = repository.roomParticipantsMap
     val notifications: StateFlow<List<DemoNotification>> = repository.notifications
     val liveGoals: StateFlow<List<LiveGoal>> = repository.liveGoals
     val giftOverlayEvents: StateFlow<List<LiveGiftOverlayEvent>> = repository.giftOverlayEvents

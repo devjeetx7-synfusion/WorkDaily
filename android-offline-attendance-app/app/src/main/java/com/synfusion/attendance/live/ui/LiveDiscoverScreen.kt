@@ -21,10 +21,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.SubcomposeAsyncImage
+import coil.request.ImageRequest
 import com.synfusion.attendance.live.model.LiveRoom
 import com.synfusion.attendance.live.ui.components.*
 import com.synfusion.attendance.live.viewmodel.LiveViewModel
@@ -135,7 +139,7 @@ fun LiveDiscoverScreen(
                 }
             }
 
-            // 2-Column Edge-to-Edge Tall Portrait Cards Grid with Trade Vector Previews
+            // 2-Column Edge-to-Edge Tall Portrait Cards Grid with Trade Visual Previews
             if (activeLiveRooms.isEmpty()) {
                 Box(
                     modifier = Modifier
@@ -284,6 +288,8 @@ fun CleanLiveRoomGridCard(
     room: LiveRoom,
     onClick: () -> Unit
 ) {
+    val context = LocalContext.current
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -293,25 +299,28 @@ fun CleanLiveRoomGridCard(
         colors = CardDefaults.cardColors(containerColor = LiveSurfaceDark)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            // Simulated Construction Trade Visual Preview Backdrop
-            val tradeIcon = rememberTradeIcon(room.category, room.title)
-            val gradientColors = rememberTradeGradient(room.category)
-
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Brush.verticalGradient(gradientColors)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = tradeIcon,
-                    contentDescription = null,
-                    tint = Color.White.copy(alpha = 0.18f),
-                    modifier = Modifier.size(72.dp)
+            // High Quality Thumbnail Preview or Trade Backdrop
+            if (!room.thumbnailUrl.isNull_or_blank()) {
+                val request = remember(room.thumbnailUrl) {
+                    ImageRequest.Builder(context)
+                        .data(room.thumbnailUrl)
+                        .crossfade(true)
+                        .build()
+                }
+                SubcomposeAsyncImage(
+                    model = request,
+                    contentDescription = room.title,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                    error = {
+                        TradeBackdrop(room = room)
+                    }
                 )
+            } else {
+                TradeBackdrop(room = room)
             }
 
-            // Top Overlay: Small Red Live Badge + Translucent Viewer Counter
+            // Top Overlay: Single Red Live Badge + Translucent Viewer Counter
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -319,56 +328,74 @@ fun CleanLiveRoomGridCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                LiveBadge(text = "LIVE")
+                CompactLiveBadge(text = "LIVE")
                 ViewerCountChip(count = room.viewerCount)
             }
 
-            // Bottom Overlay: Subtle Scrim + Compact Creator Identity (Avatar + Name ONLY)
-            Row(
+            // Bottom Overlay: Subtle Scrim + Creator Identity & Title
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.BottomStart)
                     .background(
                         Brush.verticalGradient(
-                            listOf(Color.Transparent, Color.Black.copy(alpha = 0.88f))
+                            listOf(Color.Transparent, Color.Black.copy(alpha = 0.85f))
                         )
                     )
                     .padding(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
-                val initials = remember(room.creatorName) {
-                    val parts = room.creatorName.trim().split(" ")
-                    if (parts.size >= 2) "${parts[0].take(1)}${parts[1].take(1)}".uppercase()
-                    else if (room.creatorName.isNotBlank()) room.creatorName.take(2).uppercase()
-                    else "WD"
-                }
-
-                Box(
-                    modifier = Modifier
-                        .size(24.dp)
-                        .clip(CircleShape)
-                        .background(LivePrimaryEmerald),
-                    contentAlignment = Alignment.Center
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
+                    WorkDailyLiveAvatar(
+                        name = room.creatorName,
+                        avatarUrl = room.creatorAvatar,
+                        size = 22.dp,
+                        isLive = false,
+                        showBadge = false
+                    )
+
                     Text(
-                        text = initials,
-                        fontSize = 10.sp,
+                        text = room.creatorName,
+                        fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        color = Color.White,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
 
                 Text(
-                    text = room.creatorName,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
+                    text = room.title,
+                    fontSize = 11.sp,
+                    color = Color.White.copy(alpha = 0.85f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun TradeBackdrop(room: LiveRoom) {
+    val tradeIcon = rememberTradeIcon(room.category, room.title)
+    val gradientColors = rememberTradeGradient(room.category)
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Brush.verticalGradient(gradientColors)),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = tradeIcon,
+            contentDescription = null,
+            tint = Color.White.copy(alpha = 0.18f),
+            modifier = Modifier.size(64.dp)
+        )
     }
 }
 
@@ -398,3 +425,5 @@ private fun rememberTradeGradient(category: String): List<Color> {
         }
     }
 }
+
+private fun String?.isNull_or_blank(): Boolean = this == null || this.isBlank()
