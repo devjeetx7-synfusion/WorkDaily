@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -128,16 +129,16 @@ fun GiftStoreBottomSheet(
                 }
             }
 
-            // Gifts Grid
+            // Gifts Grid (Adaptive multi-column, unclipped up-to-2-line gift names)
             LazyVerticalGrid(
-                columns = GridCells.Fixed(4),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+                columns = GridCells.Adaptive(minSize = 82.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(260.dp)
             ) {
-                items(filteredGifts) { gift ->
+                items(filteredGifts, key = { it.id }) { gift ->
                     val isSelected = selectedGift?.id == gift.id
                     val totalCost = gift.diamondCost * selectedQuantity
                     val canAfford = wallet.diamondBalance >= totalCost
@@ -145,7 +146,7 @@ fun GiftStoreBottomSheet(
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(95.dp)
+                            .height(96.dp)
                             .clickable { selectedGift = gift },
                         shape = RoundedCornerShape(14.dp),
                         colors = CardDefaults.cardColors(
@@ -159,13 +160,13 @@ fun GiftStoreBottomSheet(
                         Column(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .padding(8.dp),
+                                .padding(6.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.SpaceBetween
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(34.dp)
+                                    .size(32.dp)
                                     .clip(CircleShape)
                                     .background(LiveGold.copy(alpha = 0.15f)),
                                 contentAlignment = Alignment.Center
@@ -174,7 +175,7 @@ fun GiftStoreBottomSheet(
                                     imageVector = getGiftIcon(gift.name),
                                     contentDescription = gift.name,
                                     tint = if (canAfford) LiveGold else Color.Gray,
-                                    modifier = Modifier.size(20.dp)
+                                    modifier = Modifier.size(18.dp)
                                 )
                             }
 
@@ -183,7 +184,8 @@ fun GiftStoreBottomSheet(
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = if (canAfford) Color.White else Color.Gray,
-                                maxLines = 1,
+                                maxLines = 2,
+                                lineHeight = 12.sp,
                                 overflow = TextOverflow.Ellipsis
                             )
 
@@ -277,7 +279,7 @@ fun GiftStoreBottomSheet(
                             colors = ButtonDefaults.buttonColors(containerColor = LivePrimaryEmerald, contentColor = Color.White),
                             shape = RoundedCornerShape(14.dp)
                         ) {
-                            Icon(Icons.Default.Send, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Icon(Icons.AutoMirrored.Filled.Send, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(6.dp))
                             Text("Send Gift", fontWeight = FontWeight.Bold)
                         }
