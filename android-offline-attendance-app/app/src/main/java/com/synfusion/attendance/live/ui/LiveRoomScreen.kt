@@ -175,10 +175,9 @@ fun LiveRoomScreen(
                         )
                     }
             ) {
-                if (room.type == LiveRoomType.VIDEO) {
-                    VideoStageCanvas(room = room)
-                } else {
-                    AudioStageCanvas(
+                when (room.type) {
+                    LiveRoomType.VIDEO -> VideoStageCanvas(room = room)
+                    LiveRoomType.AUDIO -> AudioStageCanvas(
                         room = room,
                         seats = audioSeats,
                         onSeatClick = { seatIndex ->
@@ -190,6 +189,8 @@ fun LiveRoomScreen(
                             }
                         }
                     )
+                    LiveRoomType.TEXT -> TextStageCanvas(room = room)
+                    LiveRoomType.YOUTUBE_WATCH_PARTY -> YouTubeWatchPartyStageCanvas(room = room)
                 }
             }
 
@@ -707,6 +708,93 @@ fun VideoStageCanvas(room: LiveRoom) {
                 )
             )
     )
+}
+
+@Composable
+fun TextStageCanvas(room: LiveRoom) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        LiveDarkBg,
+                        Color(0xFF1E293B),
+                        LiveDarkBg
+                    )
+                )
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier.padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(64.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFF2563EB).copy(alpha = 0.2f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Default.ChatBubble, contentDescription = null, tint = Color(0xFF60A5FA), modifier = Modifier.size(32.dp))
+            }
+            Text("Group Text Chat Room", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            Text(room.title, fontSize = 14.sp, color = Color.LightGray)
+        }
+    }
+}
+
+@Composable
+fun YouTubeWatchPartyStageCanvas(room: LiveRoom) {
+    val videoId = remember(room.youtubeVideoId, room.youtubeVideoUrl) {
+        room.youtubeVideoId ?: (room.youtubeVideoUrl?.let { extractYouTubeVideoId(it) } ?: "dQw4w9WgXcQ")
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(Icons.Default.OndemandVideo, contentDescription = null, tint = Color(0xFFEF4444), modifier = Modifier.size(24.dp))
+                Text("YouTube Watch Party", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            }
+
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(210.dp),
+                shape = RoundedCornerShape(16.dp),
+                color = Color(0xFF1F2937),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFEF4444).copy(alpha = 0.5f))
+            ) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Icon(Icons.Default.PlayCircle, contentDescription = "Play Video", tint = Color(0xFFEF4444), modifier = Modifier.size(56.dp))
+                        Text("Synchronized Playback: Video ID ($videoId)", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                        Text("Host Synchronized Stream Control Active", color = Color.Gray, fontSize = 11.sp)
+                    }
+                }
+            }
+        }
+    }
 }
 
 @Composable

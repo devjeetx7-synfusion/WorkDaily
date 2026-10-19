@@ -1,8 +1,10 @@
 package com.synfusion.attendance.live.model
 
 enum class LiveRoomType {
+    VIDEO,
     AUDIO,
-    VIDEO
+    TEXT,
+    YOUTUBE_WATCH_PARTY
 }
 
 enum class GuestRequestStatus {
@@ -142,7 +144,9 @@ data class LiveRoom(
     val showGifts: Boolean = true,
     val isChatEnabled: Boolean = true,
     val pinnedMessage: ChatMessage? = null,
-    val startTimeMillis: Long = System.currentTimeMillis()
+    val startTimeMillis: Long = System.currentTimeMillis(),
+    val youtubeVideoUrl: String? = null,
+    val youtubeVideoId: String? = null
 )
 
 data class LiveCreator(
