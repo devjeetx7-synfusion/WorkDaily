@@ -577,6 +577,7 @@ fun DashboardScreen(
             composable("rewards_hub") {
                 RewardsHubScreen(
                     viewModel = rewardsViewModel,
+                    liveViewModel = liveViewModel,
                     onNavigateBack = { bottomNavController.navigateUp() },
                     onNavigateWallet = { bottomNavController.navigate("rewards_wallet") },
                     onNavigateRedeem = { bottomNavController.navigate("rewards_redeem") },
@@ -589,6 +590,8 @@ fun DashboardScreen(
                     onNavigateDailyCheckIn = { bottomNavController.navigate("rewards_daily_checkin") },
                     onNavigateSpin = { bottomNavController.navigate("rewards_spin") },
                     onSelectTransaction = { bottomNavController.navigate("rewards_transaction_detail") },
+                    onNavigateLiveRoom = { roomId -> bottomNavController.navigate("live_feed/$roomId") },
+                    onNavigateLiveDiscover = { bottomNavController.navigate("live_discover") },
                     onNavigateLiveWallet = { bottomNavController.navigate("live_wallet") },
                     onNavigateLiveEarnings = { bottomNavController.navigate("live_earnings") }
                 )
@@ -612,8 +615,23 @@ fun DashboardScreen(
                 arguments = listOf(navArgument("roomId") { defaultValue = "room_1" })
             ) { backStackEntry ->
                 val roomId = backStackEntry.arguments?.getString("roomId") ?: "room_1"
-                LiveRoomScreen(
-                    roomId = roomId,
+                LiveFeedScreen(
+                    initialRoomId = roomId,
+                    viewModel = liveViewModel,
+                    onNavigateBack = { bottomNavController.navigateUp() },
+                    onNavigateWallet = { bottomNavController.navigate("live_wallet") },
+                    onNavigateSummary = { rId -> bottomNavController.navigate("live_summary") },
+                    onNavigatePrivateChat = { friendId -> bottomNavController.navigate("live_private_chat/$friendId") },
+                    onNavigateFullProfile = { userId -> bottomNavController.navigate("live_profile?userId=$userId") }
+                )
+            }
+            composable(
+                route = "live_feed/{roomId}",
+                arguments = listOf(navArgument("roomId") { defaultValue = "room_1" })
+            ) { backStackEntry ->
+                val roomId = backStackEntry.arguments?.getString("roomId") ?: "room_1"
+                LiveFeedScreen(
+                    initialRoomId = roomId,
                     viewModel = liveViewModel,
                     onNavigateBack = { bottomNavController.navigateUp() },
                     onNavigateWallet = { bottomNavController.navigate("live_wallet") },

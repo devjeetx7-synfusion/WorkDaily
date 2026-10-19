@@ -1,5 +1,6 @@
 package com.synfusion.attendance.live.ui
 
+import android.content.Intent
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
@@ -47,7 +48,8 @@ fun LiveRoomScreen(
     onNavigateWallet: () -> Unit,
     onNavigateSummary: (String) -> Unit = {},
     onNavigatePrivateChat: (String) -> Unit = {},
-    onNavigateFullProfile: (String) -> Unit = {}
+    onNavigateFullProfile: (String) -> Unit = {},
+    onPagingLockChange: (Boolean) -> Unit = {}
 ) {
     val liveRooms by viewModel.liveRooms.collectAsState()
     val chatMessagesMap by viewModel.chatMessagesMap.collectAsState()
@@ -93,6 +95,19 @@ fun LiveRoomScreen(
         if (isKeyboardVisible) {
             showInlineGiftTray = false
         }
+    }
+
+    // Report lock state to parent VerticalPager container whenever overlays/sheets/inputs are active
+    val isInteractionActive = isKeyboardVisible ||
+            showInlineGiftTray ||
+            showGiftSheet ||
+            showHostControlsSheet ||
+            showViewerListSheet ||
+            selectedProfileUserId != null ||
+            showEndLiveConfirmationDialog
+
+    LaunchedEffect(isInteractionActive) {
+        onPagingLockChange(isInteractionActive)
     }
 
     // Back press handling: clear focus if keyboard is open, or request confirmation if host
@@ -246,7 +261,7 @@ fun LiveRoomScreen(
 
                 Spacer(modifier = Modifier.width(6.dp))
 
-                // Right Actions: Viewer Count + Host Controls + Close Button
+                // Right Actions: Viewer Count + Share + Host Controls + Close Button
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -255,6 +270,26 @@ fun LiveRoomScreen(
                         count = room.viewerCount,
                         onClick = { showViewerListSheet = true }
                     )
+
+                    IconButton(
+                        onClick = {
+                            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                type = "text/plain"
+                                putExtra(Intent.EXTRA_SUBJECT, "Watch ${room.creatorName} Live on WorkDaily")
+                                putExtra(
+                                    Intent.EXTRA_TEXT,
+                                    "Join ${room.creatorName}'s live stream '${room.title}' on WorkDaily!\nhttps://workdaily.app/live/${room.id}"
+                                )
+                            }
+                            context.startActivity(Intent.createChooser(shareIntent, "Share Live Stream"))
+                        },
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(CircleShape)
+                            .background(Color.Black.copy(alpha = 0.5f))
+                    ) {
+                        Icon(Icons.Default.Share, contentDescription = "Share Stream", tint = Color.White, modifier = Modifier.size(16.dp))
+                    }
 
                     if (isHost) {
                         IconButton(
