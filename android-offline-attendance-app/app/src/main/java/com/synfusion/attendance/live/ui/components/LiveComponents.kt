@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -19,9 +20,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -29,6 +32,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.SubcomposeAsyncImage
+import coil.request.ImageRequest
 import com.synfusion.attendance.live.model.*
 import com.synfusion.attendance.live.viewmodel.LiveViewModel
 
@@ -47,9 +52,195 @@ val LiveEmeraldGradient = Brush.horizontalGradient(
 )
 
 /**
- * Minimal Live Story Avatar with thin red ring and compact bottom badge.
+ * Animated Live Ring: Continuous subtle pulse wave around live broadcasting avatars.
+ */
+@Composable
+fun AnimatedLiveRing(
+    modifier: Modifier = Modifier,
+    isLive: Boolean = true
+) {
+    if (!isLive) return
+
+    val infiniteTransition = rememberInfiniteTransition(label = "liveRingTransition")
+    val waveScale by infiniteTransition.animateFloat(
+        initialValue = 1.0f,
+        targetValue = 1.18f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1400, easing = LinearOutSlowInEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "waveScale"
+    )
+    val waveAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.7f,
+        targetValue = 0.0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1400, easing = FastOutLinearInEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "waveAlpha"
+    )
+
+    Box(
+        modifier = modifier
+            .scale(waveScale)
+            .border(
+                width = 1.5.dp,
+                color = LiveRed.copy(alpha = waveAlpha),
+                shape = CircleShape
+            )
+    )
+}
+
+/**
+ * Small, compact LIVE indicator badge (does not obstruct face).
+ */
+@Composable
+fun CompactLiveBadge(
+    text: String = "LIVE",
+    bgColor: Color = LiveRed,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier
+            .height(16.dp)
+            .clip(RoundedCornerShape(4.dp)),
+        color = bgColor
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(3.dp),
+            modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.5.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(4.dp)
+                    .clip(CircleShape)
+                    .background(Color.White)
+            )
+            Text(
+                text = text.uppercase(),
+                fontSize = 9.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = Color.White,
+                letterSpacing = 0.5.sp
+            )
+        }
+    }
+}
+
+/**
+ * WorkDaily Global User / Live Avatar component.
+ * Displays photo with center-crop or fallback initials, subtle border,
+ * subtle animated live ring when broadcasting, and compact live badge.
  */
 @OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun WorkDailyLiveAvatar(
+    name: String,
+    avatarUrl: String? = null,
+    size: Dp = 56.dp,
+    isLive: Boolean = false,
+    showBadge: Boolean = true,
+    onClick: (() -> Unit)? = null,
+    onLongClick: (() -> Unit)? = null,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    val initials = remember(name) {
+        val parts = name.trim().split(" ")
+        if (parts.size >= 2) "${parts[0].take(1)}${parts[1].take(1)}".uppercase()
+        else if (name.isNotBlank()) name.take(2).uppercase()
+        else "WD"
+    }
+
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = modifier
+            .size(size + 10.dp)
+            .then(
+                if (onClick != null) {
+                    Modifier.combinedClickable(
+                        onClick = onClick,
+                        onLongClick = onLongClick
+                    )
+                } else Modifier
+            )
+    ) {
+        // Subtle Pulse Ring when broadcasting
+        if (isLive) {
+            AnimatedLiveRing(
+                modifier = Modifier.size(size + 8.dp),
+                isLive = true
+            )
+        }
+
+        // Outer static border ring
+        Box(
+            modifier = Modifier
+                .size(size + 4.dp)
+                .clip(CircleShape)
+                .then(
+                    if (isLive) Modifier.border(1.5.dp, LiveRed, CircleShape)
+                    else Modifier.border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f), CircleShape)
+                )
+                .padding(2.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            // Main Avatar Circle
+            Box(
+                modifier = Modifier
+                    .size(size)
+                    .clip(CircleShape)
+                    .background(LivePrimaryEmerald.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
+            ) {
+                if (!avatarUrl.isNull_or_blank()) {
+                    val request = remember(avatarUrl) {
+                        ImageRequest.Builder(context)
+                            .data(avatarUrl)
+                            .crossfade(true)
+                            .build()
+                    }
+                    SubcomposeAsyncImage(
+                        model = request,
+                        contentDescription = "$name Avatar",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Crop,
+                        error = {
+                            Text(
+                                text = initials,
+                                fontSize = (size.value * 0.36f).sp,
+                                fontWeight = FontWeight.Bold,
+                                color = LivePrimaryEmerald
+                            )
+                        }
+                    )
+                } else {
+                    Text(
+                        text = initials,
+                        fontSize = (size.value * 0.36f).sp,
+                        fontWeight = FontWeight.Bold,
+                        color = LivePrimaryEmerald
+                    )
+                }
+            }
+        }
+
+        // Small Red LIVE indicator near the bottom
+        if (isLive && showBadge) {
+            CompactLiveBadge(
+                modifier = Modifier.align(Alignment.BottomCenter).offset(y = 3.dp)
+            )
+        }
+    }
+}
+
+/**
+ * Minimal Live Story Avatar with label.
+ */
 @Composable
 fun LiveStoryAvatar(
     name: String,
@@ -59,73 +250,20 @@ fun LiveStoryAvatar(
     onClick: () -> Unit = {},
     onLongClick: (() -> Unit)? = null
 ) {
-    val initials = remember(name) {
-        val parts = name.trim().split(" ")
-        if (parts.size >= 2) "${parts[0].take(1)}${parts[1].take(1)}".uppercase()
-        else if (name.isNotBlank()) name.take(2).uppercase()
-        else "WD"
-    }
-
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp),
         modifier = Modifier.width(size + 12.dp)
     ) {
-        Box(
-            contentAlignment = Alignment.BottomCenter,
-            modifier = Modifier
-                .size(size + 6.dp)
-                .combinedClickable(
-                    onClick = onClick,
-                    onLongClick = onLongClick
-                )
-        ) {
-            // Thin red ring container when Live
-            Box(
-                modifier = Modifier
-                    .size(size + 6.dp)
-                    .clip(CircleShape)
-                    .then(
-                        if (isLive) Modifier.border(1.5.dp, LiveRed, CircleShape)
-                        else Modifier.border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f), CircleShape)
-                    )
-                    .padding(3.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(CircleShape)
-                        .background(LivePrimaryEmerald.copy(alpha = 0.15f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = initials,
-                        fontSize = (size.value * 0.35f).sp,
-                        fontWeight = FontWeight.Bold,
-                        color = LivePrimaryEmerald
-                    )
-                }
-            }
-
-            // Small red Live Badge attached near the bottom edge
-            if (isLive) {
-                Box(
-                    modifier = Modifier
-                        .offset(y = 2.dp)
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(LiveRed)
-                        .padding(horizontal = 4.dp, vertical = 1.dp)
-                ) {
-                    Text(
-                        text = "LIVE",
-                        fontSize = 8.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = Color.White
-                    )
-                }
-            }
-        }
+        WorkDailyLiveAvatar(
+            name = name,
+            avatarUrl = avatarUrl,
+            size = size,
+            isLive = isLive,
+            showBadge = true,
+            onClick = onClick,
+            onLongClick = onLongClick
+        )
 
         Text(
             text = name.split(" ").firstOrNull() ?: name,
@@ -139,7 +277,7 @@ fun LiveStoryAvatar(
 }
 
 /**
- * Legacy Pulsing Live Avatar maintained for backwards compatibility.
+ * Alias for PulsingLiveAvatar maintained for backwards compatibility.
  */
 @Composable
 fun PulsingLiveAvatar(
@@ -149,47 +287,25 @@ fun PulsingLiveAvatar(
     isLive: Boolean = true,
     onClick: () -> Unit = {}
 ) {
-    LiveStoryAvatar(
+    WorkDailyLiveAvatar(
         name = name,
         avatarUrl = avatarUrl,
         size = size,
         isLive = isLive,
+        showBadge = isLive,
         onClick = onClick
     )
 }
 
 /**
- * Small Red Live Badge Indicator.
+ * Legacy LiveBadge wrapper calling CompactLiveBadge.
  */
 @Composable
 fun LiveBadge(
     text: String = "LIVE",
     bgColor: Color = LiveRed
 ) {
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(4.dp))
-            .background(bgColor)
-            .padding(horizontal = 6.dp, vertical = 2.dp)
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(3.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(4.dp)
-                    .clip(CircleShape)
-                    .background(Color.White)
-            )
-            Text(
-                text = text.uppercase(),
-                fontSize = 9.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = Color.White
-            )
-        }
-    }
+    CompactLiveBadge(text = text, bgColor = bgColor)
 }
 
 /**
@@ -200,14 +316,14 @@ fun ViewerCountChip(
     count: Int,
     onClick: (() -> Unit)? = null
 ) {
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(12.dp))
-            .background(Color.Black.copy(alpha = 0.45f))
-            .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
-            .padding(horizontal = 8.dp, vertical = 4.dp)
+    Surface(
+        onClick = { onClick?.invoke() },
+        enabled = onClick != null,
+        shape = RoundedCornerShape(12.dp),
+        color = Color.Black.copy(alpha = 0.5f)
     ) {
         Row(
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
@@ -241,7 +357,7 @@ fun DiamondBalanceChip(
         modifier = Modifier
             .clip(RoundedCornerShape(16.dp))
             .clickable { onClick() },
-        color = Color.Black.copy(alpha = 0.45f)
+        color = Color.Black.copy(alpha = 0.5f)
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
@@ -265,7 +381,7 @@ fun DiamondBalanceChip(
 }
 
 /**
- * Lightweight Follow Button.
+ * WorkDaily Branded Follow Button using LivePrimaryEmerald (`0xFF0F9F7A`).
  */
 @Composable
 fun FollowButton(
@@ -276,24 +392,26 @@ fun FollowButton(
     if (isFollowing) {
         OutlinedButton(
             onClick = onToggle,
-            modifier = modifier.height(28.dp),
-            shape = RoundedCornerShape(14.dp),
-            border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.6f)),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
-            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp)
+            modifier = modifier.height(30.dp),
+            shape = RoundedCornerShape(15.dp),
+            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = MaterialTheme.colorScheme.onSurface
+            ),
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
         ) {
             Text("Following", fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
         }
     } else {
         Button(
             onClick = onToggle,
-            modifier = modifier.height(28.dp),
-            shape = RoundedCornerShape(14.dp),
+            modifier = modifier.height(30.dp),
+            shape = RoundedCornerShape(15.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = LiveRed,
+                containerColor = LivePrimaryEmerald,
                 contentColor = Color.White
             ),
-            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
+            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp)
         ) {
             Text("Follow", fontSize = 11.sp, fontWeight = FontWeight.Bold)
         }
@@ -310,25 +428,25 @@ fun GoLiveFloatingButton(
 ) {
     Surface(
         onClick = onClick,
-        modifier = modifier.height(42.dp),
-        shape = RoundedCornerShape(21.dp),
-        color = LiveRed,
+        modifier = modifier.height(44.dp),
+        shape = RoundedCornerShape(22.dp),
+        color = LivePrimaryEmerald,
         contentColor = Color.White,
         shadowElevation = 6.dp
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 18.dp),
+            modifier = Modifier.padding(horizontal = 20.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Icon(
                 imageVector = Icons.Default.Videocam,
                 contentDescription = null,
-                modifier = Modifier.size(18.dp)
+                modifier = Modifier.size(20.dp)
             )
             Text(
                 text = "Go Live",
-                fontSize = 13.sp,
+                fontSize = 14.sp,
                 fontWeight = FontWeight.Bold
             )
         }
@@ -336,7 +454,7 @@ fun GoLiveFloatingButton(
 }
 
 /**
- * Clean Floating Chat Message Bubble without thick dark rectangles.
+ * Floating Chat Comment Item.
  */
 @Composable
 fun LiveCommentItem(
@@ -418,7 +536,7 @@ fun LiveCommentItem(
 }
 
 /**
- * Reusable User Profile Bottom Sheet for all Live interactions (Host, Viewers, Chat).
+ * Reusable User Profile Bottom Sheet for Live stream overlays.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -426,7 +544,8 @@ fun LiveProfileBottomSheet(
     userId: String,
     viewModel: LiveViewModel,
     onDismiss: () -> Unit,
-    onNavigatePrivateChat: (String) -> Unit = {}
+    onNavigatePrivateChat: (String) -> Unit = {},
+    onNavigateFullProfile: ((String) -> Unit)? = null
 ) {
     val context = LocalContext.current
     val publicUsers by viewModel.publicUsers.collectAsState()
@@ -435,7 +554,7 @@ fun LiveProfileBottomSheet(
     val targetUser = remember(publicUsers, userId) {
         publicUsers.find { it.id == userId || it.name == userId } ?: DemoPublicUser(
             id = userId,
-            name = if (userId == "creator_me" || userId == "user_me") "You (Host)" else userId,
+            name = if (userId == "creator_me" || userId == "user_me" || userId == "current_user") "You (Host)" else userId,
             profession = "Site Worker",
             bio = "Active WorkDaily live participant",
             followerCount = 420,
@@ -474,8 +593,9 @@ fun LiveProfileBottomSheet(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                LiveStoryAvatar(
+                WorkDailyLiveAvatar(
                     name = targetUser.name,
+                    avatarUrl = targetUser.avatar,
                     size = 64.dp,
                     isLive = targetUser.isLiveNow
                 )
@@ -582,7 +702,22 @@ fun LiveProfileBottomSheet(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            if (onNavigateFullProfile != null) {
+                OutlinedButton(
+                    onClick = {
+                        onDismiss()
+                        onNavigateFullProfile(targetUser.id)
+                    },
+                    modifier = Modifier.fillMaxWidth().height(40.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = LivePrimaryMint),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, LivePrimaryEmerald.copy(alpha = 0.5f)),
+                    shape = RoundedCornerShape(20.dp)
+                ) {
+                    Text("View Full Profile", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
         }
     }
 }
@@ -607,7 +742,7 @@ fun LiveViewerListBottomSheet(
     val allViewers = remember(creators, publicUsers) {
         val list = mutableListOf<DemoPublicUser>()
         creators.forEach { c ->
-            list.add(DemoPublicUser(id = c.id, name = c.name, profession = c.profession, followerCount = c.followerCount, isLiveNow = c.isLiveNow))
+            list.add(DemoPublicUser(id = c.id, name = c.name, avatar = c.avatar, profession = c.profession, followerCount = c.followerCount, isLiveNow = c.isLiveNow))
         }
         publicUsers.forEach { p ->
             if (list.none { it.id == p.id }) list.add(p)
@@ -648,27 +783,33 @@ fun LiveViewerListBottomSheet(
                 }
             }
 
-            // Search Bar Input
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                placeholder = { Text("Search viewers by name...", fontSize = 12.sp, color = Color.Gray) },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(18.dp)) },
+            // Search Bar Input Container
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(48.dp)
-                    .clip(RoundedCornerShape(24.dp)),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = LiveSurfaceDark,
-                    unfocusedContainerColor = LiveSurfaceDark,
-                    focusedBorderColor = LivePrimaryEmerald,
-                    unfocusedBorderColor = Color.Transparent,
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White
-                ),
-                singleLine = true,
-                textStyle = TextStyle(fontSize = 12.sp)
-            )
+                    .height(44.dp)
+                    .clip(RoundedCornerShape(22.dp))
+                    .background(LiveSurfaceDark)
+                    .padding(horizontal = 14.dp),
+                contentAlignment = Alignment.CenterStart
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(Icons.Default.Search, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(18.dp))
+                    if (searchQuery.isEmpty()) {
+                        Text("Search viewers by name...", fontSize = 12.sp, color = Color.Gray)
+                    }
+                }
+                BasicTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    modifier = Modifier.fillMaxWidth().padding(start = 26.dp),
+                    textStyle = TextStyle(fontSize = 12.sp, color = Color.White),
+                    singleLine = true
+                )
+            }
 
             LazyColumn(
                 modifier = Modifier.heightIn(min = 200.dp, max = 340.dp),
@@ -692,7 +833,13 @@ fun LiveViewerListBottomSheet(
                             horizontalArrangement = Arrangement.spacedBy(10.dp),
                             modifier = Modifier.weight(1f)
                         ) {
-                            LiveStoryAvatar(name = viewer.name, size = 36.dp, isLive = viewer.isLiveNow)
+                            WorkDailyLiveAvatar(
+                                name = viewer.name,
+                                avatarUrl = viewer.avatar,
+                                size = 36.dp,
+                                isLive = viewer.isLiveNow,
+                                showBadge = viewer.isLiveNow
+                            )
                             Column {
                                 Text(viewer.name, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 Text(viewer.profession, fontSize = 11.sp, color = Color.Gray)
@@ -747,3 +894,5 @@ fun getGiftIcon(giftName: String): androidx.compose.ui.graphics.vector.ImageVect
         else -> Icons.Default.Construction
     }
 }
+
+private fun String?.isNull_or_blank(): Boolean = this == null || this.isBlank()
