@@ -8,6 +8,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -70,6 +71,7 @@ fun LiveRoomScreen(
     val audioSeats = audioSeatsMap[room.id] ?: emptyList()
 
     var showGiftSheet by remember { mutableStateOf(false) }
+    var showInlineGiftTray by remember { mutableStateOf(false) }
     var showHostControlsSheet by remember { mutableStateOf(false) }
     var showViewerListSheet by remember { mutableStateOf(false) }
     var showEndLiveConfirmationDialog by remember { mutableStateOf(false) }
@@ -85,6 +87,13 @@ fun LiveRoomScreen(
 
     // Keyboard Visibility Detection
     val isKeyboardVisible = WindowInsets.ime.asPaddingValues().calculateBottomPadding() > 0.dp
+
+    // Auto-dismiss inline gift tray when typing starts
+    LaunchedEffect(isKeyboardVisible) {
+        if (isKeyboardVisible) {
+            showInlineGiftTray = false
+        }
+    }
 
     // Back press handling: clear focus if keyboard is open, or request confirmation if host
     BackHandler(enabled = isKeyboardVisible || isHost) {
@@ -185,7 +194,7 @@ fun LiveRoomScreen(
                     )
             )
 
-            // Layer 3: Floating Creator Header Bar
+            // Layer 3: Floating Creator Header Bar (Clean & Compact)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -216,21 +225,15 @@ fun LiveRoomScreen(
                             showBadge = false
                         )
 
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            modifier = Modifier.widthIn(max = 110.dp)
-                        ) {
-                            Text(
-                                text = room.creatorName,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                            CompactLiveBadge()
-                        }
+                        Text(
+                            text = room.creatorName,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.widthIn(max = 120.dp)
+                        )
 
                         if (!isHost) {
                             FollowButton(
@@ -292,7 +295,7 @@ fun LiveRoomScreen(
                 }
             )
 
-            // Layer 5: Floating Live Chat Feed & Pill Comment Composer
+            // Layer 5: Floating Live Chat Feed, Inline Gift Tray & Pill Comment Composer
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -306,7 +309,7 @@ fun LiveRoomScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth(0.85f)
-                        .heightIn(max = 210.dp)
+                        .heightIn(max = if (showInlineGiftTray) 130.dp else 210.dp)
                         .padding(horizontal = 4.dp, vertical = 2.dp)
                 ) {
                     LazyColumn(
@@ -352,6 +355,19 @@ fun LiveRoomScreen(
                             }
                         }
                     }
+                }
+
+                // Compact Floating Inline Gift Tray directly above comment composer
+                if (showInlineGiftTray && !isKeyboardVisible) {
+                    InlineGiftTray(
+                        roomId = room.id,
+                        viewModel = viewModel,
+                        onClose = { showInlineGiftTray = false },
+                        onNavigateWallet = onNavigateWallet,
+                        onGiftSent = { gift, qty ->
+                            showGiftSentDialog = Pair(gift, qty)
+                        }
+                    )
                 }
 
                 // Unclipped Pill-Shaped Comment Composer (~46dp) + Actions
@@ -410,11 +426,11 @@ fun LiveRoomScreen(
 
                     if (!isKeyboardVisible && chatInput.isBlank()) {
                         IconButton(
-                            onClick = { showGiftSheet = true },
+                            onClick = { showInlineGiftTray = !showInlineGiftTray },
                             modifier = Modifier
                                 .size(44.dp)
                                 .clip(CircleShape)
-                                .background(Color.Black.copy(alpha = 0.5f))
+                                .background(if (showInlineGiftTray) LiveGold.copy(alpha = 0.3f) else Color.Black.copy(alpha = 0.5f))
                         ) {
                             Icon(Icons.Default.CardGiftcard, contentDescription = "Gift Store", tint = LiveGold, modifier = Modifier.size(20.dp))
                         }
@@ -515,6 +531,119 @@ fun LiveRoomScreen(
                     },
                     shape = RoundedCornerShape(16.dp)
                 )
+            }
+        }
+    }
+}
+
+/**
+ * Compact Transparent Inline Gift Tray composable directly above the comment composer.
+ */
+@Composable
+fun InlineGiftTray(
+    roomId: String,
+    viewModel: LiveViewModel,
+    onClose: () -> Unit,
+    onNavigateWallet: () -> Unit,
+    onGiftSent: (LiveGift, Int) -> Unit
+) {
+    val gifts by viewModel.gifts.collectAsState()
+    val wallet by viewModel.wallet.collectAsState()
+    val context = LocalContext.current
+
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp)),
+        color = Color.Black.copy(alpha = 0.65f),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.2f))
+    ) {
+        Column(
+            modifier = Modifier.padding(8.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Icon(Icons.Default.CardGiftcard, contentDescription = null, tint = LiveGold, modifier = Modifier.size(16.dp))
+                    Text("Gifts", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                }
+
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    DiamondBalanceChip(
+                        balance = wallet.diamondBalance,
+                        onClick = onNavigateWallet,
+                        fontSize = 10,
+                        iconSize = 12.dp
+                    )
+                    IconButton(onClick = onClose, modifier = Modifier.size(24.dp)) {
+                        Icon(Icons.Default.Close, contentDescription = "Close Tray", tint = Color.LightGray, modifier = Modifier.size(14.dp))
+                    }
+                }
+            }
+
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = PaddingValues(horizontal = 2.dp)
+            ) {
+                items(gifts) { gift ->
+                    val totalCost = gift.diamondCost
+                    val canAfford = wallet.diamondBalance >= totalCost
+
+                    Surface(
+                        modifier = Modifier
+                            .width(80.dp)
+                            .height(72.dp)
+                            .clickable {
+                                if (canAfford) {
+                                    val success = viewModel.sendGift(roomId, gift, 1)
+                                    if (success) {
+                                        onGiftSent(gift, 1)
+                                    } else {
+                                        Toast.makeText(context, "Insufficient diamonds", Toast.LENGTH_SHORT).show()
+                                    }
+                                } else {
+                                    Toast.makeText(context, "Insufficient diamonds. Tap balance to top up.", Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                        shape = RoundedCornerShape(12.dp),
+                        color = LiveSurfaceDark.copy(alpha = 0.8f),
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp,
+                            if (canAfford) LiveGold.copy(alpha = 0.5f) else Color.Gray.copy(alpha = 0.3f)
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(4.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.SpaceEvenly
+                        ) {
+                            Icon(
+                                imageVector = getGiftIcon(gift.name),
+                                contentDescription = gift.name,
+                                tint = if (canAfford) LiveGold else Color.Gray,
+                                modifier = Modifier.size(22.dp)
+                            )
+                            Text(
+                                text = gift.name,
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = if (canAfford) Color.White else Color.Gray,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                                Icon(Icons.Default.Diamond, contentDescription = null, tint = LiveDiamondColor, modifier = Modifier.size(9.dp))
+                                Text("${gift.diamondCost}", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = LiveDiamondColor)
+                            }
+                        }
+                    }
+                }
             }
         }
     }

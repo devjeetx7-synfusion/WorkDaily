@@ -46,6 +46,9 @@ class DemoLiveRepository(context: Context? = null) {
     private val _audioSeatsMap = MutableStateFlow<Map<String, List<AudioSeat>>>(buildInitialAudioSeats())
     val audioSeatsMap: StateFlow<Map<String, List<AudioSeat>>> = _audioSeatsMap.asStateFlow()
 
+    private val _roomParticipantsMap = MutableStateFlow<Map<String, List<RoomParticipant>>>(buildInitialRoomParticipants())
+    val roomParticipantsMap: StateFlow<Map<String, List<RoomParticipant>>> = _roomParticipantsMap.asStateFlow()
+
     private val _blockedUserIds = MutableStateFlow<Set<String>>(emptySet())
     val blockedUserIds: StateFlow<Set<String>> = _blockedUserIds.asStateFlow()
 
@@ -937,6 +940,36 @@ class DemoLiveRepository(context: Context? = null) {
             DemoPublicUser("creator_5", "Suresh Patel", "", "Labor Contractor & Payroll Lead", "Contractor", 1850, 310, 90, isFollowing = false, isFriend = false, isVerified = true, isLiveNow = true, activeRoomId = "room_5"),
             DemoPublicUser("user_101", "Sunil Mason", "", "Plaster & Brickwork Expert", "Site Mason", 340, 50, 20, isFollowing = false, isFriend = false, friendRequestStatus = FriendRequestStatus.PENDING),
             DemoPublicUser("user_102", "Deepak Plumber", "", "Commercial Plumbing Specialist", "Plumbing Lead", 510, 80, 35, isFollowing = false, isFriend = false)
+        )
+
+        private fun buildInitialRoomParticipants(): Map<String, List<RoomParticipant>> = mapOf(
+            "room_1" to listOf(
+                RoomParticipant("creator_1", "Rajesh Sharma (Host)", "", "Civil Site Engineer", 1420, isHost = true, isLiveNow = true),
+                RoomParticipant("user_101", "Sunil Mason", "", "Site Mason", 340),
+                RoomParticipant("user_102", "Deepak Plumber", "", "Plumbing Lead", 510),
+                RoomParticipant("user_103", "Rohan Electrician", "", "Electrical Lead", 280),
+                RoomParticipant("user_104", "Anil Contractor", "", "Project Contractor", 890)
+            ),
+            "room_2" to listOf(
+                RoomParticipant("creator_2", "Amit Kumar (Host)", "", "Machinery Operator", 2890, isHost = true, isLiveNow = true),
+                RoomParticipant("user_105", "Suresh Crane Operator", "", "Heavy Equipment", 420),
+                RoomParticipant("user_106", "Pankaj Inspector", "", "Safety Auditor", 670)
+            ),
+            "room_3" to listOf(
+                RoomParticipant("creator_3", "Vikram Singh (Host)", "", "Master Mason", 950, isHost = true, isLiveNow = true),
+                RoomParticipant("user_101", "Sunil Mason", "", "Site Mason", 340),
+                RoomParticipant("user_107", "Dinesh Concrete Lead", "", "Concrete Worker", 190)
+            ),
+            "room_4" to listOf(
+                RoomParticipant("creator_4", "Pooja Verma (Host)", "", "Safety Auditor", 3100, isHost = true, isLiveNow = true),
+                RoomParticipant("user_108", "Karan Site Supervisor", "", "Site Supervisor", 530),
+                RoomParticipant("user_109", "Vijay Surveyor", "", "Civil Surveyor", 310)
+            ),
+            "room_5" to listOf(
+                RoomParticipant("creator_5", "Suresh Patel (Host)", "", "Contractor Lead", 1850, isHost = true, isLiveNow = true),
+                RoomParticipant("user_110", "Ganesh Builder", "", "Sub Contractor", 720),
+                RoomParticipant("user_111", "Manoj Transport Manager", "", "Logistics Lead", 410)
+            )
         )
 
         private fun buildInitialFriendRequests(): List<DemoFriendRequest> = listOf(

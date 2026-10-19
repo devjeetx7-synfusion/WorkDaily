@@ -30,6 +30,17 @@ enum class NotificationType {
     PRIVATE_MESSAGE
 }
 
+data class RoomParticipant(
+    val id: String,
+    val name: String,
+    val avatar: String = "",
+    val profession: String = "Site Worker",
+    val followerCount: Int = 120,
+    val isHost: Boolean = false,
+    val isLiveNow: Boolean = false,
+    val joinedAtMillis: Long = System.currentTimeMillis()
+)
+
 data class DemoPublicUser(
     val id: String,
     val name: String,

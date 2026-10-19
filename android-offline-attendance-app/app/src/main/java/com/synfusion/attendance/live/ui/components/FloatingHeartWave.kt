@@ -1,9 +1,6 @@
 package com.synfusion.attendance.live.ui.components
 
-import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.*
@@ -11,13 +8,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.scale
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import kotlin.random.Random
 
 data class FloatingHeartParticle(
@@ -27,10 +19,17 @@ data class FloatingHeartParticle(
     val color: Color,
     val driftXRatio: Float,
     val rotationDegrees: Float,
-    val durationMillis: Int = Random.nextInt(1800, 2600),
-    val startTime: Long = System.currentTimeMillis()
+    val durationMillis: Long = Random.nextLong(1800, 2600),
+    val startTimeNanos: Long = System.nanoTime()
 )
 
+/**
+ * Floating Heart Wave Overlay Component.
+ * Purely decorative transparent canvas layer for floating heart animations.
+ *
+ * CRITICAL FIX: Does NOT intercept pointer events or click touches.
+ * Uses continuous frame-driven animation (withFrameNanos) for smooth particle lifecycle.
+ */
 @Composable
 fun FloatingHeartWaveOverlay(
     modifier: Modifier = Modifier,
@@ -38,9 +37,7 @@ fun FloatingHeartWaveOverlay(
     onSendHearts: (Int) -> Unit = {}
 ) {
     var particles by remember { mutableStateOf<List<FloatingHeartParticle>>(emptyList()) }
-    val coroutineScope = rememberCoroutineScope()
 
-    // Colors: Pink, coral, red
     val heartColors = remember {
         listOf(
             Color(0xFFFF2D55),
@@ -51,61 +48,63 @@ fun FloatingHeartWaveOverlay(
         )
     }
 
-    fun spawnHearts(count: Int) {
-        val now = System.currentTimeMillis()
-        val newParticles = (0 until count).map {
-            FloatingHeartParticle(
-                id = Random.nextLong(),
-                startXRatio = Random.nextFloat().coerceIn(0.65f, 0.90f),
-                sizePx = Random.nextInt(18, 36).toFloat(),
-                color = heartColors.random(),
-                driftXRatio = (Random.nextFloat() - 0.5f) * 0.15f,
-                rotationDegrees = (Random.nextFloat() - 0.5f) * 40f
-            )
+    var frameTimeNanos by remember { mutableLongStateOf(System.nanoTime()) }
+
+    // Frame ticker loop for smooth, continuous animation frame updates
+    LaunchedEffect(particles.isNotEmpty()) {
+        if (particles.isNotEmpty()) {
+            while (true) {
+                withFrameNanos { time ->
+                    frameTimeNanos = time
+                }
+                // Filter out completed particles smoothly
+                val nowNanos = System.nanoTime()
+                particles = particles.filter { particle ->
+                    val elapsedMillis = (nowNanos - particle.startTimeNanos) / 1_000_000L
+                    elapsedMillis < particle.durationMillis
+                }
+                if (particles.isEmpty()) break
+            }
         }
-        particles = (particles + newParticles).takeLast(30)
-        onSendHearts(count)
     }
 
+    // Spawn hearts when signal triggers
     LaunchedEffect(triggerHeartSignal) {
         if (triggerHeartSignal > 0) {
-            spawnHearts(Random.nextInt(2, 5))
-        }
-    }
-
-    // Cleanup expired particles
-    LaunchedEffect(particles) {
-        if (particles.isNotEmpty()) {
-            delay(100)
-            val now = System.currentTimeMillis()
-            particles = particles.filter { now - it.startTime < it.durationMillis }
-        }
-    }
-
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null
-            ) {
-                spawnHearts(Random.nextInt(2, 4))
+            val count = Random.nextInt(2, 5)
+            val nowNanos = System.nanoTime()
+            val newParticles = (0 until count).map {
+                FloatingHeartParticle(
+                    id = Random.nextLong(),
+                    startXRatio = Random.nextFloat().coerceIn(0.70f, 0.90f),
+                    sizePx = Random.nextInt(22, 38).toFloat(),
+                    color = heartColors.random(),
+                    driftXRatio = (Random.nextFloat() - 0.5f) * 0.18f,
+                    rotationDegrees = (Random.nextFloat() - 0.5f) * 45f,
+                    startTimeNanos = nowNanos
+                )
             }
-    ) {
+            particles = (particles + newParticles).takeLast(40)
+            onSendHearts(count)
+        }
+    }
+
+    // Non-clickable Box layer: allows underlying or overlaying controls to receive touches cleanly
+    Box(modifier = modifier.fillMaxSize()) {
         Canvas(modifier = Modifier.fillMaxSize()) {
             val canvasWidth = size.width
             val canvasHeight = size.height
-            val now = System.currentTimeMillis()
+            val currentNanos = frameTimeNanos
 
             particles.forEach { particle ->
-                val elapsed = (now - particle.startTime).coerceAtLeast(0)
-                val progress = (elapsed.toFloat() / particle.durationMillis).coerceIn(0f, 1f)
+                val elapsedMillis = ((currentNanos - particle.startTimeNanos) / 1_000_000L).coerceAtLeast(0L)
+                val progress = (elapsedMillis.toFloat() / particle.durationMillis).coerceIn(0f, 1f)
 
                 if (progress < 1f) {
-                    val currentY = canvasHeight * (0.85f - (progress * 0.70f))
+                    val currentY = canvasHeight * (0.85f - (progress * 0.72f))
                     val currentX = canvasWidth * (particle.startXRatio + (particle.driftXRatio * progress))
                     val alpha = (1f - progress).coerceIn(0f, 1f)
-                    val scaleFactor = (0.5f + (progress * 0.6f)).coerceIn(0.5f, 1.2f)
+                    val scaleFactor = (0.6f + (progress * 0.5f)).coerceIn(0.6f, 1.25f)
 
                     rotate(
                         degrees = particle.rotationDegrees * progress,

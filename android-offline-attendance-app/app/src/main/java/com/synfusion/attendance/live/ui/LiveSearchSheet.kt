@@ -1,10 +1,8 @@
 package com.synfusion.attendance.live.ui
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -37,52 +35,24 @@ fun LiveSearchSheet(
     val followedCreatorIds by viewModel.followedCreatorIds.collectAsState()
 
     var searchQuery by remember { mutableStateOf("") }
-    var selectedFilter by remember { mutableStateOf("All") }
 
-    val filters = listOf("All", "Live", "Users")
-
-    // Filter creators and rooms based on searchQuery and selectedFilter
-    val matchingCreators = remember(creators, searchQuery, selectedFilter, followedCreatorIds) {
-        if (selectedFilter == "Audio" || selectedFilter == "Video") emptyList()
-        else {
-            creators.filter { creator ->
-                val matchesQuery = searchQuery.isBlank() ||
-                        creator.name.contains(searchQuery, ignoreCase = true) ||
-                        creator.profession.contains(searchQuery, ignoreCase = true) ||
-                        creator.bio.contains(searchQuery, ignoreCase = true) ||
-                        creator.roomCategory.contains(searchQuery, ignoreCase = true)
-
-                val matchesFilter = when (selectedFilter) {
-                    "Following" -> followedCreatorIds.contains(creator.id)
-                    "Live" -> creator.isLiveNow
-                    else -> true
-                }
-
-                matchesQuery && matchesFilter
-            }
+    val matchingCreators = remember(creators, searchQuery, followedCreatorIds) {
+        creators.filter { creator ->
+            searchQuery.isBlank() ||
+                    creator.name.contains(searchQuery, ignoreCase = true) ||
+                    creator.profession.contains(searchQuery, ignoreCase = true) ||
+                    creator.bio.contains(searchQuery, ignoreCase = true) ||
+                    creator.roomCategory.contains(searchQuery, ignoreCase = true)
         }
     }
 
-    val matchingRooms = remember(liveRooms, searchQuery, selectedFilter, followedCreatorIds) {
-        if (selectedFilter == "Users") emptyList()
-        else {
-            liveRooms.filter { room ->
-                val matchesQuery = searchQuery.isBlank() ||
-                        room.title.contains(searchQuery, ignoreCase = true) ||
-                        room.creatorName.contains(searchQuery, ignoreCase = true) ||
-                        room.category.contains(searchQuery, ignoreCase = true) ||
-                        room.description.contains(searchQuery, ignoreCase = true)
-
-                val matchesFilter = when (selectedFilter) {
-                    "Live" -> room.isLive
-                    "Audio" -> room.type == LiveRoomType.AUDIO
-                    "Video" -> room.type == LiveRoomType.VIDEO
-                    "Following" -> followedCreatorIds.contains(room.creatorId)
-                    else -> true
-                }
-
-                matchesQuery && matchesFilter
-            }
+    val matchingRooms = remember(liveRooms, searchQuery, followedCreatorIds) {
+        liveRooms.filter { room ->
+            searchQuery.isBlank() ||
+                    room.title.contains(searchQuery, ignoreCase = true) ||
+                    room.creatorName.contains(searchQuery, ignoreCase = true) ||
+                    room.category.contains(searchQuery, ignoreCase = true) ||
+                    room.description.contains(searchQuery, ignoreCase = true)
         }
     }
 
@@ -112,7 +82,7 @@ fun LiveSearchSheet(
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Icon(Icons.Default.Search, contentDescription = null, tint = LivePrimaryEmerald)
                     Text(
-                        text = "Search Live & Creators",
+                        text = "Search",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
@@ -124,13 +94,13 @@ fun LiveSearchSheet(
                 }
             }
 
-            // Search Bar Input Field - Theme-Aware
+            // Compact Pill Search Field
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
                 placeholder = {
                     Text(
-                        "Search by name, stream title, category, profession...",
+                        "Search people or live...",
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                         fontSize = 13.sp
                     )
@@ -145,10 +115,11 @@ fun LiveSearchSheet(
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp)),
+                    .height(52.dp)
+                    .clip(RoundedCornerShape(26.dp)),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = LivePrimaryEmerald,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f),
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
                     focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
                     unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
                     focusedTextColor = MaterialTheme.colorScheme.onSurface,
@@ -156,32 +127,6 @@ fun LiveSearchSheet(
                 ),
                 singleLine = true
             )
-
-            // Filter Chips Row
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(filters) { f ->
-                    val isSelected = selectedFilter == f
-                    FilterChip(
-                        selected = isSelected,
-                        onClick = { selectedFilter = f },
-                        label = { Text(f, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = LivePrimaryEmerald,
-                            selectedLabelColor = Color.White,
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                            labelColor = MaterialTheme.colorScheme.onSurfaceVariant
-                        ),
-                        border = FilterChipDefaults.filterChipBorder(
-                            borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
-                            selectedBorderColor = LivePrimaryMint,
-                            enabled = true,
-                            selected = isSelected
-                        )
-                    )
-                }
-            }
 
             // Results List
             if (matchingCreators.isEmpty() && matchingRooms.isEmpty()) {
@@ -196,7 +141,7 @@ fun LiveSearchSheet(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Icon(Icons.Default.SearchOff, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(48.dp))
-                        Text("No matching creators or live streams found", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
+                        Text("No matching people or live streams found", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                     }
                 }
             } else {
@@ -208,7 +153,7 @@ fun LiveSearchSheet(
                     if (matchingRooms.isNotEmpty()) {
                         item {
                             Text(
-                                "ACTIVE LIVE STREAMS (${matchingRooms.size})",
+                                "LIVE STREAMS (${matchingRooms.size})",
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = LivePrimaryEmerald
@@ -283,7 +228,7 @@ fun LiveSearchSheet(
                         item {
                             Spacer(modifier = Modifier.height(6.dp))
                             Text(
-                                "CREATORS (${matchingCreators.size})",
+                                "PEOPLE & CREATORS (${matchingCreators.size})",
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = LivePrimaryEmerald
@@ -318,19 +263,14 @@ fun LiveSearchSheet(
                                         )
 
                                         Column(modifier = Modifier.weight(1f)) {
-                                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                                Text(
-                                                    text = creator.name,
-                                                    fontSize = 13.sp,
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = MaterialTheme.colorScheme.onSurface,
-                                                    maxLines = 1,
-                                                    overflow = TextOverflow.Ellipsis
-                                                )
-                                                if (creator.isLiveNow) {
-                                                    LiveBadge(text = "LIVE", bgColor = LiveRed)
-                                                }
-                                            }
+                                            Text(
+                                                text = creator.name,
+                                                fontSize = 13.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.onSurface,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
                                             Text(
                                                 text = "${creator.profession} • ${creator.followerCount} followers",
                                                 fontSize = 11.sp,
