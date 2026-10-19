@@ -1,12 +1,15 @@
 package com.synfusion.attendance.live.ui.components
 
+import android.widget.Toast
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -16,17 +19,18 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.synfusion.attendance.live.model.ChatMessage
+import com.synfusion.attendance.live.model.*
+import com.synfusion.attendance.live.viewmodel.LiveViewModel
 
 // WorkDaily Live Design System Tokens
 val LivePrimaryEmerald = Color(0xFF0F9F7A)
@@ -50,7 +54,7 @@ val LiveEmeraldGradient = Brush.horizontalGradient(
 fun LiveStoryAvatar(
     name: String,
     avatarUrl: String = "",
-    size: Dp = 56.dp,
+    size: Dp = 54.dp,
     isLive: Boolean = true,
     onClick: () -> Unit = {},
     onLongClick: (() -> Unit)? = null
@@ -141,7 +145,7 @@ fun LiveStoryAvatar(
 fun PulsingLiveAvatar(
     name: String,
     avatarUrl: String = "",
-    size: Dp = 56.dp,
+    size: Dp = 54.dp,
     isLive: Boolean = true,
     onClick: () -> Unit = {}
 ) {
@@ -201,21 +205,21 @@ fun ViewerCountChip(
             .clip(RoundedCornerShape(12.dp))
             .background(Color.Black.copy(alpha = 0.45f))
             .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
-            .padding(horizontal = 7.dp, vertical = 3.dp)
+            .padding(horizontal = 8.dp, vertical = 4.dp)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(3.dp)
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Icon(
                 imageVector = Icons.Default.Visibility,
-                contentDescription = null,
+                contentDescription = "Viewers",
                 tint = Color.White,
-                modifier = Modifier.size(11.dp)
+                modifier = Modifier.size(12.dp)
             )
             Text(
                 text = "$count",
-                fontSize = 10.sp,
+                fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White
             )
@@ -337,6 +341,7 @@ fun GoLiveFloatingButton(
 @Composable
 fun LiveCommentItem(
     message: ChatMessage,
+    onUserClick: ((String) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val textShadow = Shadow(
@@ -379,7 +384,8 @@ fun LiveCommentItem(
                 modifier = Modifier
                     .size(20.dp)
                     .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.25f)),
+                    .background(Color.White.copy(alpha = 0.25f))
+                    .then(if (onUserClick != null) Modifier.clickable { onUserClick(message.senderId) } else Modifier),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -395,7 +401,8 @@ fun LiveCommentItem(
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
                 color = LivePrimaryMint,
-                style = TextStyle(shadow = textShadow)
+                style = TextStyle(shadow = textShadow),
+                modifier = if (onUserClick != null) Modifier.clickable { onUserClick(message.senderId) } else Modifier
             )
 
             Text(
@@ -406,6 +413,299 @@ fun LiveCommentItem(
                 style = TextStyle(shadow = textShadow),
                 softWrap = true
             )
+        }
+    }
+}
+
+/**
+ * Reusable User Profile Bottom Sheet for all Live interactions (Host, Viewers, Chat).
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun LiveProfileBottomSheet(
+    userId: String,
+    viewModel: LiveViewModel,
+    onDismiss: () -> Unit,
+    onNavigatePrivateChat: (String) -> Unit = {}
+) {
+    val context = LocalContext.current
+    val publicUsers by viewModel.publicUsers.collectAsState()
+    val followedIds by viewModel.followedCreatorIds.collectAsState()
+
+    val targetUser = remember(publicUsers, userId) {
+        publicUsers.find { it.id == userId || it.name == userId } ?: DemoPublicUser(
+            id = userId,
+            name = if (userId == "creator_me" || userId == "user_me") "You (Host)" else userId,
+            profession = "Site Worker",
+            bio = "Active WorkDaily live participant",
+            followerCount = 420,
+            followingCount = 180,
+            friendsCount = 35
+        )
+    }
+
+    val isSelf = targetUser.id == "current_user" || targetUser.id == "creator_me" || targetUser.id == "user_me"
+    val isFollowing = followedIds.contains(targetUser.id)
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = LiveDarkBg,
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Drag Handle Bar
+            Box(
+                modifier = Modifier
+                    .width(40.dp)
+                    .height(4.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(Color.White.copy(alpha = 0.3f))
+            )
+
+            // Header Avatar & Name
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                LiveStoryAvatar(
+                    name = targetUser.name,
+                    size = 64.dp,
+                    isLive = targetUser.isLiveNow
+                )
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = targetUser.name,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                    if (targetUser.isVerified) {
+                        Icon(Icons.Default.CheckCircle, contentDescription = "Verified", tint = LivePrimaryMint, modifier = Modifier.size(16.dp))
+                    }
+                }
+
+                Text(
+                    text = targetUser.profession,
+                    fontSize = 13.sp,
+                    color = Color.Gray
+                )
+
+                if (targetUser.bio.isNotBlank()) {
+                    Text(
+                        text = targetUser.bio,
+                        fontSize = 12.sp,
+                        color = Color.White.copy(alpha = 0.7f),
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+
+            // Stats Row
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(LiveSurfaceDark)
+                    .padding(12.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("${targetUser.followerCount}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    Text("Followers", fontSize = 11.sp, color = Color.Gray)
+                }
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("${targetUser.followingCount}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    Text("Following", fontSize = 11.sp, color = Color.Gray)
+                }
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("${targetUser.friendsCount}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    Text("Friends", fontSize = 11.sp, color = Color.Gray)
+                }
+            }
+
+            // Interactive Actions
+            if (!isSelf) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Button(
+                        onClick = { viewModel.toggleFollowCreator(targetUser.id) },
+                        modifier = Modifier.weight(1f).height(42.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (isFollowing) LiveSurfaceDark else LivePrimaryEmerald,
+                            contentColor = Color.White
+                        ),
+                        shape = RoundedCornerShape(21.dp)
+                    ) {
+                        Text(if (isFollowing) "Following" else "Follow", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    }
+
+                    Button(
+                        onClick = {
+                            if (targetUser.isFriend) {
+                                onDismiss()
+                                onNavigatePrivateChat(targetUser.id)
+                            } else {
+                                val sent = viewModel.sendFriendRequest(targetUser.id)
+                                if (sent) {
+                                    Toast.makeText(context, "Friend Request Sent!", Toast.LENGTH_SHORT).show()
+                                } else {
+                                    Toast.makeText(context, "Friend request pending or connected", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        },
+                        modifier = Modifier.weight(1f).height(42.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = LiveSurfaceDark, contentColor = Color.White),
+                        shape = RoundedCornerShape(21.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (targetUser.isFriend) Icons.Default.Chat else Icons.Default.PersonAdd,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(if (targetUser.isFriend) "Message" else "Add Friend", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+    }
+}
+
+/**
+ * Live Viewers Scrollable Bottom Sheet with search and profile integration.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun LiveViewerListBottomSheet(
+    room: LiveRoom,
+    viewModel: LiveViewModel,
+    onDismiss: () -> Unit,
+    onSelectViewerProfile: (String) -> Unit
+) {
+    val creators by viewModel.creators.collectAsState()
+    val publicUsers by viewModel.publicUsers.collectAsState()
+    val followedIds by viewModel.followedCreatorIds.collectAsState()
+
+    var searchQuery by remember { mutableStateOf("") }
+
+    val allViewers = remember(creators, publicUsers) {
+        val list = mutableListOf<DemoPublicUser>()
+        creators.forEach { c ->
+            list.add(DemoPublicUser(id = c.id, name = c.name, profession = c.profession, followerCount = c.followerCount, isLiveNow = c.isLiveNow))
+        }
+        publicUsers.forEach { p ->
+            if (list.none { it.id == p.id }) list.add(p)
+        }
+        list
+    }
+
+    val filteredViewers = remember(allViewers, searchQuery) {
+        if (searchQuery.isBlank()) allViewers
+        else allViewers.filter {
+            it.name.contains(searchQuery, ignoreCase = true) || it.profession.contains(searchQuery, ignoreCase = true)
+        }
+    }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = LiveDarkBg,
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Icon(Icons.Default.Visibility, contentDescription = null, tint = LivePrimaryMint)
+                    Text("Live Viewers (${room.viewerCount})", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                }
+
+                IconButton(onClick = onDismiss) {
+                    Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.Gray)
+                }
+            }
+
+            // Search Bar Input
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                placeholder = { Text("Search viewers by name...", fontSize = 12.sp, color = Color.Gray) },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(18.dp)) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .clip(RoundedCornerShape(24.dp)),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = LiveSurfaceDark,
+                    unfocusedContainerColor = LiveSurfaceDark,
+                    focusedBorderColor = LivePrimaryEmerald,
+                    unfocusedBorderColor = Color.Transparent,
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White
+                ),
+                singleLine = true,
+                textStyle = TextStyle(fontSize = 12.sp)
+            )
+
+            LazyColumn(
+                modifier = Modifier.heightIn(min = 200.dp, max = 340.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(filteredViewers, key = { it.id }) { viewer ->
+                    val isFollowing = followedIds.contains(viewer.id)
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(LiveSurfaceDark)
+                            .clickable { onSelectViewerProfile(viewer.id) }
+                            .padding(10.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            LiveStoryAvatar(name = viewer.name, size = 36.dp, isLive = viewer.isLiveNow)
+                            Column {
+                                Text(viewer.name, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text(viewer.profession, fontSize = 11.sp, color = Color.Gray)
+                            }
+                        }
+
+                        FollowButton(
+                            isFollowing = isFollowing,
+                            onToggle = { viewModel.toggleFollowCreator(viewer.id) }
+                        )
+                    }
+                }
+            }
         }
     }
 }

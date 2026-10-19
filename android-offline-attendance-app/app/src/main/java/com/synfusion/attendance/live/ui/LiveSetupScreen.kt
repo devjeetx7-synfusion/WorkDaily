@@ -34,7 +34,6 @@ fun LiveSetupScreen(
 
     var selectedType by remember { mutableStateOf(LiveRoomType.VIDEO) }
     var micEnabled by remember { mutableStateOf(true) }
-    var cameraEnabled by remember { mutableStateOf(true) }
     var isFrontCamera by remember { mutableStateOf(true) }
     var isSubmitting by remember { mutableStateOf(false) }
 
@@ -49,7 +48,7 @@ fun LiveSetupScreen(
             .fillMaxSize()
             .background(Color.Black)
     ) {
-        // Immersive Simulated Video/Audio Camera Preview Surface
+        // Immersive Full-Screen Camera Preview Canvas Surface
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -70,7 +69,7 @@ fun LiveSetupScreen(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(90.dp)
+                        .size(80.dp)
                         .clip(CircleShape)
                         .background(
                             if (selectedType == LiveRoomType.VIDEO) LivePrimaryEmerald.copy(alpha = 0.2f)
@@ -82,22 +81,22 @@ fun LiveSetupScreen(
                         imageVector = if (selectedType == LiveRoomType.VIDEO) Icons.Default.Videocam else Icons.Default.Mic,
                         contentDescription = null,
                         tint = if (selectedType == LiveRoomType.VIDEO) LivePrimaryMint else LivePurple,
-                        modifier = Modifier.size(44.dp)
+                        modifier = Modifier.size(40.dp)
                     )
                 }
 
                 Text(
-                    text = if (selectedType == LiveRoomType.VIDEO) "Camera Preview Simulation" else "Voice Room Stage",
-                    color = Color.White.copy(alpha = 0.8f),
-                    fontSize = 15.sp,
+                    text = if (selectedType == LiveRoomType.VIDEO) "Camera Preview" else "Voice Room Stage",
+                    color = Color.White.copy(alpha = 0.85f),
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.Medium
                 )
 
-                LiveBadge(text = "DEMO PREVIEW", bgColor = LivePrimaryEmerald)
+                LiveBadge(text = "PREVIEW", bgColor = LivePrimaryEmerald)
             }
         }
 
-        // Top Bar Overlay (Close, Go Live Label, Settings Icon)
+        // Top Bar Overlay (Close, Go Live Heading, Settings Icon)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -109,10 +108,11 @@ fun LiveSetupScreen(
             IconButton(
                 onClick = onNavigateBack,
                 modifier = Modifier
+                    .size(36.dp)
                     .clip(CircleShape)
-                    .background(Color.Black.copy(alpha = 0.4f))
+                    .background(Color.Black.copy(alpha = 0.45f))
             ) {
-                Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
+                Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White, modifier = Modifier.size(18.dp))
             }
 
             Text(
@@ -125,10 +125,11 @@ fun LiveSetupScreen(
             IconButton(
                 onClick = { showAdvancedSettings = true },
                 modifier = Modifier
+                    .size(36.dp)
                     .clip(CircleShape)
-                    .background(Color.Black.copy(alpha = 0.4f))
+                    .background(Color.Black.copy(alpha = 0.45f))
             ) {
-                Icon(Icons.Default.Settings, contentDescription = "Settings", tint = Color.White)
+                Icon(Icons.Default.Settings, contentDescription = "Settings", tint = Color.White, modifier = Modifier.size(18.dp))
             }
         }
 
@@ -140,13 +141,13 @@ fun LiveSetupScreen(
                 .navigationBarsPadding()
                 .padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(20.dp)
+            verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
             // Mode Switch Pill (Video / Audio)
             Row(
                 modifier = Modifier
                     .clip(RoundedCornerShape(24.dp))
-                    .background(Color.Black.copy(alpha = 0.6f))
+                    .background(Color.Black.copy(alpha = 0.55f))
                     .padding(4.dp),
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
@@ -181,22 +182,23 @@ fun LiveSetupScreen(
                 }
             }
 
-            // Mic and Camera Flip Quick Actions
+            // Quick Actions: Mic & Camera Flip Toggle
             Row(
-                horizontalArrangement = Arrangement.spacedBy(24.dp),
+                horizontalArrangement = Arrangement.spacedBy(20.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(
                     onClick = { micEnabled = !micEnabled },
                     modifier = Modifier
-                        .size(50.dp)
+                        .size(46.dp)
                         .clip(CircleShape)
-                        .background(if (micEnabled) Color.White.copy(alpha = 0.2f) else LiveRed)
+                        .background(if (micEnabled) Color.White.copy(alpha = 0.25f) else LiveRed)
                 ) {
                     Icon(
                         imageVector = if (micEnabled) Icons.Default.Mic else Icons.Default.MicOff,
                         contentDescription = "Microphone Toggle",
-                        tint = Color.White
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp)
                     )
                 }
 
@@ -204,20 +206,21 @@ fun LiveSetupScreen(
                     IconButton(
                         onClick = { isFrontCamera = !isFrontCamera },
                         modifier = Modifier
-                            .size(50.dp)
+                            .size(46.dp)
                             .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.2f))
+                            .background(Color.White.copy(alpha = 0.25f))
                     ) {
                         Icon(
                             imageVector = Icons.Default.Cameraswitch,
                             contentDescription = "Flip Camera",
-                            tint = Color.White
+                            tint = Color.White,
+                            modifier = Modifier.size(20.dp)
                         )
                     }
                 }
             }
 
-            // Start Live Direct CTA
+            // Direct CTA Button
             Button(
                 onClick = {
                     if (isSubmitting) return@Button
@@ -240,23 +243,23 @@ fun LiveSetupScreen(
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(54.dp),
+                    .height(50.dp),
                 enabled = !isSubmitting,
-                shape = RoundedCornerShape(27.dp),
+                shape = RoundedCornerShape(25.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = LivePrimaryEmerald, contentColor = Color.White)
             ) {
-                Icon(Icons.Default.Podcasts, contentDescription = null)
+                Icon(Icons.Default.Podcasts, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Start Live", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Text("Start Live", fontSize = 15.sp, fontWeight = FontWeight.Bold)
             }
         }
 
-        // Optional Secondary Settings Bottom Sheet
+        // Room Settings Modal Bottom Sheet
         if (showAdvancedSettings) {
             ModalBottomSheet(
                 onDismissRequest = { showAdvancedSettings = false },
                 containerColor = MaterialTheme.colorScheme.surface,
-                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+                shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
             ) {
                 Column(
                     modifier = Modifier

@@ -111,6 +111,8 @@ data class LiveRoom(
     val creatorName: String,
     val creatorAvatar: String = "",
     val creatorProfession: String = "Site Engineer",
+    val tradeRole: String = "Site Engineer",
+    val thumbnailUrl: String? = null,
     val category: String = "Site Safety",
     val type: LiveRoomType = LiveRoomType.VIDEO,
     val viewerCount: Int = 0,

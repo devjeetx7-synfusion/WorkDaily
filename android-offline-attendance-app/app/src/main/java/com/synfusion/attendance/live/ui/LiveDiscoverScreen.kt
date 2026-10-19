@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -34,17 +35,15 @@ fun LiveDiscoverScreen(
     viewModel: LiveViewModel,
     onNavigateBack: () -> Unit,
     onNavigateLiveRoom: (String) -> Unit,
-    onNavigateWallet: () -> Unit,
-    onNavigateStudio: () -> Unit,
-    onNavigateLeaderboard: () -> Unit,
-    onNavigateProfile: () -> Unit,
+    onNavigateWallet: () -> Unit = {},
+    onNavigateStudio: () -> Unit = {},
+    onNavigateLeaderboard: () -> Unit = {},
+    onNavigateProfile: () -> Unit = {},
     onNavigatePeople: () -> Unit = {},
     onNavigateMessages: () -> Unit = {},
     onNavigateDemoControls: () -> Unit = {}
 ) {
     val liveRooms by viewModel.liveRooms.collectAsState()
-    val creators by viewModel.creators.collectAsState()
-    val followedCreatorIds by viewModel.followedCreatorIds.collectAsState()
     val notifications by viewModel.notifications.collectAsState()
 
     var showSearchSheet by remember { mutableStateOf(false) }
@@ -58,8 +57,8 @@ fun LiveDiscoverScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Live",
-                        fontSize = 20.sp,
+                        text = "Live Streams",
+                        fontSize = 18.sp,
                         fontWeight = FontWeight.Bold
                     )
                 },
@@ -104,7 +103,7 @@ fun LiveDiscoverScreen(
         floatingActionButton = {
             GoLiveFloatingButton(
                 onClick = onNavigateStudio,
-                modifier = Modifier.padding(bottom = 16.dp, end = 8.dp)
+                modifier = Modifier.padding(bottom = 12.dp, end = 4.dp)
             )
         },
         containerColor = MaterialTheme.colorScheme.background
@@ -113,21 +112,22 @@ fun LiveDiscoverScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(horizontal = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // Horizontal Creator Stories Row (Clean Circular Avatars with Thin Red Live Ring)
+            // Horizontal Creator Stories Row with thin red ring
             if (activeLiveRooms.isNotEmpty()) {
                 LazyRow(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    contentPadding = PaddingValues(vertical = 4.dp)
                 ) {
                     items(activeLiveRooms, key = { it.id }) { room ->
                         LiveStoryAvatar(
                             name = room.creatorName,
                             avatarUrl = room.creatorAvatar,
-                            size = 56.dp,
+                            size = 52.dp,
                             isLive = room.isLive,
                             onClick = { onNavigateLiveRoom(room.id) }
                         )
@@ -135,7 +135,7 @@ fun LiveDiscoverScreen(
                 }
             }
 
-            // Clean 2-Column Edge-to-Edge Tall Portrait Cards Grid
+            // 2-Column Edge-to-Edge Tall Portrait Cards Grid with Trade Vector Previews
             if (activeLiveRooms.isEmpty()) {
                 Box(
                     modifier = Modifier
@@ -154,8 +154,8 @@ fun LiveDiscoverScreen(
             } else {
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(2),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
                     modifier = Modifier.weight(1f),
                     contentPadding = PaddingValues(bottom = 80.dp)
                 ) {
@@ -287,26 +287,29 @@ fun CleanLiveRoomGridCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .aspectRatio(0.75f)
+            .aspectRatio(0.80f)
             .clickable { onClick() },
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = LiveSurfaceDark)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            // Simulated Full-Bleed Video Preview Canvas / Dark Backdrop Gradient
+            // Simulated Construction Trade Visual Preview Backdrop
+            val tradeIcon = rememberTradeIcon(room.category, room.title)
+            val gradientColors = rememberTradeGradient(room.category)
+
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(
-                                Color(0xFF1E293B),
-                                Color(0xFF0F172A),
-                                Color(0xFF020617)
-                            )
-                        )
-                    )
-            )
+                    .background(Brush.verticalGradient(gradientColors)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = tradeIcon,
+                    contentDescription = null,
+                    tint = Color.White.copy(alpha = 0.18f),
+                    modifier = Modifier.size(72.dp)
+                )
+            }
 
             // Top Overlay: Small Red Live Badge + Translucent Viewer Counter
             Row(
@@ -327,7 +330,7 @@ fun CleanLiveRoomGridCard(
                     .align(Alignment.BottomStart)
                     .background(
                         Brush.verticalGradient(
-                            listOf(Color.Transparent, Color.Black.copy(alpha = 0.85f))
+                            listOf(Color.Transparent, Color.Black.copy(alpha = 0.88f))
                         )
                     )
                     .padding(8.dp),
@@ -365,6 +368,33 @@ fun CleanLiveRoomGridCard(
                     overflow = TextOverflow.Ellipsis
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun rememberTradeIcon(category: String, title: String): ImageVector {
+    return remember(category, title) {
+        when {
+            category.contains("Safety", ignoreCase = true) || title.contains("Safety", ignoreCase = true) -> Icons.Default.Shield
+            category.contains("Machinery", ignoreCase = true) || title.contains("Excavator", ignoreCase = true) -> Icons.Default.Agriculture
+            category.contains("Masonry", ignoreCase = true) || title.contains("Mason", ignoreCase = true) -> Icons.Default.Construction
+            category.contains("Engineering", ignoreCase = true) || title.contains("Civil", ignoreCase = true) -> Icons.Default.Architecture
+            category.contains("Contractor", ignoreCase = true) || title.contains("Labor", ignoreCase = true) -> Icons.Default.Groups
+            else -> Icons.Default.Engineering
+        }
+    }
+}
+
+@Composable
+private fun rememberTradeGradient(category: String): List<Color> {
+    return remember(category) {
+        when {
+            category.contains("Safety", ignoreCase = true) -> listOf(Color(0xFF0F392B), Color(0xFF071B14), Color(0xFF020907))
+            category.contains("Machinery", ignoreCase = true) -> listOf(Color(0xFF3B2506), Color(0xFF1F1202), Color(0xFF0D0701))
+            category.contains("Masonry", ignoreCase = true) -> listOf(Color(0xFF381216), Color(0xFF1E080A), Color(0xFF0A0203))
+            category.contains("Engineering", ignoreCase = true) -> listOf(Color(0xFF10283B), Color(0xFF07141F), Color(0xFF02070D))
+            else -> listOf(Color(0xFF1E1B4B), Color(0xFF0F172A), Color(0xFF020617))
         }
     }
 }

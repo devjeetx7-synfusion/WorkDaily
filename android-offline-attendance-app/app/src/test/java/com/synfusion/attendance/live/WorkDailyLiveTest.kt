@@ -28,6 +28,12 @@ class WorkDailyLiveTest {
     }
 
     @Test
+    fun testTradeRolesDefinedInRooms() {
+        val rooms = repository.liveRooms.value
+        assertTrue("Live rooms should have trade roles defined", rooms.all { it.tradeRole.isNotBlank() })
+    }
+
+    @Test
     fun testTopUpAndSendGiftFlow() {
         val initialWallet = repository.wallet.value
         val gifts = repository.gifts.value

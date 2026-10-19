@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.*
@@ -22,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
@@ -42,12 +44,12 @@ fun LiveRoomScreen(
     viewModel: LiveViewModel,
     onNavigateBack: () -> Unit,
     onNavigateWallet: () -> Unit,
-    onNavigateSummary: (String) -> Unit = {}
+    onNavigateSummary: (String) -> Unit = {},
+    onNavigatePrivateChat: (String) -> Unit = {}
 ) {
     val liveRooms by viewModel.liveRooms.collectAsState()
     val chatMessagesMap by viewModel.chatMessagesMap.collectAsState()
     val followedCreatorIds by viewModel.followedCreatorIds.collectAsState()
-    val wallet by viewModel.wallet.collectAsState()
     val audioSeatsMap by viewModel.audioSeatsMap.collectAsState()
 
     val room = liveRooms.find { it.id == roomId } ?: liveRooms.firstOrNull() ?: LiveRoom(
@@ -69,6 +71,7 @@ fun LiveRoomScreen(
     var showGiftSheet by remember { mutableStateOf(false) }
     var showHostControlsSheet by remember { mutableStateOf(false) }
     var showViewerListSheet by remember { mutableStateOf(false) }
+    var selectedProfileUserId by remember { mutableStateOf<String?>(null) }
 
     var chatInput by remember { mutableStateOf("") }
     var triggerHeartSignal by remember { mutableLongStateOf(0L) }
@@ -81,14 +84,14 @@ fun LiveRoomScreen(
     // Keyboard Visibility Detection
     val isKeyboardVisible = WindowInsets.ime.asPaddingValues().calculateBottomPadding() > 0.dp
 
-    // Intercept back key when keyboard is open to clear focus first
+    // Clear focus on back press when keyboard is open
     BackHandler(enabled = isKeyboardVisible) {
         focusManager.clearFocus()
     }
 
     val chatListState = rememberLazyListState()
 
-    // Derived state for intelligent auto-scroll
+    // Intelligent auto-scroll derived state
     val isAtBottom by remember {
         derivedStateOf {
             val layoutInfo = chatListState.layoutInfo
@@ -110,11 +113,7 @@ fun LiveRoomScreen(
     // Detect user manual scroll upward
     LaunchedEffect(chatListState.isScrollInProgress) {
         if (chatListState.isScrollInProgress) {
-            if (!isAtBottom) {
-                userScrolledUp = true
-            } else {
-                userScrolledUp = false
-            }
+            userScrolledUp = !isAtBottom
         }
     }
 
@@ -134,7 +133,7 @@ fun LiveRoomScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Layer 1: Edge-to-Edge Full-Screen Video / Audio Broadcast Stage
+            // Layer 1: Edge-to-Edge Video / Audio Broadcast Stage
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -164,7 +163,7 @@ fun LiveRoomScreen(
                 }
             }
 
-            // Layer 2: Top Readability Scrim
+            // Layer 2: Top Readability Gradient Scrim
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -173,14 +172,14 @@ fun LiveRoomScreen(
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
-                                Color.Black.copy(alpha = 0.6f),
+                                Color.Black.copy(alpha = 0.65f),
                                 Color.Transparent
                             )
                         )
                     )
             )
 
-            // Layer 3: Minimal Creator Top Header Bar
+            // Layer 3: Minimal Floating Creator Header Bar
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -190,11 +189,13 @@ fun LiveRoomScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Left: Compact Creator Identity Surface (Avatar + Creator Name + Red Live Indicator + Follow Button)
+                // Left: Floating Creator Header Surface
                 Surface(
                     shape = RoundedCornerShape(20.dp),
                     color = Color.Black.copy(alpha = 0.45f),
-                    modifier = Modifier.weight(1f, fill = false)
+                    modifier = Modifier
+                        .weight(1f, fill = false)
+                        .clickable { selectedProfileUserId = room.creatorId }
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
@@ -210,7 +211,7 @@ fun LiveRoomScreen(
 
                         Box(
                             modifier = Modifier
-                                .size(32.dp)
+                                .size(30.dp)
                                 .clip(CircleShape)
                                 .background(LivePrimaryEmerald),
                             contentAlignment = Alignment.Center
@@ -226,7 +227,7 @@ fun LiveRoomScreen(
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            modifier = Modifier.widthIn(max = 100.dp)
+                            modifier = Modifier.widthIn(max = 110.dp)
                         ) {
                             Text(
                                 text = room.creatorName,
@@ -255,7 +256,7 @@ fun LiveRoomScreen(
 
                 Spacer(modifier = Modifier.width(6.dp))
 
-                // Right Actions: Viewer Counter + Close Action Button
+                // Right Actions: Viewer Count Chip + Host Controls + Minimal Close Button
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -292,7 +293,7 @@ fun LiveRoomScreen(
                 }
             }
 
-            // Layer 4: Floating Hearts Particle Canvas
+            // Layer 4: Floating Hearts Overlay Canvas
             FloatingHeartWaveOverlay(
                 triggerHeartSignal = triggerHeartSignal,
                 onSendHearts = { count ->
@@ -300,7 +301,7 @@ fun LiveRoomScreen(
                 }
             )
 
-            // Layer 5: Transparent Floating Live Chat Feed & Bottom Composer
+            // Layer 5: Floating Live Chat Feed & Compact Pill-Shaped Comment Composer
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -310,11 +311,11 @@ fun LiveRoomScreen(
                     .padding(horizontal = 12.dp, vertical = 6.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Floating Comments Feed overlay with subtle bottom scrim
+                // Floating Comments Feed overlay
                 Box(
                     modifier = Modifier
                         .fillMaxWidth(0.85f)
-                        .heightIn(max = 220.dp)
+                        .heightIn(max = 210.dp)
                         .padding(horizontal = 4.dp, vertical = 2.dp)
                 ) {
                     LazyColumn(
@@ -326,11 +327,14 @@ fun LiveRoomScreen(
                             items = chatMessages,
                             key = { it.id }
                         ) { msg ->
-                            LiveCommentItem(message = msg)
+                            LiveCommentItem(
+                                message = msg,
+                                onUserClick = { selectedProfileUserId = it }
+                            )
                         }
                     }
 
-                    // Compact "New Messages ↓" pill indicator when scrolled up
+                    // "New Messages ↓" indicator
                     if (userScrolledUp && !isAtBottom) {
                         Surface(
                             shape = RoundedCornerShape(16.dp),
@@ -360,34 +364,37 @@ fun LiveRoomScreen(
                     }
                 }
 
-                // Bottom Composer Row: Multiline Input + Compact Action Icons
+                // Bottom Composer: Compact Semi-Transparent Pill Input (~46dp) + Quick Actions
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    OutlinedTextField(
-                        value = chatInput,
-                        onValueChange = { chatInput = it },
-                        placeholder = { Text("Leave a comment...", color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp) },
+                    // Fully pill-shaped translucent input
+                    Box(
                         modifier = Modifier
                             .weight(1f)
-                            .heightIn(min = 40.dp, max = 100.dp)
-                            .clip(RoundedCornerShape(20.dp)),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = Color.Black.copy(alpha = 0.45f),
-                            unfocusedContainerColor = Color.Black.copy(alpha = 0.35f),
-                            focusedBorderColor = Color.White.copy(alpha = 0.5f),
-                            unfocusedBorderColor = Color.White.copy(alpha = 0.2f),
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White
-                        ),
-                        minLines = 1,
-                        maxLines = 3,
-                        textStyle = TextStyle(fontSize = 12.sp)
-                    )
+                            .height(46.dp)
+                            .clip(RoundedCornerShape(23.dp))
+                            .background(Color.Black.copy(alpha = 0.45f))
+                            .border(1.dp, Color.White.copy(alpha = 0.25f), RoundedCornerShape(23.dp))
+                            .padding(horizontal = 16.dp),
+                        contentAlignment = Alignment.CenterStart
+                    ) {
+                        if (chatInput.isEmpty()) {
+                            Text("Comment...", color = Color.White.copy(alpha = 0.6f), fontSize = 13.sp)
+                        }
+                        BasicTextField(
+                            value = chatInput,
+                            onValueChange = { chatInput = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            textStyle = TextStyle(color = Color.White, fontSize = 13.sp),
+                            singleLine = true,
+                            cursorBrush = SolidColor(LivePrimaryMint)
+                        )
+                    }
 
-                    // If typing or keyboard active, present Send action button
+                    // Send Action when typing or active
                     if (isKeyboardVisible || chatInput.isNotBlank()) {
                         IconButton(
                             onClick = {
@@ -395,11 +402,12 @@ fun LiveRoomScreen(
                                     viewModel.sendChatMessage(room.id, chatInput.trim())
                                     chatInput = ""
                                     userScrolledUp = false
+                                    focusManager.clearFocus()
                                 }
                             },
                             enabled = chatInput.isNotBlank(),
                             modifier = Modifier
-                                .size(38.dp)
+                                .size(44.dp)
                                 .clip(CircleShape)
                                 .background(if (chatInput.isNotBlank()) LiveRed else Color.Gray.copy(alpha = 0.3f))
                         ) {
@@ -407,7 +415,7 @@ fun LiveRoomScreen(
                                 imageVector = Icons.AutoMirrored.Filled.Send,
                                 contentDescription = "Send Comment",
                                 tint = Color.White,
-                                modifier = Modifier.size(16.dp)
+                                modifier = Modifier.size(18.dp)
                             )
                         }
                     }
@@ -417,27 +425,27 @@ fun LiveRoomScreen(
                         IconButton(
                             onClick = { showGiftSheet = true },
                             modifier = Modifier
-                                .size(38.dp)
+                                .size(44.dp)
                                 .clip(CircleShape)
                                 .background(Color.Black.copy(alpha = 0.45f))
                         ) {
-                            Icon(Icons.Default.CardGiftcard, contentDescription = "Gift Store", tint = LiveGold, modifier = Modifier.size(18.dp))
+                            Icon(Icons.Default.CardGiftcard, contentDescription = "Gift Store", tint = LiveGold, modifier = Modifier.size(20.dp))
                         }
 
                         IconButton(
                             onClick = { triggerHeartSignal = System.currentTimeMillis() },
                             modifier = Modifier
-                                .size(38.dp)
+                                .size(44.dp)
                                 .clip(CircleShape)
                                 .background(Color.Black.copy(alpha = 0.45f))
                         ) {
-                            Icon(Icons.Default.Favorite, contentDescription = "Send Heart", tint = LiveRed, modifier = Modifier.size(18.dp))
+                            Icon(Icons.Default.Favorite, contentDescription = "Send Heart", tint = LiveRed, modifier = Modifier.size(20.dp))
                         }
                     }
                 }
             }
 
-            // Layer 6: Temporary Gift Bottom Sheet
+            // Layer 6: Gift Store Bottom Sheet
             if (showGiftSheet) {
                 GiftStoreBottomSheet(
                     roomId = room.id,
@@ -457,18 +465,32 @@ fun LiveRoomScreen(
                     viewModel = viewModel,
                     onDismiss = { showHostControlsSheet = false },
                     onEndLiveConfirmed = {
-                        val summary = viewModel.endLiveStream(room.id)
+                        viewModel.endLiveStream(room.id)
                         onNavigateBack()
                     }
                 )
             }
 
-            // Viewer List Bottom Sheet
+            // Live Viewers Bottom Sheet
             if (showViewerListSheet) {
-                ViewerListSheet(
+                LiveViewerListBottomSheet(
                     room = room,
                     viewModel = viewModel,
-                    onDismiss = { showViewerListSheet = false }
+                    onDismiss = { showViewerListSheet = false },
+                    onSelectViewerProfile = { viewerId ->
+                        showViewerListSheet = false
+                        selectedProfileUserId = viewerId
+                    }
+                )
+            }
+
+            // Reusable User Profile Bottom Sheet
+            selectedProfileUserId?.let { targetId ->
+                LiveProfileBottomSheet(
+                    userId = targetId,
+                    viewModel = viewModel,
+                    onDismiss = { selectedProfileUserId = null },
+                    onNavigatePrivateChat = onNavigatePrivateChat
                 )
             }
 
@@ -594,67 +616,6 @@ fun AudioStageCanvas(
                                 )
                             }
                         }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun ViewerListSheet(
-    room: LiveRoom,
-    viewModel: LiveViewModel,
-    onDismiss: () -> Unit
-) {
-    val creators by viewModel.creators.collectAsState()
-
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        containerColor = LiveDarkBg,
-        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("Room Viewers (${room.viewerCount})", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                IconButton(onClick = onDismiss) {
-                    Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.Gray)
-                }
-            }
-
-            LazyColumn(
-                modifier = Modifier.height(220.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(creators) { creator ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(LiveSurfaceDark)
-                            .padding(10.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            PulsingLiveAvatar(name = creator.name, size = 32.dp, isLive = false)
-                            Column {
-                                Text(creator.name, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                                Text(creator.profession, fontSize = 10.sp, color = Color.Gray)
-                            }
-                        }
-
-                        LiveBadge(text = "VIEWER", bgColor = LivePrimaryEmerald)
                     }
                 }
             }
