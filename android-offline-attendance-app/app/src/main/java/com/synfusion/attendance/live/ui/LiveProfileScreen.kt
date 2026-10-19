@@ -21,11 +21,19 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.synfusion.attendance.live.model.FriendRequestStatus
+import com.synfusion.attendance.live.model.*
 import com.synfusion.attendance.live.ui.components.*
 import com.synfusion.attendance.live.viewmodel.LiveViewModel
+import com.synfusion.attendance.utils.AmountFormatter
+
+enum class UserListType {
+    FOLLOWERS,
+    FOLLOWING,
+    FRIENDS
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,26 +50,51 @@ fun LiveProfileScreen(
 ) {
     val context = LocalContext.current
     val publicUsers by viewModel.publicUsers.collectAsState()
-    val friendRequests by viewModel.friendRequests.collectAsState()
-    val wallet by viewModel.wallet.collectAsState()
     val creatorEarning by viewModel.creatorEarning.collectAsState()
+    val wallet by viewModel.wallet.collectAsState()
     val creators by viewModel.creators.collectAsState()
     val followedIds by viewModel.followedCreatorIds.collectAsState()
 
     val targetUser = remember(publicUsers, userId) {
-        if (userId != null && userId != "current_user") {
+        if (userId != null && userId != "current_user" && userId != "user_me") {
             publicUsers.find { it.id == userId }
         } else null
     }
 
-    val isSelf = targetUser == null || targetUser.id == "current_user"
+    val isSelf = targetUser == null || targetUser.id == "current_user" || targetUser.id == "user_me"
+
+    val displayName = remember(targetUser, isSelf) {
+        if (isSelf) "You" else targetUser?.name ?: "Worker Profile"
+    }
+
+    val profession = remember(targetUser, isSelf) {
+        if (isSelf) "Site Engineer" else targetUser?.profession ?: "Site Worker"
+    }
+
+    val bio = remember(targetUser, isSelf) {
+        if (isSelf) "WorkDaily Verified Member • Site Operations & Construction Specialist"
+        else targetUser?.bio ?: ""
+    }
+
+    val avatarUrl = remember(targetUser, isSelf) {
+        if (isSelf) "" else targetUser?.avatar
+    }
+
+    val isLive = targetUser?.isLiveNow == true
 
     var showMenu by remember { mutableStateOf(false) }
+    var activeUserListType by remember { mutableStateOf<UserListType?>(null) }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (isSelf) "My Public Profile" else targetUser?.name ?: "Worker Profile", fontWeight = FontWeight.Bold) },
+                title = {
+                    Text(
+                        text = if (isSelf) "My Profile" else "Profile",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -78,7 +111,16 @@ fun LiveProfileScreen(
                                 onDismissRequest = { showMenu = false }
                             ) {
                                 DropdownMenuItem(
+                                    text = { Text("Share Profile") },
+                                    leadingIcon = { Icon(Icons.Default.Share, contentDescription = null) },
+                                    onClick = {
+                                        showMenu = false
+                                        Toast.makeText(context, "Profile link copied to clipboard", Toast.LENGTH_SHORT).show()
+                                    }
+                                )
+                                DropdownMenuItem(
                                     text = { Text("Block User", color = LiveRed) },
+                                    leadingIcon = { Icon(Icons.Default.Block, contentDescription = null, tint = LiveRed) },
                                     onClick = {
                                         showMenu = false
                                         viewModel.blockUser(targetUser.id)
@@ -88,6 +130,7 @@ fun LiveProfileScreen(
                                 )
                                 DropdownMenuItem(
                                     text = { Text("Report Profile") },
+                                    leadingIcon = { Icon(Icons.Default.Flag, contentDescription = null) },
                                     onClick = {
                                         showMenu = false
                                         Toast.makeText(context, "Profile reported to moderators", Toast.LENGTH_SHORT).show()
@@ -113,61 +156,102 @@ fun LiveProfileScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Profile Card
+            // Section 1: Compact Avatar & Identity Header
             item {
-                Card(
+                Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(22.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, LivePrimaryEmerald.copy(alpha = 0.3f))
+                    shape = RoundedCornerShape(20.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)),
+                    tonalElevation = 1.dp
                 ) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(20.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        PulsingLiveAvatar(
-                            name = if (isSelf) "You" else targetUser?.name ?: "Worker",
-                            size = 64.dp,
-                            isLive = targetUser?.isLiveNow == true
+                        WorkDailyLiveAvatar(
+                            name = displayName,
+                            avatarUrl = avatarUrl,
+                            size = 80.dp,
+                            isLive = isLive,
+                            showBadge = isLive
                         )
 
-                        Text(
-                            text = if (isSelf) "You (Site Engineer)" else targetUser?.name ?: "",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(2.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Text(
+                                    text = displayName,
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Icon(
+                                    imageVector = Icons.Default.CheckCircle,
+                                    contentDescription = "Verified Member",
+                                    tint = LivePrimaryEmerald,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
 
-                        Text(
-                            text = if (isSelf) "WorkDaily Verified Member" else targetUser?.profession ?: "Site Worker",
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = LivePrimaryEmerald.copy(alpha = 0.1f)
+                            ) {
+                                Text(
+                                    text = profession,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = LivePrimaryEmerald,
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
 
-                        if (!isSelf && !targetUser?.bio.isNull_or_blank()) {
+                        if (bio.isNotBlank()) {
                             Text(
-                                text = targetUser?.bio ?: "",
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                text = bio,
+                                fontSize = 13.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(horizontal = 8.dp)
                             )
                         }
 
-                        Spacer(modifier = Modifier.height(8.dp))
+                        HorizontalDivider(
+                            modifier = Modifier.padding(vertical = 4.dp),
+                            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f)
+                        )
 
-                        // Stats Row (Followers, Following, Friends)
+                        // Compact Statistics Row (Followers, Following, Friends)
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceEvenly
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            val followerCount = if (isSelf) followedIds.size + 142 else targetUser?.followerCount ?: 0
+                            val followingCount = if (isSelf) 240 else targetUser?.followingCount ?: 0
+                            val friendsCount = if (isSelf) 35 else targetUser?.friendsCount ?: 0
+
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .clickable { activeUserListType = UserListType.FOLLOWERS }
+                                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
                                 Text(
-                                    text = "${if (isSelf) followedIds.size else targetUser?.followerCount ?: 0}",
+                                    text = "$followerCount",
                                     fontSize = 18.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurface
@@ -175,9 +259,17 @@ fun LiveProfileScreen(
                                 Text("Followers", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
 
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Box(modifier = Modifier.height(24.dp).width(1.dp).background(MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)))
+
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .clickable { activeUserListType = UserListType.FOLLOWING }
+                                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
                                 Text(
-                                    text = "${if (isSelf) 240 else targetUser?.followingCount ?: 0}",
+                                    text = "$followingCount",
                                     fontSize = 18.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurface
@@ -185,9 +277,17 @@ fun LiveProfileScreen(
                                 Text("Following", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
 
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Box(modifier = Modifier.height(24.dp).width(1.dp).background(MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)))
+
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .clickable { activeUserListType = UserListType.FRIENDS }
+                                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
                                 Text(
-                                    text = "${if (isSelf) 15 else targetUser?.friendsCount ?: 0}",
+                                    text = "$friendsCount",
                                     fontSize = 18.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurface
@@ -199,105 +299,239 @@ fun LiveProfileScreen(
                 }
             }
 
-            // Actions Section for Other Users
-            if (!isSelf && targetUser != null) {
-                item {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        // Follow / Following Button
-                        Button(
-                            onClick = { viewModel.toggleFollowCreator(targetUser.id) },
-                            modifier = Modifier.weight(1f).height(38.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = if (targetUser.isFollowing) MaterialTheme.colorScheme.surfaceVariant else LivePrimaryEmerald,
-                                contentColor = if (targetUser.isFollowing) MaterialTheme.colorScheme.onSurface else Color.White
-                            ),
-                            shape = RoundedCornerShape(8.dp),
-                            contentPadding = PaddingValues(0.dp)
+            // Section 2: Interactive Actions
+            item {
+                if (!isSelf && targetUser != null) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            Text(if (targetUser.isFollowing) "Following" else "Follow", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-                        }
+                            // Follow / Following Action Button
+                            Button(
+                                onClick = { viewModel.toggleFollowCreator(targetUser.id) },
+                                modifier = Modifier.weight(1f).height(44.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (targetUser.isFollowing) MaterialTheme.colorScheme.surfaceVariant else LivePrimaryEmerald,
+                                    contentColor = if (targetUser.isFollowing) MaterialTheme.colorScheme.onSurface else Color.White
+                                ),
+                                shape = RoundedCornerShape(12.dp),
+                                contentPadding = PaddingValues(0.dp)
+                            ) {
+                                Icon(
+                                    imageVector = if (targetUser.isFollowing) Icons.Default.Check else Icons.Default.PersonAdd,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = if (targetUser.isFollowing) "Following" else "Follow",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
 
-                        // Message Action
-                        Button(
-                            onClick = { onNavigatePrivateChat(targetUser.id) },
-                            modifier = Modifier.weight(1f).height(38.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurface),
-                            shape = RoundedCornerShape(8.dp),
-                            contentPadding = PaddingValues(0.dp)
-                        ) {
-                            Text("Message", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-                        }
+                            // Message Action Button
+                            Button(
+                                onClick = { onNavigatePrivateChat(targetUser.id) },
+                                modifier = Modifier.weight(1f).height(44.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                ),
+                                shape = RoundedCornerShape(12.dp),
+                                contentPadding = PaddingValues(0.dp)
+                            ) {
+                                Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Message", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                            }
 
-                        // Add Friend Button
-                        if (!targetUser.isFriend && targetUser.friendRequestStatus != FriendRequestStatus.PENDING) {
+                            // Add / Manage Friend Button
                             IconButton(
                                 onClick = {
-                                    viewModel.sendFriendRequest(targetUser.id)
-                                    Toast.makeText(context, "Friend request sent!", Toast.LENGTH_SHORT).show()
+                                    if (targetUser.isFriend) {
+                                        viewModel.unfriendUser(targetUser.id)
+                                        Toast.makeText(context, "Removed from friends", Toast.LENGTH_SHORT).show()
+                                    } else {
+                                        val sent = viewModel.sendFriendRequest(targetUser.id)
+                                        if (sent) {
+                                            Toast.makeText(context, "Friend request sent!", Toast.LENGTH_SHORT).show()
+                                        } else {
+                                            Toast.makeText(context, "Request already sent or connected", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
                                 },
                                 modifier = Modifier
-                                    .size(38.dp)
-                                    .clip(RoundedCornerShape(8.dp))
+                                    .size(44.dp)
+                                    .clip(RoundedCornerShape(12.dp))
                                     .background(MaterialTheme.colorScheme.surfaceVariant)
                             ) {
-                                Icon(Icons.Default.PersonAdd, contentDescription = "Add Friend", modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurface)
-                            }
-                        } else if (targetUser.isFriend) {
-                            IconButton(
-                                onClick = { viewModel.unfriendUser(targetUser.id) },
-                                modifier = Modifier
-                                    .size(38.dp)
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                            ) {
-                                Icon(Icons.Default.People, contentDescription = "Friends", modifier = Modifier.size(20.dp), tint = LivePrimaryEmerald)
+                                Icon(
+                                    imageVector = if (targetUser.isFriend) Icons.Default.People else Icons.Default.GroupAdd,
+                                    contentDescription = "Friend Action",
+                                    tint = if (targetUser.isFriend) LivePrimaryEmerald else MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.size(20.dp)
+                                )
                             }
                         }
-                    }
-                }
 
-                if (targetUser.isLiveNow && targetUser.activeRoomId != null) {
-                    item {
-                        Button(
-                            onClick = { onNavigateLiveRoom(targetUser.activeRoomId) },
-                            modifier = Modifier.fillMaxWidth().height(42.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = LiveRed, contentColor = Color.White),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Icon(Icons.Default.LiveTv, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Watch Live", fontWeight = FontWeight.Bold)
+                        // Watch Live Banner Button (only displayed when user is broadcasting)
+                        if (targetUser.isLiveNow && targetUser.activeRoomId != null) {
+                            Button(
+                                onClick = { onNavigateLiveRoom(targetUser.activeRoomId) },
+                                modifier = Modifier.fillMaxWidth().height(46.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = LiveRed, contentColor = Color.White),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Icon(Icons.Default.LiveTv, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Watch Live Now", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                            }
                         }
                     }
-                }
-            } else {
-                // Self Quick Actions
-                item {
+                } else {
+                    // Self Creator & Wallet Navigation Actions
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         Button(
                             onClick = onNavigateWallet,
-                            modifier = Modifier.weight(1f).height(38.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurface),
-                            shape = RoundedCornerShape(8.dp),
-                            contentPadding = PaddingValues(0.dp)
+                            modifier = Modifier.weight(1f).height(42.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                contentColor = MaterialTheme.colorScheme.onSurface
+                            ),
+                            shape = RoundedCornerShape(12.dp)
                         ) {
-                            Text("Wallet", fontWeight = FontWeight.SemiBold)
+                            Icon(Icons.Default.AccountBalanceWallet, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Diamond Wallet", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                         }
 
                         Button(
                             onClick = onNavigateEarnings,
-                            modifier = Modifier.weight(1f).height(38.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurface),
-                            shape = RoundedCornerShape(8.dp),
-                            contentPadding = PaddingValues(0.dp)
+                            modifier = Modifier.weight(1f).height(42.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = LivePrimaryEmerald,
+                                contentColor = Color.White
+                            ),
+                            shape = RoundedCornerShape(12.dp)
                         ) {
-                            Text("Earnings", fontWeight = FontWeight.SemiBold)
+                            Icon(Icons.Default.MonetizationOn, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Creator Earnings", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                        }
+                    }
+                }
+            }
+
+            // Section 3: TOTAL EARNED Summary Card (New Verified Section)
+            item {
+                TotalEarnedSummaryCard(
+                    isSelf = isSelf,
+                    creatorEarning = creatorEarning,
+                    wallet = wallet,
+                    onNavigateWallet = onNavigateWallet,
+                    onNavigateEarnings = onNavigateEarnings
+                )
+            }
+        }
+    }
+
+    // Modal Bottom Sheet for Followers / Following / Friends List
+    activeUserListType?.let { listType ->
+        ModalBottomSheet(
+            onDismissRequest = { activeUserListType = null },
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+            containerColor = MaterialTheme.colorScheme.surface,
+            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+        ) {
+            val title = when (listType) {
+                UserListType.FOLLOWERS -> "Followers"
+                UserListType.FOLLOWING -> "Following"
+                UserListType.FRIENDS -> "Friends"
+            }
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(title, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                    IconButton(onClick = { activeUserListType = null }) {
+                        Icon(Icons.Default.Close, contentDescription = "Close")
+                    }
+                }
+
+                val listUsers = remember(publicUsers, listType) {
+                    when (listType) {
+                        UserListType.FRIENDS -> publicUsers.filter { it.isFriend }
+                        UserListType.FOLLOWING -> publicUsers.filter { it.isFollowing }
+                        UserListType.FOLLOWERS -> publicUsers
+                    }
+                }
+
+                if (listUsers.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(180.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("No users found in $title", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.heightIn(max = 360.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        items(listUsers, key = { it.id }) { user ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                                    .clickable {
+                                        activeUserListType = null
+                                        if (user.id != "current_user") {
+                                            onNavigatePrivateChat(user.id)
+                                        }
+                                    }
+                                    .padding(12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    WorkDailyLiveAvatar(
+                                        name = user.name,
+                                        avatarUrl = user.avatar,
+                                        size = 40.dp,
+                                        isLive = user.isLiveNow,
+                                        showBadge = user.isLiveNow
+                                    )
+                                    Column {
+                                        Text(user.name, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                                        Text(user.profession, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                }
+
+                                FollowButton(
+                                    isFollowing = user.isFollowing,
+                                    onToggle = { viewModel.toggleFollowCreator(user.id) }
+                                )
+                            }
                         }
                     }
                 }
@@ -306,4 +540,170 @@ fun LiveProfileScreen(
     }
 }
 
-private fun String?.isNull_or_blank(): Boolean = this == null || this.isBlank()
+/**
+ * Polished Earnings Summary Card ("Total Earned").
+ * Clearly displays platform rewards and creator earnings while keeping private salary/wage details protected.
+ */
+@Composable
+fun TotalEarnedSummaryCard(
+    isSelf: Boolean,
+    creatorEarning: DemoCreatorEarning,
+    wallet: DemoWallet,
+    onNavigateWallet: () -> Unit,
+    onNavigateEarnings: () -> Unit
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.surface,
+        border = androidx.compose.foundation.BorderStroke(1.dp, LivePrimaryEmerald.copy(alpha = 0.3f)),
+        tonalElevation = 2.dp
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(CircleShape)
+                            .background(LivePrimaryEmerald.copy(alpha = 0.15f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.MonetizationOn,
+                            contentDescription = null,
+                            tint = LivePrimaryEmerald,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                    Text(
+                        text = "Total Earned",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = LivePrimaryEmerald.copy(alpha = 0.12f)
+                ) {
+                    Text(
+                        text = if (isSelf) "Platform Rewards" else "Creator Verified",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = LivePrimaryEmerald,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                    )
+                }
+            }
+
+            if (isSelf) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    // Card 1: Lifetime Earned Platform Value
+                    Surface(
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(14.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Text("Lifetime Earned", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(
+                                text = "₹${creatorEarning.totalRupeesEarned.toInt()}",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = LivePrimaryEmerald
+                            )
+                            Text(
+                                text = "${creatorEarning.totalDiamondsReceived} 💎 Gifts & Rewards",
+                                fontSize = 10.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    // Card 2: Current Redeemable Balance
+                    Surface(
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(14.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Text("Available Balance", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(
+                                text = "${creatorEarning.availableDiamonds} 💎",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "≈ ₹${(creatorEarning.availableDiamonds * 0.5).toInt()} Redeemable",
+                                fontSize = 10.sp,
+                                color = LivePrimaryEmerald
+                            )
+                        }
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(Icons.Default.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(14.dp))
+                        Text(
+                            text = "Private financial earnings visible only to you",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    TextButton(
+                        onClick = onNavigateEarnings,
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+                    ) {
+                        Text("Details ›", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = LivePrimaryEmerald)
+                    }
+                }
+            } else {
+                // Public View for other creators
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text("Creator Live Gifts Earned", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("${creatorEarning.totalDiamondsReceived} 💎 Diamonds", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                    }
+                    Icon(Icons.Default.Verified, contentDescription = "Verified Creator", tint = LivePrimaryEmerald, modifier = Modifier.size(24.dp))
+                }
+            }
+        }
+    }
+}

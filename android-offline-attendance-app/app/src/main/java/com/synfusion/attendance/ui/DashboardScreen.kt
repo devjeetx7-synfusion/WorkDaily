@@ -616,7 +616,10 @@ fun DashboardScreen(
                     roomId = roomId,
                     viewModel = liveViewModel,
                     onNavigateBack = { bottomNavController.navigateUp() },
-                    onNavigateWallet = { bottomNavController.navigate("live_wallet") }
+                    onNavigateWallet = { bottomNavController.navigate("live_wallet") },
+                    onNavigateSummary = { rId -> bottomNavController.navigate("live_summary") },
+                    onNavigatePrivateChat = { friendId -> bottomNavController.navigate("live_private_chat/$friendId") },
+                    onNavigateFullProfile = { userId -> bottomNavController.navigate("live_profile?userId=$userId") }
                 )
             }
             composable("live_people") {

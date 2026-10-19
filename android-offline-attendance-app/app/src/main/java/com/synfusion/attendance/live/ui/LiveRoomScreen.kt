@@ -45,7 +45,8 @@ fun LiveRoomScreen(
     onNavigateBack: () -> Unit,
     onNavigateWallet: () -> Unit,
     onNavigateSummary: (String) -> Unit = {},
-    onNavigatePrivateChat: (String) -> Unit = {}
+    onNavigatePrivateChat: (String) -> Unit = {},
+    onNavigateFullProfile: (String) -> Unit = {}
 ) {
     val liveRooms by viewModel.liveRooms.collectAsState()
     val chatMessagesMap by viewModel.chatMessagesMap.collectAsState()
@@ -65,12 +66,13 @@ fun LiveRoomScreen(
 
     val chatMessages = chatMessagesMap[room.id] ?: emptyList()
     val isFollowing = followedCreatorIds.contains(room.creatorId)
-    val isHost = room.isHost || room.creatorId == "creator_me"
+    val isHost = room.isHost || room.creatorId == "creator_me" || room.creatorId == "user_me"
     val audioSeats = audioSeatsMap[room.id] ?: emptyList()
 
     var showGiftSheet by remember { mutableStateOf(false) }
     var showHostControlsSheet by remember { mutableStateOf(false) }
     var showViewerListSheet by remember { mutableStateOf(false) }
+    var showEndLiveConfirmationDialog by remember { mutableStateOf(false) }
     var selectedProfileUserId by remember { mutableStateOf<String?>(null) }
 
     var chatInput by remember { mutableStateOf("") }
@@ -84,14 +86,20 @@ fun LiveRoomScreen(
     // Keyboard Visibility Detection
     val isKeyboardVisible = WindowInsets.ime.asPaddingValues().calculateBottomPadding() > 0.dp
 
-    // Clear focus on back press when keyboard is open
-    BackHandler(enabled = isKeyboardVisible) {
-        focusManager.clearFocus()
+    // Back press handling: clear focus if keyboard is open, or request confirmation if host
+    BackHandler(enabled = isKeyboardVisible || isHost) {
+        if (isKeyboardVisible) {
+            focusManager.clearFocus()
+        } else if (isHost) {
+            showEndLiveConfirmationDialog = true
+        } else {
+            viewModel.setActiveRoom(null)
+            onNavigateBack()
+        }
     }
 
     val chatListState = rememberLazyListState()
 
-    // Intelligent auto-scroll derived state
     val isAtBottom by remember {
         derivedStateOf {
             val layoutInfo = chatListState.layoutInfo
@@ -110,14 +118,12 @@ fun LiveRoomScreen(
         viewModel.setActiveRoom(room.id)
     }
 
-    // Detect user manual scroll upward
     LaunchedEffect(chatListState.isScrollInProgress) {
         if (chatListState.isScrollInProgress) {
             userScrolledUp = !isAtBottom
         }
     }
 
-    // Intelligent Auto-scroll to latest comments
     LaunchedEffect(chatMessages.size) {
         if (chatMessages.isNotEmpty() && !userScrolledUp) {
             chatListState.animateScrollToItem(chatMessages.size - 1)
@@ -163,7 +169,7 @@ fun LiveRoomScreen(
                 }
             }
 
-            // Layer 2: Top Readability Gradient Scrim
+            // Layer 2: Top Gradient Scrim
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -179,7 +185,7 @@ fun LiveRoomScreen(
                     )
             )
 
-            // Layer 3: Minimal Floating Creator Header Bar
+            // Layer 3: Floating Creator Header Bar
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -189,10 +195,10 @@ fun LiveRoomScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Left: Floating Creator Header Surface
+                // Left: Host Profile Chip
                 Surface(
                     shape = RoundedCornerShape(20.dp),
-                    color = Color.Black.copy(alpha = 0.45f),
+                    color = Color.Black.copy(alpha = 0.5f),
                     modifier = Modifier
                         .weight(1f, fill = false)
                         .clickable { selectedProfileUserId = room.creatorId }
@@ -202,27 +208,13 @@ fun LiveRoomScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        val initials = remember(room.creatorName) {
-                            val parts = room.creatorName.trim().split(" ")
-                            if (parts.size >= 2) "${parts[0].take(1)}${parts[1].take(1)}".uppercase()
-                            else if (room.creatorName.isNotBlank()) room.creatorName.take(2).uppercase()
-                            else "WD"
-                        }
-
-                        Box(
-                            modifier = Modifier
-                                .size(30.dp)
-                                .clip(CircleShape)
-                                .background(LivePrimaryEmerald),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = initials,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-                        }
+                        WorkDailyLiveAvatar(
+                            name = room.creatorName,
+                            avatarUrl = room.creatorAvatar,
+                            size = 30.dp,
+                            isLive = room.isLive,
+                            showBadge = false
+                        )
 
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -237,12 +229,7 @@ fun LiveRoomScreen(
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
-                            Box(
-                                modifier = Modifier
-                                    .size(5.dp)
-                                    .clip(CircleShape)
-                                    .background(LiveRed)
-                            )
+                            CompactLiveBadge()
                         }
 
                         if (!isHost) {
@@ -256,7 +243,7 @@ fun LiveRoomScreen(
 
                 Spacer(modifier = Modifier.width(6.dp))
 
-                // Right Actions: Viewer Count Chip + Host Controls + Minimal Close Button
+                // Right Actions: Viewer Count + Host Controls + Close Button
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -272,7 +259,7 @@ fun LiveRoomScreen(
                             modifier = Modifier
                                 .size(32.dp)
                                 .clip(CircleShape)
-                                .background(Color.Black.copy(alpha = 0.45f))
+                                .background(Color.Black.copy(alpha = 0.5f))
                         ) {
                             Icon(Icons.Default.Tune, contentDescription = "Host Controls", tint = Color.White, modifier = Modifier.size(16.dp))
                         }
@@ -280,20 +267,24 @@ fun LiveRoomScreen(
 
                     IconButton(
                         onClick = {
-                            viewModel.setActiveRoom(null)
-                            onNavigateBack()
+                            if (isHost) {
+                                showEndLiveConfirmationDialog = true
+                            } else {
+                                viewModel.setActiveRoom(null)
+                                onNavigateBack()
+                            }
                         },
                         modifier = Modifier
                             .size(32.dp)
                             .clip(CircleShape)
-                            .background(Color.Black.copy(alpha = 0.45f))
+                            .background(Color.Black.copy(alpha = 0.5f))
                     ) {
                         Icon(Icons.Default.Close, contentDescription = "Close Stream", tint = Color.White, modifier = Modifier.size(16.dp))
                     }
                 }
             }
 
-            // Layer 4: Floating Hearts Overlay Canvas
+            // Layer 4: Floating Hearts Wave Canvas
             FloatingHeartWaveOverlay(
                 triggerHeartSignal = triggerHeartSignal,
                 onSendHearts = { count ->
@@ -301,7 +292,7 @@ fun LiveRoomScreen(
                 }
             )
 
-            // Layer 5: Floating Live Chat Feed & Compact Pill-Shaped Comment Composer
+            // Layer 5: Floating Live Chat Feed & Pill Comment Composer
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -311,7 +302,7 @@ fun LiveRoomScreen(
                     .padding(horizontal = 12.dp, vertical = 6.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Floating Comments Feed overlay
+                // Comments Feed Overlay
                 Box(
                     modifier = Modifier
                         .fillMaxWidth(0.85f)
@@ -334,7 +325,6 @@ fun LiveRoomScreen(
                         }
                     }
 
-                    // "New Messages ↓" indicator
                     if (userScrolledUp && !isAtBottom) {
                         Surface(
                             shape = RoundedCornerShape(16.dp),
@@ -364,19 +354,18 @@ fun LiveRoomScreen(
                     }
                 }
 
-                // Bottom Composer: Compact Semi-Transparent Pill Input (~46dp) + Quick Actions
+                // Unclipped Pill-Shaped Comment Composer (~46dp) + Actions
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    // Fully pill-shaped translucent input
                     Box(
                         modifier = Modifier
                             .weight(1f)
                             .height(46.dp)
                             .clip(RoundedCornerShape(23.dp))
-                            .background(Color.Black.copy(alpha = 0.45f))
+                            .background(Color.Black.copy(alpha = 0.5f))
                             .border(1.dp, Color.White.copy(alpha = 0.25f), RoundedCornerShape(23.dp))
                             .padding(horizontal = 16.dp),
                         contentAlignment = Alignment.CenterStart
@@ -394,7 +383,6 @@ fun LiveRoomScreen(
                         )
                     }
 
-                    // Send Action when typing or active
                     if (isKeyboardVisible || chatInput.isNotBlank()) {
                         IconButton(
                             onClick = {
@@ -409,7 +397,7 @@ fun LiveRoomScreen(
                             modifier = Modifier
                                 .size(44.dp)
                                 .clip(CircleShape)
-                                .background(if (chatInput.isNotBlank()) LiveRed else Color.Gray.copy(alpha = 0.3f))
+                                .background(if (chatInput.isNotBlank()) LivePrimaryEmerald else Color.Gray.copy(alpha = 0.3f))
                         ) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.Send,
@@ -420,14 +408,13 @@ fun LiveRoomScreen(
                         }
                     }
 
-                    // Secondary Compact Action Triggers [Gift, Heart] when idle
                     if (!isKeyboardVisible && chatInput.isBlank()) {
                         IconButton(
                             onClick = { showGiftSheet = true },
                             modifier = Modifier
                                 .size(44.dp)
                                 .clip(CircleShape)
-                                .background(Color.Black.copy(alpha = 0.45f))
+                                .background(Color.Black.copy(alpha = 0.5f))
                         ) {
                             Icon(Icons.Default.CardGiftcard, contentDescription = "Gift Store", tint = LiveGold, modifier = Modifier.size(20.dp))
                         }
@@ -437,7 +424,7 @@ fun LiveRoomScreen(
                             modifier = Modifier
                                 .size(44.dp)
                                 .clip(CircleShape)
-                                .background(Color.Black.copy(alpha = 0.45f))
+                                .background(Color.Black.copy(alpha = 0.5f))
                         ) {
                             Icon(Icons.Default.Favorite, contentDescription = "Send Heart", tint = LiveRed, modifier = Modifier.size(20.dp))
                         }
@@ -445,7 +432,7 @@ fun LiveRoomScreen(
                 }
             }
 
-            // Layer 6: Gift Store Bottom Sheet
+            // Layer 6: Sheets & Dialogs
             if (showGiftSheet) {
                 GiftStoreBottomSheet(
                     roomId = room.id,
@@ -458,20 +445,19 @@ fun LiveRoomScreen(
                 )
             }
 
-            // Host Controls Bottom Sheet
             if (showHostControlsSheet) {
                 HostControlsSheet(
                     room = room,
                     viewModel = viewModel,
                     onDismiss = { showHostControlsSheet = false },
                     onEndLiveConfirmed = {
+                        showHostControlsSheet = false
                         viewModel.endLiveStream(room.id)
-                        onNavigateBack()
+                        onNavigateSummary(room.id)
                     }
                 )
             }
 
-            // Live Viewers Bottom Sheet
             if (showViewerListSheet) {
                 LiveViewerListBottomSheet(
                     room = room,
@@ -484,17 +470,16 @@ fun LiveRoomScreen(
                 )
             }
 
-            // Reusable User Profile Bottom Sheet
             selectedProfileUserId?.let { targetId ->
                 LiveProfileBottomSheet(
                     userId = targetId,
                     viewModel = viewModel,
                     onDismiss = { selectedProfileUserId = null },
-                    onNavigatePrivateChat = onNavigatePrivateChat
+                    onNavigatePrivateChat = onNavigatePrivateChat,
+                    onNavigateFullProfile = onNavigateFullProfile
                 )
             }
 
-            // Gift Celebration Dialog
             showGiftSentDialog?.let { (gift, qty) ->
                 GiftCongratulationsDialog(
                     gift = gift,
@@ -502,6 +487,33 @@ fun LiveRoomScreen(
                     recipientName = room.creatorName,
                     totalDiamondsSpent = gift.diamondCost * qty,
                     onDismiss = { showGiftSentDialog = null }
+                )
+            }
+
+            // Broadcaster End Live Confirmation AlertDialog
+            if (showEndLiveConfirmationDialog) {
+                AlertDialog(
+                    onDismissRequest = { showEndLiveConfirmationDialog = false },
+                    title = { Text("End Live Broadcast?", fontWeight = FontWeight.Bold) },
+                    text = { Text("Are you sure you want to end this live stream session? Viewers will be notified.") },
+                    confirmButton = {
+                        Button(
+                            onClick = {
+                                showEndLiveConfirmationDialog = false
+                                viewModel.endLiveStream(room.id)
+                                onNavigateSummary(room.id)
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = LiveRed)
+                        ) {
+                            Text("End Live", fontWeight = FontWeight.Bold, color = Color.White)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showEndLiveConfirmationDialog = false }) {
+                            Text("Cancel")
+                        }
+                    },
+                    shape = RoundedCornerShape(16.dp)
                 )
             }
         }
@@ -562,7 +574,6 @@ fun AudioStageCanvas(
                 color = Color.White
             )
 
-            // 6-Seat Speaker Grid
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 seats.chunked(3).forEach { rowSeats ->
                     Row(
@@ -577,10 +588,11 @@ fun AudioStageCanvas(
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     if (seat.userName != null) {
-                                        PulsingLiveAvatar(
+                                        WorkDailyLiveAvatar(
                                             name = seat.userName,
                                             size = 48.dp,
-                                            isLive = seat.isSpeaking
+                                            isLive = seat.isSpeaking,
+                                            showBadge = false
                                         )
                                         if (seat.isMuted) {
                                             Box(
