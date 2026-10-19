@@ -159,96 +159,114 @@ fun LiveProfileScreen(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Section 1: Compact Avatar & Identity Header
+            // Section 1: Identity Header & Stats
             item {
-                Surface(
+                Column(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(20.dp),
-                    color = MaterialTheme.colorScheme.surface,
-                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)),
-                    tonalElevation = 1.dp
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(20.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    // Identity Card
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(20.dp),
+                        color = MaterialTheme.colorScheme.surface,
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
                     ) {
-                        WorkDailyLiveAvatar(
-                            name = displayName,
-                            avatarUrl = avatarUrl,
-                            size = 80.dp,
-                            isLive = isLive,
-                            showBadge = isLive
-                        )
-
                         Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(2.dp)
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(20.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
+                            // Top Row: Avatar Left, Identity Info Right
                             Row(
+                                modifier = Modifier.fillMaxWidth(),
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                horizontalArrangement = Arrangement.spacedBy(16.dp)
                             ) {
-                                Text(
-                                    text = displayName,
-                                    fontSize = 20.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface
+                                WorkDailyLiveAvatar(
+                                    name = displayName,
+                                    avatarUrl = avatarUrl,
+                                    size = 80.dp,
+                                    isLive = isLive,
+                                    showBadge = false
                                 )
-                                Icon(
-                                    imageVector = Icons.Default.CheckCircle,
-                                    contentDescription = "Verified Member",
-                                    tint = LivePrimaryEmerald,
-                                    modifier = Modifier.size(18.dp)
-                                )
+
+                                Column(
+                                    modifier = Modifier.weight(1f),
+                                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        Text(
+                                            text = displayName,
+                                            fontSize = 20.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                        Icon(
+                                            imageVector = Icons.Default.CheckCircle,
+                                            contentDescription = "Verified Member",
+                                            tint = LivePrimaryEmerald,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = LivePrimaryEmerald.copy(alpha = 0.12f)
+                                    ) {
+                                        Text(
+                                            text = profession,
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = LivePrimaryEmerald,
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                                        )
+                                    }
+                                }
                             }
 
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = LivePrimaryEmerald.copy(alpha = 0.1f)
-                            ) {
+                            if (bio.isNotBlank()) {
                                 Text(
-                                    text = profession,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = LivePrimaryEmerald,
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 2.dp)
+                                    text = bio,
+                                    fontSize = 13.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    lineHeight = 18.sp
                                 )
                             }
                         }
+                    }
 
-                        if (bio.isNotBlank()) {
-                            Text(
-                                text = bio,
-                                fontSize = 13.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(horizontal = 8.dp)
-                            )
-                        }
+                    // Statistics Grid Bar
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        color = MaterialTheme.colorScheme.surface,
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
+                    ) {
+                        val followerCount = if (isSelf) followedIds.size + 142 else targetUser?.followerCount ?: 0
+                        val followingCount = if (isSelf) 240 else targetUser?.followingCount ?: 0
+                        val friendsCount = if (isSelf) 35 else targetUser?.friendsCount ?: 0
 
-                        HorizontalDivider(
-                            modifier = Modifier.padding(vertical = 4.dp),
-                            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f)
-                        )
-
-                        // Compact Statistics Row (Followers, Following, Friends)
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 12.dp),
                             horizontalArrangement = Arrangement.SpaceEvenly,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            val followerCount = if (isSelf) followedIds.size + 142 else targetUser?.followerCount ?: 0
-                            val followingCount = if (isSelf) 240 else targetUser?.followingCount ?: 0
-                            val friendsCount = if (isSelf) 35 else targetUser?.friendsCount ?: 0
-
                             Column(
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 modifier = Modifier
+                                    .weight(1f)
                                     .clip(RoundedCornerShape(12.dp))
                                     .clickable { activeUserListType = UserListType.FOLLOWERS }
-                                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                                    .padding(vertical = 4.dp)
                             ) {
                                 Text(
                                     text = "$followerCount",
@@ -264,9 +282,10 @@ fun LiveProfileScreen(
                             Column(
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 modifier = Modifier
+                                    .weight(1f)
                                     .clip(RoundedCornerShape(12.dp))
                                     .clickable { activeUserListType = UserListType.FOLLOWING }
-                                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                                    .padding(vertical = 4.dp)
                             ) {
                                 Text(
                                     text = "$followingCount",
@@ -282,9 +301,10 @@ fun LiveProfileScreen(
                             Column(
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 modifier = Modifier
+                                    .weight(1f)
                                     .clip(RoundedCornerShape(12.dp))
                                     .clickable { activeUserListType = UserListType.FRIENDS }
-                                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                                    .padding(vertical = 4.dp)
                             ) {
                                 Text(
                                     text = "$friendsCount",

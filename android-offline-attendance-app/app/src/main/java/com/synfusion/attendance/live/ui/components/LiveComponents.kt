@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -121,10 +122,13 @@ fun CompactLiveBadge(
             )
             Text(
                 text = text.uppercase(),
-                fontSize = 9.sp,
-                fontWeight = FontWeight.ExtraBold,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
                 color = Color.White,
-                letterSpacing = 0.5.sp
+                letterSpacing = 0.5.sp,
+                style = TextStyle(
+                    platformStyle = PlatformTextStyle(includeFontPadding = false)
+                )
             )
         }
     }
@@ -340,7 +344,10 @@ fun ViewerCountChip(
                 text = "$count",
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.White
+                color = Color.White,
+                style = TextStyle(
+                    platformStyle = PlatformTextStyle(includeFontPadding = false)
+                )
             )
         }
     }
@@ -395,28 +402,38 @@ fun FollowButton(
     if (isFollowing) {
         OutlinedButton(
             onClick = onToggle,
-            modifier = modifier.height(30.dp),
-            shape = RoundedCornerShape(15.dp),
+            modifier = modifier.height(32.dp),
+            shape = RoundedCornerShape(16.dp),
             border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
             colors = ButtonDefaults.outlinedButtonColors(
                 contentColor = MaterialTheme.colorScheme.onSurface
             ),
-            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
+            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp)
         ) {
-            Text("Following", fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+            Text(
+                "Following",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold,
+                style = TextStyle(platformStyle = PlatformTextStyle(includeFontPadding = false))
+            )
         }
     } else {
         Button(
             onClick = onToggle,
-            modifier = modifier.height(30.dp),
-            shape = RoundedCornerShape(15.dp),
+            modifier = modifier.height(32.dp),
+            shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = LivePrimaryEmerald,
                 contentColor = Color.White
             ),
-            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp)
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp)
         ) {
-            Text("Follow", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            Text(
+                "Follow",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                style = TextStyle(platformStyle = PlatformTextStyle(includeFontPadding = false))
+            )
         }
     }
 }
@@ -572,34 +589,38 @@ fun LiveProfileBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = LiveDarkBg,
-        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+        containerColor = Color(0xFF0B101A),
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        windowInsets = WindowInsets(0.dp),
+        dragHandle = null
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .background(Color(0xFF0B101A))
+                .navigationBarsPadding()
                 .padding(horizontal = 20.dp, vertical = 12.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // Drag Handle Bar
+            // Single Drag Handle
             Box(
                 modifier = Modifier
-                    .width(40.dp)
+                    .width(36.dp)
                     .height(4.dp)
                     .clip(RoundedCornerShape(2.dp))
                     .background(Color.White.copy(alpha = 0.3f))
             )
 
-            // Header Avatar & Name
+            // Header Avatar & Identity
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 WorkDailyLiveAvatar(
                     name = targetUser.name,
                     avatarUrl = targetUser.avatar,
-                    size = 64.dp,
+                    size = 72.dp,
                     isLive = targetUser.isLiveNow,
                     showBadge = false
                 )
@@ -610,20 +631,32 @@ fun LiveProfileBottomSheet(
                 ) {
                     Text(
                         text = targetUser.name,
-                        fontSize = 18.sp,
+                        fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
                     if (targetUser.isVerified) {
-                        Icon(Icons.Default.CheckCircle, contentDescription = "Verified", tint = LivePrimaryMint, modifier = Modifier.size(16.dp))
+                        Icon(
+                            Icons.Default.CheckCircle,
+                            contentDescription = "Verified",
+                            tint = LivePrimaryMint,
+                            modifier = Modifier.size(18.dp)
+                        )
                     }
                 }
 
-                Text(
-                    text = targetUser.profession,
-                    fontSize = 13.sp,
-                    color = Color.Gray
-                )
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = LivePrimaryEmerald.copy(alpha = 0.15f)
+                ) {
+                    Text(
+                        text = targetUser.profession,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = LivePrimaryMint,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 2.dp)
+                    )
+                }
 
                 if (targetUser.bio.isNotBlank()) {
                     Text(
@@ -636,30 +669,33 @@ fun LiveProfileBottomSheet(
                 }
             }
 
-            // Stats Row
+            // Compact Statistics Row
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(16.dp))
                     .background(LiveSurfaceDark)
-                    .padding(12.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly
+                    .padding(vertical = 12.dp, horizontal = 16.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("${targetUser.followerCount}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
                     Text("Followers", fontSize = 11.sp, color = Color.Gray)
                 }
+                Box(modifier = Modifier.height(20.dp).width(1.dp).background(Color.White.copy(alpha = 0.15f)))
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("${targetUser.followingCount}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
                     Text("Following", fontSize = 11.sp, color = Color.Gray)
                 }
+                Box(modifier = Modifier.height(20.dp).width(1.dp).background(Color.White.copy(alpha = 0.15f)))
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("${targetUser.friendsCount}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
                     Text("Friends", fontSize = 11.sp, color = Color.Gray)
                 }
             }
 
-            // Interactive Actions
+            // Interactive Action Buttons
             if (!isSelf) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -672,7 +708,7 @@ fun LiveProfileBottomSheet(
                             containerColor = if (isFollowing) LiveSurfaceDark else LivePrimaryEmerald,
                             contentColor = Color.White
                         ),
-                        shape = RoundedCornerShape(21.dp)
+                        shape = RoundedCornerShape(12.dp)
                     ) {
                         Text(if (isFollowing) "Following" else "Follow", fontSize = 13.sp, fontWeight = FontWeight.Bold)
                     }
@@ -693,7 +729,7 @@ fun LiveProfileBottomSheet(
                         },
                         modifier = Modifier.weight(1f).height(42.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = LiveSurfaceDark, contentColor = Color.White),
-                        shape = RoundedCornerShape(21.dp)
+                        shape = RoundedCornerShape(12.dp)
                     ) {
                         Icon(
                             imageVector = if (targetUser.isFriend) Icons.AutoMirrored.Filled.Chat else Icons.Default.PersonAdd,
@@ -712,16 +748,16 @@ fun LiveProfileBottomSheet(
                         onDismiss()
                         onNavigateFullProfile(targetUser.id)
                     },
-                    modifier = Modifier.fillMaxWidth().height(40.dp),
+                    modifier = Modifier.fillMaxWidth().height(42.dp),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = LivePrimaryMint),
                     border = androidx.compose.foundation.BorderStroke(1.dp, LivePrimaryEmerald.copy(alpha = 0.5f)),
-                    shape = RoundedCornerShape(20.dp)
+                    shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("View Full Profile", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                    Text("View Full Profile", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
         }
     }
 }
@@ -770,15 +806,29 @@ fun LiveViewerListBottomSheet(
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        containerColor = LiveDarkBg,
-        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+        containerColor = Color(0xFF0B101A),
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        windowInsets = WindowInsets(0.dp),
+        dragHandle = null
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .background(Color(0xFF0B101A))
+                .navigationBarsPadding()
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            // Drag Handle
+            Box(
+                modifier = Modifier
+                    .width(36.dp)
+                    .height(4.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(Color.White.copy(alpha = 0.3f))
+                    .align(Alignment.CenterHorizontally)
+            )
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
