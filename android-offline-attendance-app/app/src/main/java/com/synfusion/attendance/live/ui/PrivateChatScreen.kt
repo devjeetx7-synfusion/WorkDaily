@@ -173,8 +173,7 @@ fun PrivateChatScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .imePadding()
-                .navigationBarsPadding(),
+                .imePadding(),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             // Messages Feed
@@ -239,19 +238,14 @@ fun PrivateChatScreen(
             }
 
             // Theme-Aware Compact Composer Bar
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                color = MaterialTheme.colorScheme.surface,
-                tonalElevation = 2.dp,
-                shadowElevation = 4.dp
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surface)
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
                     // Rounded Input Field
                     Surface(
                         modifier = Modifier
@@ -319,7 +313,6 @@ fun PrivateChatScreen(
                             modifier = Modifier.size(18.dp)
                         )
                     }
-                }
             }
         }
     }
@@ -331,15 +324,14 @@ fun PrivateChatScreen(
 @Composable
 fun PrivateMessageBubble(message: DemoPrivateMessage) {
     val isMe = message.senderId == "current_user" || message.senderId == "user_me"
-    val isDark = isSystemInDarkTheme()
 
     val formattedTime = remember(message.timestamp) {
         val sdf = SimpleDateFormat("h:mm a", Locale.getDefault())
         sdf.format(Date(message.timestamp))
     }
 
-    val bubbleBg = if (isMe) LivePrimaryEmerald else if (isDark) Color(0xFF1E293B) else Color(0xFFF1F5F9)
-    val textBg = if (isMe) Color.White else if (isDark) Color.White else Color(0xFF0F172A)
+    val bubbleBg = if (isMe) LivePrimaryEmerald else MaterialTheme.colorScheme.surfaceVariant
+    val textColor = if (isMe) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
 
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -362,7 +354,7 @@ fun PrivateMessageBubble(message: DemoPrivateMessage) {
                 Text(
                     text = message.message,
                     fontSize = 14.sp,
-                    color = textBg,
+                    color = textColor,
                     lineHeight = 19.sp
                 )
 
@@ -374,7 +366,7 @@ fun PrivateMessageBubble(message: DemoPrivateMessage) {
                     Text(
                         text = formattedTime,
                         fontSize = 10.sp,
-                        color = textBg.copy(alpha = 0.7f)
+                        color = textColor.copy(alpha = 0.75f)
                     )
                     if (isMe) {
                         Spacer(modifier = Modifier.width(4.dp))

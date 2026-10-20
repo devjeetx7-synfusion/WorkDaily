@@ -565,13 +565,19 @@ fun DashboardScreen(
                     rewardsViewModel = rewardsViewModel,
                     liveViewModel = liveViewModel,
                     onNavigateBack = { bottomNavController.navigateUp() },
+                    onNavigateSettings = {
+                        selectedTab = 3
+                        bottomNavController.navigate("main_pager") {
+                            popUpTo("main_pager") { inclusive = true }
+                        }
+                    },
                     onNavigateWallet = { bottomNavController.navigate("rewards_wallet") },
                     onNavigateRewardsHub = { bottomNavController.navigate("rewards_hub") },
                     onNavigateCreatorStudio = { bottomNavController.navigate("live_studio") },
                     onNavigateCreatorEarnings = { bottomNavController.navigate("live_earnings") },
                     onNavigateGoLive = { bottomNavController.navigate("live_setup") },
                     onNavigateLeaderboard = { bottomNavController.navigate("rewards_leaderboard") },
-                    onNavigateMessages = { bottomNavController.navigate("live_private_chat/creator_1") },
+                    onNavigateMessages = { bottomNavController.navigate("live_people") },
                     onNavigatePeople = { bottomNavController.navigate("live_people") },
                     onLogout = onLogout
                 )
