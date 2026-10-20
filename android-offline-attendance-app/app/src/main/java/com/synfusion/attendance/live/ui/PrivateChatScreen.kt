@@ -4,6 +4,7 @@ import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -65,7 +66,6 @@ fun PrivateChatScreen(
     var messageInput by remember { mutableStateOf("") }
     var showMenu by remember { mutableStateOf(false) }
 
-    val isFriend = friend?.isFriend == true
     val listState = rememberLazyListState()
 
     // Auto scroll to latest message when messages list updates
@@ -89,7 +89,7 @@ fun PrivateChatScreen(
                             .padding(vertical = 4.dp, horizontal = 4.dp)
                     ) {
                         WorkDailyLiveAvatar(
-                            name = friend?.name ?: "Friend",
+                            name = friend?.name ?: "User",
                             avatarUrl = friend?.avatar,
                             size = 38.dp,
                             isLive = friend?.isLiveNow == true,
@@ -101,31 +101,26 @@ fun PrivateChatScreen(
                                 horizontalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
                                 Text(
-                                    text = friend?.name ?: "Worker Friend",
+                                    text = friend?.name ?: "WorkDaily User",
                                     fontSize = 16.sp,
-                                    fontWeight = FontWeight.SemiBold,
+                                    fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurface,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
                                 if (friend?.isVerified == true) {
                                     Icon(
-                                        Icons.Default.CheckCircle,
+                                        Icons.Default.Verified,
                                         contentDescription = "Verified",
                                         tint = LivePrimaryEmerald,
-                                        modifier = Modifier.size(14.dp)
+                                        modifier = Modifier.size(15.dp)
                                     )
                                 }
                             }
                             Text(
-                                text = when {
-                                    friend?.isLiveNow == true -> "Live Now"
-                                    isFriend -> "Online"
-                                    else -> "Offline"
-                                },
+                                text = if (friend?.isLiveNow == true) "Live Streaming" else "Active",
                                 fontSize = 11.sp,
-                                fontWeight = FontWeight.Normal,
-                                color = if (friend?.isLiveNow == true) LiveRed else Color.Gray
+                                color = if (friend?.isLiveNow == true) LiveRed else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
@@ -163,18 +158,6 @@ fun PrivateChatScreen(
                                     }
                                 )
                             }
-                            if (friend != null) {
-                                DropdownMenuItem(
-                                    text = { Text("Unfriend", color = LiveRed) },
-                                    leadingIcon = { Icon(Icons.Default.PersonRemove, contentDescription = null, tint = LiveRed) },
-                                    onClick = {
-                                        showMenu = false
-                                        viewModel.unfriendUser(friend.id)
-                                        Toast.makeText(context, "Unfriended user", Toast.LENGTH_SHORT).show()
-                                        onNavigateBack()
-                                    }
-                                )
-                            }
                         }
                     }
                 },
@@ -194,42 +177,8 @@ fun PrivateChatScreen(
                 .navigationBarsPadding(),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            // Messages Feed Container
-            if (!isFriend) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                        .padding(24.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = Color(0xFF1B293C),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(24.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            Icon(Icons.Default.Lock, contentDescription = null, tint = LivePrimaryEmerald, modifier = Modifier.size(36.dp))
-                            Text(
-                                text = "Private Connection Required",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 15.sp,
-                                color = Color.White
-                            )
-                            Text(
-                                text = "Only accepted friends on WorkDaily can exchange direct messages.",
-                                color = Color.Gray,
-                                fontSize = 12.sp,
-                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                            )
-                        }
-                    }
-                }
-            } else if (messages.isEmpty()) {
+            // Messages Feed
+            if (messages.isEmpty()) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -241,14 +190,14 @@ fun PrivateChatScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         WorkDailyLiveAvatar(
-                            name = friend?.name ?: "Friend",
+                            name = friend?.name ?: "User",
                             avatarUrl = friend?.avatar,
                             size = 56.dp,
                             isLive = friend?.isLiveNow == true
                         )
                         Text(
-                            text = "Say hello to ${friend?.name ?: "your friend"}!",
-                            color = Color.Gray,
+                            text = "Send a message to ${friend?.name ?: "user"}",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Medium
                         )
@@ -270,13 +219,13 @@ fun PrivateChatScreen(
                         ) {
                             Surface(
                                 shape = RoundedCornerShape(10.dp),
-                                color = Color.White.copy(alpha = 0.08f)
+                                color = MaterialTheme.colorScheme.surfaceVariant
                             ) {
                                 Text(
                                     text = "Today",
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Medium,
-                                    color = Color.White.copy(alpha = 0.6f),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
                                 )
                             }
@@ -289,10 +238,12 @@ fun PrivateChatScreen(
                 }
             }
 
-            // Compact Composer Bar
+            // Theme-Aware Compact Composer Bar
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                color = Color(0xFF080F1E)
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 2.dp,
+                shadowElevation = 4.dp
             ) {
                 Row(
                     modifier = Modifier
@@ -305,12 +256,12 @@ fun PrivateChatScreen(
                     Surface(
                         modifier = Modifier
                             .weight(1f)
-                            .heightIn(min = 48.dp, max = 110.dp),
-                        shape = RoundedCornerShape(24.dp),
-                        color = Color(0xFF1B293C),
+                            .heightIn(min = 44.dp, max = 110.dp),
+                        shape = RoundedCornerShape(22.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
                         border = androidx.compose.foundation.BorderStroke(
                             width = 1.dp,
-                            color = Color.White.copy(alpha = 0.10f)
+                            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)
                         )
                     ) {
                         Box(
@@ -321,18 +272,17 @@ fun PrivateChatScreen(
                         ) {
                             if (messageInput.isEmpty()) {
                                 Text(
-                                    text = if (isFriend) "Message..." else "Only friends can chat",
+                                    text = "Message...",
                                     fontSize = 14.sp,
-                                    color = Color.White.copy(alpha = 0.4f)
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                             BasicTextField(
                                 value = messageInput,
                                 onValueChange = { messageInput = it },
-                                enabled = isFriend,
                                 modifier = Modifier.fillMaxWidth(),
                                 textStyle = TextStyle(
-                                    color = Color.White,
+                                    color = MaterialTheme.colorScheme.onSurface,
                                     fontSize = 14.sp
                                 ),
                                 cursorBrush = SolidColor(LivePrimaryEmerald),
@@ -353,19 +303,19 @@ fun PrivateChatScreen(
                                 }
                             }
                         },
-                        enabled = isFriend && messageInput.isNotBlank(),
+                        enabled = messageInput.isNotBlank(),
                         modifier = Modifier
-                            .size(46.dp)
+                            .size(44.dp)
                             .clip(CircleShape)
                             .background(
-                                if (isFriend && messageInput.isNotBlank()) Color(0xFF087E69)
-                                else Color(0xFF1B293C)
+                                if (messageInput.isNotBlank()) LivePrimaryEmerald
+                                else MaterialTheme.colorScheme.surfaceVariant
                             )
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.Send,
                             contentDescription = "Send Message",
-                            tint = if (isFriend && messageInput.isNotBlank()) Color.White else Color.White.copy(alpha = 0.3f),
+                            tint = if (messageInput.isNotBlank()) Color.White else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                             modifier = Modifier.size(18.dp)
                         )
                     }
@@ -376,16 +326,20 @@ fun PrivateChatScreen(
 }
 
 /**
- * Modern Chat Message Bubble with clear WorkDaily emerald outgoing styling.
+ * Modern Chat Message Bubble with theme-aware styling.
  */
 @Composable
 fun PrivateMessageBubble(message: DemoPrivateMessage) {
     val isMe = message.senderId == "current_user" || message.senderId == "user_me"
+    val isDark = isSystemInDarkTheme()
 
     val formattedTime = remember(message.timestamp) {
         val sdf = SimpleDateFormat("h:mm a", Locale.getDefault())
         sdf.format(Date(message.timestamp))
     }
+
+    val bubbleBg = if (isMe) LivePrimaryEmerald else if (isDark) Color(0xFF1E293B) else Color(0xFFF1F5F9)
+    val textBg = if (isMe) Color.White else if (isDark) Color.White else Color(0xFF0F172A)
 
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -398,7 +352,7 @@ fun PrivateMessageBubble(message: DemoPrivateMessage) {
                 bottomStart = if (isMe) 16.dp else 4.dp,
                 bottomEnd = if (isMe) 4.dp else 16.dp
             ),
-            color = if (isMe) Color(0xFF087E69) else Color(0xFF1B293C),
+            color = bubbleBg,
             modifier = Modifier.widthIn(max = 280.dp)
         ) {
             Column(
@@ -408,7 +362,7 @@ fun PrivateMessageBubble(message: DemoPrivateMessage) {
                 Text(
                     text = message.message,
                     fontSize = 14.sp,
-                    color = Color.White,
+                    color = textBg,
                     lineHeight = 19.sp
                 )
 
@@ -420,7 +374,7 @@ fun PrivateMessageBubble(message: DemoPrivateMessage) {
                     Text(
                         text = formattedTime,
                         fontSize = 10.sp,
-                        color = Color.White.copy(alpha = 0.75f)
+                        color = textBg.copy(alpha = 0.7f)
                     )
                     if (isMe) {
                         Spacer(modifier = Modifier.width(4.dp))

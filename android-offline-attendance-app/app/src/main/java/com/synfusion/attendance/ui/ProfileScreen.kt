@@ -17,7 +17,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -33,7 +32,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -46,11 +44,10 @@ import com.synfusion.attendance.live.viewmodel.LiveViewModel
 import com.synfusion.attendance.rewards.ui.components.RewardCoinBalance
 import com.synfusion.attendance.rewards.ui.components.RewardsPurple
 import com.synfusion.attendance.rewards.viewmodel.RewardsViewModel
-import com.synfusion.attendance.ui.components.CountrySelectionBottomSheet
 import com.synfusion.attendance.ui.components.CropScreenDialog
 import com.synfusion.attendance.ui.responsive.LocalWindowSizeInfo
 import com.synfusion.attendance.ui.responsive.ResponsiveContainer
-import com.synfusion.attendance.utils.CurrencyVisualTransformation
+import com.synfusion.attendance.utils.AmountFormatter
 import com.synfusion.attendance.utils.collectAsStateWithLifecycle
 import com.synfusion.attendance.viewmodel.OfflineSettingsState
 import com.synfusion.attendance.viewmodel.OfflineSettingsViewModel
@@ -62,6 +59,7 @@ fun ProfileScreen(
     rewardsViewModel: RewardsViewModel? = null,
     liveViewModel: LiveViewModel? = null,
     onNavigateBack: () -> Unit,
+    onNavigateSettings: () -> Unit = {},
     onNavigateWallet: () -> Unit = {},
     onNavigateRewardsHub: () -> Unit = {},
     onNavigateCreatorStudio: () -> Unit = {},
@@ -83,9 +81,9 @@ fun ProfileScreen(
 
     var selectedUriForCrop by remember { mutableStateOf<Uri?>(null) }
     var showPhotoActionSheet by remember { mutableStateOf(false) }
-    var showCountryBottomSheet by remember { mutableStateOf(false) }
     var activeUserListType by remember { mutableStateOf<UserListType?>(null) }
     var showBlockedUsersSheet by remember { mutableStateOf(false) }
+    var isPhoneMasked by remember { mutableStateOf(true) }
 
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -95,17 +93,7 @@ fun ProfileScreen(
         }
     }
 
-    val hasChanges = state.name != state.originalName ||
-            state.dailyWage != state.originalWage ||
-            state.role != state.originalRole ||
-            state.phone != state.originalPhone ||
-            state.countryCode != state.originalCountryCode ||
-            state.currencyCode != state.originalCurrencyCode ||
-            state.profileImageUri != null ||
-            state.profileImageUrl != state.originalProfileImageUrl
-
     val activeCountry = remember(state.countryCode) { CountryRepository.getCountry(state.countryCode) }
-    val currencySymbol = remember(state.currencyCode) { CountryRepository.getCurrencySymbol(state.currencyCode) }
 
     val displayUri = state.profileImageUri
     val currentPhotoPath = state.profileImageUrl
@@ -120,7 +108,20 @@ fun ProfileScreen(
 
     val followerCount = remember(followedIds) { followedIds.size + 142 }
     val followingCount = 240
-    val friendsCount = 35
+
+    val maskedPhone = remember(state.phone, activeCountry) {
+        if (state.phone.length > 4) {
+            "${activeCountry.callingCode} ${"•".repeat(state.phone.length - 4)}${state.phone.takeLast(4)}"
+        } else if (state.phone.isNotEmpty()) {
+            "${activeCountry.callingCode} ••••"
+        } else {
+            "Not provided"
+        }
+    }
+
+    val fullPhone = remember(state.phone, activeCountry) {
+        if (state.phone.isNotEmpty()) "${activeCountry.callingCode} ${state.phone}" else "Not provided"
+    }
 
     LaunchedEffect(state.savedMessage) {
         state.savedMessage?.let { msg ->
@@ -137,16 +138,12 @@ fun ProfileScreen(
                 title = {
                     Text(
                         text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.profile_title),
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = {
-                        if (hasChanges) {
-                            viewModel.discardChanges()
-                        }
-                        onNavigateBack()
-                    }) {
+                    IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.onboarding_back)
@@ -154,25 +151,17 @@ fun ProfileScreen(
                     }
                 },
                 actions = {
-                    AnimatedVisibility(visible = hasChanges) {
-                        IconButton(
-                            onClick = { viewModel.saveChanges() },
-                            enabled = !state.isSaving
-                        ) {
-                            if (state.isSaving) {
-                                CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
-                            } else {
-                                Icon(
-                                    Icons.Default.Check,
-                                    contentDescription = "Save",
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                            }
-                        }
+                    IconButton(onClick = onNavigateSettings) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = "Settings",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         }
@@ -183,9 +172,6 @@ fun ProfileScreen(
                 .padding(paddingValues)
         ) {
             ResponsiveContainer {
-                val windowSizeInfo = LocalWindowSizeInfo.current
-                val isLandscape = windowSizeInfo.isLandscape
-
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -194,7 +180,7 @@ fun ProfileScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(20.dp)
                 ) {
-                    // SECTION A — PROFILE HEADER
+                    // 1. TOOLBAR & HEADER IDENTITY
                     var animatePhoto by remember { mutableStateOf(false) }
                     LaunchedEffect(Unit) { animatePhoto = true }
                     val animatedScale by animateFloatAsState(
@@ -208,7 +194,7 @@ fun ProfileScreen(
 
                     Box(
                         modifier = Modifier
-                            .padding(top = 8.dp)
+                            .padding(top = 4.dp)
                             .graphicsLayer {
                                 scaleX = animatedScale
                                 scaleY = animatedScale
@@ -220,7 +206,7 @@ fun ProfileScreen(
                                 .size(110.dp)
                                 .clip(CircleShape)
                                 .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
-                                .border(3.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f), CircleShape)
+                                .border(3.dp, LivePrimaryEmerald.copy(alpha = 0.35f), CircleShape)
                                 .clickable { showPhotoActionSheet = true },
                             contentAlignment = Alignment.Center
                         ) {
@@ -251,7 +237,7 @@ fun ProfileScreen(
                                             imageVector = Icons.Default.Person,
                                             contentDescription = "Default Avatar",
                                             modifier = Modifier.size(56.dp),
-                                            tint = MaterialTheme.colorScheme.primary
+                                            tint = LivePrimaryEmerald
                                         )
                                     }
                                 )
@@ -260,7 +246,7 @@ fun ProfileScreen(
                                     imageVector = Icons.Default.Person,
                                     contentDescription = "Default Avatar",
                                     modifier = Modifier.size(56.dp),
-                                    tint = MaterialTheme.colorScheme.primary
+                                    tint = LivePrimaryEmerald
                                 )
                             }
                         }
@@ -270,7 +256,7 @@ fun ProfileScreen(
                                 .align(Alignment.BottomEnd)
                                 .size(34.dp)
                                 .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primary)
+                                .background(LivePrimaryEmerald)
                                 .border(2.dp, MaterialTheme.colorScheme.surface, CircleShape)
                                 .clickable { showPhotoActionSheet = true },
                             contentAlignment = Alignment.Center
@@ -278,7 +264,7 @@ fun ProfileScreen(
                             Icon(
                                 imageVector = Icons.Default.PhotoCamera,
                                 contentDescription = "Edit Profile Photo",
-                                tint = MaterialTheme.colorScheme.onPrimary,
+                                tint = Color.White,
                                 modifier = Modifier.size(16.dp)
                             )
                         }
@@ -310,7 +296,7 @@ fun ProfileScreen(
                             text = "@${state.name.lowercase().replace(" ", "") .ifEmpty { "user" }}",
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.primary
+                            color = LivePrimaryEmerald
                         )
 
                         Text(
@@ -320,12 +306,12 @@ fun ProfileScreen(
                         )
                     }
 
-                    // SECTION B — SOCIAL COUNTERS
+                    // 2. SOCIAL STATISTICS (Followers and Following)
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
                         color = MaterialTheme.colorScheme.surface,
-                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f))
                     ) {
                         Row(
                             modifier = Modifier
@@ -348,7 +334,7 @@ fun ProfileScreen(
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
-                                Text("Followers", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text("Followers", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
 
                             Box(modifier = Modifier.height(24.dp).width(1.dp).background(MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)))
@@ -367,116 +353,141 @@ fun ProfileScreen(
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
-                                Text("Following", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-
-                            Box(modifier = Modifier.height(24.dp).width(1.dp).background(MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)))
-
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .clickable { activeUserListType = UserListType.FRIENDS }
-                                    .padding(vertical = 4.dp)
-                            ) {
-                                Text(
-                                    text = "$friendsCount",
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Text("Friends", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text("Following", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
                     }
 
-                    // SECTION C — PERSONAL INFORMATION
+                    // 3. READ-ONLY PERSONAL INFORMATION
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(20.dp),
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
                     ) {
                         Column(
                             modifier = Modifier.padding(20.dp),
-                            verticalArrangement = Arrangement.spacedBy(18.dp)
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
-                            Text(
-                                text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.personal_info),
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-
-                            OutlinedTextField(
-                                value = state.name,
-                                onValueChange = { viewModel.onNameChange(it) },
+                            Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                label = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.full_name)) },
-                                leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
-                                shape = RoundedCornerShape(14.dp),
-                                singleLine = true
-                            )
-
-                            // Country Selector
-                            Box(modifier = Modifier.fillMaxWidth()) {
-                                OutlinedTextField(
-                                    value = "${activeCountry.flagEmoji} ${activeCountry.displayName} — ${activeCountry.currencySymbol}",
-                                    onValueChange = {},
-                                    readOnly = true,
-                                    label = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.country_region)) },
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable { showCountryBottomSheet = true },
-                                    shape = RoundedCornerShape(14.dp),
-                                    leadingIcon = { Icon(Icons.Default.Public, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-                                    trailingIcon = { Icon(Icons.Default.ArrowDropDown, contentDescription = null) },
-                                    enabled = false,
-                                    colors = OutlinedTextFieldDefaults.colors(
-                                        disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                                        disabledBorderColor = MaterialTheme.colorScheme.outline,
-                                        disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        disabledLeadingIconColor = MaterialTheme.colorScheme.primary,
-                                        disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.personal_info),
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
                                 )
-                                Box(
-                                    modifier = Modifier
-                                        .matchParentSize()
-                                        .clickable { showCountryBottomSheet = true }
-                                )
+                                TextButton(
+                                    onClick = onNavigateSettings,
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+                                ) {
+                                    Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(14.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Edit in Settings", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                }
                             }
 
-                            OutlinedTextField(
-                                value = if (state.dailyWage > 0) state.dailyWage.toInt().toString() else "",
-                                onValueChange = { viewModel.onWageChange(it.filter { ch -> ch.isDigit() }) },
+                            // Read-only Row 1: Country & Region
+                            Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                label = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.daily_wage)) },
-                                leadingIcon = { Text(currencySymbol, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 12.dp)) },
-                                shape = RoundedCornerShape(14.dp),
-                                singleLine = true,
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                visualTransformation = CurrencyVisualTransformation(state.currencyCode)
-                            )
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(38.dp)
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(Icons.Default.Public, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                                }
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text("Country & Region", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(
+                                        text = "${activeCountry.flagEmoji} ${activeCountry.displayName} (${activeCountry.currencySymbol})",
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+                            }
 
-                            OutlinedTextField(
-                                value = state.phone,
-                                onValueChange = { newValue ->
-                                    val digits = newValue.filter { it.isDigit() }.take(15)
-                                    viewModel.onPhoneChange(digits)
-                                },
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
+
+                            // Read-only Row 2: Daily Wage
+                            Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                label = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.phone_number)) },
-                                leadingIcon = { Text("${activeCountry.callingCode} ", fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 12.dp)) },
-                                shape = RoundedCornerShape(14.dp),
-                                singleLine = true,
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                            )
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(38.dp)
+                                        .clip(CircleShape)
+                                        .background(LivePrimaryEmerald.copy(alpha = 0.12f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = activeCountry.currencySymbol,
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = LivePrimaryEmerald
+                                    )
+                                }
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text("Daily Wage", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(
+                                        text = if (state.dailyWage > 0) AmountFormatter.formatWithSymbol(state.dailyWage, state.currencyCode) + " / day" else "Not configured",
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+                            }
+
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
+
+                            // Read-only Row 3: Masked Contact Info
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(38.dp)
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(Icons.Default.Phone, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                                }
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text("Private Phone Number", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(
+                                        text = if (isPhoneMasked) maskedPhone else fullPhone,
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+                                IconButton(onClick = { isPhoneMasked = !isPhoneMasked }) {
+                                    Icon(
+                                        imageVector = if (isPhoneMasked) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                        contentDescription = "Toggle phone masking",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
                         }
                     }
 
-                    // SECTION D — REWARDS & WALLET
+                    // 4. REWARDS & WALLET
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(20.dp),
@@ -507,7 +518,6 @@ fun ProfileScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
-                                // Available Coins Card
                                 Surface(
                                     modifier = Modifier
                                         .weight(1f)
@@ -530,7 +540,6 @@ fun ProfileScreen(
                                     }
                                 }
 
-                                // Live Diamonds Card
                                 Surface(
                                     modifier = Modifier
                                         .weight(1f)
@@ -556,7 +565,7 @@ fun ProfileScreen(
                         }
                     }
 
-                    // SECTION E — CREATOR EARNINGS
+                    // 5. CREATOR EARNINGS
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(20.dp),
@@ -639,7 +648,7 @@ fun ProfileScreen(
                         }
                     }
 
-                    // SECTION F — SOCIAL & LIVE SHORTCUTS
+                    // 6. SOCIAL & LIVE HUB SHORTCUTS
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(20.dp),
@@ -694,7 +703,7 @@ fun ProfileScreen(
                                 ) {
                                     Icon(Icons.Default.People, contentDescription = null, modifier = Modifier.size(16.dp))
                                     Spacer(modifier = Modifier.width(6.dp))
-                                    Text("People & Friends", fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                                    Text("People", fontSize = 12.sp, fontWeight = FontWeight.Medium)
                                 }
 
                                 OutlinedButton(
@@ -710,7 +719,7 @@ fun ProfileScreen(
                         }
                     }
 
-                    // SECTION G — ACCOUNT & PRIVACY
+                    // 7. ACCOUNT & PRIVACY
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(20.dp),
@@ -727,30 +736,6 @@ fun ProfileScreen(
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                                ) {
-                                    Icon(Icons.Default.AccountCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                                    Column {
-                                        Text("Google Account", fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                                        Text(
-                                            text = if (state.googlePhotoUrl.isNotEmpty()) "Connected" else "Local Workspace Session",
-                                            fontSize = 11.sp,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                }
-                                Icon(Icons.Default.CheckCircle, contentDescription = null, tint = LivePrimaryEmerald, modifier = Modifier.size(20.dp))
-                            }
-
-                            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
 
                             Row(
                                 modifier = Modifier
@@ -786,30 +771,6 @@ fun ProfileScreen(
                         }
                     }
 
-                    // Save Action Button
-                    if (hasChanges) {
-                        Button(
-                            onClick = { viewModel.saveChanges() },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(52.dp),
-                            shape = RoundedCornerShape(14.dp),
-                            enabled = !state.isSaving
-                        ) {
-                            if (state.isSaving) {
-                                CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
-                            } else {
-                                Icon(Icons.Default.Save, contentDescription = null, modifier = Modifier.size(20.dp))
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.save_changes),
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 16.sp
-                                )
-                            }
-                        }
-                    }
-
                     Spacer(modifier = Modifier.height(32.dp))
                 }
             }
@@ -820,6 +781,7 @@ fun ProfileScreen(
                     imageUri = selectedUriForCrop!!,
                     onCropSuccess = { croppedUri ->
                         viewModel.onProfileImageSelected(croppedUri)
+                        viewModel.saveChanges()
                         selectedUriForCrop = null
                     },
                     onCancel = {
@@ -888,6 +850,7 @@ fun ProfileScreen(
                                         showPhotoActionSheet = false
                                         viewModel.onProfileImageSelected(null)
                                         viewModel.onRemoveProfilePhoto()
+                                        viewModel.saveChanges()
                                     }
                                     .padding(vertical = 12.dp, horizontal = 16.dp),
                                 verticalAlignment = Alignment.CenterVertically
@@ -912,17 +875,6 @@ fun ProfileScreen(
                 }
             }
 
-            if (showCountryBottomSheet) {
-                CountrySelectionBottomSheet(
-                    selectedCountryCode = state.countryCode,
-                    onCountrySelected = { country ->
-                        viewModel.onCountryChange(country.countryCode)
-                        showCountryBottomSheet = false
-                    },
-                    onDismiss = { showCountryBottomSheet = false }
-                )
-            }
-
             if (activeUserListType != null) {
                 val listType = activeUserListType!!
                 ModalBottomSheet(
@@ -934,7 +886,7 @@ fun ProfileScreen(
                     val title = when (listType) {
                         UserListType.FOLLOWERS -> "Followers"
                         UserListType.FOLLOWING -> "Following"
-                        UserListType.FRIENDS -> "Friends"
+                        UserListType.FRIENDS -> "Followers"
                     }
 
                     Column(
@@ -956,9 +908,8 @@ fun ProfileScreen(
 
                         val listUsers = remember(publicUsers, listType) {
                             when (listType) {
-                                UserListType.FRIENDS -> publicUsers.filter { it.isFriend }
                                 UserListType.FOLLOWING -> publicUsers.filter { it.isFollowing }
-                                UserListType.FOLLOWERS -> publicUsers
+                                else -> publicUsers
                             }
                         }
 
@@ -1000,7 +951,7 @@ fun ProfileScreen(
                                                 avatarUrl = user.avatar,
                                                 size = 40.dp,
                                                 isLive = user.isLiveNow,
-                                                showBadge = user.isLiveNow
+                                                showBadge = false
                                             )
                                             Column {
                                                 Text(user.name, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)

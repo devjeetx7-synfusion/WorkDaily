@@ -8,6 +8,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Chat
@@ -19,10 +21,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.synfusion.attendance.live.model.FriendRequestStatus
 import com.synfusion.attendance.live.ui.components.*
 import com.synfusion.attendance.live.viewmodel.LiveViewModel
 
@@ -36,17 +40,18 @@ fun PeopleAndFriendsScreen(
 ) {
     val context = LocalContext.current
     val publicUsers by viewModel.publicUsers.collectAsState()
-    val friendRequests by viewModel.friendRequests.collectAsState()
+    val followedIds by viewModel.followedCreatorIds.collectAsState()
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     var selectedTab by remember { mutableStateOf("Discover") }
     var searchQuery by remember { mutableStateOf("") }
 
-    val pendingRequests = remember(friendRequests) {
-        friendRequests.filter { it.status == FriendRequestStatus.PENDING && it.receiverId == "current_user" }
+    val followersList = remember(publicUsers) {
+        publicUsers.filter { user -> user.id != "current_user" }
     }
 
-    val friendsList = remember(publicUsers) {
-        publicUsers.filter { it.isFriend }
+    val followingList = remember(publicUsers, followedIds) {
+        publicUsers.filter { user -> user.id != "current_user" && followedIds.contains(user.id) }
     }
 
     val discoverUsers = remember(publicUsers, searchQuery) {
@@ -56,12 +61,24 @@ fun PeopleAndFriendsScreen(
         }
     }
 
-    val tabs = listOf("Discover", "Friends (${friendsList.size})", "Requests (${pendingRequests.size})")
+    val filteredFollowers = remember(followersList, searchQuery) {
+        followersList.filter { user ->
+            searchQuery.isBlank() || user.name.contains(searchQuery, ignoreCase = true) || user.profession.contains(searchQuery, ignoreCase = true)
+        }
+    }
+
+    val filteredFollowing = remember(followingList, searchQuery) {
+        followingList.filter { user ->
+            searchQuery.isBlank() || user.name.contains(searchQuery, ignoreCase = true) || user.profession.contains(searchQuery, ignoreCase = true)
+        }
+    }
+
+    val tabs = listOf("Discover", "Followers (${followersList.size})", "Following (${followingList.size})")
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("People & Friends", fontWeight = FontWeight.Bold) },
+                title = { Text("People", fontWeight = FontWeight.Bold, fontSize = 20.sp) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -82,12 +99,12 @@ fun PeopleAndFriendsScreen(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // Pill Tabs (Discover, Friends, Requests)
+            // Pill Tabs (Discover, Followers, Following)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(16.dp))
-                    .background(MaterialTheme.colorScheme.surface)
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
                     .padding(4.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
@@ -113,30 +130,67 @@ fun PeopleAndFriendsScreen(
                 }
             }
 
-            if (selectedTab.startsWith("Discover")) {
-                // Search Field
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                    placeholder = { Text("Search site workers & engineers...") },
-                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+            // Search Bar
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                placeholder = { Text("Search site workers & engineers...") },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                trailingIcon = {
+                    if (searchQuery.isNotEmpty()) {
+                        IconButton(onClick = { searchQuery = "" }) {
+                            Icon(Icons.Default.Clear, contentDescription = "Clear")
+                        }
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp)),
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                keyboardActions = KeyboardActions(onSearch = { keyboardController?.hide() })
+            )
+
+            val currentList = when {
+                selectedTab.startsWith("Discover") -> discoverUsers
+                selectedTab.startsWith("Followers") -> filteredFollowers
+                else -> filteredFollowing
+            }
+
+            if (currentList.isEmpty()) {
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(14.dp)),
-                    singleLine = true
-                )
-
+                        .weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(Icons.Default.PeopleOutline, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(48.dp))
+                        Text(
+                            text = if (searchQuery.isNotBlank()) "No users matching '$searchQuery'" else "No users in $selectedTab",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 14.sp
+                        )
+                    }
+                }
+            } else {
                 LazyColumn(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    items(discoverUsers) { user ->
+                    items(currentList, key = { it.id }) { user ->
+                        val isFollowing = followedIds.contains(user.id)
+
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable { onNavigateProfile(user.id) },
                             shape = RoundedCornerShape(14.dp),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
                         ) {
                             Row(
                                 modifier = Modifier
@@ -147,145 +201,79 @@ fun PeopleAndFriendsScreen(
                             ) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                                     modifier = Modifier.weight(1f)
                                 ) {
-                                    PulsingLiveAvatar(name = user.name, size = 38.dp, isLive = user.isLiveNow)
-                                    Column {
-                                        Text(user.name, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                                        Text(user.profession, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    }
-                                }
+                                    WorkDailyLiveAvatar(
+                                        name = user.name,
+                                        avatarUrl = user.avatar,
+                                        size = 44.dp,
+                                        isLive = user.isLiveNow,
+                                        showBadge = false,
+                                        onClick = { onNavigateProfile(user.id) }
+                                    )
 
-                                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                    if (user.isFriend) {
-                                        IconButton(onClick = { onNavigatePrivateChat(user.id) }) {
-                                            Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = "Chat", tint = LivePrimaryEmerald)
-                                        }
-                                    } else {
-                                        Button(
-                                            onClick = {
-                                                val sent = viewModel.sendFriendRequest(user.id)
-                                                if (sent) Toast.makeText(context, "Request Sent!", Toast.LENGTH_SHORT).show()
-                                            },
-                                            colors = ButtonDefaults.buttonColors(containerColor = LivePrimaryEmerald),
-                                            shape = RoundedCornerShape(10.dp),
-                                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
                                         ) {
-                                            Text("Add Friend", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                            Text(
+                                                text = user.name,
+                                                fontSize = 14.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.onSurface,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                            if (user.isVerified) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Verified,
+                                                    contentDescription = "Verified",
+                                                    tint = LivePrimaryEmerald,
+                                                    modifier = Modifier.size(14.dp)
+                                                )
+                                            }
+                                        }
+
+                                        Text(
+                                            text = "@${user.name.lowercase().replace(" ", "")}",
+                                            fontSize = 11.sp,
+                                            color = LivePrimaryEmerald,
+                                            fontWeight = FontWeight.Medium
+                                        )
+
+                                        if (user.profession.isNotBlank()) {
+                                            Text(
+                                                text = user.profession,
+                                                fontSize = 11.sp,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
                                         }
                                     }
                                 }
-                            }
-                        }
-                    }
-                }
-            } else if (selectedTab.startsWith("Friends")) {
-                if (friendsList.isEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("No friends connected yet", color = Color.Gray, fontSize = 13.sp)
-                    }
-                } else {
-                    LazyColumn(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        items(friendsList) { friend ->
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { onNavigateProfile(friend.id) },
-                                shape = RoundedCornerShape(14.dp),
-                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-                            ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(12.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                        PulsingLiveAvatar(name = friend.name, size = 38.dp, isLive = friend.isLiveNow)
-                                        Column {
-                                            Text(friend.name, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                                            Text(friend.profession, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                        }
-                                    }
 
-                                    Button(
-                                        onClick = { onNavigatePrivateChat(friend.id) },
-                                        colors = ButtonDefaults.buttonColors(containerColor = LivePrimaryEmerald),
-                                        shape = RoundedCornerShape(10.dp)
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    FollowButton(
+                                        isFollowing = isFollowing,
+                                        onToggle = { viewModel.toggleFollowCreator(user.id) }
+                                    )
+
+                                    IconButton(
+                                        onClick = { onNavigatePrivateChat(user.id) },
+                                        modifier = Modifier.size(36.dp)
                                     ) {
-                                        Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = null, modifier = Modifier.size(14.dp))
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text("Message", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            } else {
-                // Incoming Friend Requests
-                if (pendingRequests.isEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("No pending friend requests", color = Color.Gray, fontSize = 13.sp)
-                    }
-                } else {
-                    LazyColumn(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        items(pendingRequests) { req ->
-                            Card(
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(14.dp),
-                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-                            ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(12.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Column {
-                                        Text(req.senderName, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                                        Text(req.senderProfession, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    }
-
-                                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                        Button(
-                                            onClick = {
-                                                viewModel.acceptFriendRequest(req.id)
-                                                Toast.makeText(context, "Accepted ${req.senderName}!", Toast.LENGTH_SHORT).show()
-                                            },
-                                            colors = ButtonDefaults.buttonColors(containerColor = LivePrimaryEmerald),
-                                            shape = RoundedCornerShape(8.dp),
-                                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
-                                        ) {
-                                            Text("Accept", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                                        }
-
-                                        OutlinedButton(
-                                            onClick = { viewModel.declineFriendRequest(req.id) },
-                                            shape = RoundedCornerShape(8.dp),
-                                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
-                                        ) {
-                                            Text("Decline", fontSize = 11.sp)
-                                        }
+                                        Icon(
+                                            imageVector = Icons.AutoMirrored.Filled.Chat,
+                                            contentDescription = "Chat",
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(20.dp)
+                                        )
                                     }
                                 }
                             }
