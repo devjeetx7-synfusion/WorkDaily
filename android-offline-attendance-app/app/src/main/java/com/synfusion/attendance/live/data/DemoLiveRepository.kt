@@ -335,6 +335,9 @@ class DemoLiveRepository(context: Context? = null) {
         val currentMap = _privateMessagesMap.value.toMutableMap()
         val list = currentMap[conv.id]?.toMutableList() ?: mutableListOf()
         list.add(msg)
+        while (list.size > MAX_CHAT_MESSAGES) {
+            list.removeAt(0)
+        }
         currentMap[conv.id] = list
         _privateMessagesMap.value = currentMap
 
@@ -500,6 +503,9 @@ class DemoLiveRepository(context: Context? = null) {
         val currentMap = _chatMessagesMap.value.toMutableMap()
         val list = currentMap[roomId]?.toMutableList() ?: mutableListOf()
         list.add(msg)
+        while (list.size > MAX_CHAT_MESSAGES) {
+            list.removeAt(0)
+        }
         currentMap[roomId] = list
         _chatMessagesMap.value = currentMap
     }
@@ -891,6 +897,7 @@ class DemoLiveRepository(context: Context? = null) {
         const val KEY_CREATOR_DIAMONDS = "creator_diamonds"
         const val KEY_FOLLOWED_CREATORS = "followed_creators"
         const val RUPEES_PER_DIAMOND = 0.50
+        const val MAX_CHAT_MESSAGES = 10
 
         @Volatile
         private var INSTANCE: DemoLiveRepository? = null

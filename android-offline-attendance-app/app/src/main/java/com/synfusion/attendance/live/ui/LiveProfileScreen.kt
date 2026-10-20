@@ -41,6 +41,7 @@ fun LiveProfileScreen(
     viewModel: LiveViewModel,
     userId: String? = null,
     onNavigateBack: () -> Unit,
+    onNavigateMainProfile: () -> Unit = {},
     onNavigateWallet: () -> Unit = {},
     onNavigateEarnings: () -> Unit = {},
     onNavigateStudio: () -> Unit = {},
@@ -61,7 +62,13 @@ fun LiveProfileScreen(
         } else null
     }
 
-    val isSelf = targetUser == null || targetUser.id == "current_user" || targetUser.id == "user_me"
+    val isSelf = targetUser == null || userId == null || userId == "current_user" || userId == "user_me"
+
+    LaunchedEffect(isSelf) {
+        if (isSelf) {
+            onNavigateMainProfile()
+        }
+    }
 
     val displayName = remember(targetUser, isSelf) {
         if (isSelf) "You" else targetUser?.name ?: "Worker Profile"

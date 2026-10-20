@@ -562,7 +562,18 @@ fun DashboardScreen(
             composable("profile") {
                 ProfileScreen(
                     viewModel = settingsViewModel,
-                    onNavigateBack = { bottomNavController.navigateUp() }
+                    rewardsViewModel = rewardsViewModel,
+                    liveViewModel = liveViewModel,
+                    onNavigateBack = { bottomNavController.navigateUp() },
+                    onNavigateWallet = { bottomNavController.navigate("rewards_wallet") },
+                    onNavigateRewardsHub = { bottomNavController.navigate("rewards_hub") },
+                    onNavigateCreatorStudio = { bottomNavController.navigate("live_studio") },
+                    onNavigateCreatorEarnings = { bottomNavController.navigate("live_earnings") },
+                    onNavigateGoLive = { bottomNavController.navigate("live_setup") },
+                    onNavigateLeaderboard = { bottomNavController.navigate("rewards_leaderboard") },
+                    onNavigateMessages = { bottomNavController.navigate("live_private_chat/creator_1") },
+                    onNavigatePeople = { bottomNavController.navigate("live_people") },
+                    onLogout = onLogout
                 )
             }
             composable("how_to_use") {
@@ -706,17 +717,30 @@ fun DashboardScreen(
                 arguments = listOf(navArgument("userId") { defaultValue = "current_user" })
             ) { backStackEntry ->
                 val userId = backStackEntry.arguments?.getString("userId") ?: "current_user"
-                LiveProfileScreen(
-                    viewModel = liveViewModel,
-                    userId = userId,
-                    onNavigateBack = { bottomNavController.navigateUp() },
-                    onNavigateWallet = { bottomNavController.navigate("live_wallet") },
-                    onNavigateEarnings = { bottomNavController.navigate("live_earnings") },
-                    onNavigateStudio = { bottomNavController.navigate("live_setup") },
-                    onNavigateLiveRoom = { roomId -> bottomNavController.navigate("live_room/$roomId") },
-                    onNavigatePrivateChat = { friendId -> bottomNavController.navigate("live_private_chat/$friendId") },
-                    onNavigateDemoControls = { bottomNavController.navigate("live_demo_controls") }
-                )
+                if (userId == "current_user" || userId == "user_me") {
+                    LaunchedEffect(Unit) {
+                        bottomNavController.navigate("profile") {
+                            popUpTo("live_profile?userId=$userId") { inclusive = true }
+                        }
+                    }
+                } else {
+                    LiveProfileScreen(
+                        viewModel = liveViewModel,
+                        userId = userId,
+                        onNavigateBack = { bottomNavController.navigateUp() },
+                        onNavigateMainProfile = {
+                            bottomNavController.navigate("profile") {
+                                popUpTo("live_profile?userId=$userId") { inclusive = true }
+                            }
+                        },
+                        onNavigateWallet = { bottomNavController.navigate("live_wallet") },
+                        onNavigateEarnings = { bottomNavController.navigate("live_earnings") },
+                        onNavigateStudio = { bottomNavController.navigate("live_setup") },
+                        onNavigateLiveRoom = { roomId -> bottomNavController.navigate("live_room/$roomId") },
+                        onNavigatePrivateChat = { friendId -> bottomNavController.navigate("live_private_chat/$friendId") },
+                        onNavigateDemoControls = { bottomNavController.navigate("live_demo_controls") }
+                    )
+                }
             }
             composable("live_demo_controls") {
                 DeveloperDemoControlsSheet(
