@@ -1,6 +1,7 @@
 package com.synfusion.attendance.live.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -24,7 +25,8 @@ import com.synfusion.attendance.live.viewmodel.LiveViewModel
 @Composable
 fun LiveLeaderboardScreen(
     viewModel: LiveViewModel,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onNavigateProfile: (String) -> Unit = {}
 ) {
     val creators by viewModel.creators.collectAsState()
     val sortedCreators = remember(creators) {
@@ -66,7 +68,9 @@ fun LiveLeaderboardScreen(
                 }
 
                 Card(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onNavigateProfile(creator.id) },
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(containerColor = LiveSurfaceDark),
                     border = androidx.compose.foundation.BorderStroke(
@@ -97,10 +101,12 @@ fun LiveLeaderboardScreen(
                                 )
                             }
 
-                            PulsingLiveAvatar(
+                            WorkDailyLiveAvatar(
                                 name = creator.name,
+                                avatarUrl = creator.avatar,
                                 size = 40.dp,
-                                isLive = false
+                                isLive = false,
+                                onClick = { onNavigateProfile(creator.id) }
                             )
 
                             Column {

@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.*
 import androidx.compose.ui.draw.clip
 import android.content.Context
@@ -71,9 +72,11 @@ import com.synfusion.attendance.ui.responsive.ResponsiveContainer
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.foundation.layout.WindowInsets
+import com.synfusion.attendance.ui.components.CountrySelectionBottomSheet
 
 enum class SettingsCategory(val titleRes: Int, val icon: androidx.compose.ui.graphics.vector.ImageVector) {
     PROFILE(com.synfusion.attendance.R.string.category_profile_settings, Icons.Default.Person),
+    PERSONAL_WORK(com.synfusion.attendance.R.string.personal_info, Icons.Default.Work),
     STAY_CONNECTED(com.synfusion.attendance.R.string.category_stay_connected, Icons.Default.Favorite),
     PREFERENCES(com.synfusion.attendance.R.string.category_app_preferences, Icons.Default.Settings),
     BACKUP(com.synfusion.attendance.R.string.category_backup, Icons.Default.Backup),
@@ -91,7 +94,6 @@ fun SettingsScreen(
     val state by viewModel.state.collectAsStateWithLifecycle(initialValue = OfflineSettingsState())
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
-
 
     var isAppNotificationsEnabled by remember { mutableStateOf(androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled()) }
     var isPostPermissionsGranted by remember {
@@ -135,8 +137,6 @@ fun SettingsScreen(
             com.synfusion.attendance.utils.NotificationScheduler.cancelAllScheduledWork(context)
         }
     }
-
-
 
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
@@ -229,6 +229,7 @@ fun SettingsScreen(
     }
 
     var showProfileEditSheet by remember { mutableStateOf(false) }
+    var showCountryBottomSheet by remember { mutableStateOf(false) }
 
     val supportedLanguages = mapOf("en" to "English", "hi" to "हिंदी")
 
@@ -236,6 +237,8 @@ fun SettingsScreen(
             state.dailyWage != state.originalWage ||
             state.role != state.originalRole ||
             state.phone != state.originalPhone ||
+            state.countryCode != state.originalCountryCode ||
+            state.currencyCode != state.originalCurrencyCode ||
             state.profileImageUri != null
 
     val windowSizeInfo = LocalWindowSizeInfo.current
@@ -262,7 +265,8 @@ fun SettingsScreen(
                         Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.settings), fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                     }
 
-                    ProfileCardSection(state = state, viewModel = viewModel, hasChanges = hasChanges, onEditPhoto = { onNavigate("profile") })
+                    ProfileCardSection(state = state, viewModel = viewModel, hasChanges = hasChanges, onEditPhoto = { showProfileEditSheet = true })
+                    PersonalAndWorkCardSection(state = state, viewModel = viewModel, onOpenCountryPicker = { showCountryBottomSheet = true })
                     StayConnectedCardSection(context = context)
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Text(
@@ -297,13 +301,12 @@ fun SettingsScreen(
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error.copy(alpha=0.1f), contentColor = MaterialTheme.colorScheme.error)
                     ) {
-                        Icon(Icons.Default.Logout, contentDescription = null, modifier = Modifier.size(24.dp))
+                        Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null, modifier = Modifier.size(24.dp))
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.logout), fontSize = 16.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             } else {
-                // Adaptive Split-Pane View for Medium & Expanded Windows / Tablets
                 Row(
                     modifier = Modifier
                         .fillMaxSize()
@@ -311,7 +314,6 @@ fun SettingsScreen(
                         .padding(start = 20.dp, top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 12.dp, end = 20.dp, bottom = 24.dp),
                     horizontalArrangement = Arrangement.spacedBy(20.dp)
                 ) {
-                    // Left Pane: Navigation List
                     Card(
                         modifier = Modifier
                             .width(320.dp)
@@ -389,14 +391,13 @@ fun SettingsScreen(
                                 shape = RoundedCornerShape(12.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error.copy(alpha=0.1f), contentColor = MaterialTheme.colorScheme.error)
                             ) {
-                                Icon(Icons.Default.Logout, contentDescription = null, modifier = Modifier.size(20.dp))
+                                Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null, modifier = Modifier.size(20.dp))
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.logout), fontSize = 14.sp, fontWeight = FontWeight.Bold)
                             }
                         }
                     }
 
-                    // Right Pane: Detail View for Selected Category
                     Box(
                         modifier = Modifier
                             .weight(1f)
@@ -416,7 +417,10 @@ fun SettingsScreen(
 
                             when (selectedCategory) {
                                 SettingsCategory.PROFILE -> {
-                                    ProfileCardSection(state = state, viewModel = viewModel, hasChanges = hasChanges, onEditPhoto = { onNavigate("profile") })
+                                    ProfileCardSection(state = state, viewModel = viewModel, hasChanges = hasChanges, onEditPhoto = { showProfileEditSheet = true })
+                                }
+                                SettingsCategory.PERSONAL_WORK -> {
+                                    PersonalAndWorkCardSection(state = state, viewModel = viewModel, onOpenCountryPicker = { showCountryBottomSheet = true })
                                 }
                                 SettingsCategory.STAY_CONNECTED -> {
                                     StayConnectedCardSection(context = context)
@@ -445,19 +449,6 @@ fun SettingsScreen(
                         }
                     }
                 }
-                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
-                Row(modifier = Modifier.fillMaxWidth().clickable { onNavigate("live_demo_controls") }.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(modifier = Modifier.size(40.dp).clip(androidx.compose.foundation.shape.CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha=0.1f)), contentAlignment = Alignment.Center) {
-                            Icon(Icons.Default.BugReport, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                        }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column {
-                            Text("Developer Demo Controls", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                            Text("Edit demo live balances, followers & overrides", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                    }
-                }
             }
         }
 
@@ -479,7 +470,16 @@ fun SettingsScreen(
             )
         }
 
-
+        if (showCountryBottomSheet) {
+            CountrySelectionBottomSheet(
+                selectedCountryCode = state.countryCode,
+                onCountrySelected = { country ->
+                    viewModel.onCountryChange(country.countryCode)
+                    showCountryBottomSheet = false
+                },
+                onDismiss = { showCountryBottomSheet = false }
+            )
+        }
 
         if (showDeveloperSheet) {
             DeveloperContactBottomSheet(onDismiss = { showDeveloperSheet = false })
@@ -561,7 +561,6 @@ fun SettingsScreen(
                             backupSuccessDialogDetails = backupFile
                         } catch (e: Exception) {
                             Toast.makeText(context, "Backup failed: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
-                            // Still logout or stay? Stay so they can try again.
                         } finally {
                             isBackingUpForLogout = false
                         }
@@ -755,14 +754,102 @@ fun ProfileCardSection(
                 }
             }
 
-            val activeCountry = remember(state.countryCode) { CountryRepository.getCountry(state.countryCode) }
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(text = state.name.ifEmpty { androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.user_name) }, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                if (state.phone.isNotEmpty()) {
-                    Text(text = "${activeCountry.callingCode} ${state.phone}", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                if (state.dailyWage > 0) {
-                    Text(text = AmountFormatter.formatWithSymbol(state.dailyWage, state.currencyCode) + " / " + androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.day_singular), fontSize = 14.sp, color = Color(0xFF16A34A), fontWeight = FontWeight.Bold)
+                Text(text = "@${state.name.lowercase().replace(" ", "").ifEmpty { "user" }}", fontSize = 13.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
+            }
+        }
+    }
+}
+
+@Composable
+fun PersonalAndWorkCardSection(
+    state: OfflineSettingsState,
+    viewModel: OfflineSettingsViewModel,
+    onOpenCountryPicker: () -> Unit
+) {
+    val activeCountry = remember(state.countryCode) { CountryRepository.getCountry(state.countryCode) }
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text(
+                text = "Personal & Work Details",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+
+            Box(modifier = Modifier.fillMaxWidth()) {
+                OutlinedTextField(
+                    value = "${activeCountry.flagEmoji} ${activeCountry.displayName} (${activeCountry.currencySymbol})",
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.country_region)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    leadingIcon = { Icon(Icons.Default.Public, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                    trailingIcon = { Icon(Icons.Default.ArrowDropDown, contentDescription = null) },
+                    enabled = false,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                        disabledBorderColor = MaterialTheme.colorScheme.outline,
+                        disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        disabledLeadingIconColor = MaterialTheme.colorScheme.primary,
+                        disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                )
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .clickable { onOpenCountryPicker() }
+                )
+            }
+
+            OutlinedTextField(
+                value = if (state.dailyWage > 0) state.dailyWage.toInt().toString() else "",
+                onValueChange = { viewModel.onWageChange(it.filter { ch -> ch.isDigit() }) },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.daily_wage)) },
+                leadingIcon = { Text(CountryRepository.getCurrencySymbol(state.currencyCode), fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 12.dp)) },
+                shape = RoundedCornerShape(12.dp),
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                visualTransformation = CurrencyVisualTransformation(state.currencyCode)
+            )
+
+            OutlinedTextField(
+                value = state.phone,
+                onValueChange = { newValue ->
+                    val digits = newValue.filter { it.isDigit() }.take(15)
+                    viewModel.onPhoneChange(digits)
+                },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.phone_number)) },
+                leadingIcon = { Text("${activeCountry.callingCode} ", fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 12.dp)) },
+                shape = RoundedCornerShape(12.dp),
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+            )
+
+            Button(
+                onClick = { viewModel.saveChanges() },
+                modifier = Modifier.fillMaxWidth().height(48.dp),
+                shape = RoundedCornerShape(12.dp),
+                enabled = !state.isSaving
+            ) {
+                if (state.isSaving) {
+                    CircularProgressIndicator(modifier = Modifier.size(20.dp), color = MaterialTheme.colorScheme.onPrimary)
+                } else {
+                    Icon(Icons.Default.Save, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Save Details", fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -911,7 +998,6 @@ fun AppPreferencesCardSection(
         border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
-            // 1. Theme — Toggle (reflects effective dark theme including system inheritance)
             val isSystemDark = isSystemInDarkTheme()
             val effectiveDarkMode = state.isDarkMode ?: isSystemDark
 
@@ -953,7 +1039,6 @@ fun AppPreferencesCardSection(
 
             HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
 
-            // 2. Enable Splash Screen — Toggle
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -992,7 +1077,6 @@ fun AppPreferencesCardSection(
 
             HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
 
-            // 3. Reminders — Toggle
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1085,7 +1169,6 @@ fun AppPreferencesCardSection(
                 )
             }
 
-            // 4. Language — Selection
             if (state.isLanguageEnabled && state.isLanguageActivityEnabled) {
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
                 Row(
@@ -1134,8 +1217,6 @@ fun AppPreferencesCardSection(
                     )
                 }
             }
-
-
         }
     }
 }
@@ -1306,7 +1387,6 @@ fun InfoSupportCardSection(
     }
 }
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LogoutBottomSheet(
@@ -1331,14 +1411,13 @@ fun LogoutBottomSheet(
                 horizontalArrangement = Arrangement.spacedBy(24.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // LEFT COLUMN: Icon + Information
                 Column(
                     modifier = Modifier.weight(0.45f),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Logout,
+                        imageVector = Icons.AutoMirrored.Filled.Logout,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.error,
                         modifier = Modifier.size(44.dp)
@@ -1359,7 +1438,6 @@ fun LogoutBottomSheet(
                     )
                 }
 
-                // RIGHT COLUMN: Primary & Secondary Actions
                 Column(
                     modifier = Modifier.weight(0.55f),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -1405,7 +1483,7 @@ fun LogoutBottomSheet(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Icon(
-                    imageVector = Icons.Default.Logout,
+                    imageVector = Icons.AutoMirrored.Filled.Logout,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.error,
                     modifier = Modifier.size(48.dp)
@@ -1463,8 +1541,6 @@ fun LogoutBottomSheet(
         }
     }
 }
-
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -1607,7 +1683,6 @@ fun TermsConditionsBottomSheet(onDismiss: () -> Unit) {
     }
 }
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DeveloperContactBottomSheet(onDismiss: () -> Unit) {
@@ -1647,18 +1722,10 @@ fun DeveloperContactBottomSheet(onDismiss: () -> Unit) {
                     contentDescription = "SynFusion Profile",
                     modifier = Modifier.fillMaxSize().clip(androidx.compose.foundation.shape.CircleShape),
                     contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                    loading = {
-                        Icon(
-                            imageVector = Icons.Default.Person,
-                            contentDescription = "Loading Profile",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(24.dp)
-                        )
-                    },
                     error = {
                         Icon(
                             imageVector = Icons.Default.Person,
-                            contentDescription = "Error Loading Profile",
+                            contentDescription = "Default Profile",
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.padding(24.dp)
                         )
@@ -1731,12 +1798,15 @@ fun OfflineProfileEditBottomSheet(
     onSave: () -> Unit
 ) {
     val nameFocusRequester = remember { FocusRequester() }
+    var professionText by remember { mutableStateOf("Site Engineer") }
+    var bioText by remember { mutableStateOf("WorkDaily Verified Member • Site Operations Specialist") }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        windowInsets = WindowInsets(0.dp),
         dragHandle = { BottomSheetDefaults.DragHandle() }
     ) {
         Column(
@@ -1783,112 +1853,78 @@ fun OfflineProfileEditBottomSheet(
                     else null
                 }
 
-                // Premium visual transition for the profile image
-                var animatePhoto by remember { mutableStateOf(false) }
-                LaunchedEffect(Unit) {
-                    animatePhoto = true
-                }
-                val animatedScale by androidx.compose.animation.core.animateFloatAsState(
-                    targetValue = if (animatePhoto) 1f else 0.7f,
-                    animationSpec = androidx.compose.animation.core.spring(
-                        dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy,
-                        stiffness = androidx.compose.animation.core.Spring.StiffnessLow
-                    ),
-                    label = "photoScale"
-                )
-                val animatedAlpha by androidx.compose.animation.core.animateFloatAsState(
-                    targetValue = if (animatePhoto) 1f else 0f,
-                    animationSpec = androidx.compose.animation.core.tween(durationMillis = 350),
-                    label = "photoAlpha"
-                )
-
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
+                Box(modifier = Modifier.padding(bottom = 8.dp)) {
                     Box(
                         modifier = Modifier
-                            .graphicsLayer {
-                                scaleX = animatedScale
-                                scaleY = animatedScale
-                                alpha = animatedAlpha
-                            }
-                            .padding(bottom = 8.dp)
+                            .size(100.dp)
+                            .clip(androidx.compose.foundation.shape.CircleShape)
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+                            .border(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), androidx.compose.foundation.shape.CircleShape),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(100.dp)
-                                .clip(androidx.compose.foundation.shape.CircleShape)
-                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
-                                .border(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), androidx.compose.foundation.shape.CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            val imageRequest = remember(imageModel) {
-                                if (imageModel != null) {
-                                    val builder = coil.request.ImageRequest.Builder(context)
-                                        .data(imageModel)
-                                        .crossfade(true)
-                                    if (imageModel is java.io.File) {
-                                        builder.memoryCacheKey("${imageModel.absolutePath}_${imageModel.lastModified()}")
-                                            .diskCacheKey("${imageModel.absolutePath}_${imageModel.lastModified()}")
-                                            .networkCachePolicy(coil.request.CachePolicy.DISABLED)
-                                    } else {
-                                        builder.networkCachePolicy(coil.request.CachePolicy.ENABLED)
-                                    }
-                                    builder.diskCachePolicy(coil.request.CachePolicy.ENABLED)
-                                        .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
-                                        .build()
-                                } else null
-                            }
-
-                            if (imageModel != null && imageRequest != null) {
-                                coil.compose.SubcomposeAsyncImage(
-                                    model = imageRequest,
-                                    contentDescription = "Preview Photo",
-                                    modifier = Modifier.fillMaxSize().clip(androidx.compose.foundation.shape.CircleShape),
-                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                                    error = {
-                                        Icon(
-                                            imageVector = Icons.Default.Person,
-                                            contentDescription = "Default Avatar",
-                                            modifier = Modifier.size(50.dp),
-                                            tint = MaterialTheme.colorScheme.primary
-                                        )
-                                    }
-                                )
-                            } else {
-                                Icon(
-                                    imageVector = Icons.Default.Person,
-                                    contentDescription = "Default Avatar",
-                                    modifier = Modifier.size(50.dp),
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                            }
+                        val imageRequest = remember(imageModel) {
+                            if (imageModel != null) {
+                                val builder = coil.request.ImageRequest.Builder(context)
+                                    .data(imageModel)
+                                    .crossfade(true)
+                                if (imageModel is java.io.File) {
+                                    builder.memoryCacheKey("${imageModel.absolutePath}_${imageModel.lastModified()}")
+                                        .diskCacheKey("${imageModel.absolutePath}_${imageModel.lastModified()}")
+                                        .networkCachePolicy(coil.request.CachePolicy.DISABLED)
+                                } else {
+                                    builder.networkCachePolicy(coil.request.CachePolicy.ENABLED)
+                                }
+                                builder.diskCachePolicy(coil.request.CachePolicy.ENABLED)
+                                    .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
+                                    .build()
+                            } else null
                         }
 
-                        // Circular edit/pencil button in the bottom-right corner
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.BottomEnd)
-                                .minimumInteractiveComponentSize()
-                                .size(32.dp)
-                                .clip(androidx.compose.foundation.shape.CircleShape)
-                                .background(MaterialTheme.colorScheme.primary)
-                                .border(2.dp, MaterialTheme.colorScheme.surface, androidx.compose.foundation.shape.CircleShape)
-                                .clickable { showActionSheet = true },
-                            contentAlignment = Alignment.Center
-                        ) {
+                        if (imageModel != null && imageRequest != null) {
+                            coil.compose.SubcomposeAsyncImage(
+                                model = imageRequest,
+                                contentDescription = "Preview Photo",
+                                modifier = Modifier.fillMaxSize().clip(androidx.compose.foundation.shape.CircleShape),
+                                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                                error = {
+                                    Icon(
+                                        imageVector = Icons.Default.Person,
+                                        contentDescription = "Default Avatar",
+                                        modifier = Modifier.size(50.dp),
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            )
+                        } else {
                             Icon(
-                                imageVector = Icons.Default.Edit,
-                                contentDescription = "Edit Profile Photo",
-                                tint = MaterialTheme.colorScheme.onPrimary,
-                                modifier = Modifier.size(16.dp)
+                                imageVector = Icons.Default.Person,
+                                contentDescription = "Default Avatar",
+                                modifier = Modifier.size(50.dp),
+                                tint = MaterialTheme.colorScheme.primary
                             )
                         }
                     }
+
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .minimumInteractiveComponentSize()
+                            .size(32.dp)
+                            .clip(androidx.compose.foundation.shape.CircleShape)
+                            .background(MaterialTheme.colorScheme.primary)
+                            .border(2.dp, MaterialTheme.colorScheme.surface, androidx.compose.foundation.shape.CircleShape)
+                            .clickable { showActionSheet = true },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Edit Profile Photo",
+                            tint = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
                 }
 
-                // Show the 1:1 Image Cropper when an image has been selected
                 if (selectedUriForCrop != null) {
                     CropScreenDialog(
                         imageUri = selectedUriForCrop!!,
@@ -1902,7 +1938,6 @@ fun OfflineProfileEditBottomSheet(
                     )
                 }
 
-                // Compact Action Sheet Modal Bottom Sheet
                 if (showActionSheet) {
                     ModalBottomSheet(
                         onDismissRequest = { showActionSheet = false },
@@ -1926,7 +1961,6 @@ fun OfflineProfileEditBottomSheet(
                                 modifier = Modifier.padding(bottom = 8.dp)
                             )
 
-                            // Change Photo option
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -1953,7 +1987,6 @@ fun OfflineProfileEditBottomSheet(
                                 )
                             }
 
-                            // Remove Photo option (only visible if profile photo exists)
                             if (imageModel != null) {
                                 Row(
                                     modifier = Modifier
@@ -1992,37 +2025,41 @@ fun OfflineProfileEditBottomSheet(
                 value = state.name,
                 onValueChange = { viewModel.onNameChange(it) },
                 modifier = Modifier.fillMaxWidth().focusRequester(nameFocusRequester),
-                label = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.full_name)) },
+                label = { Text("Display Name") },
                 leadingIcon = { Icon(Icons.Default.Person, null) },
                 shape = RoundedCornerShape(12.dp),
                 singleLine = true
             )
 
-            val activeCountry = remember(state.countryCode) { CountryRepository.getCountry(state.countryCode) }
             OutlinedTextField(
-                value = if (state.dailyWage > 0) state.dailyWage.toInt().toString() else "",
-                onValueChange = { viewModel.onWageChange(it.filter { ch -> ch.isDigit() }) },
+                value = "@${state.name.lowercase().replace(" ", "").ifEmpty { "user" }}",
+                onValueChange = {},
+                readOnly = true,
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.daily_wage)) },
-                leadingIcon = { Text(CountryRepository.getCurrencySymbol(state.currencyCode), fontWeight = FontWeight.Bold) },
+                label = { Text("Unique Username") },
+                leadingIcon = { Icon(Icons.Default.AlternateEmail, null) },
                 shape = RoundedCornerShape(12.dp),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                visualTransformation = CurrencyVisualTransformation(state.currencyCode)
+                singleLine = true
             )
 
             OutlinedTextField(
-                value = state.phone,
-                onValueChange = { newValue ->
-                    val digits = newValue.filter { it.isDigit() }.take(15)
-                    viewModel.onPhoneChange(digits)
-                },
+                value = professionText,
+                onValueChange = { professionText = it },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.phone_number)) },
-                leadingIcon = { Text("${activeCountry.callingCode} ", fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 12.dp)) },
+                label = { Text("Profession") },
+                leadingIcon = { Icon(Icons.Default.Badge, null) },
                 shape = RoundedCornerShape(12.dp),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                singleLine = true
+            )
+
+            OutlinedTextField(
+                value = bioText,
+                onValueChange = { bioText = it },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Bio") },
+                leadingIcon = { Icon(Icons.Default.Description, null) },
+                shape = RoundedCornerShape(12.dp),
+                maxLines = 3
             )
 
             Spacer(modifier = Modifier.height(16.dp))
