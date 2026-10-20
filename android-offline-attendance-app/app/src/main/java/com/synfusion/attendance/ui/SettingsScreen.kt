@@ -75,9 +75,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import com.synfusion.attendance.ui.components.CountrySelectionBottomSheet
 
 enum class SettingsCategory(val titleRes: Int, val icon: androidx.compose.ui.graphics.vector.ImageVector) {
-    PROFILE(com.synfusion.attendance.R.string.category_profile_settings, Icons.Default.Person),
-    PERSONAL_WORK(com.synfusion.attendance.R.string.personal_info, Icons.Default.Work),
-    STAY_CONNECTED(com.synfusion.attendance.R.string.category_stay_connected, Icons.Default.Favorite),
+    ACCOUNT(com.synfusion.attendance.R.string.category_profile_settings, Icons.Default.Person),
     PREFERENCES(com.synfusion.attendance.R.string.category_app_preferences, Icons.Default.Settings),
     BACKUP(com.synfusion.attendance.R.string.category_backup, Icons.Default.Backup),
     INFO_SUPPORT(com.synfusion.attendance.R.string.category_info_support, Icons.Default.Info)
@@ -229,20 +227,12 @@ fun SettingsScreen(
     }
 
     var showProfileEditSheet by remember { mutableStateOf(false) }
-    var showCountryBottomSheet by remember { mutableStateOf(false) }
+    var showPersonalWorkDetailsSheet by remember { mutableStateOf(false) }
 
     val supportedLanguages = mapOf("en" to "English", "hi" to "हिंदी")
 
-    val hasChanges = state.name != state.originalName ||
-            state.dailyWage != state.originalWage ||
-            state.role != state.originalRole ||
-            state.phone != state.originalPhone ||
-            state.countryCode != state.originalCountryCode ||
-            state.currencyCode != state.originalCurrencyCode ||
-            state.profileImageUri != null
-
     val windowSizeInfo = LocalWindowSizeInfo.current
-    var selectedCategory by rememberSaveable { mutableStateOf(SettingsCategory.PROFILE) }
+    var selectedCategory by rememberSaveable { mutableStateOf(SettingsCategory.ACCOUNT) }
 
     val actualNotificationState = state.isRemindersEnabled && isAppNotificationsEnabled && isPostPermissionsGranted && isChannelEnabled
 
@@ -265,9 +255,11 @@ fun SettingsScreen(
                         Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.settings), fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                     }
 
-                    ProfileCardSection(state = state, viewModel = viewModel, hasChanges = hasChanges, onEditPhoto = { showProfileEditSheet = true })
-                    PersonalAndWorkCardSection(state = state, viewModel = viewModel, onOpenCountryPicker = { showCountryBottomSheet = true })
-                    StayConnectedCardSection(context = context)
+                    AccountNavigationCardSection(
+                        onEditProfile = { showProfileEditSheet = true },
+                        onEditPersonalWork = { showPersonalWorkDetailsSheet = true }
+                    )
+
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Text(
                             text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.category_app_preferences),
@@ -289,7 +281,11 @@ fun SettingsScreen(
                             onNavigate = onNavigate
                         )
                     }
+
                     BackupRestoreCardSection(state = state, lastBackupFile = lastBackupFile, context = context, onManageBackup = { showBackupSheet = true })
+
+                    StayConnectedCardSection(context = context)
+
                     InfoSupportCardSection(onNavigate = onNavigate, onDeveloperContact = { showDeveloperSheet = true })
 
                     Button(
@@ -416,14 +412,11 @@ fun SettingsScreen(
                             )
 
                             when (selectedCategory) {
-                                SettingsCategory.PROFILE -> {
-                                    ProfileCardSection(state = state, viewModel = viewModel, hasChanges = hasChanges, onEditPhoto = { showProfileEditSheet = true })
-                                }
-                                SettingsCategory.PERSONAL_WORK -> {
-                                    PersonalAndWorkCardSection(state = state, viewModel = viewModel, onOpenCountryPicker = { showCountryBottomSheet = true })
-                                }
-                                SettingsCategory.STAY_CONNECTED -> {
-                                    StayConnectedCardSection(context = context)
+                                SettingsCategory.ACCOUNT -> {
+                                    AccountNavigationCardSection(
+                                        onEditProfile = { showProfileEditSheet = true },
+                                        onEditPersonalWork = { showPersonalWorkDetailsSheet = true }
+                                    )
                                 }
                                 SettingsCategory.PREFERENCES -> {
                                     AppPreferencesCardSection(
@@ -443,6 +436,8 @@ fun SettingsScreen(
                                     BackupRestoreCardSection(state = state, lastBackupFile = lastBackupFile, context = context, onManageBackup = { showBackupSheet = true })
                                 }
                                 SettingsCategory.INFO_SUPPORT -> {
+                                    StayConnectedCardSection(context = context)
+                                    Spacer(modifier = Modifier.height(12.dp))
                                     InfoSupportCardSection(onNavigate = onNavigate, onDeveloperContact = { showDeveloperSheet = true })
                                 }
                             }
@@ -470,14 +465,21 @@ fun SettingsScreen(
             )
         }
 
-        if (showCountryBottomSheet) {
-            CountrySelectionBottomSheet(
-                selectedCountryCode = state.countryCode,
-                onCountrySelected = { country ->
-                    viewModel.onCountryChange(country.countryCode)
-                    showCountryBottomSheet = false
+        if (showPersonalWorkDetailsSheet) {
+            var wasSaved by remember { mutableStateOf(false) }
+            PersonalWorkDetailsBottomSheet(
+                state = state,
+                viewModel = viewModel,
+                onDismiss = {
+                    if (!wasSaved) {
+                        viewModel.discardChanges()
+                    }
+                    showPersonalWorkDetailsSheet = false
                 },
-                onDismiss = { showCountryBottomSheet = false }
+                onSave = {
+                    wasSaved = true
+                    viewModel.saveChanges()
+                }
             )
         }
 
@@ -642,149 +644,155 @@ fun SettingsScreen(
 }
 
 @Composable
-fun ProfileCardSection(
-    state: OfflineSettingsState,
-    viewModel: OfflineSettingsViewModel,
-    hasChanges: Boolean,
-    onEditPhoto: () -> Unit
+fun AccountNavigationCardSection(
+    onEditProfile: () -> Unit,
+    onEditPersonalWork: () -> Unit
 ) {
-    val context = LocalContext.current
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onEditPhoto() },
-        shape = RoundedCornerShape(24.dp),
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
     ) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onEditProfile() }
+                    .padding(16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.profile_settings), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                AnimatedVisibility(visible = hasChanges) {
-                    IconButton(onClick = { viewModel.saveChanges() }, enabled = !state.isSaving) {
-                        if (state.isSaving) {
-                            CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
-                        } else {
-                            Icon(Icons.Default.Check, contentDescription = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.save_changes), tint = MaterialTheme.colorScheme.primary)
-                        }
-                    }
-                }
-            }
-
-            Box(modifier = Modifier.padding(bottom = 8.dp)) {
-                val imageFile = remember(state.profileImageUrl) {
-                    if (state.profileImageUrl.isNotEmpty()) java.io.File(state.profileImageUrl) else null
-                }
-                val showLocalImage = imageFile != null && imageFile.exists()
-                val imageModel: Any? = remember(state.profileImageUrl, showLocalImage, state.googlePhotoUrl) {
-                    if (showLocalImage && imageFile != null) imageFile
-                    else if (state.googlePhotoUrl.isNotEmpty()) state.googlePhotoUrl
-                    else null
-                }
-                val imageRequest = remember(imageModel) {
-                    if (imageModel != null) {
-                        val builder = coil.request.ImageRequest.Builder(context)
-                            .data(imageModel)
-                            .crossfade(true)
-                        if (imageModel is java.io.File) {
-                            builder.memoryCacheKey("${state.profileImageUrl}_${imageModel.lastModified()}")
-                                .diskCacheKey("${state.profileImageUrl}_${imageModel.lastModified()}")
-                                .networkCachePolicy(coil.request.CachePolicy.DISABLED)
-                        } else {
-                            builder.networkCachePolicy(coil.request.CachePolicy.ENABLED)
-                        }
-                        builder.diskCachePolicy(coil.request.CachePolicy.ENABLED)
-                            .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
-                            .build()
-                    } else null
-                }
-
-                Box(
-                    modifier = Modifier
-                        .size(90.dp)
-                        .clip(androidx.compose.foundation.shape.CircleShape)
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
-                        .border(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), androidx.compose.foundation.shape.CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (imageModel != null && imageRequest != null) {
-                        coil.compose.SubcomposeAsyncImage(
-                            model = imageRequest,
-                            contentDescription = "Profile Photo",
-                            modifier = Modifier.fillMaxSize().clip(androidx.compose.foundation.shape.CircleShape),
-                            contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                            error = {
-                                Icon(
-                                    imageVector = Icons.Default.Person,
-                                    contentDescription = "Default Avatar",
-                                    modifier = Modifier.size(50.dp),
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                            }
-                        )
-                    } else {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(androidx.compose.foundation.shape.CircleShape)
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                        contentAlignment = Alignment.Center
+                    ) {
                         Icon(
-                            imageVector = Icons.Default.Person,
-                            contentDescription = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.profile_settings),
-                            modifier = Modifier.size(50.dp),
+                            Icons.Default.Person,
+                            contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary
                         )
                     }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.edit_profile),
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "Photo, display name, username & bio",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
-
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .size(32.dp)
-                        .clip(androidx.compose.foundation.shape.CircleShape)
-                        .background(MaterialTheme.colorScheme.primary)
-                        .border(2.dp, MaterialTheme.colorScheme.surface, androidx.compose.foundation.shape.CircleShape)
-                        .clickable { onEditPhoto() },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(Icons.Default.Edit, contentDescription = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.edit_profile), tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(16.dp))
-                }
+                Icon(
+                    Icons.Default.ChevronRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
 
-            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(text = state.name.ifEmpty { androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.user_name) }, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                Text(text = "@${state.name.lowercase().replace(" ", "").ifEmpty { "user" }}", fontSize = 13.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onEditPersonalWork() }
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(androidx.compose.foundation.shape.CircleShape)
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.Work,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.personal_info),
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "Country, currency, daily wage & phone",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                Icon(
+                    Icons.Default.ChevronRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PersonalAndWorkCardSection(
+fun PersonalWorkDetailsBottomSheet(
     state: OfflineSettingsState,
     viewModel: OfflineSettingsViewModel,
-    onOpenCountryPicker: () -> Unit
+    onDismiss: () -> Unit,
+    onSave: () -> Unit
 ) {
+    var showCountryPickerSheet by remember { mutableStateOf(false) }
     val activeCountry = remember(state.countryCode) { CountryRepository.getCountry(state.countryCode) }
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        windowInsets = WindowInsets(0.dp),
+        dragHandle = { BottomSheetDefaults.DragHandle() }
     ) {
         Column(
-            modifier = Modifier.padding(20.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 16.dp)
+                .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Text(
-                text = "Personal & Work Details",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(androidx.compose.foundation.shape.CircleShape)
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Default.Work, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.personal_info),
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline)
 
             Box(modifier = Modifier.fillMaxWidth()) {
                 OutlinedTextField(
@@ -808,7 +816,7 @@ fun PersonalAndWorkCardSection(
                 Box(
                     modifier = Modifier
                         .matchParentSize()
-                        .clickable { onOpenCountryPicker() }
+                        .clickable { showCountryPickerSheet = true }
                 )
             }
 
@@ -838,20 +846,47 @@ fun PersonalAndWorkCardSection(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
             )
 
-            Button(
-                onClick = { viewModel.saveChanges() },
-                modifier = Modifier.fillMaxWidth().height(48.dp),
-                shape = RoundedCornerShape(12.dp),
-                enabled = !state.isSaving
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                if (state.isSaving) {
-                    CircularProgressIndicator(modifier = Modifier.size(20.dp), color = MaterialTheme.colorScheme.onPrimary)
-                } else {
-                    Icon(Icons.Default.Save, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Save Details", fontWeight = FontWeight.Bold)
+                OutlinedButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.weight(1f).height(50.dp),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.cancel))
+                }
+                Button(
+                    onClick = {
+                        onSave()
+                        onDismiss()
+                    },
+                    modifier = Modifier.weight(1f).height(50.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    enabled = !state.isSaving
+                ) {
+                    if (state.isSaving) {
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)
+                    } else {
+                        Text("Save Details", fontWeight = FontWeight.Bold)
+                    }
                 }
             }
+            Spacer(modifier = Modifier.height(32.dp))
+        }
+
+        if (showCountryPickerSheet) {
+            CountrySelectionBottomSheet(
+                selectedCountryCode = state.countryCode,
+                onCountrySelected = { country ->
+                    viewModel.onCountryChange(country.countryCode)
+                    showCountryPickerSheet = false
+                },
+                onDismiss = { showCountryPickerSheet = false }
+            )
         }
     }
 }
