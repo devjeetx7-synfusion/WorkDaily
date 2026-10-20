@@ -16,6 +16,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.LiveTv
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -145,7 +146,7 @@ fun DashboardScreen(
             0 -> "dashboard"
             1 -> "calendar"
             2 -> "stats"
-            3 -> "settings"
+            3 -> "live_discover"
             else -> "dashboard"
         }
     }
@@ -172,7 +173,10 @@ fun DashboardScreen(
                 "dashboard" -> selectedTab = 0
                 "calendar" -> selectedTab = 1
                 "stats" -> selectedTab = 2
-                "settings" -> selectedTab = 3
+                "live_discover", "live" -> selectedTab = 3
+                "settings" -> {
+                    selectedTab = 0
+                }
                 "passbook" -> {
                     bottomNavController.navigate("passbook")
                 }
@@ -225,15 +229,18 @@ fun DashboardScreen(
                 }
                 selectedTab = 2
             }
-            "settings" -> {
+            "live_discover" -> {
                 if (currentRoute != "main_pager") {
                     bottomNavController.popBackStack("main_pager", false)
-                } else if (selectedTab == 3) {
-                    coroutineScope.launch {
-                        settingsScrollState.animateScrollTo(0)
-                    }
                 }
                 selectedTab = 3
+            }
+            "settings" -> {
+                if (currentRoute != "settings") {
+                    bottomNavController.navigate("settings") {
+                        launchSingleTop = true
+                    }
+                }
             }
             "passbook" -> {
                 if (currentRoute != "all_time_passbook") {
@@ -494,11 +501,17 @@ fun DashboardScreen(
                             )
                         }
                         3 -> {
-                            SettingsScreen(
-                                viewModel = settingsViewModel,
-                                onLogout = onLogout,
-                                onNavigate = { route: String -> bottomNavController.navigate(route) },
-                                scrollState = settingsScrollState
+                            LiveDiscoverScreen(
+                                viewModel = liveViewModel,
+                                onNavigateBack = { selectedTab = 0 },
+                                onNavigateLiveRoom = { roomId -> bottomNavController.navigate("live_room/$roomId") },
+                                onNavigateWallet = { bottomNavController.navigate("live_wallet") },
+                                onNavigateStudio = { bottomNavController.navigate("live_setup") },
+                                onNavigateLeaderboard = { bottomNavController.navigate("live_leaderboard") },
+                                onNavigateProfile = { bottomNavController.navigate("profile") },
+                                onNavigatePeople = { bottomNavController.navigate("live_people") },
+                                onNavigateMessages = { bottomNavController.navigate("live_private_chat/creator_1") },
+                                onNavigateDemoControls = { bottomNavController.navigate("live_demo_controls") }
                             )
                         }
                     }
@@ -565,12 +578,7 @@ fun DashboardScreen(
                     rewardsViewModel = rewardsViewModel,
                     liveViewModel = liveViewModel,
                     onNavigateBack = { bottomNavController.navigateUp() },
-                    onNavigateSettings = {
-                        selectedTab = 3
-                        bottomNavController.navigate("main_pager") {
-                            popUpTo("main_pager") { inclusive = true }
-                        }
-                    },
+                    onNavigateSettings = { bottomNavController.navigate("settings") },
                     onNavigateWallet = { bottomNavController.navigate("rewards_wallet") },
                     onNavigateRewardsHub = { bottomNavController.navigate("rewards_hub") },
                     onNavigateCreatorStudio = { bottomNavController.navigate("live_studio") },
@@ -580,6 +588,14 @@ fun DashboardScreen(
                     onNavigateMessages = { bottomNavController.navigate("live_people") },
                     onNavigatePeople = { bottomNavController.navigate("live_people") },
                     onLogout = onLogout
+                )
+            }
+            composable("settings") {
+                SettingsScreen(
+                    viewModel = settingsViewModel,
+                    onLogout = onLogout,
+                    onNavigate = { route: String -> bottomNavController.navigate(route) },
+                    onNavigateBack = { bottomNavController.navigateUp() }
                 )
             }
             composable("how_to_use") {
@@ -1839,7 +1855,7 @@ fun AdaptiveNavigationRail(currentRoute: String, onNavigate: (String) -> Unit = 
         NavItem("dashboard", Icons.Default.Home, "Home"),
         NavItem("calendar", Icons.Default.CalendarMonth, "Calendar"),
         NavItem("stats", Icons.Default.BarChart, "Status"),
-        NavItem("settings", Icons.Default.Settings, "Setting")
+        NavItem("live_discover", Icons.Default.LiveTv, "Live")
     )
 
     val coroutineScope = rememberCoroutineScope()

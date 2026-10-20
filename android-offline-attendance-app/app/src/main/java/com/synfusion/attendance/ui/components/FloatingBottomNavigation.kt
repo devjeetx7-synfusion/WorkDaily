@@ -17,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.LiveTv
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -38,7 +39,7 @@ enum class WorkDailyNavItem(
     HOME("dashboard", "Home", Icons.Default.Home),
     CALENDAR("calendar", "Calendar", Icons.Default.CalendarMonth),
     STATISTICS("stats", "Stats", Icons.Default.BarChart),
-    SETTINGS("settings", "Settings", Icons.Default.Settings);
+    LIVE("live_discover", "Live", Icons.Default.LiveTv);
 
     companion object {
         fun fromRoute(route: String): WorkDailyNavItem {
@@ -104,12 +105,12 @@ fun FloatingBottomNavigation(
                 }
             }
 
-            // Second Capsule: Settings Tab
-            val isSettingsSelected = currentRoute == WorkDailyNavItem.SETTINGS.route
-            val settingsCapsuleBgColor by animateColorAsState(
-                targetValue = if (isSettingsSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
+            // Second Capsule: Live Tab
+            val isLiveSelected = currentRoute == WorkDailyNavItem.LIVE.route
+            val liveCapsuleBgColor by animateColorAsState(
+                targetValue = if (isLiveSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
                 animationSpec = tween(durationMillis = 200),
-                label = "settingsCapsuleBgColor"
+                label = "liveCapsuleBgColor"
             )
 
             Surface(
@@ -122,7 +123,7 @@ fun FloatingBottomNavigation(
                         spotColor = Color.Black.copy(alpha = 0.08f)
                     ),
                 shape = CircleShape,
-                color = settingsCapsuleBgColor,
+                color = liveCapsuleBgColor,
                 border = BorderStroke(1.dp, capsuleBorderColor),
                 tonalElevation = 0.dp
             ) {
@@ -132,8 +133,8 @@ fun FloatingBottomNavigation(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     SettingsNavItemButton(
-                        item = WorkDailyNavItem.SETTINGS,
-                        isSelected = isSettingsSelected,
+                        item = WorkDailyNavItem.LIVE,
+                        isSelected = isLiveSelected,
                         onNavigate = onNavigate
                     )
                 }
