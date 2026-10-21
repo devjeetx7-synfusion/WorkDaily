@@ -23,9 +23,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
@@ -361,12 +365,26 @@ fun LiveRoomScreen(
                     .padding(horizontal = 12.dp, vertical = 6.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Comments Feed Overlay
+                // Comments Feed Overlay with Extended Viewport and Continuous Top Alpha Dissolve Mask V2
                 Box(
                     modifier = Modifier
                         .fillMaxWidth(0.85f)
-                        .heightIn(max = if (showInlineGiftTray) 130.dp else 210.dp)
+                        .heightIn(max = if (showInlineGiftTray) 180.dp else 300.dp)
                         .padding(horizontal = 4.dp, vertical = 2.dp)
+                        .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+                        .drawWithContent {
+                            drawContent()
+                            drawRect(
+                                brush = Brush.verticalGradient(
+                                    0.00f to Color.Transparent,
+                                    0.15f to Color.Transparent,
+                                    0.35f to Color.Black.copy(alpha = 0.5f),
+                                    0.55f to Color.Black,
+                                    1.00f to Color.Black
+                                ),
+                                blendMode = BlendMode.DstIn
+                            )
+                        }
                 ) {
                     LazyColumn(
                         state = chatListState,
