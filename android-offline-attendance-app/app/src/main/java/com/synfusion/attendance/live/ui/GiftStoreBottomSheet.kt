@@ -51,7 +51,6 @@ fun GiftStoreBottomSheet(
     var selectedGift by remember { mutableStateOf<LiveGift?>(gifts.firstOrNull()) }
     var selectedCategory by remember { mutableStateOf("Construction") }
     var selectedQuantity by remember { mutableStateOf(1) }
-    var showCongratulationsDialog by remember { mutableStateOf<Pair<LiveGift, Int>?>(null) }
 
     val categories = listOf("Construction", "Site Tools", "Love", "Celebration", "Premium")
     val quantityMultipliers = listOf(1, 5, 10, 99)
@@ -271,7 +270,7 @@ fun GiftStoreBottomSheet(
                                 val success = viewModel.sendGift(roomId, activeGift, selectedQuantity)
                                 if (success) {
                                     onGiftSent(activeGift, selectedQuantity)
-                                    showCongratulationsDialog = Pair(activeGift, selectedQuantity)
+                                    onDismiss()
                                 } else {
                                     Toast.makeText(context, "Insufficient diamonds balance!", Toast.LENGTH_SHORT).show()
                                 }
@@ -301,19 +300,6 @@ fun GiftStoreBottomSheet(
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-        }
-
-        showCongratulationsDialog?.let { (gift, qty) ->
-            GiftCongratulationsDialog(
-                gift = gift,
-                quantity = qty,
-                recipientName = recipientName,
-                totalDiamondsSpent = gift.diamondCost * qty,
-                onDismiss = {
-                    showCongratulationsDialog = null
-                    onDismiss()
-                }
-            )
         }
     }
 }

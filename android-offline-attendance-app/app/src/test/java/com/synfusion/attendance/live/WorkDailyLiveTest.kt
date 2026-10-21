@@ -154,4 +154,64 @@ class WorkDailyLiveTest {
         val blockedMsgSent = repository.sendPrivateMessage(friendId, "Are you there?")
         assertFalse("Messaging blocked user should fail", blockedMsgSent)
     }
+
+    @Test
+    fun testGiftOverlayEventAndQueueManagement() {
+        val room = repository.liveRooms.value.first()
+        val gift = repository.gifts.value.first { it.diamondCost == 100 } // Power Drill
+
+        // 1. Send gift
+        val success = repository.sendGift(room.id, gift, quantity = 2)
+        assertTrue("Gift sending should succeed", success)
+
+        // 2. Verify Gift Overlay Event is generated
+        val overlayEvents = repository.giftOverlayEvents.value
+        val event = overlayEvents.find { it.roomId == room.id && it.giftName == gift.name }
+        assertNotNull("Overlay event should be created", event)
+        assertEquals(2, event?.quantity)
+
+        // 3. Remove overlay event on animation complete
+        repository.removeGiftOverlayEvent(event!!.id)
+        val updatedEvents = repository.giftOverlayEvents.value
+        assertFalse("Overlay event should be removed after animation completion", updatedEvents.any { it.id == event.id })
+    }
+
+    @Test
+    fun testRealtimeSystemChatEventsAndDeduplication() {
+        val room = repository.liveRooms.value.first()
+
+        // 1. User joined event
+        repository.onUserJoinedRoom(room.id, "Dev")
+        val chatsAfterJoin = repository.chatMessagesMap.value[room.id] ?: emptyList()
+        assertTrue("USER_JOINED message should be in chat", chatsAfterJoin.any { it.eventType == "USER_JOINED" && it.senderName == "Dev" })
+
+        // Duplicate join within recent history should be ignored
+        val joinCountBefore = chatsAfterJoin.count { it.eventType == "USER_JOINED" && it.senderName == "Dev" }
+        repository.onUserJoinedRoom(room.id, "Dev")
+        val chatsAfterDupJoin = repository.chatMessagesMap.value[room.id] ?: emptyList()
+        val joinCountAfter = chatsAfterDupJoin.count { it.eventType == "USER_JOINED" && it.senderName == "Dev" }
+        assertEquals("Duplicate join should not be posted twice", joinCountBefore, joinCountAfter)
+
+        // 2. Share Live event
+        repository.onShareLiveStream(room.id, "Anu")
+        val chatsAfterShare = repository.chatMessagesMap.value[room.id] ?: emptyList()
+        assertTrue("LIVE_SHARED message should be in chat", chatsAfterShare.any { it.eventType == "LIVE_SHARED" && it.senderName == "Anu" })
+
+        // 3. Follow invitation
+        repository.triggerHostFollowInvitation(room.id, "Rajesh")
+        val chatsAfterInvite = repository.chatMessagesMap.value[room.id] ?: emptyList()
+        assertTrue("FOLLOW_INVITATION message should be in chat", chatsAfterInvite.any { it.eventType == "FOLLOW_INVITATION" && it.senderName == "Rajesh" })
+    }
+
+    @Test
+    fun testToggleFollowWithRoomContextEmitsChatEvent() {
+        val creators = repository.creators.value
+        val target = creators.first { !it.isFollowing }
+        val room = repository.liveRooms.value.first()
+
+        repository.toggleFollowCreator(target.id, room.id)
+
+        val chats = repository.chatMessagesMap.value[room.id] ?: emptyList()
+        assertTrue("Following creator in room context should post USER_FOLLOWED system chat event", chats.any { it.eventType == "USER_FOLLOWED" })
+    }
 }

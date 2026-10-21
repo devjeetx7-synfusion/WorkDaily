@@ -497,12 +497,22 @@ fun GoLiveFloatingButton(
 }
 
 /**
- * Floating Chat Comment Item.
+ * Redesigned Floating Chat Comment & System Event Item.
+ * Renders lightweight normal comments as well as animated, color-coded gradients for:
+ * - USER_JOINED (Emerald/Teal)
+ * - USER_FOLLOWED / USER_FOLLOWED_BACK (Pink/Purple)
+ * - GIFT_SENT / GIFT_COMBO (Gold/Amber)
+ * - LOVE_REACTION (Rose/Magenta)
+ * - LIVE_SHARED (Cyan/Blue)
+ * - FOLLOW_INVITATION (Indigo/Violet with CTA)
  */
 @Composable
 fun LiveCommentItem(
     message: ChatMessage,
     onUserClick: ((String) -> Unit)? = null,
+    onFollowClick: ((String) -> Unit)? = null,
+    isFollowingUser: Boolean = false,
+    currentUserId: String = "current_user",
     modifier: Modifier = Modifier
 ) {
     val textShadow = Shadow(
@@ -510,70 +520,262 @@ fun LiveCommentItem(
         blurRadius = 4f
     )
 
-    if (message.isGiftAnnouncement) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-            modifier = modifier
-                .clip(RoundedCornerShape(8.dp))
-                .background(LiveGold.copy(alpha = 0.2f))
-                .padding(horizontal = 8.dp, vertical = 4.dp)
-        ) {
-            Icon(Icons.Default.CardGiftcard, contentDescription = null, tint = LiveGold, modifier = Modifier.size(12.dp))
-            Text(
-                text = "${message.senderName} ${message.message}",
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                color = LiveGold,
-                style = TextStyle(shadow = textShadow)
-            )
-        }
-    } else {
-        Row(
-            verticalAlignment = Alignment.Top,
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            modifier = modifier.padding(vertical = 2.dp)
-        ) {
-            val initials = remember(message.senderName) {
-                val parts = message.senderName.trim().split(" ")
-                if (parts.size >= 2) "${parts[0].take(1)}${parts[1].take(1)}".uppercase()
-                else if (message.senderName.isNotBlank()) message.senderName.take(2).uppercase()
-                else "U"
-            }
+    val eventType = message.eventType ?: when {
+        message.isGiftAnnouncement -> "GIFT_SENT"
+        message.message.contains("joined", ignoreCase = true) -> "USER_JOINED"
+        message.message.contains("followed", ignoreCase = true) -> "USER_FOLLOWED"
+        message.message.contains("shared", ignoreCase = true) -> "LIVE_SHARED"
+        else -> null
+    }
 
-            Box(
-                modifier = Modifier
-                    .size(20.dp)
-                    .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.25f))
-                    .then(if (onUserClick != null) Modifier.clickable { onUserClick(message.senderId) } else Modifier),
-                contentAlignment = Alignment.Center
+    when (eventType) {
+        "USER_JOINED" -> {
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = Color.Black.copy(alpha = 0.35f),
+                border = androidx.compose.foundation.BorderStroke(1.dp, LivePrimaryMint.copy(alpha = 0.4f)),
+                modifier = modifier.padding(vertical = 2.dp)
             ) {
-                Text(
-                    text = initials,
-                    fontSize = 9.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(16.dp)
+                            .clip(CircleShape)
+                            .background(LiveEmeraldGradient),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CallMade,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(10.dp)
+                        )
+                    }
+                    Text(
+                        text = "${message.senderName} joined the live",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = LivePrimaryMint,
+                        style = TextStyle(shadow = textShadow)
+                    )
+                }
             }
+        }
 
-            Text(
-                text = message.senderName,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                color = LivePrimaryMint,
-                style = TextStyle(shadow = textShadow),
-                modifier = if (onUserClick != null) Modifier.clickable { onUserClick(message.senderId) } else Modifier
-            )
+        "USER_FOLLOWED", "USER_FOLLOWED_BACK" -> {
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = Color(0x33EC4899), // Pink-purple translucent
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFF472B6).copy(alpha = 0.5f)),
+                modifier = modifier.padding(vertical = 2.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                ) {
+                    Text("💗", fontSize = 12.sp)
+                    Text(
+                        text = if (message.message.isNotBlank() && !message.message.startsWith("sent")) message.message else "${message.senderName} followed host",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFF472B6),
+                        style = TextStyle(shadow = textShadow)
+                    )
+                }
+            }
+        }
 
-            Text(
-                text = message.message,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Normal,
-                color = Color.White,
-                style = TextStyle(shadow = textShadow),
-                softWrap = true
-            )
+        "GIFT_SENT", "GIFT_COMBO" -> {
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = Color(0x44ECB159), // Gold-amber translucent
+                border = androidx.compose.foundation.BorderStroke(1.dp, LiveGold.copy(alpha = 0.6f)),
+                modifier = modifier.padding(vertical = 2.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CardGiftcard,
+                        contentDescription = null,
+                        tint = LiveGold,
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Text(
+                        text = "${message.senderName} ${message.message}",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = LiveGold,
+                        style = TextStyle(shadow = textShadow)
+                    )
+                    if (message.giftDiamondCost != null && message.giftDiamondCost > 0) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(2.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Diamond,
+                                contentDescription = null,
+                                tint = LiveDiamondColor,
+                                modifier = Modifier.size(11.dp)
+                            )
+                            Text(
+                                text = "${message.giftDiamondCost}",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = LiveDiamondColor
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        "LIVE_SHARED" -> {
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = Color(0x3306B6D4), // Cyan-blue translucent
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF38BDF8).copy(alpha = 0.5f)),
+                modifier = modifier.padding(vertical = 2.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Share,
+                        contentDescription = null,
+                        tint = Color(0xFF38BDF8),
+                        modifier = Modifier.size(12.dp)
+                    )
+                    Text(
+                        text = "${message.senderName} shared this live",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF38BDF8),
+                        style = TextStyle(shadow = textShadow)
+                    )
+                }
+            }
+        }
+
+        "FOLLOW_INVITATION" -> {
+            Surface(
+                shape = RoundedCornerShape(14.dp),
+                color = Color(0x446366F1), // Indigo-purple translucent
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF818CF8).copy(alpha = 0.6f)),
+                modifier = modifier.padding(vertical = 2.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text("💜", fontSize = 12.sp)
+                        Text(
+                            text = message.message.ifBlank { "Follow ${message.senderName} for more lives!" },
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+
+                    if (onFollowClick != null && !isFollowingUser && message.senderId != currentUserId) {
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = LivePrimaryEmerald,
+                            modifier = Modifier
+                                .padding(start = 8.dp)
+                                .clickable { onFollowClick(message.senderId) }
+                        ) {
+                            Text(
+                                text = "+ Follow",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        else -> {
+            // Standard User Message Row with optional contextual + Follow CTA
+            Row(
+                verticalAlignment = Alignment.Top,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                modifier = modifier.padding(vertical = 2.dp)
+            ) {
+                val initials = remember(message.senderName) {
+                    val parts = message.senderName.trim().split(" ")
+                    if (parts.size >= 2) "${parts[0].take(1)}${parts[1].take(1)}".uppercase()
+                    else if (message.senderName.isNotBlank()) message.senderName.take(2).uppercase()
+                    else "U"
+                }
+
+                Box(
+                    modifier = Modifier
+                        .size(20.dp)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.25f))
+                        .then(if (onUserClick != null) Modifier.clickable { onUserClick(message.senderId) } else Modifier),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = initials,
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+
+                Text(
+                    text = message.senderName,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = LivePrimaryMint,
+                    style = TextStyle(shadow = textShadow),
+                    modifier = if (onUserClick != null) Modifier.clickable { onUserClick(message.senderId) } else Modifier
+                )
+
+                Text(
+                    text = message.message,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Normal,
+                    color = Color.White,
+                    style = TextStyle(shadow = textShadow),
+                    modifier = Modifier.weight(1f, fill = false),
+                    softWrap = true
+                )
+
+                if (onFollowClick != null && !isFollowingUser && message.senderId != currentUserId && message.senderId != "user") {
+                    Text(
+                        text = "+Follow",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = LivePrimaryMint,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(LivePrimaryEmerald.copy(alpha = 0.2f))
+                            .clickable { onFollowClick(message.senderId) }
+                            .padding(horizontal = 4.dp, vertical = 1.dp)
+                    )
+                }
+            }
         }
     }
 }
