@@ -81,8 +81,24 @@ class LiveViewModel(application: Application) : AndroidViewModel(application) {
         repository.resetSocialDemoData()
     }
 
-    fun toggleFollowCreator(creatorId: String) {
-        repository.toggleFollowCreator(creatorId)
+    fun toggleFollowCreator(creatorId: String, roomId: String? = null) {
+        repository.toggleFollowCreator(creatorId, roomId)
+    }
+
+    fun removeGiftOverlayEvent(eventId: String) {
+        repository.removeGiftOverlayEvent(eventId)
+    }
+
+    fun onUserJoinedRoom(roomId: String, userName: String = "Dev") {
+        repository.onUserJoinedRoom(roomId, userName)
+    }
+
+    fun onShareLiveStream(roomId: String, senderName: String = "You") {
+        repository.onShareLiveStream(roomId, senderName)
+    }
+
+    fun triggerHostFollowInvitation(roomId: String, hostName: String) {
+        repository.triggerHostFollowInvitation(roomId, hostName)
     }
 
     fun topUpDiamonds(amount: Int) {

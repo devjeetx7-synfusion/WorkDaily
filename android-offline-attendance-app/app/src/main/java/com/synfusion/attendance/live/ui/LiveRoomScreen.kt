@@ -68,9 +68,14 @@ fun LiveRoomScreen(
     )
 
     val chatMessages = chatMessagesMap[room.id] ?: emptyList()
+    val giftOverlayEvents by viewModel.giftOverlayEvents.collectAsState()
     val isFollowing = followedCreatorIds.contains(room.creatorId)
     val isHost = room.isHost || room.creatorId == "creator_me" || room.creatorId == "user_me"
     val audioSeats = audioSeatsMap[room.id] ?: emptyList()
+
+    val roomGiftEvents = remember(giftOverlayEvents, room.id) {
+        giftOverlayEvents.filter { it.roomId == room.id }
+    }
 
     var showGiftSheet by remember { mutableStateOf(false) }
     var showInlineGiftTray by remember { mutableStateOf(false) }
@@ -81,7 +86,6 @@ fun LiveRoomScreen(
 
     var chatInput by remember { mutableStateOf("") }
     var triggerHeartSignal by remember { mutableLongStateOf(0L) }
-    var showGiftSentDialog by remember { mutableStateOf<Pair<LiveGift, Int>?>(null) }
 
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
@@ -140,6 +144,7 @@ fun LiveRoomScreen(
 
     LaunchedEffect(room.id) {
         viewModel.setActiveRoom(room.id)
+        viewModel.onUserJoinedRoom(room.id, "You")
     }
 
     LaunchedEffect(chatListState.isScrollInProgress) {
@@ -259,7 +264,7 @@ fun LiveRoomScreen(
                         if (!isHost) {
                             FollowButton(
                                 isFollowing = isFollowing,
-                                onToggle = { viewModel.toggleFollowCreator(room.creatorId) }
+                                onToggle = { viewModel.toggleFollowCreator(room.creatorId, room.id) }
                             )
                         }
                     }
@@ -279,6 +284,7 @@ fun LiveRoomScreen(
 
                     IconButton(
                         onClick = {
+                            viewModel.onShareLiveStream(room.id, "You")
                             val shareIntent = Intent(Intent.ACTION_SEND).apply {
                                 type = "text/plain"
                                 putExtra(Intent.EXTRA_SUBJECT, "Watch ${room.creatorName} Live on WorkDaily")
@@ -328,7 +334,16 @@ fun LiveRoomScreen(
                 }
             }
 
-            // Layer 4: Floating Hearts Wave Canvas
+            // Layer 4: Transparent Animated Gift Overlay Engine
+            LiveGiftAnimationHost(
+                events = roomGiftEvents,
+                currentUserId = "current_user",
+                onEventFinished = { eventId ->
+                    viewModel.removeGiftOverlayEvent(eventId)
+                }
+            )
+
+            // Layer 5: Floating Hearts Wave Canvas
             FloatingHeartWaveOverlay(
                 triggerHeartSignal = triggerHeartSignal,
                 onSendHearts = { count ->
@@ -362,9 +377,13 @@ fun LiveRoomScreen(
                             items = chatMessages,
                             key = { it.id }
                         ) { msg ->
+                            val isMsgSenderFollowed = followedCreatorIds.contains(msg.senderId)
                             LiveCommentItem(
                                 message = msg,
-                                onUserClick = { selectedProfileUserId = it }
+                                onUserClick = { selectedProfileUserId = it },
+                                onFollowClick = { senderId -> viewModel.toggleFollowCreator(senderId, room.id) },
+                                isFollowingUser = isMsgSenderFollowed,
+                                currentUserId = "current_user"
                             )
                         }
                     }
@@ -408,8 +427,9 @@ fun LiveRoomScreen(
                             showGiftSheet = false
                         },
                         onNavigateWallet = onNavigateWallet,
-                        onGiftSent = { gift, qty ->
-                            showGiftSentDialog = Pair(gift, qty)
+                        onGiftSent = { _, _ ->
+                            showInlineGiftTray = false
+                            showGiftSheet = false
                         }
                     )
                 }
@@ -499,8 +519,8 @@ fun LiveRoomScreen(
                     viewModel = viewModel,
                     onDismiss = { showGiftSheet = false },
                     onNavigateWallet = onNavigateWallet,
-                    onGiftSent = { gift, qty ->
-                        showGiftSentDialog = Pair(gift, qty)
+                    onGiftSent = { _, _ ->
+                        showGiftSheet = false
                     }
                 )
             }
@@ -537,16 +557,6 @@ fun LiveRoomScreen(
                     onDismiss = { selectedProfileUserId = null },
                     onNavigatePrivateChat = onNavigatePrivateChat,
                     onNavigateFullProfile = onNavigateFullProfile
-                )
-            }
-
-            showGiftSentDialog?.let { (gift, qty) ->
-                GiftCongratulationsDialog(
-                    gift = gift,
-                    quantity = qty,
-                    recipientName = room.creatorName,
-                    totalDiamondsSpent = gift.diamondCost * qty,
-                    onDismiss = { showGiftSentDialog = null }
                 )
             }
 

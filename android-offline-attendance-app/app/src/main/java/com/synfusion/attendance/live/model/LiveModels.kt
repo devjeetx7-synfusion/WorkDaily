@@ -220,7 +220,8 @@ data class ChatMessage(
     val giftDiamondCost: Int? = null,
     val isSystemMessage: Boolean = false,
     val isPinned: Boolean = false,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
+    val eventType: String? = null
 )
 
 data class GuestRequest(

@@ -201,7 +201,7 @@ class DemoLiveRepository(context: Context? = null) {
         syncSocialStateToUsers()
     }
 
-    fun toggleFollowCreator(creatorId: String) {
+    fun toggleFollowCreator(creatorId: String, roomId: String? = null) {
         if (creatorId == "current_user") return
         val current = _followedCreatorIds.value.toMutableSet()
         val isNowFollowing = !current.contains(creatorId)
@@ -213,10 +213,63 @@ class DemoLiveRepository(context: Context? = null) {
                 type = NotificationType.NEW_FOLLOWER,
                 targetCreatorId = creatorId
             )
+            if (roomId != null) {
+                val creator = _creators.value.find { it.id == creatorId }
+                val creatorName = creator?.name ?: "Host"
+                val followMsg = ChatMessage(
+                    id = UUID.randomUUID().toString(),
+                    roomId = roomId,
+                    senderName = "You",
+                    message = "You started following $creatorName",
+                    eventType = "USER_FOLLOWED"
+                )
+                addChatMessageInternal(roomId, followMsg)
+            }
         } else {
             current.remove(creatorId)
         }
         saveFollowedCreatorIds(current)
+    }
+
+    fun removeGiftOverlayEvent(eventId: String) {
+        _giftOverlayEvents.value = _giftOverlayEvents.value.filterNot { it.id == eventId }
+    }
+
+    fun onUserJoinedRoom(roomId: String, userName: String = "Dev") {
+        val existingChats = _chatMessagesMap.value[roomId] ?: emptyList()
+        val hasRecentJoin = existingChats.takeLast(10).any { it.eventType == "USER_JOINED" && it.senderName == userName }
+        if (!hasRecentJoin) {
+            val joinMsg = ChatMessage(
+                id = UUID.randomUUID().toString(),
+                roomId = roomId,
+                senderName = userName,
+                message = "joined the live",
+                eventType = "USER_JOINED"
+            )
+            addChatMessageInternal(roomId, joinMsg)
+        }
+    }
+
+    fun onShareLiveStream(roomId: String, senderName: String = "You") {
+        val shareMsg = ChatMessage(
+            id = UUID.randomUUID().toString(),
+            roomId = roomId,
+            senderName = senderName,
+            message = "shared this live",
+            eventType = "LIVE_SHARED"
+        )
+        addChatMessageInternal(roomId, shareMsg)
+    }
+
+    fun triggerHostFollowInvitation(roomId: String, hostName: String) {
+        val inviteMsg = ChatMessage(
+            id = UUID.randomUUID().toString(),
+            roomId = roomId,
+            senderName = hostName,
+            message = "Follow $hostName for more lives!",
+            eventType = "FOLLOW_INVITATION"
+        )
+        addChatMessageInternal(roomId, inviteMsg)
     }
 
     // Friend Requests & Relationships
