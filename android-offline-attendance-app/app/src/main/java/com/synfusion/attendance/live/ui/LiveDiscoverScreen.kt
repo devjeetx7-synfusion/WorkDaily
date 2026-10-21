@@ -107,7 +107,9 @@ fun LiveDiscoverScreen(
         floatingActionButton = {
             GoLiveFloatingButton(
                 onClick = onNavigateStudio,
-                modifier = Modifier.padding(bottom = 12.dp, end = 4.dp)
+                modifier = Modifier
+                    .navigationBarsPadding()
+                    .padding(bottom = 84.dp, end = 12.dp)
             )
         },
         containerColor = MaterialTheme.colorScheme.background
@@ -161,7 +163,7 @@ fun LiveDiscoverScreen(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                     modifier = Modifier.weight(1f),
-                    contentPadding = PaddingValues(bottom = 80.dp)
+                    contentPadding = PaddingValues(bottom = 140.dp)
                 ) {
                     items(activeLiveRooms, key = { it.id }) { room ->
                         CleanLiveRoomGridCard(
