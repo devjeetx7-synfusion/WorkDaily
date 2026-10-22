@@ -135,6 +135,7 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:32.8.0"))
     implementation("com.google.firebase:firebase-auth-ktx")
     implementation("com.google.firebase:firebase-firestore-ktx")
+    implementation("com.google.firebase:firebase-messaging-ktx")
 
     // Google Credential Manager & Google ID
     implementation("androidx.credentials:credentials:1.2.1")
