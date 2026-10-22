@@ -10,14 +10,17 @@ import com.synfusion.attendance.data.daos.UserDao
 import com.synfusion.attendance.data.entities.AttendanceEntity
 import com.synfusion.attendance.data.entities.SummaryEntity
 import com.synfusion.attendance.data.entities.UserEntity
+import com.synfusion.attendance.notifications.data.NotificationDao
+import com.synfusion.attendance.notifications.data.NotificationEntity
 
 @Database(
     entities = [
         UserEntity::class,
         AttendanceEntity::class,
-        SummaryEntity::class
+        SummaryEntity::class,
+        NotificationEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = true
 )
 abstract class AttendanceDatabase : RoomDatabase() {
@@ -25,6 +28,7 @@ abstract class AttendanceDatabase : RoomDatabase() {
     abstract fun userDao(): UserDao
     abstract fun attendanceDao(): AttendanceDao
     abstract fun summaryDao(): SummaryDao
+    abstract fun notificationDao(): NotificationDao
 
     companion object {
         @Volatile
@@ -49,6 +53,34 @@ abstract class AttendanceDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `notifications` (
+                        `id` TEXT NOT NULL,
+                        `type` TEXT NOT NULL,
+                        `categoryId` TEXT NOT NULL,
+                        `title` TEXT NOT NULL,
+                        `body` TEXT NOT NULL,
+                        `timestamp` INTEGER NOT NULL,
+                        `userId` TEXT,
+                        `entityId` TEXT,
+                        `deepLink` TEXT,
+                        `artworkUrl` TEXT,
+                        `artworkResId` INTEGER,
+                        `priority` INTEGER NOT NULL,
+                        `isRead` INTEGER NOT NULL,
+                        `source` TEXT NOT NULL,
+                        `expiryTime` INTEGER,
+                        `isDemo` INTEGER NOT NULL,
+                        PRIMARY KEY(`id`)
+                    )
+                    """.trimIndent()
+                )
+            }
+        }
+
         fun getInstance(context: android.content.Context): AttendanceDatabase {
             synchronized(dbLock) {
                 if (isSwapping) {
@@ -61,7 +93,7 @@ abstract class AttendanceDatabase : RoomDatabase() {
                         "synfusion_offline_attendance_db"
                     )
                     .setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING)
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                     .fallbackToDestructiveMigration()
                     .build()
                     INSTANCE = instance

@@ -85,6 +85,8 @@ import com.synfusion.attendance.utils.collectAsStateWithLifecycle
 import com.synfusion.attendance.ui.responsive.LocalWindowSizeInfo
 import com.synfusion.attendance.ui.responsive.ResponsiveContainer
 import com.synfusion.attendance.ui.pdf.PdfViewerScreen
+import com.synfusion.attendance.notifications.ui.*
+import com.synfusion.attendance.notifications.studio.*
 import android.net.Uri
 import java.net.URLDecoder
 import java.net.URLEncoder
@@ -379,9 +381,9 @@ fun DashboardScreen(
                                                         item {
                                                             HeaderSection(
                                                                 state = dashboardState,
-                                                                coinBalance = walletSummary.totalBalance,
                                                                 onProfileClick = { bottomNavController.navigate("profile") },
-                                                                onRewardsClick = { bottomNavController.navigate("rewards_hub") }
+                                                                onSearchClick = { bottomNavController.navigate("live_people") },
+                                                                onNotificationClick = { bottomNavController.navigate("notifications_center") }
                                                             )
                                                         }
                                                         item {
@@ -430,9 +432,9 @@ fun DashboardScreen(
                                                         item {
                                                             HeaderSection(
                                                                 state = dashboardState,
-                                                                coinBalance = walletSummary.totalBalance,
                                                                 onProfileClick = { bottomNavController.navigate("profile") },
-                                                                onRewardsClick = { bottomNavController.navigate("rewards_hub") }
+                                                                onSearchClick = { bottomNavController.navigate("live_people") },
+                                                                onNotificationClick = { bottomNavController.navigate("notifications_center") }
                                                             )
                                                         }
                                                         item {
@@ -570,6 +572,28 @@ fun DashboardScreen(
                     title = decodedTitle,
                     exportType = exportType,
                     monthDate = monthDate,
+                    onNavigateBack = { bottomNavController.navigateUp() }
+                )
+            }
+            composable("notifications_center") {
+                val notifViewModel: NotificationCenterViewModel = viewModel()
+                NotificationCenterScreen(
+                    viewModel = notifViewModel,
+                    onNavigateBack = { bottomNavController.navigateUp() },
+                    onNavigateSettings = { bottomNavController.navigate("notification_settings") },
+                    onNavigateDestination = { route -> bottomNavController.navigate(route) }
+                )
+            }
+            composable("notification_settings") {
+                NotificationSettingsScreen(
+                    onNavigateBack = { bottomNavController.navigateUp() },
+                    onNavigateStudio = { bottomNavController.navigate("notification_studio") }
+                )
+            }
+            composable("notification_studio") {
+                val studioViewModel: NotificationStudioViewModel = viewModel()
+                NotificationStudioScreen(
+                    viewModel = studioViewModel,
                     onNavigateBack = { bottomNavController.navigateUp() }
                 )
             }
@@ -1043,9 +1067,9 @@ fun DashboardShimmer() {
 @Composable
 fun HeaderSection(
     state: OfflineDashboardState,
-    coinBalance: Int = 0,
     onProfileClick: () -> Unit = {},
-    onRewardsClick: () -> Unit = {}
+    onSearchClick: () -> Unit = {},
+    onNotificationClick: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val todayCal = remember { Calendar.getInstance() }
@@ -1075,7 +1099,6 @@ fun HeaderSection(
         } else null
     }
 
-    // Standard WorkDaily Header
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -1162,31 +1185,34 @@ fun HeaderSection(
 
             Spacer(modifier = Modifier.width(8.dp))
 
-            // Real Coin Balance Header Pill: [WORKDAILY COIN ICON] [COIN AMOUNT] [CHEVRON]
-            Surface(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(20.dp))
-                    .clickable { onRewardsClick() },
-                color = RewardsPurple.copy(alpha = 0.12f),
-                border = androidx.compose.foundation.BorderStroke(1.dp, RewardsPurple.copy(alpha = 0.25f))
+            // Replace Coin Pill with User Search + Notification Bell
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    RewardCoinBalance(
-                        amount = coinBalance,
-                        fontSize = 13,
-                        textColor = RewardsPurple,
-                        coinSize = 16.dp
-                    )
+                IconButton(onClick = onSearchClick) {
                     Icon(
-                        imageVector = Icons.Default.ChevronRight,
-                        contentDescription = "Open Rewards Hub",
-                        tint = RewardsPurple,
-                        modifier = Modifier.size(16.dp)
+                        imageVector = com.synfusion.attendance.ui.components.icons.WorkDailyIcons.Search,
+                        contentDescription = "Search People",
+                        tint = MaterialTheme.colorScheme.onBackground
                     )
+                }
+
+                IconButton(onClick = onNotificationClick) {
+                    Box {
+                        Icon(
+                            imageVector = com.synfusion.attendance.ui.components.icons.WorkDailyIcons.Bell,
+                            contentDescription = "Notifications",
+                            tint = MaterialTheme.colorScheme.onBackground
+                        )
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .size(8.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primary)
+                        )
+                    }
                 }
             }
         }

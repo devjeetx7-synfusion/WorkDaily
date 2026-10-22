@@ -80,72 +80,9 @@ fun LiveDiscoverScreen(
                         Icon(WorkDailyIcons.Search, contentDescription = "Search Live")
                     }
 
-                    // 2. Three-dot Overflow Menu for Friends & Notifications
-                    Box {
-                        IconButton(onClick = { showOverflowMenu = true }) {
-                            Box {
-                                Icon(WorkDailyIcons.MoreVertical, contentDescription = "Live Options")
-                                if (unreadNotificationsCount > 0) {
-                                    Box(
-                                        modifier = Modifier
-                                            .align(Alignment.TopEnd)
-                                            .size(7.dp)
-                                            .clip(CircleShape)
-                                            .background(LiveRed)
-                                    )
-                                }
-                            }
-                        }
-
-                        DropdownMenu(
-                            expanded = showOverflowMenu,
-                            onDismissRequest = { showOverflowMenu = false }
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text("Friends & People") },
-                                leadingIcon = { Icon(WorkDailyIcons.Group, contentDescription = null, modifier = Modifier.size(20.dp)) },
-                                onClick = {
-                                    showOverflowMenu = false
-                                    onNavigatePeople()
-                                }
-                            )
-
-                            DropdownMenuItem(
-                                text = {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Text("Notifications")
-                                        if (unreadNotificationsCount > 0) {
-                                            Surface(
-                                                shape = CircleShape,
-                                                color = LiveRed
-                                            ) {
-                                                Text(
-                                                    text = "$unreadNotificationsCount",
-                                                    color = Color.White,
-                                                    fontSize = 10.sp,
-                                                    fontWeight = FontWeight.Bold,
-                                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                                )
-                                            }
-                                        }
-                                    }
-                                },
-                                leadingIcon = { Icon(WorkDailyIcons.Bell, contentDescription = null, modifier = Modifier.size(20.dp)) },
-                                onClick = {
-                                    showOverflowMenu = false
-                                    showNotificationsSheet = true
-                                }
-                            )
-                        }
-                    }
-
                     Spacer(modifier = Modifier.width(4.dp))
 
-                    // 3. Compact Green [Go Live] Action Button inside ActionBar
+                    // 2. Compact Green [Go Live] Action Button inside ActionBar
                     Button(
                         onClick = onNavigateStudio,
                         shape = RoundedCornerShape(16.dp),
