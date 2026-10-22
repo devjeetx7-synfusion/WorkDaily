@@ -123,7 +123,7 @@ fun AllTimePassbookScreen(
                                 trailingIcon = {
                                     if (state.searchQuery.isNotEmpty()) {
                                         IconButton(onClick = { viewModel.updateSearchQuery("") }) {
-                                            Icon(Icons.Default.Close, contentDescription = "Clear search", modifier = Modifier.size(20.dp))
+                                            Icon(com.synfusion.attendance.ui.components.icons.WorkDailyIcons.Close, contentDescription = "Clear search", modifier = Modifier.size(20.dp))
                                         }
                                     }
                                 }
@@ -134,7 +134,7 @@ fun AllTimePassbookScreen(
                                 isSearchActive = false
                                 viewModel.updateSearchQuery("")
                             }) {
-                                Icon(Icons.Default.ArrowBack, contentDescription = "Close search")
+                                    Icon(com.synfusion.attendance.ui.components.icons.WorkDailyIcons.ArrowLeft, contentDescription = "Close search")
                             }
                         },
                         colors = TopAppBarDefaults.topAppBarColors(
@@ -147,12 +147,12 @@ fun AllTimePassbookScreen(
                         title = { Text(androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.all_time_passbook_title), fontWeight = FontWeight.Bold) },
                         navigationIcon = {
                             IconButton(onClick = onNavigateBack) {
-                                Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                                Icon(com.synfusion.attendance.ui.components.icons.WorkDailyIcons.ArrowLeft, contentDescription = "Back")
                             }
                         },
                         actions = {
                             IconButton(onClick = { isSearchActive = true }) {
-                                Icon(Icons.Default.Search, contentDescription = "Search")
+                                Icon(com.synfusion.attendance.ui.components.icons.WorkDailyIcons.Search, contentDescription = "Search")
                             }
                             IconButton(
                                 onClick = { exportAllTimePDF() },

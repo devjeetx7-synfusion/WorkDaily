@@ -127,13 +127,13 @@ fun PrivateChatScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.onSurface)
+                        Icon(com.synfusion.attendance.ui.components.icons.WorkDailyIcons.ArrowLeft, contentDescription = "Back", tint = MaterialTheme.colorScheme.onSurface)
                     }
                 },
                 actions = {
                     Box {
                         IconButton(onClick = { showMenu = true }) {
-                            Icon(Icons.Default.MoreVert, contentDescription = "More", tint = MaterialTheme.colorScheme.onSurface)
+                            Icon(com.synfusion.attendance.ui.components.icons.WorkDailyIcons.MoreVertical, contentDescription = "More", tint = MaterialTheme.colorScheme.onSurface)
                         }
                         DropdownMenu(
                             expanded = showMenu,

@@ -11,7 +11,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -32,6 +31,7 @@ import coil.request.ImageRequest
 import com.synfusion.attendance.live.model.LiveRoom
 import com.synfusion.attendance.live.ui.components.*
 import com.synfusion.attendance.live.viewmodel.LiveViewModel
+import com.synfusion.attendance.ui.components.icons.WorkDailyIcons
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,6 +52,7 @@ fun LiveDiscoverScreen(
 
     var showSearchSheet by remember { mutableStateOf(false) }
     var showNotificationsSheet by remember { mutableStateOf(false) }
+    var showOverflowMenu by remember { mutableStateOf(false) }
 
     val activeLiveRooms = remember(liveRooms) { liveRooms.filter { it.isLive } }
     val unreadNotificationsCount = remember(notifications) { notifications.count { !it.isRead } }
@@ -63,35 +64,113 @@ fun LiveDiscoverScreen(
                     Text(
                         text = "Live Streams",
                         fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(WorkDailyIcons.ArrowLeft, contentDescription = "Back")
                     }
                 },
                 actions = {
+                    // 1. Search Action
                     IconButton(onClick = { showSearchSheet = true }) {
-                        Icon(Icons.Default.Search, contentDescription = "Search Live")
+                        Icon(WorkDailyIcons.Search, contentDescription = "Search Live")
                     }
 
-                    IconButton(onClick = onNavigatePeople) {
-                        Icon(Icons.Default.People, contentDescription = "People & Friends")
-                    }
-
+                    // 2. Three-dot Overflow Menu for Friends & Notifications
                     Box {
-                        IconButton(onClick = { showNotificationsSheet = true }) {
-                            Icon(Icons.Default.Notifications, contentDescription = "Notifications")
+                        IconButton(onClick = { showOverflowMenu = true }) {
+                            Box {
+                                Icon(WorkDailyIcons.MoreVertical, contentDescription = "Live Options")
+                                if (unreadNotificationsCount > 0) {
+                                    Box(
+                                        modifier = Modifier
+                                            .align(Alignment.TopEnd)
+                                            .size(7.dp)
+                                            .clip(CircleShape)
+                                            .background(LiveRed)
+                                    )
+                                }
+                            }
                         }
-                        if (unreadNotificationsCount > 0) {
-                            Box(
-                                modifier = Modifier
-                                    .align(Alignment.TopEnd)
-                                    .padding(top = 8.dp, end = 8.dp)
-                                    .size(8.dp)
-                                    .clip(CircleShape)
-                                    .background(LiveRed)
+
+                        DropdownMenu(
+                            expanded = showOverflowMenu,
+                            onDismissRequest = { showOverflowMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Friends & People") },
+                                leadingIcon = { Icon(WorkDailyIcons.Group, contentDescription = null, modifier = Modifier.size(20.dp)) },
+                                onClick = {
+                                    showOverflowMenu = false
+                                    onNavigatePeople()
+                                }
+                            )
+
+                            DropdownMenuItem(
+                                text = {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text("Notifications")
+                                        if (unreadNotificationsCount > 0) {
+                                            Surface(
+                                                shape = CircleShape,
+                                                color = LiveRed
+                                            ) {
+                                                Text(
+                                                    text = "$unreadNotificationsCount",
+                                                    color = Color.White,
+                                                    fontSize = 10.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+                                },
+                                leadingIcon = { Icon(WorkDailyIcons.Bell, contentDescription = null, modifier = Modifier.size(20.dp)) },
+                                onClick = {
+                                    showOverflowMenu = false
+                                    showNotificationsSheet = true
+                                }
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.width(4.dp))
+
+                    // 3. Compact Green [Go Live] Action Button inside ActionBar
+                    Button(
+                        onClick = onNavigateStudio,
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = LivePrimaryEmerald,
+                            contentColor = Color.White
+                        ),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+                        modifier = Modifier
+                            .height(34.dp)
+                            .padding(end = 8.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                imageVector = WorkDailyIcons.Video,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = "Go Live",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
                             )
                         }
                     }
@@ -102,14 +181,6 @@ fun LiveDiscoverScreen(
                     navigationIconContentColor = MaterialTheme.colorScheme.onBackground,
                     actionIconContentColor = MaterialTheme.colorScheme.onBackground
                 )
-            )
-        },
-        floatingActionButton = {
-            GoLiveFloatingButton(
-                onClick = onNavigateStudio,
-                modifier = Modifier
-                    .navigationBarsPadding()
-                    .padding(bottom = 84.dp, end = 12.dp)
             )
         },
         containerColor = MaterialTheme.colorScheme.background
@@ -153,7 +224,7 @@ fun LiveDiscoverScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Icon(Icons.Default.LiveTv, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(48.dp))
+                        Icon(WorkDailyIcons.LiveTv, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(48.dp))
                         Text("No live broadcasts currently active", color = Color.Gray, fontSize = 14.sp)
                     }
                 }
@@ -163,7 +234,7 @@ fun LiveDiscoverScreen(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                     modifier = Modifier.weight(1f),
-                    contentPadding = PaddingValues(bottom = 140.dp)
+                    contentPadding = PaddingValues(bottom = 120.dp)
                 ) {
                     items(activeLiveRooms, key = { it.id }) { room ->
                         CleanLiveRoomGridCard(
@@ -223,12 +294,12 @@ fun DemoNotificationsSheet(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Icon(Icons.Default.Notifications, contentDescription = null, tint = LivePrimaryEmerald)
+                    Icon(WorkDailyIcons.Bell, contentDescription = null, tint = LivePrimaryEmerald)
                     Text("Live Notifications", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                 }
 
                 IconButton(onClick = onDismiss) {
-                    Icon(Icons.Default.Close, contentDescription = "Close")
+                    Icon(WorkDailyIcons.Close, contentDescription = "Close")
                 }
             }
 

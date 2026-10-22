@@ -145,7 +145,7 @@ fun ProfileScreen(
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            imageVector = com.synfusion.attendance.ui.components.icons.WorkDailyIcons.ArrowLeft,
                             contentDescription = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.onboarding_back)
                         )
                     }
@@ -153,7 +153,7 @@ fun ProfileScreen(
                 actions = {
                     IconButton(onClick = onNavigateSettings) {
                         Icon(
-                            imageVector = Icons.Default.Settings,
+                            imageVector = com.synfusion.attendance.ui.components.icons.WorkDailyIcons.Settings,
                             contentDescription = "Settings",
                             tint = MaterialTheme.colorScheme.onSurface
                         )

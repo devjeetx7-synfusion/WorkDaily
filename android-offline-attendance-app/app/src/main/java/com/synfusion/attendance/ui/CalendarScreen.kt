@@ -288,7 +288,7 @@ fun PersonalCalendarView(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         IconButton(onClick = { viewModel.changePersonalMonth(-1) }) {
-                            Icon(Icons.Default.ChevronLeft, contentDescription = "Previous Month")
+                            Icon(com.synfusion.attendance.ui.components.icons.WorkDailyIcons.ChevronLeft, contentDescription = "Previous Month")
                         }
                         Text(
                             text = monthYearStr,
@@ -300,7 +300,7 @@ fun PersonalCalendarView(
                                 .padding(horizontal = 8.dp, vertical = 4.dp)
                         )
                         IconButton(onClick = { viewModel.changePersonalMonth(1) }) {
-                            Icon(Icons.Default.ChevronRight, contentDescription = "Next Month")
+                            Icon(com.synfusion.attendance.ui.components.icons.WorkDailyIcons.ChevronRight, contentDescription = "Next Month")
                         }
                     }
                     Spacer(modifier = Modifier.height(16.dp))
@@ -472,7 +472,7 @@ fun PersonalCalendarView(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     IconButton(onClick = { viewModel.changePersonalMonth(-1) }) {
-                                        Icon(Icons.Default.ChevronLeft, contentDescription = "Previous Month")
+                                        Icon(com.synfusion.attendance.ui.components.icons.WorkDailyIcons.ChevronLeft, contentDescription = "Previous Month")
                                     }
                                     Text(
                                         text = monthYearStr,
@@ -484,7 +484,7 @@ fun PersonalCalendarView(
                                             .padding(horizontal = 8.dp, vertical = 4.dp)
                                     )
                                     IconButton(onClick = { viewModel.changePersonalMonth(1) }) {
-                                        Icon(Icons.Default.ChevronRight, contentDescription = "Next Month")
+                                        Icon(com.synfusion.attendance.ui.components.icons.WorkDailyIcons.ChevronRight, contentDescription = "Next Month")
                                     }
                                 }
 
