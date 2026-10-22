@@ -32,7 +32,7 @@ fun PdfViewerTopBar(
         navigationIcon = {
             IconButton(onClick = onNavigateBack) {
                 Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    imageVector = com.synfusion.attendance.ui.components.icons.WorkDailyIcons.ArrowLeft,
                     contentDescription = stringResource(R.string.pdf_go_back),
                     tint = MaterialTheme.colorScheme.onBackground
                 )
@@ -41,7 +41,7 @@ fun PdfViewerTopBar(
         actions = {
             IconButton(onClick = onOpenMore) {
                 Icon(
-                    imageVector = Icons.Default.MoreVert,
+                    imageVector = com.synfusion.attendance.ui.components.icons.WorkDailyIcons.MoreVertical,
                     contentDescription = stringResource(R.string.pdf_more),
                     tint = MaterialTheme.colorScheme.onBackground
                 )
