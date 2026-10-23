@@ -29,8 +29,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
 import com.synfusion.attendance.live.model.LiveGiftOverlayEvent
+import com.synfusion.attendance.rewards.audio.RewardsSoundEvent
+import com.synfusion.attendance.rewards.audio.RewardsSoundManager
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlin.math.cos
 import kotlin.math.sin
@@ -49,8 +53,21 @@ private data class ConstructionParticle(
 )
 
 /**
- * Live Gift Animation Host V2:
- * Coordinates the bounded gift queue, aggregates rapid same-sender combo events,
+ * Real-time particle instance supporting continuous frame-driven velocity, trajectory and lifetime.
+ */
+private data class MovingParticle(
+    val startX: Float,
+    val startY: Float,
+    val vx: Float,
+    val vy: Float,
+    val size: Float,
+    val maxLifetimeMs: Float,
+    val color: Color
+)
+
+/**
+ * Live Gift Animation Host V4:
+ * Coordinates the deterministic gift queue, aggregates rapid same-sender combo events,
  * and renders transparent non-blocking construction gift celebration overlays.
  */
 @Composable
@@ -58,31 +75,35 @@ fun LiveGiftAnimationHost(
     events: List<LiveGiftOverlayEvent>,
     modifier: Modifier = Modifier,
     currentUserId: String = "current_user",
+    soundEnabled: Boolean = true,
     onEventFinished: (String) -> Unit = {}
 ) {
     var currentDisplayEvent by remember { mutableStateOf<LiveGiftOverlayEvent?>(null) }
     var comboCount by remember { mutableIntStateOf(1) }
     val pendingQueue = remember { mutableStateListOf<LiveGiftOverlayEvent>() }
+    val processedEventIds = remember { mutableSetOf<String>() }
 
-    // Sync incoming events into queue and handle combos
+    // Process incoming events in chronological order with unique ID tracking
     LaunchedEffect(events) {
-        if (events.isNotEmpty()) {
-            val latest = events.last()
-            val active = currentDisplayEvent
+        for (event in events) {
+            if (processedEventIds.contains(event.id)) continue
 
+            val active = currentDisplayEvent
             if (active != null &&
-                active.roomId == latest.roomId &&
-                active.giftName == latest.giftName &&
-                active.senderName == latest.senderName
+                active.roomId == event.roomId &&
+                active.giftName == event.giftName &&
+                active.senderName == event.senderName
             ) {
-                // Same sender + same gift = Aggregate combo streak!
-                comboCount += latest.quantity
+                // Same room + same sender + same gift = Aggregate combo streak!
+                comboCount += event.quantity
+                processedEventIds.add(event.id)
+                onEventFinished(event.id)
             } else {
-                // Add to queue if not already present or active
-                if (pendingQueue.none { it.id == latest.id } && active?.id != latest.id) {
-                    if (pendingQueue.size < 12) { // Bounded queue safety
-                        pendingQueue.add(latest)
+                if (pendingQueue.none { it.id == event.id } && active?.id != event.id) {
+                    if (pendingQueue.size < 20) { // Bounded queue capacity safety
+                        pendingQueue.add(event)
                     }
+                    processedEventIds.add(event.id)
                 }
             }
         }
@@ -111,6 +132,7 @@ fun LiveGiftAnimationHost(
                     event = activeEvent,
                     comboCount = comboCount,
                     currentUserId = currentUserId,
+                    soundEnabled = soundEnabled,
                     onAnimationComplete = {
                         onEventFinished(activeEvent.id)
                         currentDisplayEvent = null
@@ -122,31 +144,33 @@ fun LiveGiftAnimationHost(
 }
 
 /**
- * Premium Construction Gift Overlay V2:
- * 4-Phase Lifecycle (Entrance -> Reveal & Construction Motion -> Hold -> Exit).
+ * Premium Construction Gift Overlay V4:
+ * 4-Phase Lifecycle (Entrance -> Reveal & Construction Motion -> Hold -> Exit) with real-time moving particles and sound.
  */
 @Composable
 fun LiveGiftOverlayV2(
     event: LiveGiftOverlayEvent,
     comboCount: Int,
     currentUserId: String = "current_user",
+    soundEnabled: Boolean = true,
     onAnimationComplete: () -> Unit
 ) {
-    // Determine target durations based on gift diamond cost tier
-    val totalCost = event.diamondCost * comboCount
-    val (entranceMs, revealMs, holdMs, exitMs) = remember(totalCost) {
+    val context = LocalContext.current
+    val unitCost = if (event.unitDiamondCost > 0) event.unitDiamondCost else (event.diamondCost / event.quantity.coerceAtLeast(1)).coerceAtLeast(1)
+    val aggregateTotalCost = unitCost * comboCount
+
+    val (entranceMs, revealMs, holdMs, exitMs) = remember(aggregateTotalCost) {
         when {
-            totalCost <= 15 -> Tuple4(600, 1100, 2800, 1000)   // ~5.5s Standard
-            totalCost <= 50 -> Tuple4(600, 1400, 3500, 1000)   // ~6.5s Medium
-            totalCost <= 200 -> Tuple4(600, 1800, 4600, 1000)  // ~8.0s Premium
+            aggregateTotalCost <= 15 -> Tuple4(600, 1100, 2800, 1000)   // ~5.5s Standard
+            aggregateTotalCost <= 50 -> Tuple4(600, 1400, 3500, 1000)   // ~6.5s Medium
+            aggregateTotalCost <= 200 -> Tuple4(600, 1800, 4600, 1000)  // ~8.0s Premium
             else -> Tuple4(600, 2200, 6200, 1000)              // ~10.0s Special
         }
     }
 
     var animationStage by remember { mutableIntStateOf(0) } // 0: Entrance, 1: Reveal, 2: Hold, 3: Exit
 
-    // Scale, Alpha, Offset Animatables
-    val scale = remember { Animatable(0.5f) }
+    val scale = remember { Animatable(0.55f) }
     val alpha = remember { Animatable(0f) }
     val offsetY = remember { Animatable(30f) }
     val comboBounce = remember { Animatable(1.0f) }
@@ -154,8 +178,8 @@ fun LiveGiftOverlayV2(
     // Floating animation during Hold stage
     val infiniteTransition = rememberInfiniteTransition(label = "giftFloatTransition")
     val floatY by infiniteTransition.animateFloat(
-        initialValue = -4f,
-        targetValue = 4f,
+        initialValue = -5f,
+        targetValue = 5f,
         animationSpec = infiniteRepeatable(
             animation = tween(1200, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
@@ -163,10 +187,13 @@ fun LiveGiftOverlayV2(
         label = "floatY"
     )
 
-    // Stage Lifecycle Controller
+    // Stage Lifecycle Controller with Sound Triggers
     LaunchedEffect(event.id) {
+        val soundManager = if (soundEnabled) RewardsSoundManager.getInstance(context) else null
+
         // Stage 0: Entrance
         animationStage = 0
+        soundManager?.playSound(RewardsSoundEvent.SPIN_START)
         launch { alpha.animateTo(1f, tween(350)) }
         launch { offsetY.animateTo(0f, spring(dampingRatio = Spring.DampingRatioMediumBouncy)) }
         scale.animateTo(1.1f, spring(dampingRatio = Spring.DampingRatioMediumBouncy))
@@ -175,6 +202,11 @@ fun LiveGiftOverlayV2(
 
         // Stage 1: Reveal & Gift-Specific Construction Motion
         animationStage = 1
+        when {
+            aggregateTotalCost >= 200 -> soundManager?.playSound(RewardsSoundEvent.CONGRATULATIONS)
+            aggregateTotalCost >= 50 -> soundManager?.playSound(RewardsSoundEvent.SEVEN_DAY_STREAK)
+            else -> soundManager?.playSound(RewardsSoundEvent.COIN_REWARD)
+        }
         delay(revealMs.toLong())
 
         // Stage 2: Hold
@@ -193,23 +225,40 @@ fun LiveGiftOverlayV2(
     LaunchedEffect(comboCount) {
         if (comboCount > 1) {
             comboBounce.snapTo(1.35f)
+            if (soundEnabled) {
+                RewardsSoundManager.getInstance(context).playSound(RewardsSoundEvent.SPIN_TICK)
+            }
             comboBounce.animateTo(1.0f, spring(dampingRatio = Spring.DampingRatioMediumBouncy))
         }
     }
 
-    // Dynamic Sparkle Particles
-    val particles = remember(event.giftName) {
-        List(22) {
-            ConstructionParticle(
-                initialX = Random.nextFloat() * 160f - 80f,
-                initialY = Random.nextFloat() * 160f - 80f,
-                angle = Random.nextFloat() * 360f,
-                speed = Random.nextFloat() * 2.5f + 1f,
-                size = Random.nextFloat() * 7f + 4f,
-                color = when (it % 3) {
+    // Time-driven particle animation
+    var elapsedParticleTimeMs by remember { mutableFloatStateOf(0f) }
+    LaunchedEffect(event.id) {
+        val startTime = withFrameNanos { it }
+        while (isActive) {
+            withFrameNanos { frameTime ->
+                elapsedParticleTimeMs = (frameTime - startTime) / 1_000_000f
+            }
+        }
+    }
+
+    val particlePool = remember(event.giftName) {
+        List(28) { i ->
+            val angleRad = (i * (360f / 28f) + Random.nextFloat() * 15f) * (Math.PI / 180f)
+            val speed = Random.nextFloat() * 0.12f + 0.05f
+            MovingParticle(
+                startX = 0f,
+                startY = 0f,
+                vx = (cos(angleRad) * speed).toFloat(),
+                vy = (sin(angleRad) * speed).toFloat(),
+                size = Random.nextFloat() * 6f + 3f,
+                maxLifetimeMs = Random.nextFloat() * 1800f + 1200f,
+                color = when (i % 4) {
                     0 -> LiveGold
                     1 -> LivePrimaryMint
-                    else -> LiveDiamondColor
+                    2 -> LiveDiamondColor
+                    else -> Color(0xFFF59E0B)
                 }
             )
         }
@@ -222,23 +271,23 @@ fun LiveGiftOverlayV2(
     val senderText = if (isSender) "You sent a gift" else "${event.senderName} sent a gift"
     val shadowStyle = Shadow(color = Color.Black.copy(alpha = 0.9f), blurRadius = 8f)
 
-    // Gift-specific motion parameters
+    // Animated gift icon motion values
     val (iconScale, iconRotation, iconOffsetX, iconOffsetY) = remember(event.giftName, animationStage) {
         when {
             event.giftName.contains("Tape", ignoreCase = true) -> {
-                if (animationStage == 1) Tuple4(1.12f, 0f, 0f, 0f) else Tuple4(1.0f, 0f, 0f, 0f)
+                if (animationStage == 1) Tuple4(1.15f, 0f, 0f, 0f) else Tuple4(1.0f, 0f, 0f, 0f)
             }
             event.giftName.contains("Drill", ignoreCase = true) -> {
-                if (animationStage == 1) Tuple4(1.05f, 4f, 0f, 0f) else Tuple4(1.0f, 0f, 0f, 0f)
+                if (animationStage == 1) Tuple4(1.08f, 6f, 0f, 0f) else Tuple4(1.0f, 0f, 0f, 0f)
             }
             event.giftName.contains("Hammer", ignoreCase = true) || event.giftName.contains("Trowel", ignoreCase = true) -> {
-                if (animationStage == 1) Tuple4(1.08f, -12f, 0f, 6f) else Tuple4(1.0f, 0f, 0f, 0f)
+                if (animationStage == 1) Tuple4(1.10f, -14f, 0f, 8f) else Tuple4(1.0f, 0f, 0f, 0f)
             }
             event.giftName.contains("Excavator", ignoreCase = true) || event.giftName.contains("Bulldozer", ignoreCase = true) -> {
-                if (animationStage == 1) Tuple4(1.06f, 0f, 8f, 0f) else Tuple4(1.0f, 0f, 0f, 0f)
+                if (animationStage == 1) Tuple4(1.08f, 0f, 10f, 0f) else Tuple4(1.0f, 0f, 0f, 0f)
             }
             event.giftName.contains("Crane", ignoreCase = true) -> {
-                if (animationStage == 1) Tuple4(1.08f, 0f, 0f, -8f) else Tuple4(1.0f, 0f, 0f, 0f)
+                if (animationStage == 1) Tuple4(1.10f, 0f, 0f, -10f) else Tuple4(1.0f, 0f, 0f, 0f)
             }
             else -> Tuple4(1.0f, 0f, 0f, 0f)
         }
@@ -280,21 +329,22 @@ fun LiveGiftOverlayV2(
                         )
                 )
 
-                // Particle Canvas
+                // Continuous Moving Particle Canvas
                 Canvas(
                     modifier = Modifier
                         .fillMaxSize()
                         .alpha(if (animationStage == 3) 0.2f else 0.85f)
                 ) {
                     val center = Offset(size.width / 2f, size.height / 2f)
-                    val progress = if (animationStage == 1) 0.6f else 0.3f
-                    particles.forEach { p ->
-                        val rad = Math.toRadians((p.angle + progress * 180f).toDouble())
-                        val x = center.x + p.initialX + (cos(rad) * progress * 35f).toFloat()
-                        val y = center.y + p.initialY + (sin(rad) * progress * 35f).toFloat()
+                    particlePool.forEach { p ->
+                        val ageMs = elapsedParticleTimeMs % p.maxLifetimeMs
+                        val lifecycleProgress = ageMs / p.maxLifetimeMs
+                        val x = center.x + p.startX + p.vx * ageMs
+                        val y = center.y + p.startY + p.vy * ageMs
+                        val particleAlpha = (1f - lifecycleProgress).coerceIn(0f, 1f)
                         drawCircle(
-                            color = p.color.copy(alpha = (1f - progress * 0.5f).coerceIn(0f, 1f)),
-                            radius = p.size,
+                            color = p.color.copy(alpha = particleAlpha),
+                            radius = p.size * (1f - lifecycleProgress * 0.3f),
                             center = Offset(x, y)
                         )
                     }
@@ -394,7 +444,7 @@ fun LiveGiftOverlayV2(
                         )
 
                         Text(
-                            text = "${event.diamondCost * comboCount}",
+                            text = "$aggregateTotalCost",
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
                             color = LiveDiamondColor

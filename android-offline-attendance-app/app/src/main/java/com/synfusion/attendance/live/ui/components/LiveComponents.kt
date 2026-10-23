@@ -1172,13 +1172,38 @@ fun RoomCategoryChip(category: String) {
     }
 }
 
-fun getGiftIcon(giftName: String): androidx.compose.ui.graphics.vector.ImageVector {
+fun getGiftIcon(giftName: String, giftId: String? = null): androidx.compose.ui.graphics.vector.ImageVector {
+    if (!giftId.isNullOrBlank()) {
+        when (giftId) {
+            "gift_1" -> return Icons.Default.Engineering // Safety Helmet
+            "gift_2" -> return Icons.Default.Straighten  // Measuring Tape
+            "gift_3" -> return Icons.Default.GridView    // Brick Stack
+            "gift_4" -> return Icons.Default.Engineering // Hard Hat
+            "gift_5" -> return Icons.Default.Handyman    // Golden Trowel
+            "gift_6" -> return Icons.Default.Handyman    // Power Drill
+            "gift_7" -> return Icons.Default.Apartment   // Scaffold
+            "gift_8" -> return Icons.Default.LocalShipping // Concrete Truck
+            "gift_9" -> return Icons.Default.Autorenew   // Cement Mixer
+            "gift_10" -> return Icons.Default.Agriculture // Excavator
+            "gift_11" -> return Icons.Default.Agriculture // Bulldozer
+            "gift_12" -> return Icons.Default.Architecture // Crane
+            "gift_13" -> return Icons.Default.Architecture // Tower Crane
+            "gift_14" -> return Icons.Default.ContentCut  // Diamond Saw
+            "gift_15" -> return Icons.Default.WbSunny     // Solar Panel
+            "gift_16" -> return Icons.Default.HorizontalRule // Steel Beam
+            "gift_17" -> return Icons.Default.Explore     // Architect Compass
+            "gift_18" -> return Icons.Default.Engineering // Golden Hardhat
+            "gift_19" -> return Icons.Default.LocalShipping // Heavy Hauler
+            "gift_20" -> return Icons.Default.EmojiEvents // Master Builder Trophy
+        }
+    }
+
     return when {
-        giftName.contains("Helmet", ignoreCase = true) || giftName.contains("Hardhat", ignoreCase = true) -> Icons.Default.Shield
+        giftName.contains("Helmet", ignoreCase = true) || giftName.contains("Hardhat", ignoreCase = true) -> Icons.Default.Engineering
         giftName.contains("Tape", ignoreCase = true) -> Icons.Default.Straighten
-        giftName.contains("Brick", ignoreCase = true) -> Icons.Default.HomeWork
-        giftName.contains("Trowel", ignoreCase = true) -> Icons.Default.Construction
-        giftName.contains("Drill", ignoreCase = true) -> Icons.Default.Build
+        giftName.contains("Brick", ignoreCase = true) -> Icons.Default.GridView
+        giftName.contains("Trowel", ignoreCase = true) -> Icons.Default.Handyman
+        giftName.contains("Drill", ignoreCase = true) -> Icons.Default.Handyman
         giftName.contains("Scaffold", ignoreCase = true) -> Icons.Default.Apartment
         giftName.contains("Truck", ignoreCase = true) || giftName.contains("Hauler", ignoreCase = true) -> Icons.Default.LocalShipping
         giftName.contains("Mixer", ignoreCase = true) -> Icons.Default.Autorenew

@@ -277,7 +277,9 @@ data class LiveGiftOverlayEvent(
     val senderName: String,
     val quantity: Int = 1,
     val comboCount: Int = 1,
-    val diamondCost: Int = 1,
+    val unitDiamondCost: Int = 1,
+    val totalDiamondCost: Int = unitDiamondCost * quantity,
+    val diamondCost: Int = totalDiamondCost,
     val timestamp: Long = System.currentTimeMillis()
 )
 

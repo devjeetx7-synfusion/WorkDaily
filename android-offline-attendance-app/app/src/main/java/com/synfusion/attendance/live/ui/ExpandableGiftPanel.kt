@@ -270,7 +270,7 @@ fun ExpandableGiftPanel(
                                 verticalArrangement = Arrangement.SpaceEvenly
                             ) {
                                 Icon(
-                                    imageVector = getGiftIcon(gift.name),
+                                        imageVector = getGiftIcon(gift.name, gift.id),
                                     contentDescription = gift.name,
                                     tint = if (canAfford) LiveGold else Color.Gray,
                                     modifier = Modifier.size(22.dp)
