@@ -512,9 +512,11 @@ class DemoLiveRepository(context: Context? = null) {
             senderName = "You",
             quantity = quantity,
             comboCount = if (quantity >= 5) quantity else 1,
+            unitDiamondCost = gift.diamondCost,
+            totalDiamondCost = totalCost,
             diamondCost = totalCost
         )
-        _giftOverlayEvents.value = listOf(overlayEvent) + _giftOverlayEvents.value
+        _giftOverlayEvents.value = _giftOverlayEvents.value + overlayEvent
 
         // Update Goals
         updateGoalProgress(typeText = "GIFTS", amount = quantity)
@@ -950,7 +952,7 @@ class DemoLiveRepository(context: Context? = null) {
         const val KEY_CREATOR_DIAMONDS = "creator_diamonds"
         const val KEY_FOLLOWED_CREATORS = "followed_creators"
         const val RUPEES_PER_DIAMOND = 0.50
-        const val MAX_CHAT_MESSAGES = 10
+        const val MAX_CHAT_MESSAGES = 50
 
         @Volatile
         private var INSTANCE: DemoLiveRepository? = null

@@ -160,20 +160,38 @@ class WorkDailyLiveTest {
         val room = repository.liveRooms.value.first()
         val gift = repository.gifts.value.first { it.diamondCost == 100 } // Power Drill
 
-        // 1. Send gift
+        // 1. Send gift with quantity = 2
         val success = repository.sendGift(room.id, gift, quantity = 2)
         assertTrue("Gift sending should succeed", success)
 
-        // 2. Verify Gift Overlay Event is generated
+        // 2. Verify Gift Overlay Event is generated with correct unit and total costs
         val overlayEvents = repository.giftOverlayEvents.value
         val event = overlayEvents.find { it.roomId == room.id && it.giftName == gift.name }
         assertNotNull("Overlay event should be created", event)
         assertEquals(2, event?.quantity)
+        assertEquals(100, event?.unitDiamondCost)
+        assertEquals(200, event?.totalDiamondCost)
+        assertEquals(200, event?.diamondCost)
 
         // 3. Remove overlay event on animation complete
         repository.removeGiftOverlayEvent(event!!.id)
         val updatedEvents = repository.giftOverlayEvents.value
         assertFalse("Overlay event should be removed after animation completion", updatedEvents.any { it.id == event.id })
+    }
+
+    @Test
+    fun testChronologicalGiftOverlayEventOrdering() {
+        val room = repository.liveRooms.value.first()
+        val gift1 = repository.gifts.value.first { it.diamondCost == 1 } // Safety Helmet
+        val gift2 = repository.gifts.value.first { it.diamondCost == 5 } // Measuring Tape
+
+        repository.sendGift(room.id, gift1, quantity = 1)
+        repository.sendGift(room.id, gift2, quantity = 1)
+
+        val events = repository.giftOverlayEvents.value
+        assertTrue("Queue should contain at least 2 events", events.size >= 2)
+        assertEquals("First sent gift should be first in chronological queue", gift1.name, events[events.size - 2].giftName)
+        assertEquals("Second sent gift should be second in chronological queue", gift2.name, events.last().giftName)
     }
 
     @Test

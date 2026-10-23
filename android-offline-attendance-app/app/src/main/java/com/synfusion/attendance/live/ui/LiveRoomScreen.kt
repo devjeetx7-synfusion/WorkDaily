@@ -73,6 +73,7 @@ fun LiveRoomScreen(
 
     val chatMessages = chatMessagesMap[room.id] ?: emptyList()
     val giftOverlayEvents by viewModel.giftOverlayEvents.collectAsState()
+    val soundEnabled by viewModel.soundEnabled.collectAsState()
     val isFollowing = followedCreatorIds.contains(room.creatorId)
     val isHost = room.isHost || room.creatorId == "creator_me" || room.creatorId == "user_me"
     val audioSeats = audioSeatsMap[room.id] ?: emptyList()
@@ -167,11 +168,19 @@ fun LiveRoomScreen(
         contentWindowInsets = WindowInsets(0.dp),
         containerColor = LiveDarkBg
     ) { paddingValues ->
-        Box(
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
+            val totalScreenHeight = maxHeight
+            val maxChatHeightNormal = totalScreenHeight * 0.55f
+            val maxChatHeightTray = (totalScreenHeight - 160.dp) * 0.42f
+            val dynamicMaxChatHeight = if (showInlineGiftTray || showGiftSheet) {
+                maxChatHeightTray.coerceAtLeast(180.dp)
+            } else {
+                maxChatHeightNormal.coerceAtLeast(280.dp)
+            }
             // Layer 1: Edge-to-Edge Video / Audio Broadcast Stage
             Box(
                 modifier = Modifier
@@ -342,6 +351,7 @@ fun LiveRoomScreen(
             LiveGiftAnimationHost(
                 events = roomGiftEvents,
                 currentUserId = "current_user",
+                soundEnabled = soundEnabled,
                 onEventFinished = { eventId ->
                     viewModel.removeGiftOverlayEvent(eventId)
                 }
@@ -365,22 +375,26 @@ fun LiveRoomScreen(
                     .padding(horizontal = 12.dp, vertical = 6.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Comments Feed Overlay with Extended Viewport and Continuous Top Alpha Dissolve Mask V2
+                // Comments Feed Overlay with Extended Viewport and Continuous Top Alpha Dissolve Mask V3
                 Box(
                     modifier = Modifier
                         .fillMaxWidth(0.85f)
-                        .heightIn(max = if (showInlineGiftTray) 180.dp else 300.dp)
+                        .heightIn(max = dynamicMaxChatHeight)
                         .padding(horizontal = 4.dp, vertical = 2.dp)
                         .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
                         .drawWithContent {
                             drawContent()
                             drawRect(
                                 brush = Brush.verticalGradient(
-                                    0.00f to Color.Transparent,
-                                    0.15f to Color.Transparent,
-                                    0.35f to Color.Black.copy(alpha = 0.5f),
-                                    0.55f to Color.Black,
-                                    1.00f to Color.Black
+                                    colorStops = arrayOf(
+                                        0.00f to Color.Transparent,
+                                        0.12f to Color.Black.copy(alpha = 0.10f),
+                                        0.28f to Color.Black.copy(alpha = 0.30f),
+                                        0.45f to Color.Black.copy(alpha = 0.65f),
+                                        0.65f to Color.Black.copy(alpha = 0.90f),
+                                        0.78f to Color.Black,
+                                        1.00f to Color.Black
+                                    )
                                 ),
                                 blendMode = BlendMode.DstIn
                             )
@@ -696,7 +710,7 @@ fun InlineGiftTray(
                             verticalArrangement = Arrangement.SpaceEvenly
                         ) {
                             Icon(
-                                imageVector = getGiftIcon(gift.name),
+                                imageVector = getGiftIcon(gift.name, gift.id),
                                 contentDescription = gift.name,
                                 tint = if (canAfford) LiveGold else Color.Gray,
                                 modifier = Modifier.size(22.dp)
