@@ -6,8 +6,10 @@ import com.synfusion.attendance.data.LocalAttendanceRepository
 import com.synfusion.attendance.data.OfflinePreferencesRepository
 import com.synfusion.attendance.data.entities.UserEntity
 import com.synfusion.attendance.online.FirestoreOnlineProfileRepository
+import com.synfusion.attendance.online.FirestorePublicProfileRepository
 import com.synfusion.attendance.online.OnlineProfile
 import com.synfusion.attendance.online.OnlineProfileRepository
+import com.synfusion.attendance.online.PublicProfileRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.firstOrNull
@@ -25,7 +27,8 @@ sealed class OfflineLoginState {
 class OfflineAuthViewModel(
     val repository: OfflinePreferencesRepository,
     private val localAttendanceRepository: LocalAttendanceRepository,
-    private val onlineProfileRepository: OnlineProfileRepository = FirestoreOnlineProfileRepository()
+    private val onlineProfileRepository: OnlineProfileRepository = FirestoreOnlineProfileRepository(),
+    private val publicProfileRepository: PublicProfileRepository = FirestorePublicProfileRepository()
 ) : ViewModel(), com.synfusion.attendance.backup.RefreshableViewModel {
 
     private val _loginState = MutableStateFlow<OfflineLoginState>(OfflineLoginState.Idle)
@@ -218,7 +221,6 @@ class OfflineAuthViewModel(
                 }
 
                 // Ensure minimal allowlisted online profile in Firestore (`users/{firebaseUid}`)
-                // Daily wage, attendance, and work history are strictly excluded!
                 try {
                     val onlineProfile = OnlineProfile(
                         uid = googleAccount.uid,
@@ -232,6 +234,11 @@ class OfflineAuthViewModel(
                         emailVerified = googleAccount.isEmailVerified
                     )
                     onlineProfileRepository.ensureOnlineProfile(onlineProfile)
+                    publicProfileRepository.ensureOrCreatePublicProfile(
+                        firebaseUid = googleAccount.uid,
+                        displayName = finalName,
+                        photoUrl = googleAccount.photoUrl
+                    )
                 } catch (e: Exception) {
                     // Safe offline failure handling: do NOT block local onboarding or corrupt local workspace
                 }

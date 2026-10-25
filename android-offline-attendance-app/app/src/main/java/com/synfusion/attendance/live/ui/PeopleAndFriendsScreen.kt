@@ -29,6 +29,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.synfusion.attendance.live.ui.components.*
 import com.synfusion.attendance.live.viewmodel.LiveViewModel
+import com.synfusion.attendance.online.FirestorePublicProfileRepository
+import com.synfusion.attendance.online.ProfileOperationResult
+import com.synfusion.attendance.online.PublicProfile
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,41 +43,44 @@ fun PeopleAndFriendsScreen(
     onNavigatePrivateChat: (String) -> Unit
 ) {
     val context = LocalContext.current
-    val publicUsers by viewModel.publicUsers.collectAsState()
-    val followedIds by viewModel.followedCreatorIds.collectAsState()
     val keyboardController = LocalSoftwareKeyboardController.current
 
     var selectedTab by remember { mutableStateOf("Discover") }
     var searchQuery by remember { mutableStateOf("") }
+    var isSearching by remember { mutableStateOf(false) }
+    var searchResults by remember { mutableStateOf<List<PublicProfile>>(emptyList()) }
+    var searchError by remember { mutableStateOf<String?>(null) }
 
-    val followersList = remember(publicUsers) {
-        publicUsers.filter { user -> user.id != "current_user" }
-    }
+    val publicProfileRepo = remember { FirestorePublicProfileRepository() }
 
-    val followingList = remember(publicUsers, followedIds) {
-        publicUsers.filter { user -> user.id != "current_user" && followedIds.contains(user.id) }
-    }
+    // Search debounce (350ms) with indexed prefix query
+    LaunchedEffect(searchQuery) {
+        val query = searchQuery.trim()
+        if (query.isBlank()) {
+            searchResults = emptyList()
+            isSearching = false
+            searchError = null
+            return@LaunchedEffect
+        }
 
-    val discoverUsers = remember(publicUsers, searchQuery) {
-        publicUsers.filter { user ->
-            user.id != "current_user" &&
-            (searchQuery.isBlank() || user.name.contains(searchQuery, ignoreCase = true) || user.profession.contains(searchQuery, ignoreCase = true))
+        isSearching = true
+        searchError = null
+        delay(350) // Debounce
+
+        when (val result = publicProfileRepo.searchPublicProfiles(query, currentUserId = null)) {
+            is ProfileOperationResult.Success -> {
+                searchResults = result.data
+                isSearching = false
+            }
+            is ProfileOperationResult.Error -> {
+                searchResults = emptyList()
+                searchError = result.message
+                isSearching = false
+            }
         }
     }
 
-    val filteredFollowers = remember(followersList, searchQuery) {
-        followersList.filter { user ->
-            searchQuery.isBlank() || user.name.contains(searchQuery, ignoreCase = true) || user.profession.contains(searchQuery, ignoreCase = true)
-        }
-    }
-
-    val filteredFollowing = remember(followingList, searchQuery) {
-        followingList.filter { user ->
-            searchQuery.isBlank() || user.name.contains(searchQuery, ignoreCase = true) || user.profession.contains(searchQuery, ignoreCase = true)
-        }
-    }
-
-    val tabs = listOf("Discover", "Followers (${followersList.size})", "Following (${followingList.size})")
+    val tabs = listOf("Discover", "Followers (0)", "Following (0)")
 
     Scaffold(
         topBar = {
@@ -134,10 +141,12 @@ fun PeopleAndFriendsScreen(
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
-                placeholder = { Text("Search site workers & engineers...") },
+                placeholder = { Text("Search by @username or display name...") },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 trailingIcon = {
-                    if (searchQuery.isNotEmpty()) {
+                    if (isSearching) {
+                        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                    } else if (searchQuery.isNotEmpty()) {
                         IconButton(onClick = { searchQuery = "" }) {
                             Icon(Icons.Default.Clear, contentDescription = "Clear")
                         }
@@ -151,13 +160,14 @@ fun PeopleAndFriendsScreen(
                 keyboardActions = KeyboardActions(onSearch = { keyboardController?.hide() })
             )
 
-            val currentList = when {
-                selectedTab.startsWith("Discover") -> discoverUsers
-                selectedTab.startsWith("Followers") -> filteredFollowers
-                else -> filteredFollowing
-            }
-
-            if (currentList.isEmpty()) {
+            if (isSearching) {
+                Box(
+                    modifier = Modifier.fillMaxWidth().weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = LivePrimaryEmerald)
+                }
+            } else if (searchResults.isEmpty()) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -170,7 +180,7 @@ fun PeopleAndFriendsScreen(
                     ) {
                         Icon(Icons.Default.PeopleOutline, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(48.dp))
                         Text(
-                            text = if (searchQuery.isNotBlank()) "No users matching '$searchQuery'" else "No users in $selectedTab",
+                            text = if (searchQuery.isNotBlank()) "No users matching '$searchQuery'" else "Type a username to search WorkDaily members",
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 14.sp
                         )
@@ -181,13 +191,11 @@ fun PeopleAndFriendsScreen(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    items(currentList, key = { it.id }) { user ->
-                        val isFollowing = followedIds.contains(user.id)
-
+                    items(searchResults, key = { it.uid }) { user ->
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { onNavigateProfile(user.id) },
+                                .clickable { onNavigateProfile(user.uid) },
                             shape = RoundedCornerShape(14.dp),
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                             border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
@@ -205,12 +213,12 @@ fun PeopleAndFriendsScreen(
                                     modifier = Modifier.weight(1f)
                                 ) {
                                     WorkDailyLiveAvatar(
-                                        name = user.name,
-                                        avatarUrl = user.avatar,
+                                        name = user.displayName,
+                                        avatarUrl = user.photoUrl ?: "",
                                         size = 44.dp,
-                                        isLive = user.isLiveNow,
+                                        isLive = false,
                                         showBadge = false,
-                                        onClick = { onNavigateProfile(user.id) }
+                                        onClick = { onNavigateProfile(user.uid) }
                                     )
 
                                     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -219,7 +227,7 @@ fun PeopleAndFriendsScreen(
                                             horizontalArrangement = Arrangement.spacedBy(4.dp)
                                         ) {
                                             Text(
-                                                text = user.name,
+                                                text = user.displayName.ifEmpty { "WorkDaily Member" },
                                                 fontSize = 14.sp,
                                                 fontWeight = FontWeight.Bold,
                                                 color = MaterialTheme.colorScheme.onSurface,
@@ -237,7 +245,7 @@ fun PeopleAndFriendsScreen(
                                         }
 
                                         Text(
-                                            text = "@${user.name.lowercase().replace(" ", "")}",
+                                            text = "@${user.username}",
                                             fontSize = 11.sp,
                                             color = LivePrimaryEmerald,
                                             fontWeight = FontWeight.Medium
@@ -259,13 +267,8 @@ fun PeopleAndFriendsScreen(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
-                                    FollowButton(
-                                        isFollowing = isFollowing,
-                                        onToggle = { viewModel.toggleFollowCreator(user.id) }
-                                    )
-
                                     IconButton(
-                                        onClick = { onNavigatePrivateChat(user.id) },
+                                        onClick = { onNavigatePrivateChat(user.uid) },
                                         modifier = Modifier.size(36.dp)
                                     ) {
                                         Icon(

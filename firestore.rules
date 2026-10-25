@@ -11,29 +11,71 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
-    // WorkDaily Online User Profile Collection
-    // Document ID MUST be the authenticated Firebase UID (`users/{firebaseUid}`).
+    // WorkDaily Private Online User Account Collection
+    // Path: `users/{firebaseUid}`
+    // Strictly private: Other users CANNOT read email, phone number, workspace IDs, or account metadata.
     match /users/{userId} {
-      // Authenticated users may read their own profile
       allow get: if isOwner(userId);
-      // Public listing of users is strictly prohibited
       allow list: if false;
 
-      // Allow creating initial online profile if authenticated as document owner
-      // and uid / localWorkspaceId fields match request metadata
       allow create: if isOwner(userId)
                     && request.resource.data.uid == userId
                     && request.resource.data.localWorkspaceId is string
                     && request.resource.data.localWorkspaceId.size() > 0;
 
-      // Allow updating permitted profile fields while locking immutable identity mapping
       allow update: if isOwner(userId)
                     && request.resource.data.uid == resource.data.uid
                     && request.resource.data.localWorkspaceId == resource.data.localWorkspaceId
                     && request.resource.data.createdAt == resource.data.createdAt;
 
-      // Deletion of online profile via normal user document update is forbidden
       allow delete: if false;
+    }
+
+    // WorkDaily Public User Profiles
+    // Path: `public_profiles/{firebaseUid}`
+    // Strictly public identity fields only. Zero financial, attendance, or private contact data.
+    match /public_profiles/{userId} {
+      // Authenticated users may view public profiles or own profile
+      allow get: if isAuthenticated() && (resource == null || resource.data.isPublic == true || isOwner(userId));
+
+      // Authenticated users may search public profiles
+      allow list: if isAuthenticated();
+
+      // Create initial public profile (owner only)
+      allow create: if isOwner(userId)
+                    && request.resource.data.uid == userId
+                    && request.resource.data.usernameLower is string
+                    && request.resource.data.usernameLower.size() >= 3
+                    && request.resource.data.usernameLower.size() <= 20
+                    && (request.resource.data.isVerified == false || !("isVerified" in request.resource.data));
+
+      // Update public profile (owner only)
+      allow update: if isOwner(userId)
+                    && request.resource.data.uid == resource.data.uid
+                    && request.resource.data.createdAt == resource.data.createdAt
+                    && (request.resource.data.isVerified == resource.data.isVerified || !("isVerified" in request.resource.data));
+
+      allow delete: if false;
+    }
+
+    // WorkDaily Unique Username Reservation Registry
+    // Path: `usernames/{normalizedUsername}`
+    // Document ID is the lowercased, normalized username (e.g., `rahul_builder`).
+    match /usernames/{username} {
+      // Authenticated users can check availability by direct document lookup
+      allow get: if isAuthenticated();
+      allow list: if false;
+
+      // Reserve username: owner claiming for themselves
+      allow create: if isAuthenticated()
+                    && request.resource.data.uid == request.auth.uid;
+
+      // Updating reservation directly is forbidden
+      allow update: if false;
+
+      // Release username: owner deleting their own reservation during username change
+      allow delete: if isAuthenticated()
+                    && resource.data.uid == request.auth.uid;
     }
 
     // Deny access to any other unmapped collections by default
