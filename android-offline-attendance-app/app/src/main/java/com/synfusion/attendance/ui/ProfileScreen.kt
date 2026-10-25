@@ -106,8 +106,33 @@ fun ProfileScreen(
         else null
     }
 
-    val followerCount = remember(followedIds) { followedIds.size + 142 }
-    val followingCount = 240
+    val currentUserId = remember {
+        try {
+            com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    var realFollowersCount by remember { mutableStateOf(0) }
+    var realFollowingCount by remember { mutableStateOf(0) }
+    val followRepo = remember { com.synfusion.attendance.online.FirestoreFollowRepository() }
+
+    LaunchedEffect(currentUserId) {
+        if (currentUserId != null) {
+            val followersRes = followRepo.getFollowers(currentUserId)
+            if (followersRes is com.synfusion.attendance.online.ProfileOperationResult.Success) {
+                realFollowersCount = followersRes.data.size
+            }
+            val followingRes = followRepo.getFollowing(currentUserId)
+            if (followingRes is com.synfusion.attendance.online.ProfileOperationResult.Success) {
+                realFollowingCount = followingRes.data.size
+            }
+        }
+    }
+
+    val followerCount = realFollowersCount
+    val followingCount = realFollowingCount
 
     val maskedPhone = remember(state.phone, activeCountry) {
         if (state.phone.length > 4) {
@@ -326,7 +351,7 @@ fun ProfileScreen(
                                 modifier = Modifier
                                     .weight(1f)
                                     .clip(RoundedCornerShape(12.dp))
-                                    .clickable { activeUserListType = UserListType.FOLLOWERS }
+                                    .clickable { onNavigatePeople() }
                                     .padding(vertical = 4.dp)
                             ) {
                                 Text(
@@ -345,7 +370,7 @@ fun ProfileScreen(
                                 modifier = Modifier
                                     .weight(1f)
                                     .clip(RoundedCornerShape(12.dp))
-                                    .clickable { activeUserListType = UserListType.FOLLOWING }
+                                    .clickable { onNavigatePeople() }
                                     .padding(vertical = 4.dp)
                             ) {
                                 Text(
@@ -381,14 +406,6 @@ fun ProfileScreen(
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.primary
                                 )
-                                TextButton(
-                                    onClick = onNavigateSettings,
-                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
-                                ) {
-                                    Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(14.dp))
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text("Edit in Settings", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                                }
                             }
 
                             // Read-only Row 1: Country & Region
@@ -649,76 +666,6 @@ fun ProfileScreen(
                         }
                     }
 
-                    // 6. SOCIAL & LIVE HUB SHORTCUTS
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(20.dp),
-                            verticalArrangement = Arrangement.spacedBy(14.dp)
-                        ) {
-                            Text(
-                                text = "Social & Live Hub",
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
-                                Button(
-                                    onClick = onNavigateGoLive,
-                                    modifier = Modifier.weight(1f).height(44.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = LivePrimaryEmerald, contentColor = Color.White),
-                                    shape = RoundedCornerShape(12.dp)
-                                ) {
-                                    Icon(Icons.Default.Podcasts, contentDescription = null, modifier = Modifier.size(16.dp))
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text("Go Live", fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                                }
-
-                                OutlinedButton(
-                                    onClick = onNavigateLeaderboard,
-                                    modifier = Modifier.weight(1f).height(44.dp),
-                                    shape = RoundedCornerShape(12.dp)
-                                ) {
-                                    Icon(Icons.Default.EmojiEvents, contentDescription = null, modifier = Modifier.size(16.dp))
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text("Leaderboard", fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                                }
-                            }
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
-                                OutlinedButton(
-                                    onClick = onNavigatePeople,
-                                    modifier = Modifier.weight(1f).height(42.dp),
-                                    shape = RoundedCornerShape(12.dp)
-                                ) {
-                                    Icon(Icons.Default.People, contentDescription = null, modifier = Modifier.size(16.dp))
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text("People", fontSize = 12.sp, fontWeight = FontWeight.Medium)
-                                }
-
-                                OutlinedButton(
-                                    onClick = onNavigateMessages,
-                                    modifier = Modifier.weight(1f).height(42.dp),
-                                    shape = RoundedCornerShape(12.dp)
-                                ) {
-                                    Icon(Icons.AutoMirrored.Filled.Chat, contentDescription = null, modifier = Modifier.size(16.dp))
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text("Messages", fontSize = 12.sp, fontWeight = FontWeight.Medium)
-                                }
-                            }
-                        }
-                    }
 
 
                     Spacer(modifier = Modifier.height(32.dp))

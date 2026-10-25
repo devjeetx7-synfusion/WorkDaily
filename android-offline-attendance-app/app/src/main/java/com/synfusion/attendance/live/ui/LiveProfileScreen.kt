@@ -28,6 +28,7 @@ import com.synfusion.attendance.live.viewmodel.LiveViewModel
 import com.synfusion.attendance.online.FirestorePublicProfileRepository
 import com.synfusion.attendance.online.ProfileOperationResult
 import com.synfusion.attendance.online.PublicProfile
+import kotlinx.coroutines.launch
 
 enum class UserListType {
     FOLLOWERS,
@@ -62,13 +63,24 @@ fun LiveProfileScreen(
         return
     }
 
+    val currentUserId = remember {
+        try {
+            com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
+        } catch (e: Exception) {
+            null
+        }
+    }
+
     var isLoading by remember { mutableStateOf(true) }
     var publicProfile by remember { mutableStateOf<PublicProfile?>(null) }
+    var isFollowingTarget by remember { mutableStateOf(false) }
     var loadError by remember { mutableStateOf<String?>(null) }
 
     val repository = remember { FirestorePublicProfileRepository() }
+    val followRepo = remember { com.synfusion.attendance.online.FirestoreFollowRepository() }
+    val coroutineScope = rememberCoroutineScope()
 
-    LaunchedEffect(userId) {
+    LaunchedEffect(userId, currentUserId) {
         isLoading = true
         loadError = null
         when (val result = repository.getPublicProfile(userId)) {
@@ -81,6 +93,10 @@ fun LiveProfileScreen(
                 loadError = result.message
                 isLoading = false
             }
+        }
+
+        if (currentUserId != null && userId != null) {
+            isFollowingTarget = followRepo.isFollowing(currentUserId, userId)
         }
     }
 
@@ -328,9 +344,33 @@ fun LiveProfileScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
+                    if (currentUserId != null && currentUserId != targetUser.uid) {
+                        Box(modifier = Modifier.weight(1f)) {
+                            FollowButton(
+                                isFollowing = isFollowingTarget,
+                                onToggle = {
+                                    val newStatus = !isFollowingTarget
+                                    isFollowingTarget = newStatus
+                                    val updatedProfile = publicProfile
+                                    if (updatedProfile != null) {
+                                        val newFollowerCount = if (newStatus) updatedProfile.followerCount + 1 else (updatedProfile.followerCount - 1).coerceAtLeast(0)
+                                        publicProfile = updatedProfile.copy(followerCount = newFollowerCount)
+                                    }
+                                    coroutineScope.launch {
+                                        if (newStatus) {
+                                            followRepo.followUser(currentUserId, targetUser.uid)
+                                        } else {
+                                            followRepo.unfollowUser(currentUserId, targetUser.uid)
+                                        }
+                                    }
+                                }
+                            )
+                        }
+                    }
+
                     OutlinedButton(
                         onClick = { onNavigatePrivateChat(targetUser.uid) },
-                        modifier = Modifier.fillMaxWidth().height(44.dp),
+                        modifier = Modifier.weight(1f).height(44.dp),
                         shape = RoundedCornerShape(12.dp),
                         border = androidx.compose.foundation.BorderStroke(1.dp, LivePrimaryEmerald)
                     ) {

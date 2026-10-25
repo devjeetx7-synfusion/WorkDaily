@@ -49,11 +49,21 @@ service cloud.firestore {
                     && request.resource.data.usernameLower.size() <= 20
                     && (request.resource.data.isVerified == false || !("isVerified" in request.resource.data));
 
-      // Update public profile (owner only)
-      allow update: if isOwner(userId)
+      // Update public profile: owner can update profile fields, or authenticated users can update follower/following counts
+      allow update: if isAuthenticated()
                     && request.resource.data.uid == resource.data.uid
                     && request.resource.data.createdAt == resource.data.createdAt
-                    && (request.resource.data.isVerified == resource.data.isVerified || !("isVerified" in request.resource.data));
+                    && (isOwner(userId) || (
+                        request.resource.data.displayName == resource.data.displayName
+                        && request.resource.data.username == resource.data.username
+                        && request.resource.data.usernameLower == resource.data.usernameLower
+                        && request.resource.data.displayNameLower == resource.data.displayNameLower
+                        && request.resource.data.bio == resource.data.bio
+                        && request.resource.data.profession == resource.data.profession
+                        && request.resource.data.photoUrl == resource.data.photoUrl
+                        && request.resource.data.isPublic == resource.data.isPublic
+                        && request.resource.data.isVerified == resource.data.isVerified
+                    ));
 
       allow delete: if false;
     }
@@ -76,6 +86,25 @@ service cloud.firestore {
       // Release username: owner deleting their own reservation during username change
       allow delete: if isAuthenticated()
                     && resource.data.uid == request.auth.uid;
+    }
+
+    // WorkDaily Follow Relationships Collection
+    // Path: `follows/{followerUid}_${targetUid}`
+    match /follows/{followId} {
+      // Authenticated users can read follow records and query followers/following
+      allow get, list: if isAuthenticated();
+
+      // Create follow relationship (follower owner only, no self-follow)
+      allow create: if isAuthenticated()
+                    && request.resource.data.followerUid == request.auth.uid
+                    && request.resource.data.followerUid != request.resource.data.targetUid;
+
+      // Updating follow relationship directly is forbidden
+      allow update: if false;
+
+      // Delete follow relationship (follower owner only)
+      allow delete: if isAuthenticated()
+                    && resource.data.followerUid == request.auth.uid;
     }
 
     // Deny access to any other unmapped collections by default
