@@ -26,6 +26,7 @@ import com.synfusion.attendance.viewmodel.OfflineAuthViewModel
 import com.synfusion.attendance.viewmodel.OfflineSettingsViewModel
 import com.synfusion.attendance.viewmodel.OfflineViewModelFactory
 import com.synfusion.attendance.viewmodel.OnlineAuthViewModel
+import com.synfusion.attendance.viewmodel.OnlineProfileViewModel
 import com.synfusion.attendance.utils.collectAsStateWithLifecycle
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
@@ -229,6 +230,7 @@ fun OfflineDailyWorkApp(
     val navController = rememberNavController()
     val authViewModel: OfflineAuthViewModel = viewModel(factory = factory)
     val onlineAuthViewModel: OnlineAuthViewModel = viewModel(factory = factory)
+    val onlineProfileViewModel: OnlineProfileViewModel = viewModel(factory = factory)
     val settingsViewModel: OfflineSettingsViewModel = viewModel(factory = factory)
 
     val tokenState by authViewModel.authTokenFlow.collectAsStateWithLifecycle(initialValue = "LOADING")
@@ -343,6 +345,7 @@ fun OfflineDailyWorkApp(
             LoginScreen(
                 authViewModel = authViewModel,
                 onlineAuthViewModel = onlineAuthViewModel,
+                onlineProfileViewModel = onlineProfileViewModel,
                 selectedLanguage = languageState ?: "en",
                 onLoginSuccess = {
                     navController.navigate("dashboard") {

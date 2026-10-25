@@ -44,6 +44,7 @@ class FirestoreOnlineProfileRepository(
                     "phoneNumber" to profile.phoneNumber,
                     "countryCode" to profile.countryCode,
                     "currencyCode" to profile.currencyCode,
+                    "gender" to profile.gender,
                     "emailVerified" to profile.emailVerified,
                     "updatedAt" to System.currentTimeMillis()
                 )
@@ -71,6 +72,7 @@ class FirestoreOnlineProfileRepository(
                     "phoneNumber" to profile.phoneNumber,
                     "countryCode" to (profile.countryCode ?: "IN"),
                     "currencyCode" to (profile.currencyCode ?: "INR"),
+                    "gender" to (profile.gender ?: "Male"),
                     "emailVerified" to profile.emailVerified,
                     "accountStatus" to profile.accountStatus,
                     "createdAt" to profile.createdAt,
@@ -103,6 +105,7 @@ class FirestoreOnlineProfileRepository(
                     phoneNumber = snapshot.getString("phoneNumber"),
                     countryCode = snapshot.getString("countryCode") ?: "IN",
                     currencyCode = snapshot.getString("currencyCode") ?: "INR",
+                    gender = snapshot.getString("gender") ?: "Male",
                     emailVerified = snapshot.getBoolean("emailVerified") ?: false,
                     accountStatus = snapshot.getString("accountStatus") ?: "active",
                     createdAt = snapshot.getLong("createdAt") ?: System.currentTimeMillis(),

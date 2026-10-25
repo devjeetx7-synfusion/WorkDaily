@@ -26,6 +26,12 @@ data class OfflineSettingsState(
     val originalRole: String = "personal",
     val phone: String = "",
     val originalPhone: String = "",
+    val gender: String = "Male",
+    val originalGender: String = "Male",
+    val profession: String = "Site Worker",
+    val originalProfession: String = "Site Worker",
+    val bio: String = "",
+    val originalBio: String = "",
     val countryCode: String = "IN",
     val originalCountryCode: String = "IN",
     val currencyCode: String = "INR",
@@ -191,6 +197,12 @@ class OfflineSettingsViewModel(
                     originalRole = "personal",
                     phone = user.phoneNumber,
                     originalPhone = user.phoneNumber,
+                    gender = user.gender,
+                    originalGender = user.gender,
+                    profession = user.profession,
+                    originalProfession = user.profession,
+                    bio = user.bio,
+                    originalBio = user.bio,
                     countryCode = user.countryCode,
                     originalCountryCode = user.countryCode,
                     currencyCode = user.currencyCode,
@@ -235,6 +247,23 @@ class OfflineSettingsViewModel(
 
     fun onPhoneChange(newPhone: String) {
         _state.update { it.copy(phone = newPhone) }
+    }
+
+    fun onGenderChange(newGender: String) {
+        _state.update { it.copy(gender = newGender) }
+    }
+
+    fun onProfessionChange(newProfession: String) {
+        _state.update { it.copy(profession = newProfession) }
+    }
+
+    fun onBioChange(newBio: String) {
+        _state.update { it.copy(bio = newBio) }
+    }
+
+    fun saveProfileInfo(name: String, profession: String, bio: String) {
+        _state.update { it.copy(name = name, profession = profession, bio = bio) }
+        saveChanges()
     }
 
     fun onCountryChange(newCountryCode: String) {
@@ -318,7 +347,10 @@ class OfflineSettingsViewModel(
                         role = "personal",
                         phoneNumber = currentState.phone,
                         countryCode = currentState.countryCode,
-                        currencyCode = currentState.currencyCode
+                        currencyCode = currentState.currencyCode,
+                        gender = currentState.gender,
+                        profession = currentState.profession,
+                        bio = currentState.bio
                     )
                     withContext(Dispatchers.IO) {
                         localAttendanceRepository.saveUser(updated)

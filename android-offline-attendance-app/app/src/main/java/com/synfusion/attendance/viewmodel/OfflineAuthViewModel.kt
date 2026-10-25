@@ -144,10 +144,14 @@ class OfflineAuthViewModel(
     fun completeProfile(
         googleAccount: com.synfusion.attendance.auth.OnlineAccount,
         enteredName: String,
+        enteredUsername: String = "",
         enteredPhone: String,
         countryCode: String,
         currencyCode: String,
         dailyWage: Double,
+        gender: String = "Male",
+        profession: String = "Site Worker",
+        bio: String = "",
         onComplete: (Boolean, String?) -> Unit
     ): kotlinx.coroutines.Job {
         return viewModelScope.launch {
@@ -204,6 +208,9 @@ class OfflineAuthViewModel(
                     dailyWage = finalWage,
                     countryCode = finalCountry,
                     currencyCode = finalCurrency,
+                    gender = gender,
+                    profession = profession,
+                    bio = bio,
                     createdAt = createdAt
                 )
 
@@ -231,14 +238,29 @@ class OfflineAuthViewModel(
                         photoUrl = googleAccount.photoUrl,
                         countryCode = finalCountry,
                         currencyCode = finalCurrency,
+                        gender = gender,
                         emailVerified = googleAccount.isEmailVerified
                     )
                     onlineProfileRepository.ensureOnlineProfile(onlineProfile)
-                    publicProfileRepository.ensureOrCreatePublicProfile(
-                        firebaseUid = googleAccount.uid,
-                        displayName = finalName,
-                        photoUrl = googleAccount.photoUrl
-                    )
+
+                    val cleanUsername = enteredUsername.trim().removePrefix("@")
+                    if (cleanUsername.isNotBlank()) {
+                        publicProfileRepository.updatePublicProfile(
+                            firebaseUid = googleAccount.uid,
+                            newUsername = cleanUsername,
+                            displayName = finalName,
+                            bio = bio,
+                            profession = profession,
+                            photoUrl = googleAccount.photoUrl,
+                            isPublic = true
+                        )
+                    } else {
+                        publicProfileRepository.ensureOrCreatePublicProfile(
+                            firebaseUid = googleAccount.uid,
+                            displayName = finalName,
+                            photoUrl = googleAccount.photoUrl
+                        )
+                    }
                 } catch (e: Exception) {
                     // Safe offline failure handling: do NOT block local onboarding or corrupt local workspace
                 }
