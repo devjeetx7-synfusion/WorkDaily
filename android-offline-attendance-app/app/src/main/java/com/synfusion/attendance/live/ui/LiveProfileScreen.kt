@@ -23,9 +23,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.synfusion.attendance.live.model.*
 import com.synfusion.attendance.live.ui.components.*
 import com.synfusion.attendance.live.viewmodel.LiveViewModel
+import com.synfusion.attendance.online.FirestorePublicProfileRepository
+import com.synfusion.attendance.online.ProfileOperationResult
+import com.synfusion.attendance.online.PublicProfile
 
 enum class UserListType {
     FOLLOWERS,
@@ -48,16 +50,7 @@ fun LiveProfileScreen(
     onNavigateDemoControls: () -> Unit = {}
 ) {
     val context = LocalContext.current
-    val publicUsers by viewModel.publicUsers.collectAsState()
-    val followedIds by viewModel.followedCreatorIds.collectAsState()
-
-    val targetUser = remember(publicUsers, userId) {
-        if (userId != null && userId != "current_user" && userId != "user_me") {
-            publicUsers.find { it.id == userId }
-        } else null
-    }
-
-    val isSelf = targetUser == null || userId == null || userId == "current_user" || userId == "user_me"
+    val isSelf = userId == null || userId == "current_user" || userId == "user_me"
 
     LaunchedEffect(isSelf) {
         if (isSelf) {
@@ -65,23 +58,82 @@ fun LiveProfileScreen(
         }
     }
 
-    if (isSelf || targetUser == null) {
+    if (isSelf || userId == null) {
         return
     }
 
-    val displayName = targetUser.name
-    val username = "@${targetUser.name.lowercase().replace(" ", "")}"
-    val profession = targetUser.profession.ifBlank { "Site Specialist" }
+    var isLoading by remember { mutableStateOf(true) }
+    var publicProfile by remember { mutableStateOf<PublicProfile?>(null) }
+    var loadError by remember { mutableStateOf<String?>(null) }
+
+    val repository = remember { FirestorePublicProfileRepository() }
+
+    LaunchedEffect(userId) {
+        isLoading = true
+        loadError = null
+        when (val result = repository.getPublicProfile(userId)) {
+            is ProfileOperationResult.Success -> {
+                publicProfile = result.data
+                isLoading = false
+            }
+            is ProfileOperationResult.Error -> {
+                publicProfile = null
+                loadError = result.message
+                isLoading = false
+            }
+        }
+    }
+
+    if (isLoading) {
+        Box(
+            modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(color = LivePrimaryEmerald)
+        }
+        return
+    }
+
+    val targetUser = publicProfile
+
+    if (targetUser == null) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("Profile Unavailable", fontWeight = FontWeight.Bold, fontSize = 18.sp) },
+                    navigationIcon = {
+                        IconButton(onClick = onNavigateBack) {
+                            Icon(com.synfusion.attendance.ui.components.icons.WorkDailyIcons.ArrowLeft, contentDescription = "Back")
+                        }
+                    }
+                )
+            }
+        ) { padding ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Icon(Icons.Default.PersonOff, contentDescription = null, modifier = Modifier.size(56.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("This profile is unavailable or does not exist.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
+                    Button(onClick = onNavigateBack) {
+                        Text("Go Back")
+                    }
+                }
+            }
+        }
+        return
+    }
+
+    val displayName = targetUser.displayName.ifEmpty { "WorkDaily Member" }
+    val username = "@${targetUser.username}"
+    val profession = targetUser.profession.ifBlank { "Site Worker" }
     val bio = targetUser.bio.ifBlank { "WorkDaily Verified Member" }
-    val avatarUrl = targetUser.avatar
-    val isLive = targetUser.isLiveNow
-    val isFollowing = followedIds.contains(targetUser.id)
+    val avatarUrl = targetUser.photoUrl ?: ""
 
     var showMenu by remember { mutableStateOf(false) }
-    var activeUserListType by remember { mutableStateOf<UserListType?>(null) }
-
-    val followerCount = targetUser.followerCount
-    val followingCount = targetUser.followingCount
 
     Scaffold(
         topBar = {
@@ -126,16 +178,6 @@ fun LiveProfileScreen(
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Block User", color = LiveRed) },
-                                leadingIcon = { Icon(Icons.Default.Block, contentDescription = null, tint = LiveRed) },
-                                onClick = {
-                                    showMenu = false
-                                    viewModel.blockUser(targetUser.id)
-                                    Toast.makeText(context, "User blocked", Toast.LENGTH_SHORT).show()
-                                    onNavigateBack()
-                                }
-                            )
-                            DropdownMenuItem(
                                 text = { Text("Report Profile") },
                                 leadingIcon = { Icon(Icons.Default.Flag, contentDescription = null) },
                                 onClick = {
@@ -162,7 +204,6 @@ fun LiveProfileScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
-            // 2. AVATAR, NAME, VERIFICATION, USERNAME, PROFESSION, BIO
             item {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -172,7 +213,7 @@ fun LiveProfileScreen(
                         name = displayName,
                         avatarUrl = avatarUrl,
                         size = 88.dp,
-                        isLive = isLive,
+                        isLive = false,
                         showBadge = false
                     )
 
@@ -235,7 +276,7 @@ fun LiveProfileScreen(
                 }
             }
 
-            // 3. FOLLOWERS AND FOLLOWING STATISTICS
+            // Truthful zero statistics
             item {
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
@@ -252,14 +293,10 @@ fun LiveProfileScreen(
                     ) {
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(12.dp))
-                                .clickable { activeUserListType = UserListType.FOLLOWERS }
-                                .padding(vertical = 4.dp)
+                            modifier = Modifier.weight(1f).padding(vertical = 4.dp)
                         ) {
                             Text(
-                                text = "$followerCount",
+                                text = "${targetUser.followerCount}",
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
@@ -271,14 +308,10 @@ fun LiveProfileScreen(
 
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(12.dp))
-                                .clickable { activeUserListType = UserListType.FOLLOWING }
-                                .padding(vertical = 4.dp)
+                            modifier = Modifier.weight(1f).padding(vertical = 4.dp)
                         ) {
                             Text(
-                                text = "$followingCount",
+                                text = "${targetUser.followingCount}",
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
@@ -289,37 +322,15 @@ fun LiveProfileScreen(
                 }
             }
 
-            // 4. FOLLOW / FOLLOWING AND MESSAGE BUTTONS
+            // Action Buttons
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Button(
-                        onClick = { viewModel.toggleFollowCreator(targetUser.id) },
-                        modifier = Modifier.weight(1f).height(44.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (isFollowing) MaterialTheme.colorScheme.surfaceVariant else LivePrimaryEmerald,
-                            contentColor = if (isFollowing) MaterialTheme.colorScheme.onSurface else Color.White
-                        ),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Icon(
-                            imageVector = if (isFollowing) Icons.Default.Check else Icons.Default.PersonAdd,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = if (isFollowing) "Following" else "Follow",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-
                     OutlinedButton(
-                        onClick = { onNavigatePrivateChat(targetUser.id) },
-                        modifier = Modifier.weight(1f).height(44.dp),
+                        onClick = { onNavigatePrivateChat(targetUser.uid) },
+                        modifier = Modifier.fillMaxWidth().height(44.dp),
                         shape = RoundedCornerShape(12.dp),
                         border = androidx.compose.foundation.BorderStroke(1.dp, LivePrimaryEmerald)
                     ) {
@@ -336,121 +347,6 @@ fun LiveProfileScreen(
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold
                         )
-                    }
-                }
-            }
-
-            // 5. CONDITIONAL WATCH LIVE SECTION
-            if (isLive && targetUser.activeRoomId != null) {
-                item {
-                    Button(
-                        onClick = { onNavigateLiveRoom(targetUser.activeRoomId) },
-                        modifier = Modifier.fillMaxWidth().height(46.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = LiveRed, contentColor = Color.White),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Icon(Icons.Default.LiveTv, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Watch Live Stream", fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
-
-        }
-    }
-
-    // Followers & Following Bottom Sheet
-    activeUserListType?.let { listType ->
-        ModalBottomSheet(
-            onDismissRequest = { activeUserListType = null },
-            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-            containerColor = MaterialTheme.colorScheme.surface,
-            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
-        ) {
-            val title = when (listType) {
-                UserListType.FOLLOWERS -> "Followers"
-                UserListType.FOLLOWING -> "Following"
-                else -> "Users"
-            }
-
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(title, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                    IconButton(onClick = { activeUserListType = null }) {
-                        Icon(Icons.Default.Close, contentDescription = "Close")
-                    }
-                }
-
-                val listUsers = remember(publicUsers, listType) {
-                    when (listType) {
-                        UserListType.FOLLOWING -> publicUsers.filter { it.isFollowing }
-                        else -> publicUsers
-                    }
-                }
-
-                if (listUsers.isEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(180.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("No users found in $title", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
-                    }
-                } else {
-                    LazyColumn(
-                        modifier = Modifier.heightIn(max = 360.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        items(listUsers, key = { it.id }) { user ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-                                    .clickable {
-                                        activeUserListType = null
-                                        if (user.id != "current_user") {
-                                            onNavigatePrivateChat(user.id)
-                                        }
-                                    }
-                                    .padding(12.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    WorkDailyLiveAvatar(
-                                        name = user.name,
-                                        avatarUrl = user.avatar,
-                                        size = 40.dp,
-                                        isLive = user.isLiveNow,
-                                        showBadge = false
-                                    )
-                                    Column {
-                                        Text(user.name, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                                        Text(user.profession, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    }
-                                }
-
-                                FollowButton(
-                                    isFollowing = user.isFollowing,
-                                    onToggle = { viewModel.toggleFollowCreator(user.id) }
-                                )
-                            }
-                        }
                     }
                 }
             }

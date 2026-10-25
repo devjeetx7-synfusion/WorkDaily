@@ -206,7 +206,11 @@ class OnlineProfileTest {
         fakePrefsRepo = FakeTestPreferencesRepository()
         fakeAttendanceRepo = FakeTestAttendanceRepository()
 
-        profileViewModel = OnlineProfileViewModel(fakeProfileRepo, testDispatcher)
+        profileViewModel = OnlineProfileViewModel(
+            onlineProfileRepository = fakeProfileRepo,
+            publicProfileRepository = null,
+            ioDispatcher = testDispatcher
+        )
         authViewModel = OfflineAuthViewModel(fakePrefsRepo, fakeAttendanceRepo, fakeProfileRepo)
     }
 

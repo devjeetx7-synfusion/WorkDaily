@@ -9,13 +9,16 @@ import com.synfusion.attendance.data.DrillDownRepository
 import com.synfusion.attendance.data.LocalAttendanceRepository
 import com.synfusion.attendance.data.OfflinePreferencesRepository
 import com.synfusion.attendance.online.FirestoreOnlineProfileRepository
+import com.synfusion.attendance.online.FirestorePublicProfileRepository
 import com.synfusion.attendance.online.OnlineProfileRepository
+import com.synfusion.attendance.online.PublicProfileRepository
 
 class OfflineViewModelFactory(
     private val repository: OfflinePreferencesRepository,
     private val context: Context,
     private val onlineAuthRepository: OnlineAuthRepository = FirebaseAuthRepository(context.applicationContext),
-    private val onlineProfileRepository: OnlineProfileRepository = FirestoreOnlineProfileRepository()
+    private val onlineProfileRepository: OnlineProfileRepository = FirestoreOnlineProfileRepository(),
+    private val publicProfileRepository: PublicProfileRepository = FirestorePublicProfileRepository()
 ) : ViewModelProvider.Factory {
 
     private val localAttendanceRepository = LocalAttendanceRepository(context)
@@ -60,7 +63,7 @@ class OfflineViewModelFactory(
         }
         if (modelClass.isAssignableFrom(OnlineProfileViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return OnlineProfileViewModel(onlineProfileRepository) as T
+            return OnlineProfileViewModel(onlineProfileRepository, publicProfileRepository) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
