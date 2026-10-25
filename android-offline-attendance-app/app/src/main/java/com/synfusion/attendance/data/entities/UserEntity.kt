@@ -14,5 +14,8 @@ data class UserEntity(
     val dailyWage: Double = 500.0,
     val countryCode: String = "IN",
     val currencyCode: String = "INR",
+    val gender: String = "Male",
+    val profession: String = "Site Worker",
+    val bio: String = "",
     val createdAt: Long = System.currentTimeMillis()
 )

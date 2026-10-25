@@ -763,13 +763,15 @@ fun EditProfileDestination(
         else null
     }
 
-    var professionText by remember { mutableStateOf("Site Engineer") }
-    var bioText by remember { mutableStateOf("WorkDaily Verified Member • Site Operations Specialist") }
+    var usernameText by remember { mutableStateOf(state.name.lowercase().replace(" ", "").ifEmpty { "user" }) }
+    var professionText by remember { mutableStateOf(state.profession) }
+    var bioText by remember { mutableStateOf(state.bio) }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
+            .imePadding()
             .padding(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -842,10 +844,12 @@ fun EditProfileDestination(
         )
 
         OutlinedTextField(
-            value = "@${state.name.lowercase().replace(" ", "").ifEmpty { "user" }}",
-            onValueChange = {},
-            readOnly = true,
-            label = { Text("Username") },
+            value = usernameText,
+            onValueChange = { newValue ->
+                val cleaned = newValue.lowercase().filter { it.isLetterOrDigit() || it == '_' || it == '.' }.take(20)
+                usernameText = cleaned
+            },
+            label = { Text("Unique Username") },
             leadingIcon = { Icon(Icons.Default.AlternateEmail, null) },
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
@@ -875,7 +879,13 @@ fun EditProfileDestination(
         Spacer(modifier = Modifier.height(12.dp))
 
         Button(
-            onClick = { viewModel.saveChanges() },
+            onClick = {
+                viewModel.saveProfileInfo(
+                    name = state.name,
+                    profession = professionText,
+                    bio = bioText
+                )
+            },
             modifier = Modifier.fillMaxWidth().height(50.dp),
             shape = RoundedCornerShape(12.dp),
             enabled = !state.isSaving
@@ -944,15 +954,67 @@ fun PersonalWorkDetailsDestination(
     viewModel: OfflineSettingsViewModel
 ) {
     var showCountryPickerSheet by remember { mutableStateOf(false) }
+    var selectedGender by remember { mutableStateOf(state.gender) }
+    var showGenderConfirmDialog by remember { mutableStateOf(false) }
+    var pendingGenderChange by remember { mutableStateOf<String?>(null) }
     val activeCountry = remember(state.countryCode) { CountryRepository.getCountry(state.countryCode) }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
+            .imePadding()
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // GENDER SELECTION
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Text(
+                text = "Gender",
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                listOf("Male", "Female", "Transgender").forEach { genderOption ->
+                    val isSelected = selectedGender == genderOption
+                    Surface(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(44.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable {
+                                if (genderOption != selectedGender) {
+                                    pendingGenderChange = genderOption
+                                    showGenderConfirmDialog = true
+                                }
+                            },
+                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp,
+                            if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            Text(
+                                text = genderOption,
+                                fontSize = 13.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                }
+            }
+        }
         Box(modifier = Modifier.fillMaxWidth()) {
             OutlinedTextField(
                 value = "${activeCountry.flagEmoji} ${activeCountry.displayName} (${activeCountry.currencySymbol})",

@@ -104,6 +104,7 @@ fun Modifier.pressScaleEffect() = composed {
 fun LoginScreen(
     authViewModel: OfflineAuthViewModel,
     onlineAuthViewModel: OnlineAuthViewModel,
+    onlineProfileViewModel: com.synfusion.attendance.viewmodel.OnlineProfileViewModel? = null,
     selectedLanguage: String,
     onLoginSuccess: () -> Unit
 ) {
@@ -118,8 +119,13 @@ fun LoginScreen(
     var showAccountMismatchDialog by remember { mutableStateOf(false) }
 
     var name by remember { mutableStateOf("") }
+    var usernameText by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
     var dailyWageText by remember { mutableStateOf("500") }
+    var selectedGender by remember { mutableStateOf("Male") }
+    var selectedProfession by remember { mutableStateOf("Site Engineer") }
+    var bioText by remember { mutableStateOf("") }
+    var showProfessionSheet by remember { mutableStateOf(false) }
 
     var selectedCountry by remember { mutableStateOf(CountryRepository.DEFAULT_COUNTRY) }
     var showCountryBottomSheet by remember { mutableStateOf(false) }
@@ -691,8 +697,9 @@ fun LoginScreen(
                                         horizontalArrangement = Arrangement.Center
                                     ) {
                                         Icon(
-                                            Icons.Default.AccountCircle,
-                                            contentDescription = null,
+                                            painter = painterResource(id = R.drawable.ic_google_logo),
+                                            contentDescription = "Google G Logo",
+                                            tint = Color.Unspecified,
                                             modifier = Modifier.size(22.dp)
                                         )
                                         Spacer(modifier = Modifier.width(10.dp))
@@ -917,31 +924,169 @@ fun LoginScreen(
                                 )
                             }
 
-                            // FULL NAME FIELD (Preserve custom name for existing upgrading user; brand-new users use Google identity summary)
-                            if (existingUser != null) {
-                                OutlinedTextField(
-                                    value = name,
-                                    onValueChange = { name = it },
-                                    label = { Text(stringResource(R.string.full_name)) },
-                                    placeholder = { Text(stringResource(R.string.enter_full_name_hint)) },
+                            // FULL NAME FIELD
+                            OutlinedTextField(
+                                value = name,
+                                onValueChange = { name = it },
+                                label = { Text(stringResource(R.string.full_name)) },
+                                placeholder = { Text(stringResource(R.string.enter_full_name_hint)) },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp),
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Default.Person,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                },
+                                singleLine = true,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                    focusedLabelColor = MaterialTheme.colorScheme.primary
+                                )
+                            )
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            // UNIQUE USERNAME FIELD
+                            OutlinedTextField(
+                                value = usernameText,
+                                onValueChange = { newValue ->
+                                    val cleaned = newValue.lowercase().filter { it.isLetterOrDigit() || it == '_' || it == '.' }.take(20)
+                                    usernameText = cleaned
+                                },
+                                label = { Text("Unique Username") },
+                                placeholder = { Text("e.g. dharmjeetsingh") },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp),
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Default.AlternateEmail,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                },
+                                singleLine = true,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                    focusedLabelColor = MaterialTheme.colorScheme.primary
+                                )
+                            )
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            // GENDER SELECTION (3 SELECTABLE CARDS: Male, Female, Transgender)
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                Text(
+                                    text = "Gender",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+                                )
+                                Row(
                                     modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    listOf("Male", "Female", "Transgender").forEach { genderOption ->
+                                        val isSelected = selectedGender == genderOption
+                                        Surface(
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .height(44.dp)
+                                                .clip(RoundedCornerShape(12.dp))
+                                                .clickable { selectedGender = genderOption },
+                                            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                                            border = androidx.compose.foundation.BorderStroke(
+                                                1.dp,
+                                                if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                                            ),
+                                            shape = RoundedCornerShape(12.dp)
+                                        ) {
+                                            Box(
+                                                contentAlignment = Alignment.Center,
+                                                modifier = Modifier.fillMaxSize()
+                                            ) {
+                                                Text(
+                                                    text = genderOption,
+                                                    fontSize = 13.sp,
+                                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            // PROFESSION SELECTION FIELD
+                            Box(modifier = Modifier.fillMaxWidth()) {
+                                OutlinedTextField(
+                                    value = selectedProfession,
+                                    onValueChange = {},
+                                    readOnly = true,
+                                    label = { Text("Profession") },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { showProfessionSheet = true },
                                     shape = RoundedCornerShape(16.dp),
                                     leadingIcon = {
                                         Icon(
-                                            Icons.Default.Person,
+                                            Icons.Default.Badge,
                                             contentDescription = null,
                                             tint = MaterialTheme.colorScheme.primary
                                         )
                                     },
-                                    singleLine = true,
+                                    trailingIcon = {
+                                        Icon(
+                                            Icons.Default.ArrowDropDown,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    },
+                                    enabled = false,
                                     colors = OutlinedTextFieldDefaults.colors(
-                                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                        focusedLabelColor = MaterialTheme.colorScheme.primary
+                                        disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                                        disabledBorderColor = MaterialTheme.colorScheme.outline,
+                                        disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        disabledLeadingIconColor = MaterialTheme.colorScheme.primary,
+                                        disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 )
-
-                                Spacer(modifier = Modifier.height(16.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .matchParentSize()
+                                        .clickable { showProfessionSheet = true }
+                                )
                             }
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            // ABOUT / BIO FIELD
+                            OutlinedTextField(
+                                value = bioText,
+                                onValueChange = { if (it.length <= 150) bioText = it },
+                                label = { Text("About / Bio") },
+                                placeholder = { Text("Brief intro about your work experience...") },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp),
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Default.Description,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                },
+                                maxLines = 3,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                    focusedLabelColor = MaterialTheme.colorScheme.primary
+                                )
+                            )
+
+                            Spacer(modifier = Modifier.height(16.dp))
 
                             // COUNTRY SELECTION FIELD
                             Box(modifier = Modifier.fillMaxWidth()) {
@@ -1097,10 +1242,14 @@ fun LoginScreen(
                                         authViewModel.completeProfile(
                                             googleAccount = account,
                                             enteredName = name,
+                                            enteredUsername = usernameText,
                                             enteredPhone = phone,
                                             countryCode = selectedCountry.countryCode,
                                             currencyCode = selectedCountry.currencyCode,
                                             dailyWage = parsedWage!!,
+                                            gender = selectedGender,
+                                            profession = selectedProfession,
+                                            bio = bioText,
                                             onComplete = { _, _ -> }
                                         )
                                     }
@@ -1169,6 +1318,141 @@ fun LoginScreen(
                 },
                 onDismiss = { showCountryBottomSheet = false }
             )
+        }
+
+        if (showProfessionSheet) {
+            ProfessionSelectionBottomSheet(
+                selectedProfession = selectedProfession,
+                onProfessionSelected = { profession ->
+                    selectedProfession = profession
+                    showProfessionSheet = false
+                },
+                onDismiss = { showProfessionSheet = false }
+            )
+        }
+    }
+}
+
+@Composable
+fun ProfessionSelectionBottomSheet(
+    selectedProfession: String,
+    onProfessionSelected: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var searchQuery by remember { mutableStateOf("") }
+    var customProfession by remember { mutableStateOf("") }
+
+    val defaultProfessions = listOf(
+        "Construction Worker", "Mason", "Electrician", "Plumber",
+        "Carpenter", "Painter", "Welder", "Helper", "Supervisor",
+        "Site Engineer", "Contractor", "Driver", "Technician", "Other"
+    )
+
+    val filtered = defaultProfessions.filter {
+        it.contains(searchQuery, ignoreCase = true)
+    }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+        windowInsets = WindowInsets(0.dp),
+        dragHandle = { BottomSheetDefaults.DragHandle() }
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text(
+                text = "Select Profession",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                placeholder = { Text("Search profession...") },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                singleLine = true
+            )
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 320.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                filtered.forEach { profession ->
+                    val isSelected = profession == selectedProfession
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable {
+                                if (profession != "Other") {
+                                    onProfessionSelected(profession)
+                                }
+                            },
+                        color = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surface,
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp,
+                            if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 14.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = profession,
+                                fontSize = 14.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                            )
+                            if (isSelected) {
+                                Icon(
+                                    Icons.Default.Check,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (filtered.contains("Other")) {
+                OutlinedTextField(
+                    value = customProfession,
+                    onValueChange = { customProfession = it },
+                    label = { Text("Custom Profession (Other)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true,
+                    trailingIcon = {
+                        if (customProfession.isNotBlank()) {
+                            IconButton(onClick = { onProfessionSelected(customProfession.trim()) }) {
+                                Icon(Icons.Default.Check, contentDescription = "Apply Custom Profession")
+                            }
+                        }
+                    }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }

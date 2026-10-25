@@ -300,9 +300,10 @@ fun ProfileScreen(
                         )
 
                         Text(
-                            text = "WorkDaily Verified Member • Site Operations Specialist",
+                            text = if (state.bio.isNotBlank()) state.bio else "WorkDaily Verified Member • ${state.profession.ifEmpty { "Site Worker" }}",
                             fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
                         )
                     }
 

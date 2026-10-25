@@ -20,7 +20,7 @@ import com.synfusion.attendance.notifications.data.NotificationEntity
         SummaryEntity::class,
         NotificationEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = true
 )
 abstract class AttendanceDatabase : RoomDatabase() {
@@ -81,6 +81,14 @@ abstract class AttendanceDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE users ADD COLUMN gender TEXT NOT NULL DEFAULT 'Male'")
+                db.execSQL("ALTER TABLE users ADD COLUMN profession TEXT NOT NULL DEFAULT 'Site Worker'")
+                db.execSQL("ALTER TABLE users ADD COLUMN bio TEXT NOT NULL DEFAULT ''")
+            }
+        }
+
         fun getInstance(context: android.content.Context): AttendanceDatabase {
             synchronized(dbLock) {
                 if (isSwapping) {
@@ -93,7 +101,7 @@ abstract class AttendanceDatabase : RoomDatabase() {
                         "synfusion_offline_attendance_db"
                     )
                     .setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING)
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_4_5)
                     .fallbackToDestructiveMigration()
                     .build()
                     INSTANCE = instance

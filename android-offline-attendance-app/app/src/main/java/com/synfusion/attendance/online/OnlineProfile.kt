@@ -17,6 +17,7 @@ data class OnlineProfile(
     val phoneNumber: String? = null,
     val countryCode: String? = "IN",
     val currencyCode: String? = "INR",
+    val gender: String? = "Male",
     val emailVerified: Boolean = false,
     val accountStatus: String = "active",
     val createdAt: Long = System.currentTimeMillis(),
