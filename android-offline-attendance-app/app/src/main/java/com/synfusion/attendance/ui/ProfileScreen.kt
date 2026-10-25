@@ -116,17 +116,14 @@ fun ProfileScreen(
 
     var realFollowersCount by remember { mutableStateOf(0) }
     var realFollowingCount by remember { mutableStateOf(0) }
-    val followRepo = remember { com.synfusion.attendance.online.FirestoreFollowRepository() }
+    val publicProfileRepo = remember { com.synfusion.attendance.online.FirestorePublicProfileRepository() }
 
     LaunchedEffect(currentUserId) {
         if (currentUserId != null) {
-            val followersRes = followRepo.getFollowers(currentUserId)
-            if (followersRes is com.synfusion.attendance.online.ProfileOperationResult.Success) {
-                realFollowersCount = followersRes.data.size
-            }
-            val followingRes = followRepo.getFollowing(currentUserId)
-            if (followingRes is com.synfusion.attendance.online.ProfileOperationResult.Success) {
-                realFollowingCount = followingRes.data.size
+            val res = publicProfileRepo.getPublicProfile(currentUserId)
+            if (res is com.synfusion.attendance.online.ProfileOperationResult.Success && res.data != null) {
+                realFollowersCount = res.data.followerCount
+                realFollowingCount = res.data.followingCount
             }
         }
     }
@@ -318,7 +315,7 @@ fun ProfileScreen(
                         }
 
                         Text(
-                            text = "@${state.name.lowercase().replace(" ", "") .ifEmpty { "user" }}",
+                            text = "@${state.username.ifEmpty { state.name.lowercase().replace(" ", "").ifEmpty { "user" } }}",
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Medium,
                             color = LivePrimaryEmerald

@@ -214,20 +214,15 @@ class OfflineAuthViewModel(
                     createdAt = createdAt
                 )
 
+                // Save local workspace first to protect local attendance data
                 localAttendanceRepository.saveUser(user)
                 repository.saveCountryAndCurrency(finalCountry, finalCurrency)
                 repository.saveAuthToken(userId)
                 repository.saveUserRole("personal")
                 repository.saveOnboardingCompleted(true)
-                repository.saveOnlineAccountSetupCompleted(true)
-                repository.saveLinkedFirebaseUid(googleAccount.uid)
 
-                // Save Google photo URL to its own separate account key (leaving custom local photo path untouched)
-                if (!googleAccount.photoUrl.isNullOrBlank()) {
-                    repository.saveGooglePhotoUrl(googleAccount.photoUrl)
-                }
-
-                // Ensure minimal allowlisted online profile in Firestore (`users/{firebaseUid}`)
+                // Try saving online profile & username reservation
+                var publicProfileError: String? = null
                 try {
                     val onlineProfile = OnlineProfile(
                         uid = googleAccount.uid,
@@ -244,7 +239,7 @@ class OfflineAuthViewModel(
                     onlineProfileRepository.ensureOnlineProfile(onlineProfile)
 
                     val cleanUsername = enteredUsername.trim().removePrefix("@")
-                    if (cleanUsername.isNotBlank()) {
+                    val pubResult = if (cleanUsername.isNotBlank()) {
                         publicProfileRepository.updatePublicProfile(
                             firebaseUid = googleAccount.uid,
                             newUsername = cleanUsername,
@@ -261,8 +256,28 @@ class OfflineAuthViewModel(
                             photoUrl = googleAccount.photoUrl
                         )
                     }
+
+                    if (pubResult is com.synfusion.attendance.online.ProfileOperationResult.Error) {
+                        publicProfileError = pubResult.message
+                    }
                 } catch (e: Exception) {
-                    // Safe offline failure handling: do NOT block local onboarding or corrupt local workspace
+                    publicProfileError = e.message ?: "Failed to save public profile"
+                }
+
+                if (publicProfileError != null) {
+                    // Online setup failed (e.g. username taken or network issue)
+                    // Do NOT mark setup completed! Propagate error so user can correct input or retry.
+                    _loginState.value = OfflineLoginState.Error(publicProfileError)
+                    onComplete(false, publicProfileError)
+                    return@launch
+                }
+
+                // Online profile and username reservation saved successfully
+                repository.saveOnlineAccountSetupCompleted(true)
+                repository.saveLinkedFirebaseUid(googleAccount.uid)
+
+                if (!googleAccount.photoUrl.isNullOrBlank()) {
+                    repository.saveGooglePhotoUrl(googleAccount.photoUrl)
                 }
 
                 _loginState.value = OfflineLoginState.Success(userId)

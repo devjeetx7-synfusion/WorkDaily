@@ -112,12 +112,97 @@ private class FakeTestAttendanceRepository : LocalAttendanceRepository(DummyCont
     override suspend fun getPersonalAttendance(): List<AttendanceEntity> = storedAttendance
 }
 
+private class FakeTestPublicProfileRepository : com.synfusion.attendance.online.PublicProfileRepository {
+    val publicProfiles = mutableMapOf<String, com.synfusion.attendance.online.PublicProfile>()
+    val usernames = mutableSetOf<String>()
+
+    override suspend fun getPublicProfile(firebaseUid: String): com.synfusion.attendance.online.ProfileOperationResult<com.synfusion.attendance.online.PublicProfile?> {
+        return com.synfusion.attendance.online.ProfileOperationResult.Success(publicProfiles[firebaseUid])
+    }
+
+    override suspend fun checkUsernameAvailability(username: String): com.synfusion.attendance.online.UsernameAvailabilityResult {
+        val validation = com.synfusion.attendance.online.UsernameValidator.validate(username)
+        if (validation is com.synfusion.attendance.online.UsernameValidationResult.Invalid) {
+            return com.synfusion.attendance.online.UsernameAvailabilityResult.Invalid(validation.reason)
+        }
+        val normalized = com.synfusion.attendance.online.UsernameValidator.normalize(username)
+        return if (usernames.contains(normalized)) {
+            com.synfusion.attendance.online.UsernameAvailabilityResult.AlreadyTaken
+        } else {
+            com.synfusion.attendance.online.UsernameAvailabilityResult.Available
+        }
+    }
+
+    override suspend fun ensureOrCreatePublicProfile(
+        firebaseUid: String,
+        displayName: String?,
+        photoUrl: String?
+    ): com.synfusion.attendance.online.ProfileOperationResult<com.synfusion.attendance.online.PublicProfile> {
+        val existing = publicProfiles[firebaseUid]
+        if (existing != null) return com.synfusion.attendance.online.ProfileOperationResult.Success(existing)
+        val candidate = com.synfusion.attendance.online.UsernameValidator.generateCandidate(displayName, firebaseUid)
+        val profile = com.synfusion.attendance.online.PublicProfile(
+            uid = firebaseUid,
+            displayName = displayName ?: "WorkDaily Member",
+            username = candidate,
+            photoUrl = photoUrl
+        )
+        publicProfiles[firebaseUid] = profile
+        usernames.add(candidate)
+        return com.synfusion.attendance.online.ProfileOperationResult.Success(profile)
+    }
+
+    override suspend fun updatePublicProfile(
+        firebaseUid: String,
+        newUsername: String,
+        displayName: String,
+        bio: String,
+        profession: String,
+        photoUrl: String?,
+        isPublic: Boolean
+    ): com.synfusion.attendance.online.ProfileOperationResult<com.synfusion.attendance.online.PublicProfile> {
+        val norm = com.synfusion.attendance.online.UsernameValidator.normalize(newUsername)
+        val existing = publicProfiles[firebaseUid]
+        if (existing?.username != norm && usernames.contains(norm)) {
+            return com.synfusion.attendance.online.ProfileOperationResult.Error("Username @$norm is already taken by another user.")
+        }
+        if (existing != null) {
+            usernames.remove(existing.username)
+        }
+        usernames.add(norm)
+        val updated = com.synfusion.attendance.online.PublicProfile(
+            uid = firebaseUid,
+            displayName = displayName,
+            username = norm,
+            bio = bio,
+            profession = profession,
+            photoUrl = photoUrl,
+            isPublic = isPublic
+        )
+        publicProfiles[firebaseUid] = updated
+        return com.synfusion.attendance.online.ProfileOperationResult.Success(updated)
+    }
+
+    override suspend fun searchPublicProfiles(
+        query: String,
+        currentUserId: String?,
+        limit: Int
+    ): com.synfusion.attendance.online.ProfileOperationResult<List<com.synfusion.attendance.online.PublicProfile>> {
+        val norm = com.synfusion.attendance.online.UsernameValidator.normalize(query)
+        val matches = publicProfiles.values.filter {
+            (it.usernameLower.contains(norm) || it.displayNameLower.contains(norm)) && it.uid != currentUserId
+        }.take(limit)
+        return com.synfusion.attendance.online.ProfileOperationResult.Success(matches)
+    }
+}
+
 @OptIn(ExperimentalCoroutinesApi::class)
 class Step2SingleAccountOnboardingTest {
 
     private val testDispatcher = UnconfinedTestDispatcher()
     private lateinit var fakePrefs: FakeTestPreferencesRepository
     private lateinit var fakeAttendanceRepo: FakeTestAttendanceRepository
+    private lateinit var fakePublicProfileRepo: FakeTestPublicProfileRepository
     private lateinit var viewModel: OfflineAuthViewModel
 
     @Before
@@ -125,7 +210,12 @@ class Step2SingleAccountOnboardingTest {
         Dispatchers.setMain(testDispatcher)
         fakePrefs = FakeTestPreferencesRepository()
         fakeAttendanceRepo = FakeTestAttendanceRepository()
-        viewModel = OfflineAuthViewModel(fakePrefs, fakeAttendanceRepo)
+        fakePublicProfileRepo = FakeTestPublicProfileRepository()
+        viewModel = OfflineAuthViewModel(
+            repository = fakePrefs,
+            localAttendanceRepository = fakeAttendanceRepo,
+            publicProfileRepository = fakePublicProfileRepo
+        )
     }
 
     @After

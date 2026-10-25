@@ -94,10 +94,11 @@ service cloud.firestore {
       // Authenticated users can read follow records and query followers/following
       allow get, list: if isAuthenticated();
 
-      // Create follow relationship (follower owner only, no self-follow)
+      // Create follow relationship (follower owner only, matching document ID format, no self-follow)
       allow create: if isAuthenticated()
                     && request.resource.data.followerUid == request.auth.uid
-                    && request.resource.data.followerUid != request.resource.data.targetUid;
+                    && request.resource.data.followerUid != request.resource.data.targetUid
+                    && followId == request.resource.data.followerUid + "_" + request.resource.data.targetUid;
 
       // Updating follow relationship directly is forbidden
       allow update: if false;
