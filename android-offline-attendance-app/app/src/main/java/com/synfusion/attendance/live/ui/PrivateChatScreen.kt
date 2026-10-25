@@ -4,7 +4,6 @@ import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -13,7 +12,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -26,12 +24,17 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.synfusion.attendance.live.model.DemoPrivateMessage
 import com.synfusion.attendance.live.ui.components.*
 import com.synfusion.attendance.live.viewmodel.LiveViewModel
+import com.synfusion.attendance.online.FirestoreFollowRepository
+import com.synfusion.attendance.online.FirestorePublicProfileRepository
+import com.synfusion.attendance.online.ProfileOperationResult
+import com.synfusion.attendance.online.PublicProfile
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -45,12 +48,37 @@ fun PrivateChatScreen(
     onNavigateProfile: (String) -> Unit
 ) {
     val context = LocalContext.current
-    val publicUsers by viewModel.publicUsers.collectAsState()
+    val currentUserId = remember {
+        try {
+            com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    val followRepo = remember { FirestoreFollowRepository() }
+    val publicProfileRepo = remember { FirestorePublicProfileRepository() }
+
+    var isCheckingMutual by remember { mutableStateOf(true) }
+    var isMutualFriend by remember { mutableStateOf(false) }
+    var friendProfile by remember { mutableStateOf<PublicProfile?>(null) }
+
     val conversations by viewModel.conversations.collectAsState()
     val privateMessagesMap by viewModel.privateMessagesMap.collectAsState()
 
-    val friend = remember(publicUsers, friendId) {
-        publicUsers.find { it.id == friendId }
+    // Check mutual friendship status on Firestore
+    LaunchedEffect(currentUserId, friendId) {
+        isCheckingMutual = true
+        if (currentUserId != null && friendId.isNotBlank()) {
+            val mutual = followRepo.isMutual(currentUserId, friendId)
+            isMutualFriend = mutual
+
+            val profRes = publicProfileRepo.getPublicProfile(friendId)
+            if (profRes is ProfileOperationResult.Success) {
+                friendProfile = profRes.data
+            }
+        }
+        isCheckingMutual = false
     }
 
     val conversation = remember(conversations, friendId) {
@@ -75,6 +103,10 @@ fun PrivateChatScreen(
         }
     }
 
+    val friendName = friendProfile?.displayName ?: "WorkDaily Member"
+    val friendAvatar = friendProfile?.photoUrl ?: ""
+    val isVerified = friendProfile?.isVerified ?: false
+
     Scaffold(
         contentWindowInsets = WindowInsets(0.dp),
         topBar = {
@@ -85,14 +117,14 @@ fun PrivateChatScreen(
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                         modifier = Modifier
                             .clip(RoundedCornerShape(12.dp))
-                            .clickable { friend?.let { onNavigateProfile(it.id) } }
+                            .clickable { onNavigateProfile(friendId) }
                             .padding(vertical = 4.dp, horizontal = 4.dp)
                     ) {
                         WorkDailyLiveAvatar(
-                            name = friend?.name ?: "User",
-                            avatarUrl = friend?.avatar,
+                            name = friendName,
+                            avatarUrl = friendAvatar,
                             size = 38.dp,
-                            isLive = friend?.isLiveNow == true,
+                            isLive = false,
                             showBadge = false
                         )
                         Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
@@ -101,14 +133,14 @@ fun PrivateChatScreen(
                                 horizontalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
                                 Text(
-                                    text = friend?.name ?: "WorkDaily User",
+                                    text = friendName,
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurface,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
-                                if (friend?.isVerified == true) {
+                                if (isVerified) {
                                     Icon(
                                         Icons.Default.Verified,
                                         contentDescription = "Verified",
@@ -118,9 +150,9 @@ fun PrivateChatScreen(
                                 }
                             }
                             Text(
-                                text = if (friend?.isLiveNow == true) "Live Streaming" else "Active",
+                                text = if (isMutualFriend) "Mutual Friend • Active" else "Follower",
                                 fontSize = 11.sp,
-                                color = if (friend?.isLiveNow == true) LiveRed else MaterialTheme.colorScheme.onSurfaceVariant
+                                color = if (isMutualFriend) LivePrimaryEmerald else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
@@ -144,7 +176,7 @@ fun PrivateChatScreen(
                                 leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
                                 onClick = {
                                     showMenu = false
-                                    friend?.let { onNavigateProfile(it.id) }
+                                    onNavigateProfile(friendId)
                                 }
                             )
                             if (conversation != null) {
@@ -176,76 +208,135 @@ fun PrivateChatScreen(
                 .imePadding(),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            // Messages Feed
-            if (messages.isEmpty()) {
+            if (isCheckingMutual) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = LivePrimaryEmerald)
+                }
+            } else if (!isMutualFriend) {
+                // FRIENDS-ONLY LOCKED SCREEN
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(1f),
+                        .weight(1f)
+                        .padding(24.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        verticalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
-                        WorkDailyLiveAvatar(
-                            name = friend?.name ?: "User",
-                            avatarUrl = friend?.avatar,
-                            size = 56.dp,
-                            isLive = friend?.isLiveNow == true
-                        )
+                        Box(
+                            modifier = Modifier
+                                .size(64.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Default.Lock,
+                                contentDescription = "Friends Only",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
+
                         Text(
-                            text = "Send a message to ${friend?.name ?: "user"}",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Medium
+                            text = "Friends-Only Messaging",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
                         )
+
+                        Text(
+                            text = "Messaging is locked because you and $friendName are not mutual friends yet. Both of you must follow each other to start chatting.",
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center,
+                            lineHeight = 18.sp
+                        )
+
+                        Button(
+                            onClick = { onNavigateProfile(friendId) },
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text("View Profile & Follow")
+                        }
                     }
                 }
             } else {
-                LazyColumn(
-                    state = listState,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                        .padding(horizontal = 14.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    item {
-                        Box(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
-                            contentAlignment = Alignment.Center
+                // Messages Feed
+                if (messages.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Surface(
-                                shape = RoundedCornerShape(10.dp),
-                                color = MaterialTheme.colorScheme.surfaceVariant
-                            ) {
-                                Text(
-                                    text = "Today",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
-                                )
-                            }
+                            WorkDailyLiveAvatar(
+                                name = friendName,
+                                avatarUrl = friendAvatar,
+                                size = 56.dp,
+                                isLive = false
+                            )
+                            Text(
+                                text = "Send a message to $friendName",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Medium
+                            )
                         }
                     }
+                } else {
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                            .padding(horizontal = 14.dp, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        item {
+                            Box(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Surface(
+                                    shape = RoundedCornerShape(10.dp),
+                                    color = MaterialTheme.colorScheme.surfaceVariant
+                                ) {
+                                    Text(
+                                        text = "Today",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
+                                    )
+                                }
+                            }
+                        }
 
-                    items(messages, key = { it.id }) { msg ->
-                        PrivateMessageBubble(message = msg)
+                        items(messages, key = { it.id }) { msg ->
+                            PrivateMessageBubble(message = msg)
+                        }
                     }
                 }
-            }
 
-            // Theme-Aware Compact Composer Bar
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surface)
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
+                // Theme-Aware Compact Composer Bar
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.surface)
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
                     // Rounded Input Field
                     Surface(
                         modifier = Modifier
@@ -313,6 +404,7 @@ fun PrivateChatScreen(
                             modifier = Modifier.size(18.dp)
                         )
                     }
+                }
             }
         }
     }

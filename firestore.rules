@@ -11,6 +11,11 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
+    function isMutualFollower(userA, userB) {
+      return exists(/databases/$(database)/documents/follows/$(userA + "_" + userB))
+          && exists(/databases/$(database)/documents/follows/$(userB + "_" + userA));
+    }
+
     // WorkDaily Private Online User Account Collection
     // Path: `users/{firebaseUid}`
     // Strictly private: Other users CANNOT read email, phone number, workspace IDs, or account metadata.
@@ -106,6 +111,30 @@ service cloud.firestore {
       // Delete follow relationship (follower owner only)
       allow delete: if isAuthenticated()
                     && resource.data.followerUid == request.auth.uid;
+    }
+
+    // WorkDaily Friends-Only Conversations & Messages
+    // Path: `conversations/{conversationId}`
+    match /conversations/{conversationId} {
+      allow read: if isAuthenticated()
+                  && (resource == null || request.auth.uid in resource.data.participants);
+
+      allow create, update: if isAuthenticated()
+                            && request.auth.uid in request.resource.data.participants
+                            && isMutualFollower(request.resource.data.participants[0], request.resource.data.participants[1]);
+
+      match /messages/{messageId} {
+        allow read: if isAuthenticated()
+                    && request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants;
+
+        allow create: if isAuthenticated()
+                      && request.resource.data.senderUid == request.auth.uid
+                      && request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants
+                      && isMutualFollower(
+                          get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants[0],
+                          get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants[1]
+                      );
+      }
     }
 
     // Deny access to any other unmapped collections by default
