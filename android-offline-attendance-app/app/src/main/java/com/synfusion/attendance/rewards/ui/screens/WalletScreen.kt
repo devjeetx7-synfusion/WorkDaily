@@ -106,7 +106,7 @@ fun WalletScreen(
 
                                 Box(
                                     contentAlignment = Alignment.Center,
-                                    modifier = Modifier.size(150.dp)
+                                    modifier = Modifier.size(110.dp)
                                 ) {
                                     RewardsRadialGlow(
                                         glowColor = GoldPrimary,
@@ -115,7 +115,7 @@ fun WalletScreen(
                                     Image(
                                         painter = painterResource(id = R.drawable.wallet_worker),
                                         contentDescription = "Wallet Worker",
-                                        modifier = Modifier.size(145.dp),
+                                        modifier = Modifier.size(105.dp),
                                         contentScale = ContentScale.Fit
                                     )
                                 }
@@ -128,27 +128,36 @@ fun WalletScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(16.dp))
-                                    .background(Color.White.copy(alpha = 0.95f))
-                                    .padding(horizontal = 12.dp, vertical = 12.dp),
+                                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.95f))
+                                    .padding(horizontal = 8.dp, vertical = 12.dp),
                                 horizontalArrangement = Arrangement.SpaceEvenly,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text("Available", fontSize = 11.sp, color = RewardsTextSecondary, fontWeight = FontWeight.SemiBold)
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text("Available", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
                                     Spacer(modifier = Modifier.height(3.dp))
                                     RewardCoinBalance(amount = walletSummary.availableCoins, fontSize = 13, textColor = RewardsSuccessGreen, coinSize = 14.dp)
                                 }
-                                Box(modifier = Modifier.height(20.dp).width(1.dp).background(Color(0xFFCBD5E1)))
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text("Pending", fontSize = 11.sp, color = RewardsTextSecondary, fontWeight = FontWeight.SemiBold)
+                                Box(modifier = Modifier.height(20.dp).width(1.dp).background(MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)))
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text("Pending", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
                                     Spacer(modifier = Modifier.height(3.dp))
                                     RewardCoinBalance(amount = walletSummary.pendingCoins, fontSize = 13, textColor = StatusOrange, coinSize = 14.dp)
                                 }
-                                Box(modifier = Modifier.height(20.dp).width(1.dp).background(Color(0xFFCBD5E1)))
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text("Lifetime", fontSize = 11.sp, color = RewardsTextSecondary, fontWeight = FontWeight.SemiBold)
+                                Box(modifier = Modifier.height(20.dp).width(1.dp).background(MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)))
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text("Lifetime", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.SemiBold)
                                     Spacer(modifier = Modifier.height(3.dp))
-                                    RewardCoinBalance(amount = walletSummary.lifetimeEarned, fontSize = 13, textColor = RoyalPurple, coinSize = 14.dp)
+                                    RewardCoinBalance(amount = walletSummary.lifetimeEarned, fontSize = 13, textColor = WorkDailyBrandPrimary, coinSize = 14.dp)
                                 }
                             }
 

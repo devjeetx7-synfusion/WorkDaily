@@ -33,6 +33,7 @@ import com.synfusion.attendance.online.FirestorePublicProfileRepository
 import com.synfusion.attendance.online.ProfileOperationResult
 import com.synfusion.attendance.online.PublicProfile
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,16 +46,45 @@ fun PeopleAndFriendsScreen(
     val context = LocalContext.current
     val keyboardController = LocalSoftwareKeyboardController.current
 
-    var selectedTab by remember { mutableStateOf("Discover") }
+    val currentUserId = remember {
+        try {
+            com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    var selectedTabKey by remember { mutableStateOf("Discover") }
     var searchQuery by remember { mutableStateOf("") }
     var isSearching by remember { mutableStateOf(false) }
     var searchResults by remember { mutableStateOf<List<PublicProfile>>(emptyList()) }
+    var followersList by remember { mutableStateOf<List<PublicProfile>>(emptyList()) }
+    var followingList by remember { mutableStateOf<List<PublicProfile>>(emptyList()) }
+    var followedUids by remember { mutableStateOf<Set<String>>(emptySet()) }
     var searchError by remember { mutableStateOf<String?>(null) }
 
     val publicProfileRepo = remember { FirestorePublicProfileRepository() }
+    val followRepo = remember { com.synfusion.attendance.online.FirestoreFollowRepository() }
+
+    // Load initial followers & following if current user is logged in
+    LaunchedEffect(currentUserId) {
+        if (currentUserId != null) {
+            val followersRes = followRepo.getFollowers(currentUserId)
+            if (followersRes is ProfileOperationResult.Success) {
+                followersList = followersRes.data
+            }
+            val followingRes = followRepo.getFollowing(currentUserId)
+            if (followingRes is ProfileOperationResult.Success) {
+                followingList = followingRes.data
+                followedUids = followingRes.data.map { it.uid }.toSet()
+            }
+        }
+    }
 
     // Search debounce (350ms) with indexed prefix query
-    LaunchedEffect(searchQuery) {
+    LaunchedEffect(searchQuery, selectedTabKey) {
+        if (selectedTabKey != "Discover") return@LaunchedEffect
+
         val query = searchQuery.trim()
         if (query.isBlank()) {
             searchResults = emptyList()
@@ -67,7 +97,7 @@ fun PeopleAndFriendsScreen(
         searchError = null
         delay(350) // Debounce
 
-        when (val result = publicProfileRepo.searchPublicProfiles(query, currentUserId = null)) {
+        when (val result = publicProfileRepo.searchPublicProfiles(query, currentUserId = currentUserId)) {
             is ProfileOperationResult.Success -> {
                 searchResults = result.data
                 isSearching = false
@@ -80,7 +110,7 @@ fun PeopleAndFriendsScreen(
         }
     }
 
-    val tabs = listOf("Discover", "Followers (0)", "Following (0)")
+    val tabs = listOf("Discover", "Followers (${followersList.size})", "Following (${followingList.size})")
 
     Scaffold(
         topBar = {
@@ -107,6 +137,7 @@ fun PeopleAndFriendsScreen(
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             // Pill Tabs (Discover, Followers, Following)
+            val tabKeys = listOf("Discover", "Followers", "Following")
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -115,20 +146,20 @@ fun PeopleAndFriendsScreen(
                     .padding(4.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                tabs.forEach { tab ->
-                    val tabKey = tab.split(" ").first()
-                    val isSelected = selectedTab.startsWith(tabKey)
+                tabKeys.forEachIndexed { index, key ->
+                    val isSelected = selectedTabKey == key
+                    val label = tabs[index]
                     Box(
                         modifier = Modifier
                             .weight(1f)
                             .clip(RoundedCornerShape(12.dp))
                             .background(if (isSelected) LivePrimaryEmerald else Color.Transparent)
-                            .clickable { selectedTab = tab }
+                            .clickable { selectedTabKey = key }
                             .padding(vertical = 10.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = tab,
+                            text = label,
                             fontSize = 12.sp,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                             color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
@@ -160,6 +191,18 @@ fun PeopleAndFriendsScreen(
                 keyboardActions = KeyboardActions(onSearch = { keyboardController?.hide() })
             )
 
+            val displayedUsers = remember(selectedTabKey, searchResults, followersList, followingList, searchQuery) {
+                when (selectedTabKey) {
+                    "Followers" -> if (searchQuery.isBlank()) followersList else followersList.filter {
+                        it.displayName.contains(searchQuery, ignoreCase = true) || it.username.contains(searchQuery, ignoreCase = true)
+                    }
+                    "Following" -> if (searchQuery.isBlank()) followingList else followingList.filter {
+                        it.displayName.contains(searchQuery, ignoreCase = true) || it.username.contains(searchQuery, ignoreCase = true)
+                    }
+                    else -> searchResults
+                }
+            }
+
             if (isSearching) {
                 Box(
                     modifier = Modifier.fillMaxWidth().weight(1f),
@@ -167,7 +210,7 @@ fun PeopleAndFriendsScreen(
                 ) {
                     CircularProgressIndicator(color = LivePrimaryEmerald)
                 }
-            } else if (searchResults.isEmpty()) {
+            } else if (displayedUsers.isEmpty()) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -179,8 +222,15 @@ fun PeopleAndFriendsScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Icon(Icons.Default.PeopleOutline, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(48.dp))
+                        val emptyMsg = when {
+                            selectedTabKey == "Discover" && searchQuery.isBlank() -> "Type a username or display name to search WorkDaily members"
+                            selectedTabKey == "Discover" -> "No users matching '$searchQuery'"
+                            selectedTabKey == "Followers" -> "No followers yet"
+                            selectedTabKey == "Following" -> "You are not following anyone yet"
+                            else -> "No users found"
+                        }
                         Text(
-                            text = if (searchQuery.isNotBlank()) "No users matching '$searchQuery'" else "Type a username to search WorkDaily members",
+                            text = emptyMsg,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 14.sp
                         )
@@ -191,7 +241,10 @@ fun PeopleAndFriendsScreen(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    items(searchResults, key = { it.uid }) { user ->
+                    items(displayedUsers, key = { it.uid }) { user ->
+                        val isFollowingUser = followedUids.contains(user.uid)
+                        val coroutineScope = rememberCoroutineScope()
+
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -267,6 +320,27 @@ fun PeopleAndFriendsScreen(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
+                                    if (currentUserId != null && currentUserId != user.uid) {
+                                        FollowButton(
+                                            isFollowing = isFollowingUser,
+                                            onToggle = {
+                                                if (isFollowingUser) {
+                                                    followedUids = followedUids - user.uid
+                                                    followingList = followingList.filter { it.uid != user.uid }
+                                                    coroutineScope.launch {
+                                                        followRepo.unfollowUser(currentUserId, user.uid)
+                                                    }
+                                                } else {
+                                                    followedUids = followedUids + user.uid
+                                                    followingList = followingList + user
+                                                    coroutineScope.launch {
+                                                        followRepo.followUser(currentUserId, user.uid)
+                                                    }
+                                                }
+                                            }
+                                        )
+                                    }
+
                                     IconButton(
                                         onClick = { onNavigatePrivateChat(user.uid) },
                                         modifier = Modifier.size(36.dp)
