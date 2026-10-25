@@ -19,6 +19,11 @@ import kotlinx.coroutines.Dispatchers
 data class OfflineSettingsState(
     val name: String = "",
     val originalName: String = "",
+    val username: String = "",
+    val originalUsername: String = "",
+    val usernameError: String? = null,
+    val isCheckingUsername: Boolean = false,
+    val usernameAvailability: com.synfusion.attendance.online.UsernameAvailabilityResult? = null,
     val dailyWage: Double = 500.0,
     val originalWage: Double = 500.0,
     val workType: String = "",
@@ -65,7 +70,8 @@ data class OfflineSettingsState(
 
 class OfflineSettingsViewModel(
     private val repository: OfflinePreferencesRepository,
-    private val localAttendanceRepository: LocalAttendanceRepository
+    private val localAttendanceRepository: LocalAttendanceRepository,
+    private val publicProfileRepository: com.synfusion.attendance.online.PublicProfileRepository = com.synfusion.attendance.online.FirestorePublicProfileRepository()
 ) : ViewModel(), com.synfusion.attendance.backup.RefreshableViewModel {
 
     private val _state = MutableStateFlow(OfflineSettingsState())
@@ -187,10 +193,23 @@ class OfflineSettingsViewModel(
             val user = withContext(Dispatchers.IO) {
                 localAttendanceRepository.getUser()
             }
+
+            var fetchedUsername = ""
+            val firebaseUid = try { com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid } catch (e: Exception) { null }
+
+            if (firebaseUid != null) {
+                val profileRes = publicProfileRepository.getPublicProfile(firebaseUid)
+                if (profileRes is com.synfusion.attendance.online.ProfileOperationResult.Success && profileRes.data != null) {
+                    fetchedUsername = profileRes.data.username
+                }
+            }
+
             if (user != null) {
                 _state.update { it.copy(
                     name = user.name,
                     originalName = user.name,
+                    username = fetchedUsername.ifEmpty { user.name.lowercase().replace(" ", "") },
+                    originalUsername = fetchedUsername.ifEmpty { user.name.lowercase().replace(" ", "") },
                     dailyWage = user.dailyWage,
                     originalWage = user.dailyWage,
                     role = "personal",
@@ -209,6 +228,33 @@ class OfflineSettingsViewModel(
                     originalCurrencyCode = user.currencyCode
                 ) }
             }
+        }
+    }
+
+    fun onUsernameChange(newUsername: String) {
+        val cleaned = newUsername.lowercase().filter { it.isLetterOrDigit() || it == '_' || it == '.' }.take(20)
+        _state.update { it.copy(username = cleaned, usernameError = null) }
+
+        if (cleaned.isBlank()) {
+            _state.update { it.copy(usernameAvailability = null, isCheckingUsername = false) }
+            return
+        }
+
+        if (cleaned == _state.value.originalUsername) {
+            _state.update { it.copy(usernameAvailability = com.synfusion.attendance.online.UsernameAvailabilityResult.Available, isCheckingUsername = false) }
+            return
+        }
+
+        val syntaxCheck = com.synfusion.attendance.online.UsernameValidator.validate(cleaned)
+        if (syntaxCheck is com.synfusion.attendance.online.UsernameValidationResult.Invalid) {
+            _state.update { it.copy(usernameError = syntaxCheck.reason, usernameAvailability = null, isCheckingUsername = false) }
+            return
+        }
+
+        viewModelScope.launch {
+            _state.update { it.copy(isCheckingUsername = true, usernameError = null) }
+            val avail = publicProfileRepository.checkUsernameAvailability(cleaned)
+            _state.update { it.copy(usernameAvailability = avail, isCheckingUsername = false) }
         }
     }
 
@@ -261,9 +307,40 @@ class OfflineSettingsViewModel(
         _state.update { it.copy(bio = newBio) }
     }
 
-    fun saveProfileInfo(name: String, profession: String, bio: String) {
-        _state.update { it.copy(name = name, profession = profession, bio = bio) }
-        saveChanges()
+    fun saveProfileInfo(name: String, username: String, profession: String, bio: String) {
+        viewModelScope.launch {
+            val currentState = _state.value
+            _state.update { it.copy(isSaving = true) }
+
+            val cleanUsername = username.trim().lowercase().removePrefix("@")
+            val uid = try { com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid } catch (e: Exception) { null }
+
+            if (uid != null && cleanUsername.isNotBlank()) {
+                val validation = com.synfusion.attendance.online.UsernameValidator.validate(cleanUsername)
+                if (validation is com.synfusion.attendance.online.UsernameValidationResult.Invalid) {
+                    _state.update { it.copy(isSaving = false, usernameError = validation.reason, savedMessage = validation.reason) }
+                    return@launch
+                }
+
+                val pubResult = publicProfileRepository.updatePublicProfile(
+                    firebaseUid = uid,
+                    newUsername = cleanUsername,
+                    displayName = name,
+                    bio = bio,
+                    profession = profession,
+                    photoUrl = currentState.googlePhotoUrl.ifBlank { null },
+                    isPublic = true
+                )
+
+                if (pubResult is com.synfusion.attendance.online.ProfileOperationResult.Error) {
+                    _state.update { it.copy(isSaving = false, usernameError = pubResult.message, savedMessage = pubResult.message) }
+                    return@launch
+                }
+            }
+
+            _state.update { it.copy(name = name, username = cleanUsername, originalUsername = cleanUsername, profession = profession, bio = bio) }
+            saveChanges()
+        }
     }
 
     fun onCountryChange(newCountryCode: String) {

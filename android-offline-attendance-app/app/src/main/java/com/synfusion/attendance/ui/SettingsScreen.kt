@@ -763,9 +763,15 @@ fun EditProfileDestination(
         else null
     }
 
-    var usernameText by remember { mutableStateOf(state.name.lowercase().replace(" ", "").ifEmpty { "user" }) }
+    var usernameText by remember { mutableStateOf(state.username.ifEmpty { state.name.lowercase().replace(" ", "") }) }
     var professionText by remember { mutableStateOf(state.profession) }
     var bioText by remember { mutableStateOf(state.bio) }
+
+    LaunchedEffect(state.username, state.profession, state.bio) {
+        if (state.username.isNotBlank()) usernameText = state.username
+        if (state.profession.isNotBlank()) professionText = state.profession
+        if (state.bio.isNotBlank()) bioText = state.bio
+    }
 
     Column(
         modifier = Modifier
@@ -843,18 +849,42 @@ fun EditProfileDestination(
             singleLine = true
         )
 
+        val isUsernameTaken = state.usernameAvailability is com.synfusion.attendance.online.UsernameAvailabilityResult.AlreadyTaken
+        val isUsernameAvailable = state.usernameAvailability is com.synfusion.attendance.online.UsernameAvailabilityResult.Available
+        val isUsernameInvalid = state.usernameError != null
+
         OutlinedTextField(
             value = usernameText,
             onValueChange = { newValue ->
                 val cleaned = newValue.lowercase().filter { it.isLetterOrDigit() || it == '_' || it == '.' }.take(20)
                 usernameText = cleaned
+                viewModel.onUsernameChange(cleaned)
             },
             label = { Text("Unique Username") },
-            leadingIcon = { Icon(Icons.Default.AlternateEmail, null) },
+            placeholder = { Text("e.g. rahul_builder") },
+            isError = isUsernameTaken || isUsernameInvalid,
+            leadingIcon = { Text("@", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 12.dp)) },
+            trailingIcon = {
+                if (state.isCheckingUsername) {
+                    CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                } else if (isUsernameAvailable) {
+                    Icon(Icons.Default.CheckCircle, contentDescription = "Available", tint = com.synfusion.attendance.live.ui.components.LivePrimaryEmerald)
+                } else if (isUsernameTaken || isUsernameInvalid) {
+                    Icon(Icons.Default.Error, contentDescription = "Error", tint = MaterialTheme.colorScheme.error)
+                }
+            },
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
             singleLine = true
         )
+
+        if (state.usernameError != null) {
+            Text(state.usernameError!!, color = MaterialTheme.colorScheme.error, fontSize = 12.sp, modifier = Modifier.fillMaxWidth().padding(start = 4.dp))
+        } else if (isUsernameTaken) {
+            Text("Username @$usernameText is taken by another user", color = MaterialTheme.colorScheme.error, fontSize = 12.sp, modifier = Modifier.fillMaxWidth().padding(start = 4.dp))
+        } else if (isUsernameAvailable && usernameText != state.originalUsername) {
+            Text("Username @$usernameText is available", color = com.synfusion.attendance.live.ui.components.LivePrimaryEmerald, fontSize = 12.sp, modifier = Modifier.fillMaxWidth().padding(start = 4.dp))
+        }
 
         OutlinedTextField(
             value = professionText,
@@ -882,13 +912,14 @@ fun EditProfileDestination(
             onClick = {
                 viewModel.saveProfileInfo(
                     name = state.name,
+                    username = usernameText,
                     profession = professionText,
                     bio = bioText
                 )
             },
             modifier = Modifier.fillMaxWidth().height(50.dp),
             shape = RoundedCornerShape(12.dp),
-            enabled = !state.isSaving
+            enabled = !state.isSaving && !state.isCheckingUsername && !isUsernameTaken && !isUsernameInvalid
         ) {
             if (state.isSaving) {
                 CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary)

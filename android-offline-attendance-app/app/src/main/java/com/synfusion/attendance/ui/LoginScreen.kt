@@ -120,6 +120,10 @@ fun LoginScreen(
 
     var name by remember { mutableStateOf("") }
     var usernameText by remember { mutableStateOf("") }
+    var isCheckingUsername by remember { mutableStateOf(false) }
+    var usernameAvailability by remember { mutableStateOf<com.synfusion.attendance.online.UsernameAvailabilityResult?>(null) }
+    var usernameValidationReason by remember { mutableStateOf<String?>(null) }
+    var suggestedUsername by remember { mutableStateOf<String?>(null) }
     var phone by remember { mutableStateOf("") }
     var dailyWageText by remember { mutableStateOf("500") }
     var selectedGender by remember { mutableStateOf("Male") }
@@ -210,9 +214,54 @@ fun LoginScreen(
                             name = state.account.displayName ?: ""
                         }
                     }
+
+                    // Generate initial candidate username if not set yet
+                    if (usernameText.isBlank()) {
+                        val initialCandidate = com.synfusion.attendance.online.UsernameValidator.generateCandidate(
+                            name.ifBlank { state.account.displayName },
+                            state.account.uid
+                        )
+                        usernameText = initialCandidate
+                    }
                 }
             }
             else -> {}
+        }
+    }
+
+    // Debounced username availability check & syntax validation
+    LaunchedEffect(usernameText) {
+        val raw = usernameText.trim().removePrefix("@")
+        if (raw.isBlank()) {
+            usernameValidationReason = null
+            usernameAvailability = null
+            isCheckingUsername = false
+            return@LaunchedEffect
+        }
+
+        val syntaxCheck = com.synfusion.attendance.online.UsernameValidator.validate(raw)
+        if (syntaxCheck is com.synfusion.attendance.online.UsernameValidationResult.Invalid) {
+            usernameValidationReason = syntaxCheck.reason
+            usernameAvailability = null
+            isCheckingUsername = false
+            return@LaunchedEffect
+        }
+
+        usernameValidationReason = null
+        isCheckingUsername = true
+        kotlinx.coroutines.delay(350)
+
+        val repo = com.synfusion.attendance.online.FirestorePublicProfileRepository()
+        val result = repo.checkUsernameAvailability(raw)
+        usernameAvailability = result
+        isCheckingUsername = false
+
+        if (result is com.synfusion.attendance.online.UsernameAvailabilityResult.AlreadyTaken) {
+            val uid = authenticatedAccount?.uid ?: "9999"
+            val candidate = com.synfusion.attendance.online.UsernameValidator.generateCandidate(raw, uid)
+            suggestedUsername = if (candidate != raw) candidate else "${raw}_1"
+        } else {
+            suggestedUsername = null
         }
     }
 
@@ -562,7 +611,7 @@ fun LoginScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(MaterialTheme.colorScheme.surface)
     ) {
         ResponsiveContainer {
             Column(
@@ -575,7 +624,11 @@ fun LoginScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 // TOP BANNER
-                Box(modifier = Modifier.fillMaxWidth()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.surface)
+                ) {
                     Image(
                         painter = painterResource(id = R.drawable.login_banner),
                         contentDescription = "WorkDaily Banner",
@@ -588,7 +641,7 @@ fun LoginScreen(
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .offset(y = (-24).dp),
+                        .fillMaxHeight(),
                     shape = RoundedCornerShape(
                         topStart = 28.dp,
                         topEnd = 28.dp,
@@ -949,6 +1002,10 @@ fun LoginScreen(
                             Spacer(modifier = Modifier.height(16.dp))
 
                             // UNIQUE USERNAME FIELD
+                            val isUsernameTaken = usernameAvailability is com.synfusion.attendance.online.UsernameAvailabilityResult.AlreadyTaken
+                            val isUsernameAvailable = usernameAvailability is com.synfusion.attendance.online.UsernameAvailabilityResult.Available
+                            val isUsernameInvalid = usernameValidationReason != null
+
                             OutlinedTextField(
                                 value = usernameText,
                                 onValueChange = { newValue ->
@@ -956,22 +1013,83 @@ fun LoginScreen(
                                     usernameText = cleaned
                                 },
                                 label = { Text("Unique Username") },
-                                placeholder = { Text("e.g. dharmjeetsingh") },
+                                placeholder = { Text("e.g. rahul_builder") },
+                                isError = isUsernameTaken || isUsernameInvalid,
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(16.dp),
                                 leadingIcon = {
-                                    Icon(
-                                        Icons.Default.AlternateEmail,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary
+                                    Text(
+                                        text = "@",
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        fontSize = 16.sp,
+                                        modifier = Modifier.padding(start = 14.dp)
                                     )
+                                },
+                                trailingIcon = {
+                                    if (isCheckingUsername) {
+                                        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                                    } else if (isUsernameAvailable) {
+                                        Icon(Icons.Default.CheckCircle, contentDescription = "Available", tint = com.synfusion.attendance.live.ui.components.LivePrimaryEmerald)
+                                    } else if (isUsernameTaken || isUsernameInvalid) {
+                                        Icon(Icons.Default.Error, contentDescription = "Error", tint = MaterialTheme.colorScheme.error)
+                                    }
                                 },
                                 singleLine = true,
                                 colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                    focusedBorderColor = if (isUsernameAvailable) com.synfusion.attendance.live.ui.components.LivePrimaryEmerald else MaterialTheme.colorScheme.primary,
                                     focusedLabelColor = MaterialTheme.colorScheme.primary
                                 )
                             )
+
+                            // Username Status & Suggestion Messages
+                            if (usernameValidationReason != null) {
+                                Text(
+                                    text = usernameValidationReason!!,
+                                    color = MaterialTheme.colorScheme.error,
+                                    fontSize = 12.sp,
+                                    modifier = Modifier.fillMaxWidth().padding(start = 12.dp, top = 2.dp)
+                                )
+                            } else if (isUsernameTaken) {
+                                Column(modifier = Modifier.fillMaxWidth().padding(start = 12.dp, top = 2.dp)) {
+                                    Text(
+                                        text = "Username @$usernameText is already taken",
+                                        color = MaterialTheme.colorScheme.error,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                    if (suggestedUsername != null) {
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            Text("Suggested:", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                            Surface(
+                                                modifier = Modifier.clickable { usernameText = suggestedUsername!! },
+                                                shape = RoundedCornerShape(8.dp),
+                                                color = MaterialTheme.colorScheme.primaryContainer
+                                            ) {
+                                                Text(
+                                                    text = "@${suggestedUsername}",
+                                                    fontSize = 12.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.primary,
+                                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            } else if (isUsernameAvailable) {
+                                Text(
+                                    text = "Username @$usernameText is available",
+                                    color = com.synfusion.attendance.live.ui.components.LivePrimaryEmerald,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    modifier = Modifier.fillMaxWidth().padding(start = 12.dp, top = 2.dp)
+                                )
+                            }
 
                             Spacer(modifier = Modifier.height(16.dp))
 

@@ -50,7 +50,11 @@ class FirestoreFollowRepository(
             val targetProfileRef = firestore.collection("public_profiles").document(targetUid)
 
             firestore.runTransaction { transaction ->
+                // Firestore transaction rule: ALL READS MUST BE EXECUTED BEFORE ANY WRITES!
                 val followSnap = transaction.get(followRef)
+                val targetSnap = transaction.get(targetProfileRef)
+                val followerSnap = transaction.get(followerProfileRef)
+
                 if (followSnap.exists()) {
                     // Already following - idempotent success
                     return@runTransaction
@@ -65,14 +69,11 @@ class FirestoreFollowRepository(
 
                 transaction.set(followRef, followData)
 
-                // Update counts on public profiles if documents exist
-                val targetSnap = transaction.get(targetProfileRef)
                 if (targetSnap.exists()) {
                     val currentFollowers = (targetSnap.getLong("followerCount") ?: 0L)
                     transaction.update(targetProfileRef, "followerCount", currentFollowers + 1)
                 }
 
-                val followerSnap = transaction.get(followerProfileRef)
                 if (followerSnap.exists()) {
                     val currentFollowing = (followerSnap.getLong("followingCount") ?: 0L)
                     transaction.update(followerProfileRef, "followingCount", currentFollowing + 1)
@@ -101,7 +102,11 @@ class FirestoreFollowRepository(
             val targetProfileRef = firestore.collection("public_profiles").document(targetUid)
 
             firestore.runTransaction { transaction ->
+                // Firestore transaction rule: ALL READS MUST BE EXECUTED BEFORE ANY WRITES!
                 val followSnap = transaction.get(followRef)
+                val targetSnap = transaction.get(targetProfileRef)
+                val followerSnap = transaction.get(followerProfileRef)
+
                 if (!followSnap.exists()) {
                     // Not following - idempotent success
                     return@runTransaction
@@ -109,14 +114,12 @@ class FirestoreFollowRepository(
 
                 transaction.delete(followRef)
 
-                val targetSnap = transaction.get(targetProfileRef)
                 if (targetSnap.exists()) {
                     val currentFollowers = (targetSnap.getLong("followerCount") ?: 0L)
                     val newCount = (currentFollowers - 1).coerceAtLeast(0L)
                     transaction.update(targetProfileRef, "followerCount", newCount)
                 }
 
-                val followerSnap = transaction.get(followerProfileRef)
                 if (followerSnap.exists()) {
                     val currentFollowing = (followerSnap.getLong("followingCount") ?: 0L)
                     val newCount = (currentFollowing - 1).coerceAtLeast(0L)

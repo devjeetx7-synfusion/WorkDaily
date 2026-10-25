@@ -12,7 +12,7 @@ sealed class UsernameValidationResult {
  */
 object UsernameValidator {
 
-    private val USERNAME_REGEX = Regex("^[a-z0-9_]{3,20}$")
+    private val USERNAME_REGEX = Regex("^[a-z0-9_.]{3,20}$")
 
     private val RESERVED_USERNAMES = setOf(
         "admin", "administrator", "workdaily", "synfusion", "official", "support",
@@ -37,7 +37,11 @@ object UsernameValidator {
         }
 
         if (!USERNAME_REGEX.matches(normalized)) {
-            return UsernameValidationResult.Invalid("Only lowercase letters, numbers, and underscores allowed")
+            return UsernameValidationResult.Invalid("Only lowercase letters, numbers, underscores, and periods allowed")
+        }
+
+        if (normalized.startsWith(".") || normalized.endsWith(".") || normalized.contains("..")) {
+            return UsernameValidationResult.Invalid("Username cannot start/end with a period or have consecutive periods")
         }
 
         if (RESERVED_USERNAMES.contains(normalized)) {

@@ -42,13 +42,19 @@ class UsernameValidatorTest {
             "user@123",
             "worker-07",
             "user#123",
-            "user.name"
+            "user!name"
         )
 
         for (username in invalidUsernames) {
             val result = UsernameValidator.validate(username)
             assertTrue("Expected $username to be invalid", result is UsernameValidationResult.Invalid)
         }
+    }
+
+    @Test
+    fun validate_usernameWithPeriod_returnsValid() {
+        val result = UsernameValidator.validate("user.name")
+        assertTrue(result is UsernameValidationResult.Valid)
     }
 
     @Test

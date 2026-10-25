@@ -26,6 +26,90 @@ import java.util.UUID
 
 private class DummyContext : android.content.ContextWrapper(null)
 
+private class FakeTestPublicProfileRepository : PublicProfileRepository {
+    val publicProfiles = mutableMapOf<String, PublicProfile>()
+    val usernames = mutableSetOf<String>()
+
+    override suspend fun getPublicProfile(firebaseUid: String): ProfileOperationResult<PublicProfile?> {
+        return ProfileOperationResult.Success(publicProfiles[firebaseUid])
+    }
+
+    override suspend fun checkUsernameAvailability(username: String): UsernameAvailabilityResult {
+        val validation = UsernameValidator.validate(username)
+        if (validation is UsernameValidationResult.Invalid) {
+            return UsernameAvailabilityResult.Invalid(validation.reason)
+        }
+        val normalized = UsernameValidator.normalize(username)
+        return if (usernames.contains(normalized)) {
+            UsernameAvailabilityResult.AlreadyTaken
+        } else {
+            UsernameAvailabilityResult.Available
+        }
+    }
+
+    override suspend fun ensureOrCreatePublicProfile(
+        firebaseUid: String,
+        displayName: String?,
+        photoUrl: String?
+    ): ProfileOperationResult<PublicProfile> {
+        val existing = publicProfiles[firebaseUid]
+        if (existing != null) return ProfileOperationResult.Success(existing)
+        val candidate = UsernameValidator.generateCandidate(displayName, firebaseUid)
+        val profile = PublicProfile(
+            uid = firebaseUid,
+            displayName = displayName ?: "WorkDaily Member",
+            username = candidate,
+            photoUrl = photoUrl
+        )
+        publicProfiles[firebaseUid] = profile
+        usernames.add(candidate)
+        return ProfileOperationResult.Success(profile)
+    }
+
+    override suspend fun updatePublicProfile(
+        firebaseUid: String,
+        newUsername: String,
+        displayName: String,
+        bio: String,
+        profession: String,
+        photoUrl: String?,
+        isPublic: Boolean
+    ): ProfileOperationResult<PublicProfile> {
+        val norm = UsernameValidator.normalize(newUsername)
+        val existing = publicProfiles[firebaseUid]
+        if (existing?.username != norm && usernames.contains(norm)) {
+            return ProfileOperationResult.Error("Username @$norm is already taken by another user.")
+        }
+        if (existing != null) {
+            usernames.remove(existing.username)
+        }
+        usernames.add(norm)
+        val updated = PublicProfile(
+            uid = firebaseUid,
+            displayName = displayName,
+            username = norm,
+            bio = bio,
+            profession = profession,
+            photoUrl = photoUrl,
+            isPublic = isPublic
+        )
+        publicProfiles[firebaseUid] = updated
+        return ProfileOperationResult.Success(updated)
+    }
+
+    override suspend fun searchPublicProfiles(
+        query: String,
+        currentUserId: String?,
+        limit: Int
+    ): ProfileOperationResult<List<PublicProfile>> {
+        val norm = UsernameValidator.normalize(query)
+        val matches = publicProfiles.values.filter {
+            (it.usernameLower.contains(norm) || it.displayNameLower.contains(norm)) && it.uid != currentUserId
+        }.take(limit)
+        return ProfileOperationResult.Success(matches)
+    }
+}
+
 private class FakeTestOnlineProfileRepository : OnlineProfileRepository {
     val profilesInMemory = mutableMapOf<String, OnlineProfile>()
     var shouldFailWithNetworkError = false
@@ -194,6 +278,7 @@ class OnlineProfileTest {
 
     private val testDispatcher = UnconfinedTestDispatcher()
     private lateinit var fakeProfileRepo: FakeTestOnlineProfileRepository
+    private lateinit var fakePublicProfileRepo: FakeTestPublicProfileRepository
     private lateinit var fakePrefsRepo: FakeTestPreferencesRepository
     private lateinit var fakeAttendanceRepo: FakeTestAttendanceRepository
     private lateinit var profileViewModel: OnlineProfileViewModel
@@ -203,15 +288,21 @@ class OnlineProfileTest {
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         fakeProfileRepo = FakeTestOnlineProfileRepository()
+        fakePublicProfileRepo = FakeTestPublicProfileRepository()
         fakePrefsRepo = FakeTestPreferencesRepository()
         fakeAttendanceRepo = FakeTestAttendanceRepository()
 
         profileViewModel = OnlineProfileViewModel(
             onlineProfileRepository = fakeProfileRepo,
-            publicProfileRepository = null,
+            publicProfileRepository = fakePublicProfileRepo,
             ioDispatcher = testDispatcher
         )
-        authViewModel = OfflineAuthViewModel(fakePrefsRepo, fakeAttendanceRepo, fakeProfileRepo)
+        authViewModel = OfflineAuthViewModel(
+            repository = fakePrefsRepo,
+            localAttendanceRepository = fakeAttendanceRepo,
+            onlineProfileRepository = fakeProfileRepo,
+            publicProfileRepository = fakePublicProfileRepo
+        )
     }
 
     @After
