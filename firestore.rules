@@ -16,9 +16,12 @@ service cloud.firestore {
           && exists(/databases/$(database)/documents/follows/$(userB + "_" + userA));
     }
 
+    function isNotBlocked(userA, userB) {
+      return !exists(/databases/$(database)/documents/blocks/$(userA + "_" + userB))
+          && !exists(/databases/$(database)/documents/blocks/$(userB + "_" + userA));
+    }
+
     // WorkDaily Private Online User Account Collection
-    // Path: `users/{firebaseUid}`
-    // Strictly private: Other users CANNOT read email, phone number, workspace IDs, or account metadata.
     match /users/{userId} {
       allow get: if isOwner(userId);
       allow list: if false;
@@ -37,16 +40,10 @@ service cloud.firestore {
     }
 
     // WorkDaily Public User Profiles
-    // Path: `public_profiles/{firebaseUid}`
-    // Strictly public identity fields only. Zero financial, attendance, or private contact data.
     match /public_profiles/{userId} {
-      // Authenticated users may view public profiles or own profile
       allow get: if isAuthenticated() && (resource == null || resource.data.isPublic == true || isOwner(userId));
-
-      // Authenticated users may search public profiles
       allow list: if isAuthenticated();
 
-      // Create initial public profile (owner only)
       allow create: if isOwner(userId)
                     && request.resource.data.uid == userId
                     && request.resource.data.usernameLower is string
@@ -54,7 +51,6 @@ service cloud.firestore {
                     && request.resource.data.usernameLower.size() <= 20
                     && (request.resource.data.isVerified == false || !("isVerified" in request.resource.data));
 
-      // Update public profile: owner can update profile fields, or authenticated users can update follower/following counts
       allow update: if isAuthenticated()
                     && request.resource.data.uid == resource.data.uid
                     && request.resource.data.createdAt == resource.data.createdAt
@@ -74,54 +70,71 @@ service cloud.firestore {
     }
 
     // WorkDaily Unique Username Reservation Registry
-    // Path: `usernames/{normalizedUsername}`
-    // Document ID is the lowercased, normalized username (e.g., `rahul_builder`).
     match /usernames/{username} {
-      // Authenticated users can check availability by direct document lookup
       allow get: if isAuthenticated();
       allow list: if false;
 
-      // Reserve username: owner claiming for themselves
       allow create: if isAuthenticated()
                     && request.resource.data.uid == request.auth.uid;
 
-      // Updating reservation directly is forbidden
       allow update: if false;
 
-      // Release username: owner deleting their own reservation during username change
       allow delete: if isAuthenticated()
                     && resource.data.uid == request.auth.uid;
     }
 
     // WorkDaily Follow Relationships Collection
-    // Path: `follows/{followerUid}_${targetUid}`
     match /follows/{followId} {
-      // Authenticated users can read follow records and query followers/following
       allow get, list: if isAuthenticated();
 
-      // Create follow relationship (follower owner only, matching document ID format, no self-follow)
       allow create: if isAuthenticated()
                     && request.resource.data.followerUid == request.auth.uid
                     && request.resource.data.followerUid != request.resource.data.targetUid
-                    && followId == request.resource.data.followerUid + "_" + request.resource.data.targetUid;
+                    && followId == request.resource.data.followerUid + "_" + request.resource.data.targetUid
+                    && isNotBlocked(request.auth.uid, request.resource.data.targetUid);
 
-      // Updating follow relationship directly is forbidden
       allow update: if false;
 
-      // Delete follow relationship (follower owner only)
+      // Follower can unfollow OR target user can remove follower
       allow delete: if isAuthenticated()
-                    && resource.data.followerUid == request.auth.uid;
+                    && (resource.data.followerUid == request.auth.uid || resource.data.targetUid == request.auth.uid);
+    }
+
+    // WorkDaily Block Collection
+    match /blocks/{blockId} {
+      allow get, list: if isAuthenticated();
+
+      allow create: if isAuthenticated()
+                    && request.resource.data.blockerUid == request.auth.uid
+                    && request.resource.data.blockerUid != request.resource.data.blockedUid
+                    && blockId == request.resource.data.blockerUid + "_" + request.resource.data.blockedUid;
+
+      allow update: if false;
+
+      allow delete: if isAuthenticated()
+                    && resource.data.blockerUid == request.auth.uid;
+    }
+
+    // WorkDaily Reports Collection
+    match /reports/{reportId} {
+      allow read: if false;
+
+      allow create: if isAuthenticated()
+                    && request.resource.data.reporterUid == request.auth.uid
+                    && request.resource.data.reporterUid != request.resource.data.targetUid;
+
+      allow update, delete: if false;
     }
 
     // WorkDaily Friends-Only Conversations & Messages
-    // Path: `conversations/{conversationId}`
     match /conversations/{conversationId} {
       allow read: if isAuthenticated()
                   && (resource == null || request.auth.uid in resource.data.participants);
 
       allow create, update: if isAuthenticated()
                             && request.auth.uid in request.resource.data.participants
-                            && isMutualFollower(request.resource.data.participants[0], request.resource.data.participants[1]);
+                            && isMutualFollower(request.resource.data.participants[0], request.resource.data.participants[1])
+                            && isNotBlocked(request.resource.data.participants[0], request.resource.data.participants[1]);
 
       match /messages/{messageId} {
         allow read: if isAuthenticated()
@@ -133,7 +146,19 @@ service cloud.firestore {
                       && isMutualFollower(
                           get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants[0],
                           get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants[1]
+                      )
+                      && isNotBlocked(
+                          get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants[0],
+                          get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants[1]
                       );
+
+        allow update: if isAuthenticated()
+                      && request.auth.uid == resource.data.recipientUid
+                      && request.resource.data.senderUid == resource.data.senderUid
+                      && request.resource.data.recipientUid == resource.data.recipientUid
+                      && request.resource.data.text == resource.data.text;
+
+        allow delete: if false;
       }
     }
 
