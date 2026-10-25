@@ -150,6 +150,77 @@ fun LiveProfileScreen(
     val avatarUrl = targetUser.photoUrl ?: ""
 
     var showMenu by remember { mutableStateOf(false) }
+    var showReportDialog by remember { mutableStateOf(false) }
+    var reportReason by remember { mutableStateOf("") }
+    var reportDetails by remember { mutableStateOf("") }
+    var isSubmittingReport by remember { mutableStateOf(false) }
+
+    val blockRepo = remember { com.synfusion.attendance.online.FirestoreBlockRepository() }
+    val reportRepo = remember { com.synfusion.attendance.online.FirestoreReportRepository() }
+    var isBlocked by remember { mutableStateOf(false) }
+
+    LaunchedEffect(currentUserId, targetUser.uid) {
+        if (currentUserId != null) {
+            isBlocked = blockRepo.isBlocked(currentUserId, targetUser.uid)
+        }
+    }
+
+    if (showReportDialog) {
+        AlertDialog(
+            onDismissRequest = { if (!isSubmittingReport) showReportDialog = false },
+            title = { Text("Report User", fontWeight = FontWeight.Bold) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text("Select a reason for reporting @${targetUser.username}:", fontSize = 13.sp)
+                    val reasons = listOf("Spam or Scam", "Inappropriate Content", "Harassment or Bullying", "Fake Profile")
+                    reasons.forEach { r ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { reportReason = r }
+                                .padding(vertical = 4.dp)
+                        ) {
+                            RadioButton(selected = reportReason == r, onClick = { reportReason = r })
+                            Text(r, fontSize = 14.sp)
+                        }
+                    }
+                    OutlinedTextField(
+                        value = reportDetails,
+                        onValueChange = { reportDetails = it },
+                        placeholder = { Text("Additional details (optional)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        maxLines = 3
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (reportReason.isNotBlank() && currentUserId != null) {
+                            isSubmittingReport = true
+                            coroutineScope.launch {
+                                val res = reportRepo.submitReport(currentUserId, targetUser.uid, reportReason, reportDetails)
+                                isSubmittingReport = false
+                                showReportDialog = false
+                                if (res is ProfileOperationResult.Success) {
+                                    Toast.makeText(context, "Report submitted. Thank you.", Toast.LENGTH_SHORT).show()
+                                } else {
+                                    Toast.makeText(context, "Failed to submit report", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        }
+                    },
+                    enabled = reportReason.isNotBlank() && !isSubmittingReport
+                ) {
+                    Text("Submit Report")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showReportDialog = false }) { Text("Cancel") }
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -194,11 +265,32 @@ fun LiveProfileScreen(
                                 }
                             )
                             DropdownMenuItem(
+                                text = { Text(if (isBlocked) "Unblock User" else "Block User") },
+                                leadingIcon = { Icon(Icons.Default.Block, contentDescription = null) },
+                                onClick = {
+                                    showMenu = false
+                                    if (currentUserId != null) {
+                                        coroutineScope.launch {
+                                            if (isBlocked) {
+                                                blockRepo.unblockUser(currentUserId, targetUser.uid)
+                                                isBlocked = false
+                                                Toast.makeText(context, "User unblocked", Toast.LENGTH_SHORT).show()
+                                            } else {
+                                                blockRepo.blockUser(currentUserId, targetUser.uid)
+                                                isBlocked = true
+                                                isFollowingTarget = false
+                                                Toast.makeText(context, "User blocked", Toast.LENGTH_SHORT).show()
+                                            }
+                                        }
+                                    }
+                                }
+                            )
+                            DropdownMenuItem(
                                 text = { Text("Report Profile") },
                                 leadingIcon = { Icon(Icons.Default.Flag, contentDescription = null) },
                                 onClick = {
                                     showMenu = false
-                                    Toast.makeText(context, "Profile reported to moderators", Toast.LENGTH_SHORT).show()
+                                    showReportDialog = true
                                 }
                             )
                         }

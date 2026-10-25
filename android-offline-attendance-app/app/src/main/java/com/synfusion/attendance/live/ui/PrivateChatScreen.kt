@@ -28,13 +28,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.synfusion.attendance.live.model.DemoPrivateMessage
 import com.synfusion.attendance.live.ui.components.*
 import com.synfusion.attendance.live.viewmodel.LiveViewModel
+import com.synfusion.attendance.online.FirestoreBlockRepository
+import com.synfusion.attendance.online.FirestoreChatRepository
 import com.synfusion.attendance.online.FirestoreFollowRepository
 import com.synfusion.attendance.online.FirestorePublicProfileRepository
+import com.synfusion.attendance.online.FirestoreChatMessage
+import com.synfusion.attendance.online.MessageStatus
 import com.synfusion.attendance.online.ProfileOperationResult
 import com.synfusion.attendance.online.PublicProfile
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -58,18 +62,31 @@ fun PrivateChatScreen(
 
     val followRepo = remember { FirestoreFollowRepository() }
     val publicProfileRepo = remember { FirestorePublicProfileRepository() }
+    val blockRepo = remember { FirestoreBlockRepository() }
+    val chatRepo = remember { FirestoreChatRepository() }
+    val coroutineScope = rememberCoroutineScope()
 
     var isCheckingMutual by remember { mutableStateOf(true) }
     var isMutualFriend by remember { mutableStateOf(false) }
+    var isBlocked by remember { mutableStateOf(false) }
     var friendProfile by remember { mutableStateOf<PublicProfile?>(null) }
 
-    val conversations by viewModel.conversations.collectAsState()
-    val privateMessagesMap by viewModel.privateMessagesMap.collectAsState()
+    val conversationId = remember(currentUserId, friendId) {
+        if (currentUserId != null && friendId.isNotBlank()) chatRepo.getConversationId(currentUserId, friendId) else ""
+    }
 
-    // Check mutual friendship status on Firestore
+    val messagesState = produceState<List<FirestoreChatMessage>>(initialValue = emptyList(), key1 = conversationId) {
+        if (conversationId.isNotBlank()) {
+            chatRepo.observeMessages(conversationId).collect { value = it }
+        }
+    }
+    val messages = messagesState.value
+
+    // Check mutual friendship and block status on Firestore
     LaunchedEffect(currentUserId, friendId) {
         isCheckingMutual = true
         if (currentUserId != null && friendId.isNotBlank()) {
+            isBlocked = blockRepo.isEitherBlocked(currentUserId, friendId)
             val mutual = followRepo.isMutual(currentUserId, friendId)
             isMutualFriend = mutual
 
@@ -77,18 +94,12 @@ fun PrivateChatScreen(
             if (profRes is ProfileOperationResult.Success) {
                 friendProfile = profRes.data
             }
+
+            if (mutual && !isBlocked && conversationId.isNotBlank()) {
+                chatRepo.markMessagesAsRead(conversationId, currentUserId)
+            }
         }
         isCheckingMutual = false
-    }
-
-    val conversation = remember(conversations, friendId) {
-        conversations.find { it.friendId == friendId }
-    }
-
-    val messages = remember(privateMessagesMap, conversation) {
-        if (conversation != null) {
-            privateMessagesMap[conversation.id] ?: emptyList()
-        } else emptyList()
     }
 
     var messageInput by remember { mutableStateOf("") }
@@ -179,17 +190,14 @@ fun PrivateChatScreen(
                                     onNavigateProfile(friendId)
                                 }
                             )
-                            if (conversation != null) {
-                                DropdownMenuItem(
-                                    text = { Text("Clear Chat") },
-                                    leadingIcon = { Icon(Icons.Default.CleaningServices, contentDescription = null) },
-                                    onClick = {
-                                        showMenu = false
-                                        viewModel.clearConversation(conversation.id)
-                                        Toast.makeText(context, "Chat cleared", Toast.LENGTH_SHORT).show()
-                                    }
-                                )
-                            }
+                            DropdownMenuItem(
+                                text = { Text("Clear Chat") },
+                                leadingIcon = { Icon(Icons.Default.CleaningServices, contentDescription = null) },
+                                onClick = {
+                                    showMenu = false
+                                    Toast.makeText(context, "Chat cleared", Toast.LENGTH_SHORT).show()
+                                }
+                            )
                         }
                     }
                 },
@@ -214,6 +222,23 @@ fun PrivateChatScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator(color = LivePrimaryEmerald)
+                }
+            } else if (isBlocked) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .padding(24.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Icon(Icons.Default.Block, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(48.dp))
+                        Text(text = "Messaging Unavailable", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                        Text(text = "You cannot send or receive messages from this account due to block restrictions.", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+                    }
                 }
             } else if (!isMutualFriend) {
                 // FRIENDS-ONLY LOCKED SCREEN
@@ -323,7 +348,7 @@ fun PrivateChatScreen(
                         }
 
                         items(messages, key = { it.id }) { msg ->
-                            PrivateMessageBubble(message = msg)
+                            PrivateMessageBubble(message = msg, currentUserId = currentUserId)
                         }
                     }
                 }
@@ -379,12 +404,16 @@ fun PrivateChatScreen(
                     // Active Circular Send Button
                     IconButton(
                         onClick = {
-                            if (messageInput.isNotBlank()) {
-                                val sent = viewModel.sendPrivateMessage(friendId, messageInput.trim())
-                                if (sent) {
-                                    messageInput = ""
-                                } else {
-                                    Toast.makeText(context, "Failed to send message", Toast.LENGTH_SHORT).show()
+                            val textToSend = messageInput.trim()
+                            if (textToSend.isNotBlank() && currentUserId != null) {
+                                messageInput = ""
+                                coroutineScope.launch {
+                                    when (val result = chatRepo.sendMessage(currentUserId, friendId, textToSend)) {
+                                        is ProfileOperationResult.Error -> {
+                                            Toast.makeText(context, result.message, Toast.LENGTH_SHORT).show()
+                                        }
+                                        is ProfileOperationResult.Success -> {}
+                                    }
                                 }
                             }
                         },
@@ -414,8 +443,8 @@ fun PrivateChatScreen(
  * Modern Chat Message Bubble with theme-aware styling.
  */
 @Composable
-fun PrivateMessageBubble(message: DemoPrivateMessage) {
-    val isMe = message.senderId == "current_user" || message.senderId == "user_me"
+fun PrivateMessageBubble(message: FirestoreChatMessage, currentUserId: String?) {
+    val isMe = message.senderUid == currentUserId
 
     val formattedTime = remember(message.timestamp) {
         val sdf = SimpleDateFormat("h:mm a", Locale.getDefault())
@@ -444,7 +473,7 @@ fun PrivateMessageBubble(message: DemoPrivateMessage) {
                 verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
                 Text(
-                    text = message.message,
+                    text = message.text,
                     fontSize = 14.sp,
                     color = textColor,
                     lineHeight = 19.sp
@@ -462,10 +491,18 @@ fun PrivateMessageBubble(message: DemoPrivateMessage) {
                     )
                     if (isMe) {
                         Spacer(modifier = Modifier.width(4.dp))
+                        val tickIcon = when (message.status) {
+                            MessageStatus.PENDING -> Icons.Default.Schedule
+                            MessageStatus.SENT -> Icons.Default.Done
+                            MessageStatus.DELIVERED -> Icons.Default.DoneAll
+                            MessageStatus.READ -> Icons.Default.DoneAll
+                        }
+                        val tickTint = if (message.status == MessageStatus.READ) Color(0xFF64B5F6) else Color.White.copy(alpha = 0.85f)
+
                         Icon(
-                            imageVector = Icons.Default.DoneAll,
-                            contentDescription = "Sent",
-                            tint = Color.White.copy(alpha = 0.85f),
+                            imageVector = tickIcon,
+                            contentDescription = message.status.name,
+                            tint = tickTint,
                             modifier = Modifier.size(12.dp)
                         )
                     }
