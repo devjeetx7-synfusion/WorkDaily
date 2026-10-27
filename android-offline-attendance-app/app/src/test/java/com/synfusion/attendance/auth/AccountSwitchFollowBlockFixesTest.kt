@@ -550,9 +550,10 @@ class AccountSwitchFollowBlockFixesTest {
         attendanceRepo.storedAttendance.add(
             AttendanceEntity(
                 id = "att-a-1",
-                userId = userAWorkspaceId,
+                workerId = userAWorkspaceId,
                 date = "2026-10-25",
-                status = "present"
+                status = "present",
+                type = "full"
             )
         )
 
@@ -681,7 +682,7 @@ class AccountSwitchFollowBlockFixesTest {
         )
         attendanceRepo.saveUser(offlineUser)
         attendanceRepo.storedAttendance.add(
-            AttendanceEntity(id = "att-off-1", userId = "offline-ws-001", date = "2026-10-26", status = "present")
+            AttendanceEntity(id = "att-off-1", workerId = "offline-ws-001", date = "2026-10-26", status = "present", type = "full")
         )
 
         // Registered cloud account bound to a different workspace
