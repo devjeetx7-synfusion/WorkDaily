@@ -1,19 +1,21 @@
 package com.synfusion.attendance.live.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.FontWeight
-import androidx.compose.ui.text.TextOverflow
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.synfusion.attendance.live.ui.components.WorkDailyLiveAvatar
@@ -23,9 +25,8 @@ import com.synfusion.attendance.online.PublicProfile
 import com.synfusion.attendance.online.SocialSessionCache
 import com.synfusion.attendance.online.rememberCurrentFirebaseUid
 import com.synfusion.attendance.ui.components.icons.WorkDailyIcons
-import com.synfusion.attendance.data.model.CountryRepository
-import kotlinx.coroutines.flow.collectAsStateWithLifecycle
-import kotlinx.coroutines.launch
+import com.synfusion.attendance.utils.collectAsStateWithLifecycle
+import kotlinx.coroutines.flow.flowOf
 
 /**
  * Chat list screen showing recent conversations.
@@ -40,15 +41,17 @@ fun ChatListScreen(
     onNavigatePrivateChat: (String) -> Unit,
     onNavigateUserProfile: (String) -> Unit
 ) {
-    val context = LocalContext.current
     val currentUserId = rememberCurrentFirebaseUid().value
-    val chatRepository = SocialSessionCache.manager.chatRepository
+    val activeViewerUid: String? = currentUserId?.takeIf { it.isNotBlank() }
 
-    val conversations by (if (currentUserId != null) {
-        chatRepository.observeConversations(currentUserId).collectAsStateWithLifecycle(initialValue = emptyList())
-    } else {
-        mutableStateOf(emptyList<FirestoreConversation>())
-    })
+    // chatRepository lives on the SocialSessionCache singleton (SocialSessionManager exposes the
+    // social snapshot, not the repositories) - same accessor PrivateChatScreen uses.
+    val chatRepository = SocialSessionCache.chatRepository
+
+    val conversations by remember(activeViewerUid) {
+        activeViewerUid?.let { chatRepository.observeConversations(it) }
+            ?: flowOf(emptyList<FirestoreConversation>())
+    }.collectAsStateWithLifecycle(initialValue = emptyList<FirestoreConversation>())
 
     val socialSnapshot by SocialSessionCache.manager.snapshot.collectAsStateWithLifecycle(
         initialValue = SocialSessionCache.manager.snapshot.value
@@ -56,30 +59,39 @@ fun ChatListScreen(
 
     // Helper to get the other participant's UID
     fun otherParticipantUid(conv: FirestoreConversation): String? =
-        conv.participants.firstOrNull { it != currentUserId }
+        conv.participants.firstOrNull { it.isNotBlank() && it != activeViewerUid }
 
-    // Cache public profiles for other participants
-    val profiles by remember {
-        mutableMapOf<String, PublicProfile>()
+    val participantUids = remember(conversations, activeViewerUid) {
+        conversations
+            .mapNotNull { otherParticipantUid(it) }
+            .distinct()
     }
 
-    // Resolve profile for a participant (best-effort, cached)
-    fun resolveProfile(uid: String): PublicProfile? {
-        profiles[uid]?.let { return it }
-        // Try from social snapshot
-        val ownerUid = socialSnapshot.ownerUid
-        if (ownerUid != null) {
-            val cached = socialSnapshot.profiles[uid]?.value
-            if (cached != null) {
-                profiles[uid] = cached
-                return cached
+    // Resolve real public profiles for every conversation participant through the existing
+    // SocialSessionCache manager. It caches into the snapshot StateFlow this screen already
+    // observes, so no second profile store or messaging repository is introduced.
+    LaunchedEffect(participantUids, activeViewerUid) {
+        val viewerUid = activeViewerUid ?: return@LaunchedEffect
+        participantUids.forEach { uid ->
+            val alreadyCached = SocialSessionCache.manager.snapshot.value.profiles[uid]?.value != null
+            if (!alreadyCached) {
+                SocialSessionCache.manager.getPublicProfile(ownerUid = viewerUid, targetUid = uid)
             }
         }
-        return null
     }
 
+    // Resolves a participant profile from the shared social snapshot, honouring the same
+    // owner-UID isolation guard PrivateChatScreen applies so a stale cache from a previously
+    // signed-in account can never be displayed.
+    fun resolveProfile(uid: String): PublicProfile? =
+        if (activeViewerUid != null && socialSnapshot.ownerUid == activeViewerUid) {
+            socialSnapshot.profiles[uid]?.value
+        } else {
+            null
+        }
+
     val unreadTotal = conversations.sumOf { conv ->
-        conv.unreadCounts[currentUserId ?: ""] ?: 0
+        conv.unreadCounts[activeViewerUid ?: ""] ?: 0
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -108,7 +120,7 @@ fun ChatListScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        imageVector = com.synfusion.attendance.ui.components.icons.WorkDailyIcons.Chat,
+                        imageVector = WorkDailyIcons.Chat,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(16.dp)
@@ -125,7 +137,9 @@ fun ChatListScreen(
         }
 
         LazyColumn(
-            modifier = Modifier.fillMaxWeight(),
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             if (conversations.isEmpty()) {
@@ -133,10 +147,10 @@ fun ChatListScreen(
                     Column(
                         modifier = Modifier.fillMaxSize().padding(32.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center
+                        verticalArrangement = Arrangement.Center
                     ) {
                         Icon(
-                            imageVector = com.synfusion.attendance.ui.components.icons.WorkDailyIcons.Chat,
+                            imageVector = WorkDailyIcons.Chat,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
                             modifier = Modifier.size(64.dp)
@@ -146,7 +160,8 @@ fun ChatListScreen(
                             text = "No messages yet",
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
@@ -164,16 +179,18 @@ fun ChatListScreen(
                 ) { conv ->
                     val otherUid = otherParticipantUid(conv) ?: ""
                     val otherProfile = resolveProfile(otherUid)
-                    val otherName = otherProfile?.displayName.ifEmpty { otherProfile?.username.ifEmpty { "Unknown User" } } ?: "Unknown User"
+                    val otherName = otherProfile?.displayName?.takeIf { it.isNotBlank() }
+                        ?: otherProfile?.username?.takeIf { it.isNotBlank() }
+                        ?: "Unknown User"
                     val otherPhotoUrl = otherProfile?.photoUrl
-                    val unreadCount = conv.unreadCounts[currentUserId ?: ""] ?: 0
+                    val unreadCount = conv.unreadCounts[activeViewerUid ?: ""] ?: 0
                     val isUnread = unreadCount > 0
 
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp, vertical = 8.dp)
-                            .clickable {
+                            .clickable(enabled = otherUid.isNotBlank()) {
                                 onNavigatePrivateChat(otherUid)
                             },
                         verticalAlignment = Alignment.CenterVertically
@@ -204,7 +221,7 @@ fun ChatListScreen(
                                 )
                                 if (isUnread) {
                                     Text(
-                                        text = unreadCount.min(99).toString(),
+                                        text = kotlin.math.min(unreadCount, 99).toString(),
                                         fontSize = 10.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = Color.White,
@@ -250,7 +267,7 @@ fun ChatListScreen(
                         }
                     }
 
-                    Divider(modifier = Modifier.fillMaxWidth().padding(start = 72.dp))
+                    HorizontalDivider(modifier = Modifier.fillMaxWidth().padding(start = 72.dp))
                 }
             }
         }

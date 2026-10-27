@@ -159,7 +159,10 @@ private class FakeTestPublicProfileRepository : com.synfusion.attendance.online.
         bio: String,
         profession: String,
         photoUrl: String?,
-        isPublic: Boolean
+        isPublic: Boolean,
+        gender: String,
+        dateOfBirth: String?,
+        countryCode: String
     ): com.synfusion.attendance.online.ProfileOperationResult<com.synfusion.attendance.online.PublicProfile> {
         val norm = com.synfusion.attendance.online.UsernameValidator.normalize(newUsername)
         val existing = publicProfiles[firebaseUid]
@@ -177,6 +180,9 @@ private class FakeTestPublicProfileRepository : com.synfusion.attendance.online.
             bio = bio,
             profession = profession,
             photoUrl = photoUrl,
+            gender = gender.ifBlank { existing?.gender ?: "" },
+            dateOfBirth = dateOfBirth?.takeIf { it.isNotBlank() } ?: existing?.dateOfBirth,
+            countryCode = countryCode.ifBlank { existing?.countryCode ?: "" },
             isPublic = isPublic
         )
         publicProfiles[firebaseUid] = updated

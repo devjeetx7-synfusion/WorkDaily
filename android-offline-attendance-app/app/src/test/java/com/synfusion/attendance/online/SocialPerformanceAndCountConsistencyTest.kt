@@ -44,14 +44,21 @@ class SocialPerformanceAndCountConsistencyTest {
             bio: String,
             profession: String,
             photoUrl: String?,
-            isPublic: Boolean
+            isPublic: Boolean,
+            gender: String,
+            dateOfBirth: String?,
+            countryCode: String
         ): ProfileOperationResult<PublicProfile> {
-            val updated = (profiles[firebaseUid] ?: PublicProfile(uid = firebaseUid)).copy(
+            val existing = profiles[firebaseUid] ?: PublicProfile(uid = firebaseUid)
+            val updated = existing.copy(
                 username = newUsername,
                 displayName = displayName,
                 bio = bio,
                 profession = profession,
                 photoUrl = photoUrl,
+                gender = gender.ifBlank { existing.gender },
+                dateOfBirth = dateOfBirth?.takeIf { it.isNotBlank() } ?: existing.dateOfBirth,
+                countryCode = countryCode.ifBlank { existing.countryCode },
                 isPublic = isPublic
             )
             profiles[firebaseUid] = updated

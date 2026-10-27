@@ -8,6 +8,7 @@ import com.synfusion.attendance.data.OfflinePreferencesRepository
 import com.synfusion.attendance.data.entities.UserEntity
 import com.synfusion.attendance.data.model.CountryRepository
 import com.synfusion.attendance.utils.AmountFormatter
+import com.synfusion.attendance.utils.DateOfBirthUtils
 import com.synfusion.attendance.utils.NotificationScheduler
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -197,14 +198,22 @@ class OfflineSettingsViewModel(
             }
 
             var fetchedUsername = ""
+            var fetchedDateOfBirth: String? = null
             val firebaseUid = try { com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid } catch (e: Exception) { null }
 
             if (firebaseUid != null) {
                 val profileRes = publicProfileRepository.getPublicProfile(firebaseUid)
                 if (profileRes is com.synfusion.attendance.online.ProfileOperationResult.Success && profileRes.data != null) {
                     fetchedUsername = profileRes.data.username
+                    fetchedDateOfBirth = profileRes.data.dateOfBirth
                 }
             }
+
+            // The local Room column is authoritative for this offline-first screen; the Firestore
+            // public profile is the fallback so a DOB saved through Edit Profile (or on another
+            // device) is still shown. Both representations round-trip through DateOfBirthUtils.
+            val localDateOfBirth = DateOfBirthUtils.fromEpochMillis(user?.dateOfBirth)
+            val resolvedDateOfBirth = localDateOfBirth ?: fetchedDateOfBirth
 
             if (user != null) {
                 _state.update { it.copy(
@@ -220,6 +229,8 @@ class OfflineSettingsViewModel(
                     originalPhone = user.phoneNumber,
                     gender = user.gender,
                     originalGender = user.gender,
+                    dateOfBirth = resolvedDateOfBirth,
+                    originalDateOfBirth = resolvedDateOfBirth,
                     profession = user.profession,
                     originalProfession = user.profession,
                     bio = user.bio,
@@ -244,6 +255,8 @@ class OfflineSettingsViewModel(
                     originalPhone = "",
                     gender = "Male",
                     originalGender = "Male",
+                    dateOfBirth = resolvedDateOfBirth,
+                    originalDateOfBirth = resolvedDateOfBirth,
                     profession = "Site Worker",
                     originalProfession = "Site Worker",
                     bio = "",
@@ -435,6 +448,7 @@ class OfflineSettingsViewModel(
             phone = it.originalPhone,
             countryCode = it.originalCountryCode,
             currencyCode = it.originalCurrencyCode,
+            dateOfBirth = it.originalDateOfBirth,
             profileImageUrl = it.originalProfileImageUrl,
             profileImageUri = null
         ) }
@@ -491,6 +505,14 @@ class OfflineSettingsViewModel(
                         countryCode = currentState.countryCode,
                         currencyCode = currentState.currencyCode,
                         gender = currentState.gender,
+                        // Persist the Date of Birth into the existing UserEntity.dateOfBirth column
+                        // (epoch millis). An explicit clear stores null; an incomplete or invalid
+                        // entry keeps the previously stored value so a typo can never erase data.
+                        dateOfBirth = if (currentState.dateOfBirth.isNullOrBlank()) {
+                            null
+                        } else {
+                            DateOfBirthUtils.toEpochMillis(currentState.dateOfBirth) ?: user.dateOfBirth
+                        },
                         profession = currentState.profession,
                         bio = currentState.bio
                     )
@@ -506,6 +528,7 @@ class OfflineSettingsViewModel(
                         originalPhone = it.phone,
                         originalCountryCode = it.countryCode,
                         originalCurrencyCode = it.currencyCode,
+                        originalDateOfBirth = it.dateOfBirth,
                         profileImageUri = null,
                         savedMessage = "Profile updated successfully!",
                         isSaving = false

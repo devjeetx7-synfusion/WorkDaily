@@ -931,7 +931,6 @@ fun EditProfileDestination(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
             maxLines = 3,
-            maxLength = 150,
             isError = bioError != null
         )
 
@@ -1018,7 +1017,8 @@ fun PersonalWorkDetailsDestination(
     viewModel: OfflineSettingsViewModel
 ) {
     var showCountryPickerSheet by remember { mutableStateOf(false) }
-    var selectedGender by remember { mutableStateOf(state.gender) }
+    // Keyed on state.gender so the selector reflects a confirmed change (and a reload from disk).
+    var selectedGender by remember(state.gender) { mutableStateOf(state.gender) }
     var showGenderConfirmDialog by remember { mutableStateOf(false) }
     var pendingGenderChange by remember { mutableStateOf<String?>(null) }
     val activeCountry = remember(state.countryCode) { CountryRepository.getCountry(state.countryCode) }
@@ -1088,18 +1088,36 @@ fun PersonalWorkDetailsDestination(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
             )
+            val dobValue = state.dateOfBirth.orEmpty()
+            val dobError = com.synfusion.attendance.utils.DateOfBirthUtils.validate(dobValue)
             OutlinedTextField(
-                value = state.dateOfBirth.orEmpty(),
-                onValueChange = { viewModel.onDateOfBirthChange(it.takeIf { it.isNotEmpty() }) },
+                value = dobValue,
+                onValueChange = { rawInput ->
+                    // Compose exposes no date keyboard type, so this field uses a numeric keypad
+                    // and inserts the '-' separators itself. The value handed to the ViewModel is
+                    // always the canonical "yyyy-MM-dd" string that PublicProfile.dateOfBirth and
+                    // calculateAge(...) expect, which keeps previously saved DOBs compatible.
+                    val formatted = com.synfusion.attendance.utils.DateOfBirthUtils.formatInput(rawInput)
+                    viewModel.onDateOfBirthChange(formatted.takeIf { it.isNotEmpty() })
+                },
                 label = { Text("YYYY-MM-DD") },
                 leadingIcon = { Icon(Icons.Default.Cake, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Date)
+                isError = dobError != null,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
             )
-            if (state.dateOfBirth != null) {
-                val age = calculateAge(state.dateOfBirth!!)
+            if (dobError != null) {
+                Text(
+                    text = dobError,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.fillMaxWidth().padding(start = 4.dp, top = 4.dp)
+                )
+            } else if (com.synfusion.attendance.utils.DateOfBirthUtils.isValid(dobValue)) {
+                val age = calculateAge(dobValue)
                 Text(
                     text = "Age: $age",
                     fontSize = 12.sp,
@@ -1184,6 +1202,44 @@ fun PersonalWorkDetailsDestination(
                 showCountryPickerSheet = false
             },
             onDismiss = { showCountryPickerSheet = false }
+        )
+    }
+
+    // Confirmation step for the gender selector above. Without this dialog the
+    // pendingGenderChange / showGenderConfirmDialog state was written but never read,
+    // so tapping an option did nothing and OfflineSettingsViewModel.onGenderChange was unreachable.
+    val requestedGender: String? = pendingGenderChange
+    if (showGenderConfirmDialog && requestedGender != null) {
+        val confirmedGender: String = requestedGender
+        AlertDialog(
+            onDismissRequest = {
+                showGenderConfirmDialog = false
+                pendingGenderChange = null
+            },
+            title = { Text("Change gender", fontWeight = FontWeight.Bold) },
+            text = { Text("Update your gender from \"$selectedGender\" to \"$confirmedGender\"?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.onGenderChange(confirmedGender)
+                        showGenderConfirmDialog = false
+                        pendingGenderChange = null
+                    },
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Confirm", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showGenderConfirmDialog = false
+                        pendingGenderChange = null
+                    }
+                ) {
+                    Text("Cancel")
+                }
+            }
         )
     }
 }
