@@ -918,12 +918,12 @@ fun EditProfileDestination(
         OutlinedTextField(
             value = bioText,
             onValueChange = { newValue ->
-                bioText = newValue
                 if (newValue.length > 150) {
                     bioError = "Bio must be 150 characters or fewer"
                     bioText = newValue.take(150)
                 } else {
                     bioError = null
+                    bioText = newValue
                 }
             },
             label = { Text("Bio") },
@@ -934,8 +934,9 @@ fun EditProfileDestination(
             isError = bioError != null
         )
 
-        if (bioError != null) {
-            Text(bioError!!, color = MaterialTheme.colorScheme.error, fontSize = 12.sp, modifier = Modifier.fillMaxWidth().padding(start = 4.dp))
+        val err = bioError
+        if (err != null) {
+            Text(err, color = MaterialTheme.colorScheme.error, fontSize = 12.sp, modifier = Modifier.fillMaxWidth().padding(start = 4.dp))
         }
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -1088,43 +1089,66 @@ fun PersonalWorkDetailsDestination(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
             )
-            val dobValue = state.dateOfBirth.orEmpty()
-            val dobError = com.synfusion.attendance.utils.DateOfBirthUtils.validate(dobValue)
+            var dobText by remember(state.dateOfBirth) { mutableStateOf(state.dateOfBirth.orEmpty()) }
+            var dobError by remember { mutableStateOf<String?>(null) }
+
+            fun validateDob(input: String): String? {
+                if (input.isBlank()) return null
+                if (input.length != 10) return "Use YYYY-MM-DD format"
+                try {
+                    val parts = input.split("-")
+                    if (parts.size != 3) return "Use YYYY-MM-DD format"
+                    val year = parts[0].toInt()
+                    val month = parts[1].toInt()
+                    val day = parts[2].toInt()
+                    if (year < 1900) return "Invalid birth year"
+                    if (month !in 1..12) return "Invalid month (01-12)"
+                    val date = java.time.LocalDate.of(year, month, day)
+                    if (date.isAfter(java.time.LocalDate.now())) return "Date cannot be in the future"
+                } catch (e: Exception) {
+                    return "Invalid date"
+                }
+                return null
+            }
+
             OutlinedTextField(
-                value = dobValue,
-                onValueChange = { rawInput ->
-                    // Compose exposes no date keyboard type, so this field uses a numeric keypad
-                    // and inserts the '-' separators itself. The value handed to the ViewModel is
-                    // always the canonical "yyyy-MM-dd" string that PublicProfile.dateOfBirth and
-                    // calculateAge(...) expect, which keeps previously saved DOBs compatible.
-                    val formatted = com.synfusion.attendance.utils.DateOfBirthUtils.formatInput(rawInput)
-                    viewModel.onDateOfBirthChange(formatted.takeIf { it.isNotEmpty() })
+                value = dobText,
+                onValueChange = { newValue ->
+                    val filtered = newValue.filter { it.isDigit() || it == '-' }.take(10)
+                    dobText = filtered
+                    val err = validateDob(filtered)
+                    dobError = err
+                    if (err == null) {
+                        viewModel.onDateOfBirthChange(filtered.takeIf { it.isNotEmpty() })
+                    }
                 },
                 label = { Text("YYYY-MM-DD") },
+                placeholder = { Text("1995-08-15") },
                 leadingIcon = { Icon(Icons.Default.Cake, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                isError = dobError != null,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 singleLine = true,
-                isError = dobError != null,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
             )
             if (dobError != null) {
                 Text(
-                    text = dobError,
+                    text = dobError!!,
                     fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.fillMaxWidth().padding(start = 4.dp, top = 4.dp)
-                )
-            } else if (com.synfusion.attendance.utils.DateOfBirthUtils.isValid(dobValue)) {
-                val age = calculateAge(dobValue)
-                Text(
-                    text = "Age: $age",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(start = 4.dp, top = 4.dp)
                 )
+            } else if (!state.dateOfBirth.isNullOrBlank()) {
+                val age = calculateAge(state.dateOfBirth!!)
+                if (age > 0) {
+                    Text(
+                        text = "Age: $age years",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 4.dp, top = 4.dp)
+                    )
+                }
             }
         }
 

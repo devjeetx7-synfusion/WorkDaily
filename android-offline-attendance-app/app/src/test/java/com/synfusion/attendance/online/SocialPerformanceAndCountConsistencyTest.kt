@@ -56,10 +56,13 @@ class SocialPerformanceAndCountConsistencyTest {
                 bio = bio,
                 profession = profession,
                 photoUrl = photoUrl,
+                isPublic = isPublic,
+                // Preserve the optional attributes a caller may not manage, so the Google
+                // sign-up path (which relies on the interface defaults "", null, "") cannot
+                // erase gender/dateOfBirth/countryCode already saved from Settings.
                 gender = gender.ifBlank { existing.gender },
                 dateOfBirth = dateOfBirth?.takeIf { it.isNotBlank() } ?: existing.dateOfBirth,
-                countryCode = countryCode.ifBlank { existing.countryCode },
-                isPublic = isPublic
+                countryCode = countryCode.ifBlank { existing.countryCode }
             )
             profiles[firebaseUid] = updated
             return ProfileOperationResult.Success(updated)
@@ -317,6 +320,8 @@ class SocialPerformanceAndCountConsistencyTest {
                 targetProfileHint = profileRepo.profiles.getValue("uid_b")
             )
         }
+        testScheduler.runCurrent() // Run firstTap until it suspends at followBarrier
+
         val secondTap = async {
             manager.setFollowState(
                 actorUid = "uid_a",
@@ -325,6 +330,7 @@ class SocialPerformanceAndCountConsistencyTest {
                 targetProfileHint = profileRepo.profiles.getValue("uid_b")
             )
         }
+        testScheduler.runCurrent()
 
         barrier.complete(Unit)
         val results = listOf(firstTap.await(), secondTap.await())
@@ -419,6 +425,8 @@ class SocialPerformanceAndCountConsistencyTest {
             clockMs = { 1_000L },
             onClearExternalCaches = { externalClearedCount += 1 }
         )
+        manager.onAuthenticatedUserChanged("uid_a")
+        externalClearedCount = 0
 
         manager.getFollowCounts("uid_a", "uid_a")
         manager.getFollowingList("uid_a", "uid_a")
