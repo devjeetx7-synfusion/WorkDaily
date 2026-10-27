@@ -1,6 +1,7 @@
 package com.synfusion.attendance.online
 
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FieldPath
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.tasks.await
@@ -13,6 +14,19 @@ interface BlockRepository {
     suspend fun isEitherBlocked(uidA: String, uidB: String): Boolean
     suspend fun getBlockedUserIds(blockerUid: String): ProfileOperationResult<List<String>>
     suspend fun removeFollower(targetUid: String, followerUid: String): ProfileOperationResult<Boolean>
+
+    suspend fun getBlockedProfiles(blockerUid: String): ProfileOperationResult<List<PublicProfile>> {
+        return when (val idsRes = getBlockedUserIds(blockerUid)) {
+            is ProfileOperationResult.Success -> {
+                ProfileOperationResult.Success(
+                    idsRes.data.map { uid ->
+                        PublicProfile(uid = uid, displayName = "Blocked User", username = uid.take(10))
+                    }
+                )
+            }
+            is ProfileOperationResult.Error -> idsRes
+        }
+    }
 }
 
 class FirestoreBlockRepository(
@@ -136,10 +150,68 @@ class FirestoreBlockRepository(
                 .whereEqualTo("blockerUid", blockerUid)
                 .get()
                 .await()
-            val ids = snap.documents.mapNotNull { it.getString("blockedUid") }
+            val ids = snap.documents
+                .sortedByDescending { it.getLong("timestamp") ?: 0L }
+                .mapNotNull { it.getString("blockedUid")?.takeIf { uid -> uid.isNotBlank() } }
+                .distinct()
             ProfileOperationResult.Success(ids)
         } catch (e: Exception) {
             ProfileOperationResult.Error(e.message ?: "Failed to fetch blocked users", cause = e)
+        }
+    }
+
+    override suspend fun getBlockedProfiles(blockerUid: String): ProfileOperationResult<List<PublicProfile>> = withContext(Dispatchers.IO) {
+        if (blockerUid.isBlank()) return@withContext ProfileOperationResult.Success(emptyList())
+        try {
+            val firestore = firestoreSupplier()
+            val snap = firestore.collection("blocks")
+                .whereEqualTo("blockerUid", blockerUid)
+                .get()
+                .await()
+            val blockedUids = snap.documents
+                .sortedByDescending { it.getLong("timestamp") ?: 0L }
+                .mapNotNull { it.getString("blockedUid")?.takeIf { uid -> uid.isNotBlank() } }
+                .distinct()
+
+            if (blockedUids.isEmpty()) {
+                return@withContext ProfileOperationResult.Success(emptyList())
+            }
+
+            val profileMap = mutableMapOf<String, PublicProfile>()
+            for (chunk in blockedUids.chunked(10)) {
+                val profilesSnap = firestore.collection("public_profiles")
+                    .whereIn(FieldPath.documentId(), chunk)
+                    .get()
+                    .await()
+                for (doc in profilesSnap.documents) {
+                    val data = doc.data ?: continue
+                    profileMap[doc.id] = PublicProfile(
+                        uid = doc.id,
+                        displayName = data["displayName"] as? String ?: "WorkDaily Member",
+                        username = data["username"] as? String ?: "",
+                        usernameLower = data["usernameLower"] as? String ?: "",
+                        displayNameLower = data["displayNameLower"] as? String ?: "",
+                        bio = data["bio"] as? String ?: "",
+                        profession = data["profession"] as? String ?: "Site Worker",
+                        photoUrl = data["photoUrl"] as? String,
+                        isPublic = data["isPublic"] as? Boolean ?: true,
+                        isVerified = data["isVerified"] as? Boolean ?: false,
+                        followerCount = (data["followerCount"] as? Number)?.toInt() ?: 0,
+                        followingCount = (data["followingCount"] as? Number)?.toInt() ?: 0
+                    )
+                }
+            }
+
+            val orderedProfiles = blockedUids.map { uid ->
+                profileMap[uid] ?: PublicProfile(
+                    uid = uid,
+                    displayName = "WorkDaily Member",
+                    username = uid.take(10)
+                )
+            }
+            ProfileOperationResult.Success(orderedProfiles)
+        } catch (e: Exception) {
+            ProfileOperationResult.Error(e.message ?: "Failed to load blocked users", cause = e)
         }
     }
 

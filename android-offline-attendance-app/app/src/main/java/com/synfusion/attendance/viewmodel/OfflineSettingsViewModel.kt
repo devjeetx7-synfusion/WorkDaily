@@ -227,6 +227,26 @@ class OfflineSettingsViewModel(
                     currencyCode = user.currencyCode,
                     originalCurrencyCode = user.currencyCode
                 ) }
+            } else {
+                _state.update { it.copy(
+                    name = "",
+                    originalName = "",
+                    username = "",
+                    originalUsername = "",
+                    usernameError = null,
+                    isCheckingUsername = false,
+                    usernameAvailability = null,
+                    dailyWage = 500.0,
+                    originalWage = 500.0,
+                    phone = "",
+                    originalPhone = "",
+                    gender = "Male",
+                    originalGender = "Male",
+                    profession = "Site Worker",
+                    originalProfession = "Site Worker",
+                    bio = "",
+                    originalBio = ""
+                ) }
             }
         }
     }
@@ -253,7 +273,8 @@ class OfflineSettingsViewModel(
 
         viewModelScope.launch {
             _state.update { it.copy(isCheckingUsername = true, usernameError = null) }
-            val avail = publicProfileRepository.checkUsernameAvailability(cleaned)
+            val currentUid = try { com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid } catch (_: Exception) { null }
+            val avail = publicProfileRepository.checkUsernameAvailability(cleaned, currentUid)
             _state.update { it.copy(usernameAvailability = avail, isCheckingUsername = false) }
         }
     }
@@ -511,7 +532,39 @@ class OfflineSettingsViewModel(
         _state.update { it.copy(savedMessage = null) }
     }
 
+    fun clearSessionState() {
+        loadJob?.cancel()
+        _state.update {
+            it.copy(
+                name = "",
+                originalName = "",
+                username = "",
+                originalUsername = "",
+                usernameError = null,
+                isCheckingUsername = false,
+                usernameAvailability = null,
+                dailyWage = 500.0,
+                originalWage = 500.0,
+                phone = "",
+                originalPhone = "",
+                gender = "Male",
+                originalGender = "Male",
+                profession = "Site Worker",
+                originalProfession = "Site Worker",
+                bio = "",
+                originalBio = "",
+                profileImageUrl = "",
+                originalProfileImageUrl = "",
+                googlePhotoUrl = "",
+                profileImageUri = null,
+                isSaving = false,
+                savedMessage = null
+            )
+        }
+    }
+
     fun logout() {
+        clearSessionState()
         viewModelScope.launch {
             repository.clearAuthSession()
             NotificationScheduler.cancelAllSchedules(repository.context)

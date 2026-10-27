@@ -40,7 +40,14 @@ class FirestorePublicProfileRepository(
         }
     }
 
-    override suspend fun checkUsernameAvailability(username: String): UsernameAvailabilityResult = withContext(Dispatchers.IO) {
+    override suspend fun checkUsernameAvailability(username: String): UsernameAvailabilityResult {
+        return checkUsernameAvailability(username, currentUserId = null)
+    }
+
+    override suspend fun checkUsernameAvailability(
+        username: String,
+        currentUserId: String?
+    ): UsernameAvailabilityResult = withContext(Dispatchers.IO) {
         val validation = UsernameValidator.validate(username)
         if (validation is UsernameValidationResult.Invalid) {
             return@withContext UsernameAvailabilityResult.Invalid(validation.reason)
@@ -53,7 +60,12 @@ class FirestorePublicProfileRepository(
             val snapshot = firestore.collection("usernames").document(normalized).get().await()
 
             if (snapshot.exists()) {
-                UsernameAvailabilityResult.AlreadyTaken
+                val ownerUid = snapshot.getString("uid")
+                if (!currentUserId.isNullOrBlank() && ownerUid == currentUserId) {
+                    UsernameAvailabilityResult.Available
+                } else {
+                    UsernameAvailabilityResult.AlreadyTaken
+                }
             } else {
                 UsernameAvailabilityResult.Available
             }
@@ -167,12 +179,22 @@ class FirestorePublicProfileRepository(
 
             firestore.runTransaction { transaction ->
                 val now = System.currentTimeMillis()
+                val txProfileSnap = transaction.get(profileRef)
+                val txOldUsernameLower = txProfileSnap.getString("usernameLower") ?: oldUsernameLower
+                val existingFollowerCount = (txProfileSnap.getLong("followerCount") ?: currentSnap.getLong("followerCount") ?: 0L).toInt()
+                val existingFollowingCount = (txProfileSnap.getLong("followingCount") ?: currentSnap.getLong("followingCount") ?: 0L).toInt()
+                val existingIsVerified = txProfileSnap.getBoolean("isVerified") ?: currentSnap.getBoolean("isVerified") ?: false
+                val existingCreatedAt = txProfileSnap.getLong("createdAt") ?: createdAt
 
-                if (oldUsernameLower != newNormalized) {
-                    val newUsernameRef = firestore.collection("usernames").document(newNormalized)
-                    val newUsernameSnap = transaction.get(newUsernameRef)
+                val newUsernameRef = firestore.collection("usernames").document(newNormalized)
+                val newUsernameSnap = if (txOldUsernameLower != newNormalized) {
+                    transaction.get(newUsernameRef)
+                } else {
+                    null
+                }
 
-                    if (newUsernameSnap.exists()) {
+                if (txOldUsernameLower != newNormalized) {
+                    if (newUsernameSnap != null && newUsernameSnap.exists()) {
                         val ownerUid = newUsernameSnap.getString("uid")
                         if (ownerUid != firebaseUid) {
                             throw IllegalStateException("USERNAME_TAKEN")
@@ -183,8 +205,8 @@ class FirestorePublicProfileRepository(
                     transaction.set(newUsernameRef, mapOf("uid" to firebaseUid, "createdAt" to now))
 
                     // Delete old reservation if it existed
-                    if (oldUsernameLower.isNotBlank()) {
-                        val oldUsernameRef = firestore.collection("usernames").document(oldUsernameLower)
+                    if (txOldUsernameLower.isNotBlank()) {
+                        val oldUsernameRef = firestore.collection("usernames").document(txOldUsernameLower)
                         transaction.delete(oldUsernameRef)
                     }
                 }
@@ -200,7 +222,10 @@ class FirestorePublicProfileRepository(
                     profession = profession.trim().ifEmpty { "Site Worker" },
                     photoUrl = photoUrl,
                     isPublic = isPublic,
-                    createdAt = createdAt,
+                    isVerified = existingIsVerified,
+                    followerCount = existingFollowerCount,
+                    followingCount = existingFollowingCount,
+                    createdAt = existingCreatedAt,
                     updatedAt = now
                 )
 

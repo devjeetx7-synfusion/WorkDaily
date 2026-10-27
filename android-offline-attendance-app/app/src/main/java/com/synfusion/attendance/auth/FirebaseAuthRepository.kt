@@ -1,6 +1,7 @@
 package com.synfusion.attendance.auth
 
 import android.content.Context
+import androidx.credentials.ClearCredentialStateRequest
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialCancellationException
@@ -149,13 +150,22 @@ class FirebaseAuthRepository(
         }
     }
 
-    override suspend fun signOut() = withContext(Dispatchers.IO) {
-        try {
-            firebaseAuth?.signOut()
-        } catch (e: Exception) {
-            // Ignore sign-out errors
-        }
+    override suspend fun signOut() {
         _authState.value = OnlineAuthState.Unauthenticated
+        withContext(Dispatchers.IO) {
+            try {
+                firebaseAuth?.signOut()
+            } catch (_: Exception) {
+                // Ignore sign-out errors
+            }
+            try {
+                val credentialManager = CredentialManager.create(context)
+                credentialManager.clearCredentialState(ClearCredentialStateRequest())
+            } catch (_: Exception) {
+                // Credential Manager may be unavailable on non-GMS devices or in unit tests
+            }
+            _authState.value = OnlineAuthState.Unauthenticated
+        }
     }
 
     private fun mapFirebaseUser(user: FirebaseUser): OnlineAccount {

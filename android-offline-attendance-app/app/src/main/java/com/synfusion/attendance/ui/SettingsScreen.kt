@@ -12,6 +12,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -43,6 +45,10 @@ import androidx.lifecycle.LifecycleEventObserver
 import com.synfusion.attendance.backup.BackupManager
 import com.synfusion.attendance.backup.ProgressTracker
 import com.synfusion.attendance.data.model.CountryRepository
+import com.synfusion.attendance.live.ui.components.WorkDailyLiveAvatar
+import com.synfusion.attendance.online.FirestoreBlockRepository
+import com.synfusion.attendance.online.ProfileOperationResult
+import com.synfusion.attendance.online.PublicProfile
 import com.synfusion.attendance.ui.components.CountrySelectionBottomSheet
 import com.synfusion.attendance.ui.components.CropScreenDialog
 import com.synfusion.attendance.ui.components.InstagramIcon
@@ -67,6 +73,7 @@ enum class SettingsDestination {
     EDIT_PROFILE,
     PERSONAL_DETAILS,
     PRIVACY_SAFETY,
+    BLOCKED_USERS,
     APPEARANCE,
     NOTIFICATIONS,
     LANGUAGE,
@@ -208,6 +215,7 @@ fun SettingsScreen(
         SettingsDestination.EDIT_PROFILE -> "Edit profile"
         SettingsDestination.PERSONAL_DETAILS -> "Personal & work details"
         SettingsDestination.PRIVACY_SAFETY -> "Privacy & safety"
+        SettingsDestination.BLOCKED_USERS -> "Blocked users"
         SettingsDestination.APPEARANCE -> "Appearance"
         SettingsDestination.NOTIFICATIONS -> "Notifications & reminders"
         SettingsDestination.LANGUAGE -> "Language"
@@ -217,10 +225,10 @@ fun SettingsScreen(
     }
 
     val handleBackPress = {
-        if (currentDestination != SettingsDestination.MAIN) {
-            currentDestination = SettingsDestination.MAIN
-        } else {
-            onNavigateBack()
+        when (currentDestination) {
+            SettingsDestination.BLOCKED_USERS -> currentDestination = SettingsDestination.PRIVACY_SAFETY
+            SettingsDestination.MAIN -> onNavigateBack()
+            else -> currentDestination = SettingsDestination.MAIN
         }
     }
 
@@ -288,7 +296,14 @@ fun SettingsScreen(
                             PersonalWorkDetailsDestination(state = state, viewModel = viewModel)
                         }
                         SettingsDestination.PRIVACY_SAFETY -> {
-                            PrivacySafetyDestination()
+                            PrivacySafetyDestination(
+                                onOpenBlockedUsers = { currentDestination = SettingsDestination.BLOCKED_USERS }
+                            )
+                        }
+                        SettingsDestination.BLOCKED_USERS -> {
+                            BlockedUsersDestination(
+                                onOpenProfile = { targetUid -> onNavigate("live_profile?userId=$targetUid") }
+                            )
                         }
                         SettingsDestination.APPEARANCE -> {
                             AppearanceDestination(state = state, viewModel = viewModel)
@@ -575,6 +590,7 @@ fun MainSettingsContent(
         Triple(SettingsDestination.EDIT_PROFILE, "Edit profile", "Photo, name, username and bio"),
         Triple(SettingsDestination.PERSONAL_DETAILS, "Personal & work details", "Country, currency, wage and phone"),
         Triple(SettingsDestination.PRIVACY_SAFETY, "Privacy & safety", "Blocked accounts and privacy"),
+        Triple(SettingsDestination.BLOCKED_USERS, "Blocked users", "View and unblock blocked accounts"),
         Triple(SettingsDestination.APPEARANCE, "Appearance", "Theme and splash screen"),
         Triple(SettingsDestination.NOTIFICATIONS, "Notifications & reminders", "Alerts and reminder settings"),
         Triple(SettingsDestination.LANGUAGE, "Language", "Current selected language"),
@@ -636,6 +652,7 @@ fun MainSettingsContent(
                         SettingsDestination.EDIT_PROFILE -> Icons.Default.Person
                         SettingsDestination.PERSONAL_DETAILS -> Icons.Default.Work
                         SettingsDestination.PRIVACY_SAFETY -> Icons.Default.Security
+                        SettingsDestination.BLOCKED_USERS -> Icons.Default.Block
                         SettingsDestination.APPEARANCE -> Icons.Default.Palette
                         SettingsDestination.NOTIFICATIONS -> Icons.Default.Notifications
                         SettingsDestination.LANGUAGE -> Icons.Default.Language
@@ -1265,14 +1282,56 @@ fun TermsConditionsBottomSheet(onDismiss: () -> Unit) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PrivacySafetyDestination() {
-    var showBlockedSheet by remember { mutableStateOf(false) }
+fun PrivacySafetyDestination(
+    onOpenBlockedUsers: () -> Unit
+) {
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val scope = rememberCoroutineScope()
+    val blockRepo = remember { FirestoreBlockRepository() }
+    var blockedCount by remember { mutableStateOf<Int?>(null) }
+
+    suspend fun refreshBlockedCount() {
+        val currentUid = try {
+            com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
+        } catch (_: Exception) {
+            null
+        }
+        if (currentUid.isNullOrBlank()) {
+            blockedCount = null
+            return
+        }
+        when (val res = blockRepo.getBlockedUserIds(currentUid)) {
+            is ProfileOperationResult.Success -> blockedCount = res.data.size
+            is ProfileOperationResult.Error -> {}
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        refreshBlockedCount()
+    }
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                scope.launch { refreshBlockedCount() }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    val blockedSubtitle = when (val count = blockedCount) {
+        null -> "View and manage blocked accounts"
+        0 -> "No blocked accounts"
+        1 -> "1 blocked account"
+        else -> "$count blocked accounts"
+    }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -1286,9 +1345,9 @@ fun PrivacySafetyDestination() {
             Column {
                 SettingsNavigationRow(
                     title = "Blocked Users",
-                    subtitle = "View and manage blocked accounts",
+                    subtitle = blockedSubtitle,
                     icon = Icons.Default.Block,
-                    onClick = { showBlockedSheet = true }
+                    onClick = onOpenBlockedUsers
                 )
             }
         }
@@ -1300,17 +1359,305 @@ fun PrivacySafetyDestination() {
             modifier = Modifier.padding(horizontal = 8.dp)
         )
     }
+}
 
-    if (showBlockedSheet) {
-        ModalBottomSheet(
-            onDismissRequest = { showBlockedSheet = false },
-            containerColor = MaterialTheme.colorScheme.surface,
-            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
-        ) {
-            Column(modifier = Modifier.fillMaxWidth().padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("Blocked Users", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                Text("No blocked accounts currently.", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Spacer(modifier = Modifier.height(16.dp))
+@Composable
+fun BlockedUsersDestination(
+    onOpenProfile: (String) -> Unit = {}
+) {
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val scope = rememberCoroutineScope()
+    val blockRepo = remember { FirestoreBlockRepository() }
+
+    var currentUid by remember {
+        mutableStateOf(
+            try { com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid } catch (_: Exception) { null }
+        )
+    }
+    var isLoading by remember { mutableStateOf(true) }
+    var loadError by remember { mutableStateOf<String?>(null) }
+    var blockedProfiles by remember { mutableStateOf<List<PublicProfile>>(emptyList()) }
+    var unblockingUids by remember { mutableStateOf<Set<String>>(emptySet()) }
+
+    suspend fun loadBlockedList(showSpinner: Boolean) {
+        val uid = try { com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid } catch (_: Exception) { null }
+        currentUid = uid
+        if (uid.isNullOrBlank()) {
+            blockedProfiles = emptyList()
+            loadError = null
+            isLoading = false
+            return
+        }
+        if (showSpinner && blockedProfiles.isEmpty()) {
+            isLoading = true
+        }
+        loadError = null
+        when (val result = blockRepo.getBlockedProfiles(uid)) {
+            is ProfileOperationResult.Success -> {
+                blockedProfiles = result.data
+                isLoading = false
+            }
+            is ProfileOperationResult.Error -> {
+                loadError = result.message
+                isLoading = false
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        loadBlockedList(showSpinner = true)
+    }
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                scope.launch { loadBlockedList(showSpinner = false) }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+    ) {
+        when {
+            currentUid.isNullOrBlank() && !isLoading -> {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Block,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                        modifier = Modifier.size(52.dp)
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "Sign in required",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = "Sign in with Google to view and manage blocked WorkDaily accounts.",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+
+            isLoading -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                }
+            }
+
+            loadError != null -> {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CloudOff,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(48.dp)
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = loadError ?: "Failed to load blocked users.",
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(
+                        onClick = { scope.launch { loadBlockedList(showSpinner = true) } },
+                        shape = RoundedCornerShape(14.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    ) {
+                        Text("Retry", fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+
+            blockedProfiles.isEmpty() -> {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.surface,
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)),
+                        modifier = Modifier.size(72.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Default.Block,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(34.dp)
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "No blocked users",
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = "Accounts you block won't be able to follow or message you on WorkDaily. You can unblock them here anytime.",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                        lineHeight = 19.sp
+                    )
+                }
+            }
+
+            else -> {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    contentPadding = PaddingValues(bottom = 24.dp)
+                ) {
+                    item {
+                        Text(
+                            text = "Blocked users cannot follow or message you. Unblocking does not automatically follow them.",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp)
+                        )
+                    }
+
+                    items(blockedProfiles, key = { it.uid }) { user ->
+                        val userDisplayName = user.displayName.ifBlank { "WorkDaily Member" }
+                        val userHandle = if (user.username.isNotBlank()) "@${user.username}" else "@member"
+                        val isUnblocking = unblockingUids.contains(user.uid)
+
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(16.dp))
+                                .clickable { onOpenProfile(user.uid) },
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f))
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                WorkDailyLiveAvatar(
+                                    name = userDisplayName,
+                                    avatarUrl = user.photoUrl ?: "",
+                                    size = 46.dp,
+                                    isLive = false,
+                                    showBadge = false
+                                )
+
+                                Column(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .padding(horizontal = 12.dp),
+                                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                                ) {
+                                    Text(
+                                        text = userDisplayName,
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    Text(
+                                        text = userHandle,
+                                        fontSize = 13.sp,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+
+                                OutlinedButton(
+                                    onClick = {
+                                        val activeUid = currentUid ?: return@OutlinedButton
+                                        if (isUnblocking) return@OutlinedButton
+                                        unblockingUids = unblockingUids + user.uid
+                                        scope.launch {
+                                            try {
+                                                when (val res = blockRepo.unblockUser(activeUid, user.uid)) {
+                                                    is ProfileOperationResult.Success -> {
+                                                        blockedProfiles = blockedProfiles.filterNot { it.uid == user.uid }
+                                                        Toast.makeText(context, "Unblocked $userHandle", Toast.LENGTH_SHORT).show()
+                                                    }
+                                                    is ProfileOperationResult.Error -> {
+                                                        Toast.makeText(context, res.message, Toast.LENGTH_SHORT).show()
+                                                    }
+                                                }
+                                            } catch (e: Exception) {
+                                                Toast.makeText(context, e.message ?: "Failed to unblock user", Toast.LENGTH_SHORT).show()
+                                            } finally {
+                                                unblockingUids = unblockingUids - user.uid
+                                            }
+                                        }
+                                    },
+                                    enabled = !isUnblocking,
+                                    modifier = Modifier
+                                        .height(38.dp)
+                                        .defaultMinSize(minWidth = 92.dp),
+                                    shape = RoundedCornerShape(19.dp),
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
+                                    colors = ButtonDefaults.outlinedButtonColors(
+                                        containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
+                                        contentColor = MaterialTheme.colorScheme.primary
+                                    ),
+                                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp)
+                                ) {
+                                    if (isUnblocking) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(16.dp),
+                                            color = MaterialTheme.colorScheme.primary,
+                                            strokeWidth = 2.dp
+                                        )
+                                    } else {
+                                        Text(
+                                            text = "Unblock",
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }

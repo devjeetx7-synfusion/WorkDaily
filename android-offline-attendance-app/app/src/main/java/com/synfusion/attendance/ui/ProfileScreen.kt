@@ -31,12 +31,16 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import com.synfusion.attendance.data.model.CountryRepository
 import com.synfusion.attendance.live.ui.UserListType
+import com.synfusion.attendance.live.ui.UserRelationshipBottomSheet
 import com.synfusion.attendance.live.ui.components.FollowButton
 import com.synfusion.attendance.live.ui.components.LivePrimaryEmerald
 import com.synfusion.attendance.live.ui.components.WorkDailyLiveAvatar
@@ -51,6 +55,7 @@ import com.synfusion.attendance.utils.AmountFormatter
 import com.synfusion.attendance.utils.collectAsStateWithLifecycle
 import com.synfusion.attendance.viewmodel.OfflineSettingsState
 import com.synfusion.attendance.viewmodel.OfflineSettingsViewModel
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,6 +73,7 @@ fun ProfileScreen(
     onNavigateLeaderboard: () -> Unit = {},
     onNavigateMessages: () -> Unit = {},
     onNavigatePeople: () -> Unit = {},
+    onNavigateUserProfile: (String) -> Unit = {},
     onLogout: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle(initialValue = OfflineSettingsState())
@@ -106,25 +112,66 @@ fun ProfileScreen(
         else null
     }
 
-    val currentUserId = remember {
-        try {
-            com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
-        } catch (e: Exception) {
-            null
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val coroutineScope = rememberCoroutineScope()
+    var currentUserId by remember {
+        mutableStateOf(
+            try {
+                com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
+            } catch (_: Exception) {
+                null
+            }
+        )
+    }
+
+    var realFollowersCount by remember { mutableIntStateOf(0) }
+    var realFollowingCount by remember { mutableIntStateOf(0) }
+    val publicProfileRepo = remember { com.synfusion.attendance.online.FirestorePublicProfileRepository() }
+    val followRepo = remember { com.synfusion.attendance.online.FirestoreFollowRepository() }
+    val blockRepo = remember { com.synfusion.attendance.online.FirestoreBlockRepository() }
+
+    suspend fun refreshOwnFollowCounts(uid: String?) {
+        if (uid.isNullOrBlank()) {
+            realFollowersCount = 0
+            realFollowingCount = 0
+            return
+        }
+        when (val countsRes = followRepo.getFollowCounts(uid)) {
+            is com.synfusion.attendance.online.ProfileOperationResult.Success -> {
+                realFollowersCount = countsRes.data.followerCount
+                realFollowingCount = countsRes.data.followingCount
+            }
+            is com.synfusion.attendance.online.ProfileOperationResult.Error -> {
+                val res = publicProfileRepo.getPublicProfile(uid)
+                if (res is com.synfusion.attendance.online.ProfileOperationResult.Success && res.data != null) {
+                    realFollowersCount = res.data.followerCount.coerceAtLeast(0)
+                    realFollowingCount = res.data.followingCount.coerceAtLeast(0)
+                }
+            }
         }
     }
 
-    var realFollowersCount by remember { mutableStateOf(0) }
-    var realFollowingCount by remember { mutableStateOf(0) }
-    val publicProfileRepo = remember { com.synfusion.attendance.online.FirestorePublicProfileRepository() }
-
     LaunchedEffect(currentUserId) {
-        if (currentUserId != null) {
-            val res = publicProfileRepo.getPublicProfile(currentUserId)
-            if (res is com.synfusion.attendance.online.ProfileOperationResult.Success && res.data != null) {
-                realFollowersCount = res.data.followerCount
-                realFollowingCount = res.data.followingCount
+        refreshOwnFollowCounts(currentUserId)
+    }
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                val latestUid = try {
+                    com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
+                } catch (_: Exception) {
+                    null
+                }
+                currentUserId = latestUid
+                coroutineScope.launch {
+                    refreshOwnFollowCounts(latestUid)
+                }
             }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
 
@@ -154,6 +201,7 @@ fun ProfileScreen(
 
     Scaffold(
         contentWindowInsets = WindowInsets(0.dp),
+        containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             TopAppBar(
@@ -348,7 +396,13 @@ fun ProfileScreen(
                                 modifier = Modifier
                                     .weight(1f)
                                     .clip(RoundedCornerShape(12.dp))
-                                    .clickable { onNavigatePeople() }
+                                    .clickable {
+                                        if (!currentUserId.isNullOrBlank()) {
+                                            activeUserListType = UserListType.FOLLOWERS
+                                        } else {
+                                            onNavigatePeople()
+                                        }
+                                    }
                                     .padding(vertical = 4.dp)
                             ) {
                                 Text(
@@ -367,7 +421,13 @@ fun ProfileScreen(
                                 modifier = Modifier
                                     .weight(1f)
                                     .clip(RoundedCornerShape(12.dp))
-                                    .clickable { onNavigatePeople() }
+                                    .clickable {
+                                        if (!currentUserId.isNullOrBlank()) {
+                                            activeUserListType = UserListType.FOLLOWING
+                                        } else {
+                                            onNavigatePeople()
+                                        }
+                                    }
                                     .padding(vertical = 4.dp)
                             ) {
                                 Text(
@@ -769,100 +829,32 @@ fun ProfileScreen(
                 }
             }
 
-            if (activeUserListType != null) {
-                val listType = activeUserListType!!
-                ModalBottomSheet(
-                    onDismissRequest = { activeUserListType = null },
-                    sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
-                ) {
-                    val title = when (listType) {
-                        UserListType.FOLLOWERS -> "Followers"
-                        UserListType.FOLLOWING -> "Following"
-                        UserListType.FRIENDS -> "Followers"
-                    }
-
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(title, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                            IconButton(onClick = { activeUserListType = null }) {
-                                Icon(Icons.Default.Close, contentDescription = "Close")
-                            }
+            if (activeUserListType != null && !currentUserId.isNullOrBlank()) {
+                UserRelationshipBottomSheet(
+                    targetUid = currentUserId!!,
+                    listType = activeUserListType!!,
+                    initialCount = if (activeUserListType == UserListType.FOLLOWERS) followerCount else followingCount,
+                    currentUserId = currentUserId,
+                    followRepo = followRepo,
+                    blockRepo = blockRepo,
+                    onDismiss = {
+                        activeUserListType = null
+                        coroutineScope.launch {
+                            refreshOwnFollowCounts(currentUserId)
                         }
-
-                        val listUsers = remember(publicUsers, listType) {
-                            when (listType) {
-                                UserListType.FOLLOWING -> publicUsers.filter { it.isFollowing }
-                                else -> publicUsers
-                            }
+                    },
+                    onRelationshipChanged = {
+                        coroutineScope.launch {
+                            refreshOwnFollowCounts(currentUserId)
                         }
-
-                        if (listUsers.isEmpty()) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(180.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text("No users found in $title", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
-                            }
-                        } else {
-                            LazyColumn(
-                                modifier = Modifier.heightIn(max = 360.dp),
-                                verticalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
-                                items(listUsers, key = { it.id }) { user ->
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clip(RoundedCornerShape(12.dp))
-                                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-                                            .clickable {
-                                                activeUserListType = null
-                                                onNavigateMessages()
-                                            }
-                                            .padding(12.dp),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                                            modifier = Modifier.weight(1f)
-                                        ) {
-                                            WorkDailyLiveAvatar(
-                                                name = user.name,
-                                                avatarUrl = user.avatar,
-                                                size = 40.dp,
-                                                isLive = user.isLiveNow,
-                                                showBadge = false
-                                            )
-                                            Column {
-                                                Text(user.name, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                                                Text(user.profession, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                            }
-                                        }
-
-                                        FollowButton(
-                                            isFollowing = user.isFollowing,
-                                            onToggle = { liveViewModel?.toggleFollowCreator(user.id) }
-                                        )
-                                    }
-                                }
-                            }
+                    },
+                    onUserSelected = { selectedProfile ->
+                        activeUserListType = null
+                        if (selectedProfile.uid != currentUserId) {
+                            onNavigateUserProfile(selectedProfile.uid)
                         }
                     }
-                }
+                )
             }
 
             if (showBlockedUsersSheet) {

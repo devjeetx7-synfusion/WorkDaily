@@ -404,7 +404,7 @@ fun DiamondBalanceChip(
 
 /**
  * WorkDaily Branded Follow Button using WorkDaily Brand Emerald (`LivePrimaryEmerald` / 0xFF0F9F7A).
- * Supports optional loading indicator and customizable height/width.
+ * Supports non-shifting loading indicator, optional aligned leading icon, and responsive sizing.
  */
 @Composable
 fun FollowButton(
@@ -412,47 +412,82 @@ fun FollowButton(
     onToggle: () -> Unit,
     modifier: Modifier = Modifier,
     isLoading: Boolean = false,
+    enabled: Boolean = true,
+    showIcon: Boolean = false,
     height: Dp = 28.dp,
     minWidth: Dp = 64.dp
 ) {
     val cornerRadius = height / 2
+    val isLarge = height >= 44.dp
+    val isMedium = height >= 34.dp
+    val horizontalPadding = when {
+        isLarge -> 16.dp
+        isMedium -> 14.dp
+        else -> 12.dp
+    }
+    val borderStrokeWidth = if (isLarge) 1.5.dp else 1.dp
+    val labelFontSize = when {
+        isLarge -> 14.sp
+        isMedium -> 12.sp
+        else -> 11.sp
+    }
+    val spinnerSize = if (isLarge) 18.dp else 14.dp
+
     if (isFollowing) {
         OutlinedButton(
             onClick = onToggle,
-            enabled = !isLoading,
+            enabled = enabled && !isLoading,
             modifier = modifier
                 .height(height)
                 .defaultMinSize(minWidth = minWidth),
             shape = RoundedCornerShape(cornerRadius),
-            border = androidx.compose.foundation.BorderStroke(1.dp, LivePrimaryEmerald),
+            border = androidx.compose.foundation.BorderStroke(
+                borderStrokeWidth,
+                LivePrimaryEmerald.copy(alpha = if (enabled) 1f else 0.5f)
+            ),
             colors = ButtonDefaults.outlinedButtonColors(
                 containerColor = LivePrimaryEmerald.copy(alpha = 0.12f),
-                contentColor = LivePrimaryEmerald
+                contentColor = LivePrimaryEmerald,
+                disabledContainerColor = LivePrimaryEmerald.copy(alpha = 0.10f),
+                disabledContentColor = LivePrimaryEmerald.copy(alpha = 0.7f)
             ),
-            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
+            contentPadding = PaddingValues(horizontal = horizontalPadding, vertical = 0.dp)
         ) {
             if (isLoading) {
                 CircularProgressIndicator(
-                    modifier = Modifier.size(if (height >= 40.dp) 18.dp else 14.dp),
+                    modifier = Modifier.size(spinnerSize),
                     color = LivePrimaryEmerald,
                     strokeWidth = 2.dp
                 )
             } else {
-                Text(
-                    text = "Following",
-                    fontSize = if (height >= 40.dp) 14.sp else 11.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    softWrap = false,
-                    overflow = TextOverflow.Clip,
-                    style = TextStyle(platformStyle = PlatformTextStyle(includeFontPadding = false))
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    if (showIcon) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                    }
+                    Text(
+                        text = "Following",
+                        fontSize = labelFontSize,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis,
+                        style = TextStyle(platformStyle = PlatformTextStyle(includeFontPadding = false))
+                    )
+                }
             }
         }
     } else {
         Button(
             onClick = onToggle,
-            enabled = !isLoading,
+            enabled = enabled && !isLoading,
             modifier = modifier
                 .height(height)
                 .defaultMinSize(minWidth = minWidth),
@@ -460,26 +495,40 @@ fun FollowButton(
             colors = ButtonDefaults.buttonColors(
                 containerColor = LivePrimaryEmerald,
                 contentColor = Color.White,
-                disabledContainerColor = LivePrimaryEmerald.copy(alpha = 0.6f)
+                disabledContainerColor = LivePrimaryEmerald.copy(alpha = 0.65f),
+                disabledContentColor = Color.White
             ),
-            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
+            contentPadding = PaddingValues(horizontal = horizontalPadding, vertical = 0.dp)
         ) {
             if (isLoading) {
                 CircularProgressIndicator(
-                    modifier = Modifier.size(if (height >= 40.dp) 18.dp else 14.dp),
+                    modifier = Modifier.size(spinnerSize),
                     color = Color.White,
                     strokeWidth = 2.dp
                 )
             } else {
-                Text(
-                    text = "Follow",
-                    fontSize = if (height >= 40.dp) 14.sp else 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    softWrap = false,
-                    overflow = TextOverflow.Clip,
-                    style = TextStyle(platformStyle = PlatformTextStyle(includeFontPadding = false))
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    if (showIcon) {
+                        Icon(
+                            imageVector = Icons.Default.PersonAdd,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                    }
+                    Text(
+                        text = "Follow",
+                        fontSize = labelFontSize,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis,
+                        style = TextStyle(platformStyle = PlatformTextStyle(includeFontPadding = false))
+                    )
+                }
             }
         }
     }

@@ -67,6 +67,7 @@ import com.synfusion.attendance.data.model.CountryRepository
 import com.synfusion.attendance.ui.components.CountrySelectionBottomSheet
 import com.synfusion.attendance.ui.responsive.ResponsiveContainer
 import com.synfusion.attendance.utils.getActivity
+import com.synfusion.attendance.viewmodel.AccountResolutionState
 import com.synfusion.attendance.viewmodel.OfflineAuthViewModel
 import com.synfusion.attendance.viewmodel.OfflineLoginState
 import com.synfusion.attendance.viewmodel.OnlineAuthViewModel
@@ -110,13 +111,13 @@ fun LoginScreen(
 ) {
     val loginState by authViewModel.loginState.collectAsState()
     val onlineAuthState by onlineAuthViewModel.authState.collectAsState()
+    val accountResolutionState by authViewModel.accountResolutionState.collectAsState()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val webClientId = stringResource(R.string.default_web_client_id)
 
     var authenticatedAccount by remember { mutableStateOf<OnlineAccount?>(null) }
     var existingUser by remember { mutableStateOf<UserEntity?>(null) }
-    var showAccountMismatchDialog by remember { mutableStateOf(false) }
 
     var name by remember { mutableStateOf("") }
     var usernameText by remember { mutableStateOf("") }
@@ -141,25 +142,15 @@ fun LoginScreen(
     var detectedBackupFile by remember { mutableStateOf<File?>(null) }
     var showSmartBackupDialog by remember { mutableStateOf(false) }
 
-    // Fetch existing user profile on load to prefill fields for upgrade flow
+    // Detect whether a local workspace exists for "Continue Offline" without leaking fields across accounts
     LaunchedEffect(Unit) {
         withContext(Dispatchers.IO) {
             val user = authViewModel.getExistingUser()
-            existingUser = user
-            if (user != null) {
-                withContext(Dispatchers.Main) {
-                    name = user.name
-                    phone = user.phoneNumber
-                    dailyWageText = if (user.dailyWage > 0) user.dailyWage.toInt().toString() else "500"
-                    selectedCountry = CountryRepository.getCountry(user.countryCode)
-                }
-            } else {
-                // Attempt locale auto-detection for new users
-                val deviceCountryCode = Locale.getDefault().country
-                val detected = CountryRepository.getCountry(deviceCountryCode)
-                withContext(Dispatchers.Main) {
-                    selectedCountry = detected
-                }
+            val deviceCountryCode = Locale.getDefault().country
+            val detected = CountryRepository.getCountry(deviceCountryCode)
+            withContext(Dispatchers.Main) {
+                existingUser = user
+                selectedCountry = detected
             }
 
             // Scan for smart backup
@@ -188,41 +179,42 @@ fun LoginScreen(
         }
     }
 
-    // Handle online auth state transitions
+    // Resolve authenticated Google account (existing account auto-login vs new registration vs conflict)
     LaunchedEffect(onlineAuthState) {
         when (val state = onlineAuthState) {
             is OnlineAuthState.Authenticated -> {
-                val isMismatch = authViewModel.checkAccountMismatch(state.account.uid)
-                if (isMismatch) {
-                    showAccountMismatchDialog = true
-                } else {
-                    authenticatedAccount = state.account
-                    // Prefill profile values if existing user
-                    val currentLocalUser = existingUser
-                    if (currentLocalUser != null) {
-                        if (name.isBlank() || name == "User") {
-                            name = currentLocalUser.name.ifBlank { state.account.displayName ?: "" }
-                        }
-                        if (phone.isBlank()) {
-                            phone = currentLocalUser.phoneNumber
-                        }
-                        if (dailyWageText.isBlank()) {
-                            dailyWageText = if (currentLocalUser.dailyWage > 0) currentLocalUser.dailyWage.toInt().toString() else "500"
-                        }
-                    } else {
-                        if (name.isBlank()) {
-                            name = state.account.displayName ?: ""
-                        }
-                    }
+                authViewModel.resolveAuthenticatedAccount(state.account)
+            }
+            is OnlineAuthState.Unauthenticated, is OnlineAuthState.Idle -> {
+                authenticatedAccount = null
+                authViewModel.resetAccountResolutionState()
+            }
+            else -> {}
+        }
+    }
 
-                    // Generate initial candidate username if not set yet
-                    if (usernameText.isBlank()) {
-                        val initialCandidate = com.synfusion.attendance.online.UsernameValidator.generateCandidate(
-                            name.ifBlank { state.account.displayName },
-                            state.account.uid
-                        )
-                        usernameText = initialCandidate
-                    }
+    LaunchedEffect(accountResolutionState) {
+        when (val res = accountResolutionState) {
+            is AccountResolutionState.SignedInExisting -> {
+                authenticatedAccount = null
+            }
+            is AccountResolutionState.NeedsProfileSetup -> {
+                authenticatedAccount = res.account
+                name = res.prefillName
+                phone = res.prefillPhone
+                dailyWageText = if (res.prefillDailyWage > 0.0) res.prefillDailyWage.toInt().toString() else "500"
+                selectedCountry = CountryRepository.getCountry(res.prefillCountryCode)
+                selectedGender = res.prefillGender
+                selectedProfession = res.prefillProfession
+                bioText = res.prefillBio
+                usernameValidationReason = null
+                usernameAvailability = null
+                suggestedUsername = null
+                usernameText = res.prefillUsername.ifBlank {
+                    com.synfusion.attendance.online.UsernameValidator.generateCandidate(
+                        res.prefillName.ifBlank { res.account.displayName },
+                        res.account.uid
+                    )
                 }
             }
             else -> {}
@@ -230,7 +222,7 @@ fun LoginScreen(
     }
 
     // Debounced username availability check & syntax validation
-    LaunchedEffect(usernameText) {
+    LaunchedEffect(usernameText, authenticatedAccount?.uid) {
         val raw = usernameText.trim().removePrefix("@")
         if (raw.isBlank()) {
             usernameValidationReason = null
@@ -251,13 +243,14 @@ fun LoginScreen(
         isCheckingUsername = true
         kotlinx.coroutines.delay(350)
 
+        val currentUid = authenticatedAccount?.uid
         val repo = com.synfusion.attendance.online.FirestorePublicProfileRepository()
-        val result = repo.checkUsernameAvailability(raw)
+        val result = repo.checkUsernameAvailability(raw, currentUid)
         usernameAvailability = result
         isCheckingUsername = false
 
         if (result is com.synfusion.attendance.online.UsernameAvailabilityResult.AlreadyTaken) {
-            val uid = authenticatedAccount?.uid ?: "9999"
+            val uid = currentUid ?: "9999"
             val candidate = com.synfusion.attendance.online.UsernameValidator.generateCandidate(raw, uid)
             suggestedUsername = if (candidate != raw) candidate else "${raw}_1"
         } else {
@@ -431,9 +424,14 @@ fun LoginScreen(
         )
     }
 
-    if (showAccountMismatchDialog) {
+    val conflictState = accountResolutionState as? AccountResolutionState.WorkspaceConflict
+    if (conflictState != null) {
         AlertDialog(
-            onDismissRequest = { showAccountMismatchDialog = false },
+            onDismissRequest = {
+                authViewModel.resetAccountResolutionState()
+                onlineAuthViewModel.signOut()
+            },
+            containerColor = MaterialTheme.colorScheme.surface,
             title = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error)
@@ -442,24 +440,43 @@ fun LoginScreen(
                 }
             },
             text = {
-                Text(stringResource(R.string.account_mismatch_msg))
+                Text(conflictState.message)
             },
             confirmButton = {
-                Button(onClick = {
-                    showAccountMismatchDialog = false
-                    onlineAuthViewModel.signOut()
-                }) {
-                    Text(stringResource(R.string.try_again))
+                if (conflictState.canSwitchToAccountWorkspace) {
+                    Button(onClick = {
+                        authViewModel.switchFromUnlinkedToRegisteredAccount(conflictState.account)
+                    }) {
+                        Text("Open Account")
+                    }
+                } else {
+                    Button(onClick = {
+                        authViewModel.resetAccountResolutionState()
+                        onlineAuthViewModel.signOut()
+                    }) {
+                        Text(stringResource(R.string.try_again))
+                    }
                 }
             },
             dismissButton = {
-                TextButton(onClick = {
-                    showAccountMismatchDialog = false
-                    if (existingUser != null) {
-                        authViewModel.resumeExistingWorkspace()
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (conflictState.canSwitchToAccountWorkspace) {
+                        TextButton(onClick = {
+                            authViewModel.resetAccountResolutionState()
+                            onlineAuthViewModel.signOut()
+                        }) {
+                            Text(stringResource(R.string.try_again))
+                        }
                     }
-                }) {
-                    Text(stringResource(R.string.continue_offline))
+                    if (existingUser != null) {
+                        TextButton(onClick = {
+                            authViewModel.resetAccountResolutionState()
+                            onlineAuthViewModel.signOut()
+                            authViewModel.resumeExistingWorkspace()
+                        }) {
+                            Text(stringResource(R.string.continue_offline))
+                        }
+                    }
                 }
             }
         )
@@ -606,7 +623,12 @@ fun LoginScreen(
     val parsedWage = dailyWageText.toDoubleOrNull()
     val isWageValid = parsedWage != null && parsedWage > 0.0
     val isPhoneValid = if (selectedCountry.countryCode == "IN") phone.length == 10 else phone.length in 7..15
-    val isProcessing = loginState is OfflineLoginState.Loading || onlineAuthState is OnlineAuthState.Loading
+    val isUsernameValidForSubmit = usernameValidationReason == null &&
+        usernameAvailability !is com.synfusion.attendance.online.UsernameAvailabilityResult.AlreadyTaken &&
+        !isCheckingUsername
+    val isProcessing = loginState is OfflineLoginState.Loading ||
+        onlineAuthState is OnlineAuthState.Loading ||
+        accountResolutionState is AccountResolutionState.Resolving
 
     Box(
         modifier = Modifier
@@ -710,6 +732,23 @@ fun LoginScreen(
                                 else -> {}
                             }
 
+                            if (accountResolutionState is AccountResolutionState.Error) {
+                                val resError = (accountResolutionState as AccountResolutionState.Error).message
+                                Text(
+                                    text = resError,
+                                    color = MaterialTheme.colorScheme.error,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(bottom = 16.dp)
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(MaterialTheme.colorScheme.error.copy(alpha = 0.08f))
+                                        .padding(vertical = 10.dp, horizontal = 14.dp)
+                                )
+                            }
+
                             // TERMS / PRIVACY CONSENT ROW
                             LegalConsentRow(
                                 isConsentChecked = isConsentChecked,
@@ -724,7 +763,13 @@ fun LoginScreen(
                             Button(
                                 onClick = {
                                     if (isConsentChecked && !isProcessing) {
-                                        onlineAuthViewModel.signInWithGoogle(context, webClientId)
+                                        authViewModel.resetAccountResolutionState()
+                                        scope.launch {
+                                            if (onlineAuthState is OnlineAuthState.Authenticated) {
+                                                onlineAuthViewModel.signOut().join()
+                                            }
+                                            onlineAuthViewModel.signInWithGoogle(context, webClientId)
+                                        }
                                     }
                                 },
                                 modifier = Modifier
@@ -1356,7 +1401,7 @@ fun LoginScreen(
                             // SUBMIT / COMPLETE SETUP BUTTON
                             Button(
                                 onClick = {
-                                    if (isWageValid && isPhoneValid) {
+                                    if (isWageValid && isPhoneValid && isUsernameValidForSubmit) {
                                         authViewModel.completeProfile(
                                             googleAccount = account,
                                             enteredName = name,
@@ -1381,7 +1426,7 @@ fun LoginScreen(
                                     containerColor = MaterialTheme.colorScheme.primary,
                                     contentColor = MaterialTheme.colorScheme.onPrimary
                                 ),
-                                enabled = isWageValid && isPhoneValid && !isProcessing
+                                enabled = isWageValid && isPhoneValid && isUsernameValidForSubmit && !isProcessing
                             ) {
                                 if (isProcessing) {
                                     CircularProgressIndicator(
@@ -1413,6 +1458,26 @@ fun LoginScreen(
                                         )
                                     }
                                 }
+                            }
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            TextButton(
+                                onClick = {
+                                    scope.launch {
+                                        authViewModel.resetAccountResolutionState()
+                                        onlineAuthViewModel.signOut().join()
+                                        authenticatedAccount = null
+                                    }
+                                },
+                                enabled = !isProcessing
+                            ) {
+                                Text(
+                                    text = "Use a different Google account",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
                             }
                         }
                     }
