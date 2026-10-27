@@ -918,12 +918,12 @@ fun EditProfileDestination(
         OutlinedTextField(
             value = bioText,
             onValueChange = { newValue ->
-                if (newValue.length <= 150) {
-                    bioText = newValue
-                    bioError = null
-                } else {
-                    bioText = newValue.take(150)
+                if (newValue.length > 150) {
                     bioError = "Bio must be 150 characters or fewer"
+                    bioText = newValue.take(150)
+                } else {
+                    bioError = null
+                    bioText = newValue
                 }
             },
             label = { Text("Bio") },
@@ -1088,25 +1088,66 @@ fun PersonalWorkDetailsDestination(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
             )
+            var dobText by remember(state.dateOfBirth) { mutableStateOf(state.dateOfBirth.orEmpty()) }
+            var dobError by remember { mutableStateOf<String?>(null) }
+
+            fun validateDob(input: String): String? {
+                if (input.isBlank()) return null
+                if (input.length != 10) return "Use YYYY-MM-DD format"
+                try {
+                    val parts = input.split("-")
+                    if (parts.size != 3) return "Use YYYY-MM-DD format"
+                    val year = parts[0].toInt()
+                    val month = parts[1].toInt()
+                    val day = parts[2].toInt()
+                    if (year < 1900) return "Invalid birth year"
+                    if (month !in 1..12) return "Invalid month (01-12)"
+                    val date = java.time.LocalDate.of(year, month, day)
+                    if (date.isAfter(java.time.LocalDate.now())) return "Date cannot be in the future"
+                } catch (e: Exception) {
+                    return "Invalid date"
+                }
+                return null
+            }
+
             OutlinedTextField(
-                value = state.dateOfBirth.orEmpty(),
-                onValueChange = { viewModel.onDateOfBirthChange(it.takeIf { it.isNotEmpty() }) },
-                label = { Text("Date of Birth (YYYY-MM-DD)") },
+                value = dobText,
+                onValueChange = { newValue ->
+                    val filtered = newValue.filter { it.isDigit() || it == '-' }.take(10)
+                    dobText = filtered
+                    val err = validateDob(filtered)
+                    dobError = err
+                    if (err == null) {
+                        viewModel.onDateOfBirthChange(filtered.takeIf { it.isNotEmpty() })
+                    }
+                },
+                label = { Text("YYYY-MM-DD") },
+                placeholder = { Text("1995-08-15") },
                 leadingIcon = { Icon(Icons.Default.Cake, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                isError = dobError != null,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii)
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
             )
-            if (state.dateOfBirth != null) {
-                val age = calculateAge(state.dateOfBirth!!)
+            if (dobError != null) {
                 Text(
-                    text = "Age: $age",
+                    text = dobError!!,
                     fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.padding(start = 4.dp, top = 4.dp)
                 )
+            } else if (!state.dateOfBirth.isNullOrBlank()) {
+                val age = calculateAge(state.dateOfBirth!!)
+                if (age > 0) {
+                    Text(
+                        text = "Age: $age years",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 4.dp, top = 4.dp)
+                    )
+                }
             }
         }
 

@@ -316,6 +316,8 @@ class SocialPerformanceAndCountConsistencyTest {
                 targetProfileHint = profileRepo.profiles.getValue("uid_b")
             )
         }
+        testScheduler.runCurrent() // Run firstTap until it suspends at followBarrier
+
         val secondTap = async {
             manager.setFollowState(
                 actorUid = "uid_a",
@@ -324,6 +326,7 @@ class SocialPerformanceAndCountConsistencyTest {
                 targetProfileHint = profileRepo.profiles.getValue("uid_b")
             )
         }
+        testScheduler.runCurrent()
 
         barrier.complete(Unit)
         val results = listOf(firstTap.await(), secondTap.await())
@@ -418,6 +421,8 @@ class SocialPerformanceAndCountConsistencyTest {
             clockMs = { 1_000L },
             onClearExternalCaches = { externalClearedCount += 1 }
         )
+        manager.onAuthenticatedUserChanged("uid_a")
+        externalClearedCount = 0
 
         manager.getFollowCounts("uid_a", "uid_a")
         manager.getFollowingList("uid_a", "uid_a")

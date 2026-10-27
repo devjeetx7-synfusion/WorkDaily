@@ -1278,7 +1278,9 @@ fun HeaderSection(
                         )
                         if (state.unreadMessageCount > 0) {
                             Badge(
-                                modifier = Modifier.align(Alignment.TopEnd).size(18.dp),
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .size(18.dp),
                                 containerColor = MaterialTheme.colorScheme.error,
                                 contentColor = Color.White,
                                 content = { Text(text = kotlin.math.min(state.unreadMessageCount, 99).toString(), color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold) }

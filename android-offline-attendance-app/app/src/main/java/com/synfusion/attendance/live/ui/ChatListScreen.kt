@@ -63,12 +63,11 @@ fun ChatListScreen(
         conv.participants.firstOrNull { it != currentUserId }
 
     // Cache public profiles for other participants
-    val profiles = remember {
-        mutableMapOf<String, PublicProfile>()
-    }
+    val profiles = remember { mutableMapOf<String, PublicProfile>() }
 
     // Resolve profile for a participant (best-effort, cached)
     fun resolveProfile(uid: String): PublicProfile? {
+        if (uid.isBlank()) return null
         profiles[uid]?.let { return it }
         // Try from social snapshot
         val ownerUid = socialSnapshot.ownerUid
@@ -168,7 +167,12 @@ fun ChatListScreen(
                 ) { conv ->
                     val otherUid = otherParticipantUid(conv) ?: ""
                     val otherProfile = resolveProfile(otherUid)
-                    val otherName = otherProfile?.displayName?.ifEmpty { otherProfile.username.ifEmpty { "Unknown User" } } ?: "Unknown User"
+                    val otherName = when {
+                        otherProfile == null -> "Unknown User"
+                        otherProfile.displayName.isNotBlank() -> otherProfile.displayName
+                        otherProfile.username.isNotBlank() -> otherProfile.username
+                        else -> "Unknown User"
+                    }
                     val otherPhotoUrl = otherProfile?.photoUrl
                     val unreadCount = conv.unreadCounts[currentUserId ?: ""] ?: 0
                     val isUnread = unreadCount > 0
@@ -254,7 +258,7 @@ fun ChatListScreen(
                         }
                     }
 
-                    Divider(modifier = Modifier.fillMaxWidth().padding(start = 72.dp))
+                    HorizontalDivider(modifier = Modifier.fillMaxWidth().padding(start = 72.dp))
                 }
             }
         }
