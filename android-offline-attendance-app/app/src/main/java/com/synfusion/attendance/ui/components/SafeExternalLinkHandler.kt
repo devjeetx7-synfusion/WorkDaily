@@ -29,4 +29,28 @@ object SafeExternalLinkHandler {
             Toast.makeText(context, context.getString(R.string.error_generic_email), Toast.LENGTH_SHORT).show()
         }
     }
+
+    fun openExternalUrl(context: Context, url: String) {
+        val trimmed = url.trim()
+        if (trimmed.isEmpty()) return
+
+        val uri = try {
+            Uri.parse(trimmed)
+        } catch (e: Exception) {
+            Toast.makeText(context, context.getString(R.string.error_generic_link), Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val scheme = uri.scheme?.lowercase()
+        if (scheme == "mailto") {
+            val emailAddress = trimmed.substringAfter("mailto:").substringBefore("?")
+            openEmail(context, emailAddress)
+        } else if (scheme == "http" || scheme == "https") {
+            openLink(context, trimmed)
+        } else {
+            // For any other scheme or no scheme provided, default to openLink with http/https fallback if needed
+            val targetUrl = if (scheme == null) "https://$trimmed" else trimmed
+            openLink(context, targetUrl)
+        }
+    }
 }
