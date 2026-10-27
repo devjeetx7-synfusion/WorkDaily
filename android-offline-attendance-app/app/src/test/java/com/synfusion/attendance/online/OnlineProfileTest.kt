@@ -73,7 +73,10 @@ private class FakeTestPublicProfileRepository : PublicProfileRepository {
         bio: String,
         profession: String,
         photoUrl: String?,
-        isPublic: Boolean
+        isPublic: Boolean,
+        gender: String,
+        dateOfBirth: String?,
+        countryCode: String
     ): ProfileOperationResult<PublicProfile> {
         val norm = UsernameValidator.normalize(newUsername)
         val existing = publicProfiles[firebaseUid]

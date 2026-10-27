@@ -160,7 +160,10 @@ class FirestorePublicProfileRepository(
         bio: String,
         profession: String,
         photoUrl: String?,
-        isPublic: Boolean
+        isPublic: Boolean,
+        gender: String,
+        dateOfBirth: String?,
+        countryCode: String
     ): ProfileOperationResult<PublicProfile> = withContext(Dispatchers.IO) {
         val validation = UsernameValidator.validate(newUsername)
         if (validation is UsernameValidationResult.Invalid) {

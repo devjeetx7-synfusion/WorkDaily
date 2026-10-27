@@ -1,19 +1,23 @@
 package com.synfusion.attendance.live.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.FontWeight
-import androidx.compose.ui.text.TextOverflow
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.synfusion.attendance.live.ui.components.WorkDailyLiveAvatar
@@ -23,8 +27,7 @@ import com.synfusion.attendance.online.PublicProfile
 import com.synfusion.attendance.online.SocialSessionCache
 import com.synfusion.attendance.online.rememberCurrentFirebaseUid
 import com.synfusion.attendance.ui.components.icons.WorkDailyIcons
-import com.synfusion.attendance.data.model.CountryRepository
-import kotlinx.coroutines.flow.collectAsStateWithLifecycle
+import com.synfusion.attendance.utils.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 
 /**
@@ -42,13 +45,14 @@ fun ChatListScreen(
 ) {
     val context = LocalContext.current
     val currentUserId = rememberCurrentFirebaseUid().value
-    val chatRepository = SocialSessionCache.manager.chatRepository
+    val chatRepository = SocialSessionCache.chatRepository
 
-    val conversations by (if (currentUserId != null) {
+    val conversationsState = if (currentUserId != null) {
         chatRepository.observeConversations(currentUserId).collectAsStateWithLifecycle(initialValue = emptyList())
     } else {
-        mutableStateOf(emptyList<FirestoreConversation>())
-    })
+        remember { mutableStateOf(emptyList<FirestoreConversation>()) }
+    }
+    val conversations = conversationsState.value
 
     val socialSnapshot by SocialSessionCache.manager.snapshot.collectAsStateWithLifecycle(
         initialValue = SocialSessionCache.manager.snapshot.value
@@ -59,12 +63,11 @@ fun ChatListScreen(
         conv.participants.firstOrNull { it != currentUserId }
 
     // Cache public profiles for other participants
-    val profiles by remember {
-        mutableMapOf<String, PublicProfile>()
-    }
+    val profiles = remember { mutableMapOf<String, PublicProfile>() }
 
     // Resolve profile for a participant (best-effort, cached)
     fun resolveProfile(uid: String): PublicProfile? {
+        if (uid.isBlank()) return null
         profiles[uid]?.let { return it }
         // Try from social snapshot
         val ownerUid = socialSnapshot.ownerUid
@@ -125,7 +128,7 @@ fun ChatListScreen(
         }
 
         LazyColumn(
-            modifier = Modifier.fillMaxWeight(),
+            modifier = Modifier.weight(1f),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             if (conversations.isEmpty()) {
@@ -164,7 +167,12 @@ fun ChatListScreen(
                 ) { conv ->
                     val otherUid = otherParticipantUid(conv) ?: ""
                     val otherProfile = resolveProfile(otherUid)
-                    val otherName = otherProfile?.displayName.ifEmpty { otherProfile?.username.ifEmpty { "Unknown User" } } ?: "Unknown User"
+                    val otherName = when {
+                        otherProfile == null -> "Unknown User"
+                        otherProfile.displayName.isNotBlank() -> otherProfile.displayName
+                        otherProfile.username.isNotBlank() -> otherProfile.username
+                        else -> "Unknown User"
+                    }
                     val otherPhotoUrl = otherProfile?.photoUrl
                     val unreadCount = conv.unreadCounts[currentUserId ?: ""] ?: 0
                     val isUnread = unreadCount > 0
@@ -204,13 +212,13 @@ fun ChatListScreen(
                                 )
                                 if (isUnread) {
                                     Text(
-                                        text = unreadCount.min(99).toString(),
+                                        text = kotlin.math.min(unreadCount, 99).toString(),
                                         fontSize = 10.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = Color.White,
                                         modifier = Modifier
-                                            .padding(horizontal = 6.dp, vertical = 2.dp)
                                             .background(MaterialTheme.colorScheme.error, RoundedCornerShape(8.dp))
+                                            .padding(horizontal = 6.dp, vertical = 2.dp)
                                     )
                                 }
                             }
@@ -250,7 +258,7 @@ fun ChatListScreen(
                         }
                     }
 
-                    Divider(modifier = Modifier.fillMaxWidth().padding(start = 72.dp))
+                    HorizontalDivider(modifier = Modifier.fillMaxWidth().padding(start = 72.dp))
                 }
             }
         }

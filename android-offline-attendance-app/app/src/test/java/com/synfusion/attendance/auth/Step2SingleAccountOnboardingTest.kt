@@ -159,7 +159,10 @@ private class FakeTestPublicProfileRepository : com.synfusion.attendance.online.
         bio: String,
         profession: String,
         photoUrl: String?,
-        isPublic: Boolean
+        isPublic: Boolean,
+        gender: String,
+        dateOfBirth: String?,
+        countryCode: String
     ): com.synfusion.attendance.online.ProfileOperationResult<com.synfusion.attendance.online.PublicProfile> {
         val norm = com.synfusion.attendance.online.UsernameValidator.normalize(newUsername)
         val existing = publicProfiles[firebaseUid]
