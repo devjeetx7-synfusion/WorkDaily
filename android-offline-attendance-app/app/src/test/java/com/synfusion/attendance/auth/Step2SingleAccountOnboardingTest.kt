@@ -94,8 +94,14 @@ private class FakeTestPreferencesRepository : OfflinePreferencesRepository(Dummy
     override suspend fun clearAuthSession() {
         savedAuthToken = null
         savedRole = null
+        savedLinkedFirebaseUid = null
+        savedOnlineAccountSetupCompleted = null
+        savedGooglePhotoUrl = null
         _authTokenFlow.value = null
         _roleFlow.value = null
+        _linkedFirebaseUidFlow.value = null
+        _onlineAccountSetupCompletedFlow.value = false
+        _googlePhotoUrlFlow.value = null
     }
 }
 
@@ -499,7 +505,7 @@ class Step2SingleAccountOnboardingTest {
     }
 
     @Test
-    fun testSignOutSemantics_PreservesUserDatabaseAndLinkedFirebaseUid() = runBlocking {
+    fun testSignOutSemantics_PreservesUserDatabaseAndAllowsAccountSwitching() = runBlocking {
         val localUuid = "local_uuid_700"
         val existingUser = UserEntity(
             id = localUuid,
@@ -522,13 +528,11 @@ class Step2SingleAccountOnboardingTest {
         // Perform Sign Out
         viewModel.logout().join()
 
-        // Active session tokens are cleared
+        // Active session tokens and online account bindings are cleared
         assertNull(fakePrefs.savedAuthToken)
         assertNull(fakePrefs.savedRole)
-
-        // Linked Firebase UID and online account completion marker are PRESERVED
-        assertEquals("firebase_linked_700", fakePrefs.savedLinkedFirebaseUid)
-        assertEquals(true, fakePrefs.savedOnlineAccountSetupCompleted)
+        assertNull(fakePrefs.savedLinkedFirebaseUid)
+        assertNull(fakePrefs.savedOnlineAccountSetupCompleted)
 
         // Database records (UserEntity & Attendance) remain completely INTACT
         assertNotNull(fakeAttendanceRepo.getUser())
