@@ -1,8 +1,8 @@
 package com.synfusion.attendance.live.ui
 
 import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -22,22 +22,27 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import com.google.firebase.auth.FirebaseAuth
 import com.synfusion.attendance.live.ui.components.*
 import com.synfusion.attendance.live.viewmodel.LiveViewModel
 import com.synfusion.attendance.online.FirestoreBlockRepository
+import com.synfusion.attendance.online.FirestoreChatMessage
 import com.synfusion.attendance.online.FirestoreChatRepository
 import com.synfusion.attendance.online.FirestoreFollowRepository
 import com.synfusion.attendance.online.FirestorePublicProfileRepository
-import com.synfusion.attendance.online.FirestoreChatMessage
 import com.synfusion.attendance.online.MessageStatus
 import com.synfusion.attendance.online.ProfileOperationResult
 import com.synfusion.attendance.online.PublicProfile
+import com.synfusion.attendance.ui.components.icons.WorkDailyIcons
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -52,10 +57,12 @@ fun PrivateChatScreen(
     onNavigateProfile: (String) -> Unit
 ) {
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+
     val currentUserId = remember {
         try {
-            com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
-        } catch (e: Exception) {
+            FirebaseAuth.getInstance().currentUser?.uid
+        } catch (_: Exception) {
             null
         }
     }
@@ -66,10 +73,13 @@ fun PrivateChatScreen(
     val chatRepo = remember { FirestoreChatRepository() }
     val coroutineScope = rememberCoroutineScope()
 
-    var isCheckingMutual by remember { mutableStateOf(true) }
-    var isMutualFriend by remember { mutableStateOf(false) }
-    var isBlocked by remember { mutableStateOf(false) }
-    var friendProfile by remember { mutableStateOf<PublicProfile?>(null) }
+    var isCheckingMutual by remember(friendId) { mutableStateOf(true) }
+    var isMutualFriend by remember(friendId) { mutableStateOf(false) }
+    var isBlocked by remember(friendId) { mutableStateOf(false) }
+    var isBlockedByMe by remember(friendId) { mutableStateOf(false) }
+    var isBlockActionBusy by remember(friendId) { mutableStateOf(false) }
+    var showBlockConfirmDialog by remember(friendId) { mutableStateOf(false) }
+    var friendProfile by remember(friendId) { mutableStateOf<PublicProfile?>(null) }
 
     val conversationId = remember(currentUserId, friendId) {
         if (currentUserId != null && friendId.isNotBlank()) chatRepo.getConversationId(currentUserId, friendId) else ""
@@ -82,12 +92,17 @@ fun PrivateChatScreen(
     }
     val messages = messagesState.value
 
-    // Check mutual friendship and block status on Firestore
-    LaunchedEffect(currentUserId, friendId) {
-        isCheckingMutual = true
-        if (currentUserId != null && friendId.isNotBlank()) {
-            isBlocked = blockRepo.isEitherBlocked(currentUserId, friendId)
-            val mutual = followRepo.isMutual(currentUserId, friendId)
+    suspend fun refreshChatRelationshipState(showInitialSpinner: Boolean) {
+        if (showInitialSpinner && friendProfile == null) {
+            isCheckingMutual = true
+        }
+        if (!currentUserId.isNullOrBlank() && friendId.isNotBlank()) {
+            val blockedByCurrent = blockRepo.isBlocked(currentUserId, friendId)
+            val blockedByOther = blockRepo.isBlocked(friendId, currentUserId)
+            isBlockedByMe = blockedByCurrent
+            isBlocked = blockedByCurrent || blockedByOther
+
+            val mutual = if (!isBlocked) followRepo.isMutual(currentUserId, friendId) else false
             isMutualFriend = mutual
 
             val profRes = publicProfileRepo.getPublicProfile(friendId)
@@ -102,110 +117,277 @@ fun PrivateChatScreen(
         isCheckingMutual = false
     }
 
+    LaunchedEffect(currentUserId, friendId) {
+        refreshChatRelationshipState(showInitialSpinner = true)
+    }
+
+    DisposableEffect(lifecycleOwner, currentUserId, friendId) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                coroutineScope.launch {
+                    refreshChatRelationshipState(showInitialSpinner = false)
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
     var messageInput by remember { mutableStateOf("") }
+    var isSending by remember { mutableStateOf(false) }
+    var sendError by remember { mutableStateOf<String?>(null) }
     var showMenu by remember { mutableStateOf(false) }
 
     val listState = rememberLazyListState()
 
-    // Auto scroll to latest message when messages list updates
+    // Auto scroll to latest message & mark incoming messages read
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) {
             listState.animateScrollToItem(messages.size - 1)
+            val lastMsg = messages.lastOrNull()
+            if (currentUserId != null &&
+                isMutualFriend &&
+                !isBlocked &&
+                conversationId.isNotBlank() &&
+                lastMsg != null &&
+                lastMsg.senderUid != currentUserId &&
+                lastMsg.status != MessageStatus.READ
+            ) {
+                chatRepo.markMessagesAsRead(conversationId, currentUserId)
+            }
         }
     }
 
-    val friendName = friendProfile?.displayName ?: "WorkDaily Member"
+    val friendName = friendProfile?.displayName?.takeIf { it.isNotBlank() } ?: "WorkDaily Member"
+    val friendUsername = friendProfile?.username?.takeIf { it.isNotBlank() }
     val friendAvatar = friendProfile?.photoUrl ?: ""
     val isVerified = friendProfile?.isVerified ?: false
+
+    if (showBlockConfirmDialog) {
+        AlertDialog(
+            onDismissRequest = { if (!isBlockActionBusy) showBlockConfirmDialog = false },
+            containerColor = MaterialTheme.colorScheme.surface,
+            title = {
+                Text(
+                    text = "Block ${friendUsername?.let { "@$it" } ?: friendName}?",
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            },
+            text = {
+                Text(
+                    text = "Blocking disables messaging and removes any follow relationship between you. You can unblock them anytime from their profile or Settings → Privacy & Safety → Blocked Users.",
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    lineHeight = 20.sp
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (currentUserId.isNullOrBlank() || isBlockActionBusy) return@Button
+                        isBlockActionBusy = true
+                        coroutineScope.launch {
+                            try {
+                                when (val res = blockRepo.blockUser(currentUserId, friendId)) {
+                                    is ProfileOperationResult.Success -> {
+                                        isBlockedByMe = true
+                                        isBlocked = true
+                                        isMutualFriend = false
+                                        showBlockConfirmDialog = false
+                                        Toast.makeText(context, "User blocked", Toast.LENGTH_SHORT).show()
+                                    }
+                                    is ProfileOperationResult.Error -> {
+                                        Toast.makeText(context, res.message, Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            } catch (e: Exception) {
+                                Toast.makeText(context, e.message ?: "Failed to block user", Toast.LENGTH_SHORT).show()
+                            } finally {
+                                isBlockActionBusy = false
+                            }
+                        }
+                    },
+                    enabled = !isBlockActionBusy,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = Color.White
+                    )
+                ) {
+                    if (isBlockActionBusy) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            color = Color.White,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text("Block", fontWeight = FontWeight.Bold)
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showBlockConfirmDialog = false },
+                    enabled = !isBlockActionBusy
+                ) {
+                    Text("Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        )
+    }
 
     Scaffold(
         contentWindowInsets = WindowInsets(0.dp),
         topBar = {
-            TopAppBar(
-                title = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
-                            .clickable { onNavigateProfile(friendId) }
-                            .padding(vertical = 4.dp, horizontal = 4.dp)
-                    ) {
-                        WorkDailyLiveAvatar(
-                            name = friendName,
-                            avatarUrl = friendAvatar,
-                            size = 38.dp,
-                            isLive = false,
-                            showBadge = false
-                        )
-                        Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            Column(modifier = Modifier.background(MaterialTheme.colorScheme.surface)) {
+                TopAppBar(
+                    title = {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable { onNavigateProfile(friendId) }
+                                .padding(vertical = 4.dp, horizontal = 4.dp)
+                        ) {
+                            WorkDailyLiveAvatar(
+                                name = friendName,
+                                avatarUrl = friendAvatar,
+                                size = 40.dp,
+                                isLive = false,
+                                showBadge = false
+                            )
+                            Column(
+                                modifier = Modifier.weight(1f),
+                                verticalArrangement = Arrangement.spacedBy(2.dp)
                             ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Text(
+                                        text = friendName,
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.weight(1f, fill = false)
+                                    )
+                                    if (isVerified) {
+                                        Icon(
+                                            imageVector = Icons.Default.Verified,
+                                            contentDescription = "Verified",
+                                            tint = LivePrimaryEmerald,
+                                            modifier = Modifier.size(15.dp)
+                                        )
+                                    }
+                                }
                                 Text(
-                                    text = friendName,
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface,
+                                    text = when {
+                                        isBlocked -> "Messaging unavailable"
+                                        isMutualFriend -> "Mutual Friend • Active"
+                                        friendUsername != null -> "@$friendUsername"
+                                        else -> "WorkDaily Member"
+                                    },
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = if (isMutualFriend && !isBlocked) {
+                                        LivePrimaryEmerald
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurfaceVariant
+                                    },
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
-                                if (isVerified) {
-                                    Icon(
-                                        Icons.Default.Verified,
-                                        contentDescription = "Verified",
-                                        tint = LivePrimaryEmerald,
-                                        modifier = Modifier.size(15.dp)
+                            }
+                        }
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = onNavigateBack) {
+                            Icon(
+                                imageVector = WorkDailyIcons.ArrowLeft,
+                                contentDescription = "Back",
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    },
+                    actions = {
+                        Box {
+                            IconButton(onClick = { showMenu = true }) {
+                                Icon(
+                                    imageVector = WorkDailyIcons.MoreVertical,
+                                    contentDescription = "More",
+                                    tint = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                            DropdownMenu(
+                                expanded = showMenu,
+                                onDismissRequest = { showMenu = false },
+                                modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("View Profile") },
+                                    leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
+                                    onClick = {
+                                        showMenu = false
+                                        onNavigateProfile(friendId)
+                                    }
+                                )
+                                if (!currentUserId.isNullOrBlank()) {
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(
+                                                text = if (isBlockedByMe) "Unblock User" else "Block User",
+                                                color = if (isBlockedByMe) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.error
+                                            )
+                                        },
+                                        leadingIcon = {
+                                            Icon(
+                                                imageVector = Icons.Default.Block,
+                                                contentDescription = null,
+                                                tint = if (isBlockedByMe) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error
+                                            )
+                                        },
+                                        enabled = !isBlockActionBusy,
+                                        onClick = {
+                                            showMenu = false
+                                            if (isBlockedByMe) {
+                                                isBlockActionBusy = true
+                                                coroutineScope.launch {
+                                                    try {
+                                                        when (val res = blockRepo.unblockUser(currentUserId, friendId)) {
+                                                            is ProfileOperationResult.Success -> {
+                                                                refreshChatRelationshipState(showInitialSpinner = false)
+                                                                Toast.makeText(context, "User unblocked", Toast.LENGTH_SHORT).show()
+                                                            }
+                                                            is ProfileOperationResult.Error -> {
+                                                                Toast.makeText(context, res.message, Toast.LENGTH_SHORT).show()
+                                                            }
+                                                        }
+                                                    } finally {
+                                                        isBlockActionBusy = false
+                                                    }
+                                                }
+                                            } else {
+                                                showBlockConfirmDialog = true
+                                            }
+                                        }
                                     )
                                 }
                             }
-                            Text(
-                                text = if (isMutualFriend) "Mutual Friend • Active" else "Follower",
-                                fontSize = 11.sp,
-                                color = if (isMutualFriend) LivePrimaryEmerald else MaterialTheme.colorScheme.onSurfaceVariant
-                            )
                         }
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(com.synfusion.attendance.ui.components.icons.WorkDailyIcons.ArrowLeft, contentDescription = "Back", tint = MaterialTheme.colorScheme.onSurface)
-                    }
-                },
-                actions = {
-                    Box {
-                        IconButton(onClick = { showMenu = true }) {
-                            Icon(com.synfusion.attendance.ui.components.icons.WorkDailyIcons.MoreVertical, contentDescription = "More", tint = MaterialTheme.colorScheme.onSurface)
-                        }
-                        DropdownMenu(
-                            expanded = showMenu,
-                            onDismissRequest = { showMenu = false }
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text("View Profile") },
-                                leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
-                                onClick = {
-                                    showMenu = false
-                                    onNavigateProfile(friendId)
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Clear Chat") },
-                                leadingIcon = { Icon(Icons.Default.CleaningServices, contentDescription = null) },
-                                onClick = {
-                                    showMenu = false
-                                    Toast.makeText(context, "Chat cleared", Toast.LENGTH_SHORT).show()
-                                }
-                            )
-                        }
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        titleContentColor = MaterialTheme.colorScheme.onSurface,
+                        navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
+                        actionIconContentColor = MaterialTheme.colorScheme.onSurface
+                    )
                 )
-            )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+            }
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
@@ -213,12 +395,12 @@ fun PrivateChatScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .imePadding(),
-            verticalArrangement = Arrangement.SpaceBetween
         ) {
             if (isCheckingMutual) {
                 Box(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator(color = LivePrimaryEmerald)
@@ -228,16 +410,69 @@ fun PrivateChatScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f)
+                        .navigationBarsPadding()
                         .padding(24.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    Surface(
+                        shape = RoundedCornerShape(24.dp),
+                        color = MaterialTheme.colorScheme.surface,
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Icon(Icons.Default.Block, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(48.dp))
-                        Text(text = "Messaging Unavailable", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                        Text(text = "You cannot send or receive messages from this account due to block restrictions.", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+                        Column(
+                            modifier = Modifier.padding(horizontal = 24.dp, vertical = 28.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Block,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(44.dp)
+                            )
+                            Text(
+                                text = "Messaging Unavailable",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "You cannot send or receive messages with this account due to block settings.",
+                                fontSize = 13.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center,
+                                lineHeight = 19.sp
+                            )
+                            if (isBlockedByMe && !currentUserId.isNullOrBlank()) {
+                                OutlinedButton(
+                                    onClick = {
+                                        if (isBlockActionBusy) return@OutlinedButton
+                                        isBlockActionBusy = true
+                                        coroutineScope.launch {
+                                            try {
+                                                when (val res = blockRepo.unblockUser(currentUserId, friendId)) {
+                                                    is ProfileOperationResult.Success -> {
+                                                        refreshChatRelationshipState(showInitialSpinner = false)
+                                                        Toast.makeText(context, "User unblocked", Toast.LENGTH_SHORT).show()
+                                                    }
+                                                    is ProfileOperationResult.Error -> {
+                                                        Toast.makeText(context, res.message, Toast.LENGTH_SHORT).show()
+                                                    }
+                                                }
+                                            } finally {
+                                                isBlockActionBusy = false
+                                            }
+                                        }
+                                    },
+                                    enabled = !isBlockActionBusy,
+                                    shape = RoundedCornerShape(20.dp),
+                                    border = BorderStroke(1.dp, LivePrimaryEmerald)
+                                ) {
+                                    Text("Unblock User", color = LivePrimaryEmerald, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
                     }
                 }
             } else if (!isMutualFriend) {
@@ -246,76 +481,121 @@ fun PrivateChatScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f)
+                        .navigationBarsPadding()
                         .padding(24.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(14.dp)
+                    Surface(
+                        shape = RoundedCornerShape(24.dp),
+                        color = MaterialTheme.colorScheme.surface,
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(64.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)),
-                            contentAlignment = Alignment.Center
+                        Column(
+                            modifier = Modifier.padding(horizontal = 24.dp, vertical = 28.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(14.dp)
                         ) {
-                            Icon(
-                                Icons.Default.Lock,
-                                contentDescription = "Friends Only",
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(32.dp)
+                            Box(
+                                modifier = Modifier
+                                    .size(64.dp)
+                                    .clip(CircleShape)
+                                    .background(LivePrimaryEmerald.copy(alpha = 0.12f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Lock,
+                                    contentDescription = "Friends Only",
+                                    tint = LivePrimaryEmerald,
+                                    modifier = Modifier.size(30.dp)
+                                )
+                            }
+
+                            Text(
+                                text = "Friends-Only Messaging",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
                             )
-                        }
 
-                        Text(
-                            text = "Friends-Only Messaging",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
+                            Text(
+                                text = "Messaging is locked because you and $friendName are not mutual friends yet. Both of you must follow each other to start chatting.",
+                                fontSize = 13.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center,
+                                lineHeight = 19.sp
+                            )
 
-                        Text(
-                            text = "Messaging is locked because you and $friendName are not mutual friends yet. Both of you must follow each other to start chatting.",
-                            fontSize = 13.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center,
-                            lineHeight = 18.sp
-                        )
-
-                        Button(
-                            onClick = { onNavigateProfile(friendId) },
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Text("View Profile & Follow")
+                            Button(
+                                onClick = { onNavigateProfile(friendId) },
+                                shape = RoundedCornerShape(22.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = LivePrimaryEmerald,
+                                    contentColor = Color.White
+                                ),
+                                modifier = Modifier.height(44.dp)
+                            ) {
+                                Text("View Profile & Follow", fontWeight = FontWeight.Bold)
+                            }
                         }
                     }
                 }
             } else {
-                // Messages Feed
+                // Messages Feed or Balanced Empty Conversation State
                 if (messages.isEmpty()) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .weight(1f),
+                            .weight(1f)
+                            .padding(horizontal = 24.dp, vertical = 16.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        Surface(
+                            shape = RoundedCornerShape(24.dp),
+                            color = MaterialTheme.colorScheme.surface,
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
+                            modifier = Modifier.widthIn(max = 340.dp)
                         ) {
-                            WorkDailyLiveAvatar(
-                                name = friendName,
-                                avatarUrl = friendAvatar,
-                                size = 56.dp,
-                                isLive = false
-                            )
-                            Text(
-                                text = "Send a message to $friendName",
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Medium
-                            )
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 24.dp, vertical = 28.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                WorkDailyLiveAvatar(
+                                    name = friendName,
+                                    avatarUrl = friendAvatar,
+                                    size = 68.dp,
+                                    isLive = false,
+                                    showBadge = false
+                                )
+
+                                if (friendUsername != null) {
+                                    Text(
+                                        text = "@$friendUsername",
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = LivePrimaryEmerald
+                                    )
+                                }
+
+                                Text(
+                                    text = "Send a message to $friendName",
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    textAlign = TextAlign.Center
+                                )
+
+                                Text(
+                                    text = "Say hello to start your conversation. Messages are shared privately between mutual friends.",
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontSize = 12.sp,
+                                    textAlign = TextAlign.Center,
+                                    lineHeight = 18.sp
+                                )
+                            }
                         }
                     }
                 } else {
@@ -323,13 +603,15 @@ fun PrivateChatScreen(
                         state = listState,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .weight(1f)
-                            .padding(horizontal = 14.dp, vertical = 8.dp),
+                            .weight(1f),
+                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         item {
                             Box(
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Surface(
@@ -353,85 +635,179 @@ fun PrivateChatScreen(
                     }
                 }
 
-                // Theme-Aware Compact Composer Bar
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.surface)
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                // Bottom Composer Surface: Handles IME + Gesture Navigation Bar without overlap or duplicate padding
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.surface
                 ) {
-                    // Rounded Input Field
-                    Surface(
+                    Column(
                         modifier = Modifier
-                            .weight(1f)
-                            .heightIn(min = 44.dp, max = 110.dp),
-                        shape = RoundedCornerShape(22.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
-                        border = androidx.compose.foundation.BorderStroke(
-                            width = 1.dp,
-                            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)
-                        )
+                            .fillMaxWidth()
+                            .windowInsetsPadding(WindowInsets.navigationBars.union(WindowInsets.ime))
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 12.dp),
-                            contentAlignment = Alignment.CenterStart
-                        ) {
-                            if (messageInput.isEmpty()) {
-                                Text(
-                                    text = "Message...",
-                                    fontSize = 14.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            BasicTextField(
-                                value = messageInput,
-                                onValueChange = { messageInput = it },
-                                modifier = Modifier.fillMaxWidth(),
-                                textStyle = TextStyle(
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    fontSize = 14.sp
-                                ),
-                                cursorBrush = SolidColor(LivePrimaryEmerald),
-                                maxLines = 4
-                            )
-                        }
-                    }
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
 
-                    // Active Circular Send Button
-                    IconButton(
-                        onClick = {
-                            val textToSend = messageInput.trim()
-                            if (textToSend.isNotBlank() && currentUserId != null) {
-                                messageInput = ""
-                                coroutineScope.launch {
-                                    when (val result = chatRepo.sendMessage(currentUserId, friendId, textToSend)) {
-                                        is ProfileOperationResult.Error -> {
-                                            Toast.makeText(context, result.message, Toast.LENGTH_SHORT).show()
-                                        }
-                                        is ProfileOperationResult.Success -> {}
-                                    }
+                        if (sendError != null) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(MaterialTheme.colorScheme.error.copy(alpha = 0.08f))
+                                    .padding(horizontal = 14.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = sendError ?: "",
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.weight(1f),
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                IconButton(
+                                    onClick = { sendError = null },
+                                    modifier = Modifier.size(24.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Close,
+                                        contentDescription = "Dismiss error",
+                                        tint = MaterialTheme.colorScheme.error,
+                                        modifier = Modifier.size(15.dp)
+                                    )
                                 }
                             }
-                        },
-                        enabled = messageInput.isNotBlank(),
-                        modifier = Modifier
-                            .size(44.dp)
-                            .clip(CircleShape)
-                            .background(
-                                if (messageInput.isNotBlank()) LivePrimaryEmerald
-                                else MaterialTheme.colorScheme.surfaceVariant
-                            )
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.Send,
-                            contentDescription = "Send Message",
-                            tint = if (messageInput.isNotBlank()) Color.White else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                            modifier = Modifier.size(18.dp)
-                        )
+                        }
+
+                        val trimmedMessage = messageInput.trim()
+                        val canSend = trimmedMessage.isNotEmpty() && !isSending && !currentUserId.isNullOrBlank()
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.Bottom,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            // Rounded Input Pill (48dp baseline height matching 48dp Send button)
+                            Surface(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .heightIn(min = 48.dp, max = 120.dp),
+                                shape = RoundedCornerShape(24.dp),
+                                color = MaterialTheme.colorScheme.background,
+                                border = BorderStroke(
+                                    width = 1.dp,
+                                    color = if (trimmedMessage.isNotEmpty()) {
+                                        LivePrimaryEmerald.copy(alpha = 0.55f)
+                                    } else {
+                                        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f)
+                                    }
+                                )
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .defaultMinSize(minHeight = 48.dp)
+                                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                                    contentAlignment = Alignment.CenterStart
+                                ) {
+                                    if (messageInput.isEmpty()) {
+                                        Text(
+                                            text = "Type a message...",
+                                            fontSize = 14.sp,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                    BasicTextField(
+                                        value = messageInput,
+                                        onValueChange = {
+                                            messageInput = it
+                                            if (sendError != null) sendError = null
+                                        },
+                                        enabled = !isSending,
+                                        modifier = Modifier.fillMaxWidth(),
+                                        textStyle = TextStyle(
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            fontSize = 14.sp,
+                                            lineHeight = 20.sp
+                                        ),
+                                        cursorBrush = SolidColor(LivePrimaryEmerald),
+                                        maxLines = 4
+                                    )
+                                }
+                            }
+
+                            // Aligned 48dp Circular Send Button
+                            IconButton(
+                                onClick = {
+                                    val senderUid = currentUserId
+                                    val textToSend = messageInput.trim()
+                                    if (textToSend.isBlank() || senderUid.isNullOrBlank() || isSending) {
+                                        return@IconButton
+                                    }
+
+                                    sendError = null
+                                    isSending = true
+                                    messageInput = ""
+
+                                    coroutineScope.launch {
+                                        try {
+                                            when (val result = chatRepo.sendMessage(senderUid, friendId, textToSend)) {
+                                                is ProfileOperationResult.Success -> {
+                                                    sendError = null
+                                                }
+                                                is ProfileOperationResult.Error -> {
+                                                    if (messageInput.isBlank()) {
+                                                        messageInput = textToSend
+                                                    }
+                                                    sendError = result.message
+                                                    Toast.makeText(context, result.message, Toast.LENGTH_SHORT).show()
+                                                }
+                                            }
+                                        } catch (e: Exception) {
+                                            if (messageInput.isBlank()) {
+                                                messageInput = textToSend
+                                            }
+                                            val errMsg = e.message ?: "Failed to send message"
+                                            sendError = errMsg
+                                            Toast.makeText(context, errMsg, Toast.LENGTH_SHORT).show()
+                                        } finally {
+                                            isSending = false
+                                        }
+                                    }
+                                },
+                                enabled = canSend,
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .clip(CircleShape)
+                                    .background(
+                                        when {
+                                            isSending -> LivePrimaryEmerald.copy(alpha = 0.7f)
+                                            canSend -> LivePrimaryEmerald
+                                            else -> MaterialTheme.colorScheme.surfaceVariant
+                                        }
+                                    )
+                            ) {
+                                if (isSending) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(20.dp),
+                                        color = Color.White,
+                                        strokeWidth = 2.dp
+                                    )
+                                } else {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.Send,
+                                        contentDescription = "Send Message",
+                                        tint = if (canSend) {
+                                            Color.White
+                                        } else {
+                                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                                        },
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -451,8 +827,8 @@ fun PrivateMessageBubble(message: FirestoreChatMessage, currentUserId: String?) 
         sdf.format(Date(message.timestamp))
     }
 
-    val bubbleBg = if (isMe) LivePrimaryEmerald else MaterialTheme.colorScheme.surfaceVariant
-    val textColor = if (isMe) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+    val bubbleBg = if (isMe) LivePrimaryEmerald else MaterialTheme.colorScheme.surface
+    val textColor = if (isMe) Color.White else MaterialTheme.colorScheme.onSurface
 
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -466,6 +842,7 @@ fun PrivateMessageBubble(message: FirestoreChatMessage, currentUserId: String?) 
                 bottomEnd = if (isMe) 4.dp else 16.dp
             ),
             color = bubbleBg,
+            border = if (isMe) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)),
             modifier = Modifier.widthIn(max = 280.dp)
         ) {
             Column(

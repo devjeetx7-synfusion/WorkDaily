@@ -612,6 +612,7 @@ fun DashboardScreen(
                     onNavigateLeaderboard = { bottomNavController.navigate("rewards_leaderboard") },
                     onNavigateMessages = { bottomNavController.navigate("live_people") },
                     onNavigatePeople = { bottomNavController.navigate("live_people") },
+                    onNavigateUserProfile = { targetUid -> bottomNavController.navigate("live_profile?userId=$targetUid") },
                     onLogout = onLogout
                 )
             }
@@ -785,7 +786,13 @@ fun DashboardScreen(
                         onNavigateStudio = { bottomNavController.navigate("live_setup") },
                         onNavigateLiveRoom = { roomId -> bottomNavController.navigate("live_room/$roomId") },
                         onNavigatePrivateChat = { friendId -> bottomNavController.navigate("live_private_chat/$friendId") },
-                        onNavigateDemoControls = { bottomNavController.navigate("live_demo_controls") }
+                        onNavigateDemoControls = { bottomNavController.navigate("live_demo_controls") },
+                        onNavigatePeople = { bottomNavController.navigate("live_people") },
+                        onNavigateUserProfile = { targetUid ->
+                            if (targetUid != userId) {
+                                bottomNavController.navigate("live_profile?userId=$targetUid")
+                            }
+                        }
                     )
                 }
             }

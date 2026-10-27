@@ -17,6 +17,11 @@ interface PublicProfileRepository {
 
     suspend fun checkUsernameAvailability(username: String): UsernameAvailabilityResult
 
+    suspend fun checkUsernameAvailability(
+        username: String,
+        currentUserId: String?
+    ): UsernameAvailabilityResult = checkUsernameAvailability(username)
+
     suspend fun ensureOrCreatePublicProfile(
         firebaseUid: String,
         displayName: String?,

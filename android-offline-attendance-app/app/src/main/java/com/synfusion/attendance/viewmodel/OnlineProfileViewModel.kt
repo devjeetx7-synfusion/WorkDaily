@@ -111,7 +111,7 @@ class OnlineProfileViewModel(
         }
     }
 
-    fun checkUsernameAvailability(username: String) {
+    fun checkUsernameAvailability(username: String, currentUserId: String? = null) {
         checkUsernameJob?.cancel()
         val repository = publicProfileRepository ?: return
 
@@ -123,18 +123,18 @@ class OnlineProfileViewModel(
         _usernameCheckState.value = UsernameCheckState.Checking
 
         checkUsernameJob = viewModelScope.launch(ioDispatcher) {
-            when (val result = repository.checkUsernameAvailability(username)) {
+            when (val result = repository.checkUsernameAvailability(username, currentUserId)) {
                 is UsernameAvailabilityResult.Available -> {
-                    val currentUsername = _publicProfileState.value?.username ?: ""
-                    if (username.trim().equals(currentUsername, ignoreCase = true)) {
-                        _usernameCheckState.value = UsernameCheckState.Available
-                    } else {
-                        _usernameCheckState.value = UsernameCheckState.Available
-                    }
+                    _usernameCheckState.value = UsernameCheckState.Available
                 }
                 is UsernameAvailabilityResult.AlreadyTaken -> {
-                    val currentUsername = _publicProfileState.value?.username ?: ""
-                    if (username.trim().equals(currentUsername, ignoreCase = true)) {
+                    val cachedProfile = _publicProfileState.value
+                    val currentUsername = if (cachedProfile != null && (currentUserId == null || cachedProfile.uid == currentUserId)) {
+                        cachedProfile.username
+                    } else {
+                        ""
+                    }
+                    if (currentUsername.isNotBlank() && username.trim().equals(currentUsername, ignoreCase = true)) {
                         _usernameCheckState.value = UsernameCheckState.Available
                     } else {
                         _usernameCheckState.value = UsernameCheckState.AlreadyTaken
@@ -211,6 +211,15 @@ class OnlineProfileViewModel(
     }
 
     fun clearSaveState() {
+        _publicProfileSaveState.value = null
+    }
+
+    fun clearSessionState() {
+        checkUsernameJob?.cancel()
+        currentPendingProfile = null
+        _profileState.value = OnlineProfileState.Idle
+        _publicProfileState.value = null
+        _usernameCheckState.value = UsernameCheckState.Idle
         _publicProfileSaveState.value = null
     }
 }

@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.synfusion.attendance.auth.FirebaseAuthRepository
 import com.synfusion.attendance.auth.OnlineAuthRepository
+import com.synfusion.attendance.data.AndroidWorkspaceStorageManager
 import com.synfusion.attendance.data.DrillDownRepository
 import com.synfusion.attendance.data.LocalAttendanceRepository
 import com.synfusion.attendance.data.OfflinePreferencesRepository
@@ -23,11 +24,18 @@ class OfflineViewModelFactory(
 
     private val localAttendanceRepository = LocalAttendanceRepository(context)
     private val drillDownRepository = DrillDownRepository(context)
+    private val workspaceStorageManager = AndroidWorkspaceStorageManager(context.applicationContext, repository)
 
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(OfflineAuthViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return OfflineAuthViewModel(repository, localAttendanceRepository) as T
+            return OfflineAuthViewModel(
+                repository = repository,
+                localAttendanceRepository = localAttendanceRepository,
+                onlineProfileRepository = onlineProfileRepository,
+                publicProfileRepository = publicProfileRepository,
+                workspaceStorageManager = workspaceStorageManager
+            ) as T
         }
         if (modelClass.isAssignableFrom(OfflineDashboardViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")

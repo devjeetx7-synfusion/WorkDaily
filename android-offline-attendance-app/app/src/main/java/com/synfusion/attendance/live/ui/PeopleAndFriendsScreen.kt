@@ -20,12 +20,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import com.synfusion.attendance.live.ui.components.*
 import com.synfusion.attendance.live.viewmodel.LiveViewModel
 import com.synfusion.attendance.online.FirestorePublicProfileRepository
@@ -43,10 +46,24 @@ fun PeopleAndFriendsScreen(
     onNavigatePrivateChat: (String) -> Unit
 ) {
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     val keyboardController = LocalSoftwareKeyboardController.current
     val preferences = remember { context.getSharedPreferences("workdaily_people_search", android.content.Context.MODE_PRIVATE) }
-    val currentUserId = remember {
-        try { com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid } catch (_: Exception) { null }
+    var currentUserId by remember {
+        mutableStateOf(
+            try { com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid } catch (_: Exception) { null }
+        )
+    }
+    val recentQueriesKey = remember(currentUserId) { "recent_queries_${currentUserId ?: "guest"}" }
+
+    fun loadRecentForKey(key: String): List<String> {
+        return preferences.getString(key, "")
+            .orEmpty()
+            .split("\n")
+            .map { it.trim().removePrefix("@") }
+            .filter { it.isNotBlank() }
+            .distinctBy { it.lowercase() }
+            .take(8)
     }
 
     var selectedTabKey by remember { mutableStateOf("Discover") }
@@ -56,22 +73,16 @@ fun PeopleAndFriendsScreen(
     var followersList by remember { mutableStateOf<List<PublicProfile>>(emptyList()) }
     var followingList by remember { mutableStateOf<List<PublicProfile>>(emptyList()) }
     var followedUids by remember { mutableStateOf<Set<String>>(emptySet()) }
+    var blockedUids by remember { mutableStateOf<Set<String>>(emptySet()) }
     var searchError by remember { mutableStateOf<String?>(null) }
-    var recentQueries by remember {
-        mutableStateOf(
-            preferences.getString("recent_queries", "")
-                .orEmpty()
-                .split("\n")
-                .map { it.trim().removePrefix("@") }
-                .filter { it.isNotBlank() }
-                .distinctBy { it.lowercase() }
-                .take(8)
-        )
+    var recentQueries by remember(recentQueriesKey) {
+        mutableStateOf(loadRecentForKey(recentQueriesKey))
     }
     var showAllRecent by remember { mutableStateOf(false) }
     var busyFollowUids by remember { mutableStateOf<Set<String>>(emptySet()) }
     val publicProfileRepo = remember { FirestorePublicProfileRepository() }
     val followRepo = remember { com.synfusion.attendance.online.FirestoreFollowRepository() }
+    val blockRepo = remember { com.synfusion.attendance.online.FirestoreBlockRepository() }
     val scope = rememberCoroutineScope()
 
     fun persistRecent(query: String) {
@@ -79,31 +90,55 @@ fun PeopleAndFriendsScreen(
         if (clean.isBlank()) return
         val updated = (listOf(clean) + recentQueries.filterNot { it.equals(clean, ignoreCase = true) }).take(8)
         recentQueries = updated
-        preferences.edit().putString("recent_queries", updated.joinToString("\n")).apply()
+        preferences.edit().putString(recentQueriesKey, updated.joinToString("\n")).apply()
     }
 
     fun removeRecent(query: String) {
         val updated = recentQueries.filterNot { it.equals(query, ignoreCase = true) }
         recentQueries = updated
-        preferences.edit().putString("recent_queries", updated.joinToString("\n")).apply()
+        preferences.edit().putString(recentQueriesKey, updated.joinToString("\n")).apply()
     }
 
-    fun refreshRelationships() {
-        if (currentUserId != null) {
+    fun refreshRelationships(targetUid: String? = currentUserId) {
+        if (!targetUid.isNullOrBlank()) {
             scope.launch {
-                val followersRes = followRepo.getFollowers(currentUserId)
+                val blockedRes = blockRepo.getBlockedUserIds(targetUid)
+                if (blockedRes is ProfileOperationResult.Success) {
+                    blockedUids = blockedRes.data.toSet()
+                }
+                val followersRes = followRepo.getFollowers(targetUid)
                 if (followersRes is ProfileOperationResult.Success) followersList = followersRes.data
-                val followingRes = followRepo.getFollowing(currentUserId)
+                val followingRes = followRepo.getFollowing(targetUid)
                 if (followingRes is ProfileOperationResult.Success) {
                     followingList = followingRes.data
                     followedUids = followingRes.data.map { it.uid }.toSet()
                 }
+                followRepo.getFollowCounts(targetUid)
             }
+        } else {
+            followersList = emptyList()
+            followingList = emptyList()
+            followedUids = emptySet()
+            blockedUids = emptySet()
         }
     }
 
     LaunchedEffect(currentUserId) {
-        refreshRelationships()
+        refreshRelationships(currentUserId)
+    }
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                val latestUid = try { com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid } catch (_: Exception) { null }
+                currentUserId = latestUid
+                refreshRelationships(latestUid)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
     }
 
     LaunchedEffect(searchQuery, selectedTabKey) {
@@ -133,9 +168,9 @@ fun PeopleAndFriendsScreen(
 
     val tabs = listOf("Discover", "Followers (${followersList.size})", "Following (${followingList.size})")
 
-    val displayedUsers = remember(selectedTabKey, searchResults, followersList, followingList, searchQuery) {
+    val displayedUsers = remember(selectedTabKey, searchResults, followersList, followingList, searchQuery, blockedUids) {
         val cleanQuery = searchQuery.trim().removePrefix("@").trim()
-        when (selectedTabKey) {
+        val rawList = when (selectedTabKey) {
             "Followers" -> if (cleanQuery.isBlank()) followersList else followersList.filter {
                 it.displayName.contains(cleanQuery, ignoreCase = true) || it.username.contains(cleanQuery, ignoreCase = true)
             }
@@ -144,6 +179,7 @@ fun PeopleAndFriendsScreen(
             }
             else -> searchResults
         }
+        rawList.filterNot { blockedUids.contains(it.uid) }
     }
 
     Scaffold(
@@ -275,7 +311,7 @@ fun PeopleAndFriendsScreen(
                         }
                         TextButton(onClick = {
                             recentQueries = emptyList()
-                            preferences.edit().remove("recent_queries").apply()
+                            preferences.edit().remove(recentQueriesKey).apply()
                         }) {
                             Text(
                                 text = "Clear all",
@@ -501,7 +537,8 @@ fun PeopleAndFriendsScreen(
                                         fontWeight = FontWeight.SemiBold,
                                         color = MaterialTheme.colorScheme.onSurface,
                                         maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.weight(1f, fill = false)
                                     )
                                     if (user.isVerified) {
                                         Icon(
@@ -532,7 +569,8 @@ fun PeopleAndFriendsScreen(
 
                             Spacer(modifier = Modifier.width(8.dp))
 
-                            if (currentUserId != null && currentUserId != user.uid) {
+                            val activeUid = currentUserId
+                            if (!activeUid.isNullOrBlank() && activeUid != user.uid) {
                                 FollowButton(
                                     isFollowing = isFollowingUser,
                                     onToggle = {
@@ -542,9 +580,9 @@ fun PeopleAndFriendsScreen(
                                         scope.launch {
                                             try {
                                                 val result = if (wasFollowing) {
-                                                    followRepo.unfollowUser(currentUserId, user.uid)
+                                                    followRepo.unfollowUser(activeUid, user.uid)
                                                 } else {
-                                                    followRepo.followUser(currentUserId, user.uid)
+                                                    followRepo.followUser(activeUid, user.uid)
                                                 }
                                                 if (result is ProfileOperationResult.Success) {
                                                     followedUids = if (wasFollowing) {
@@ -552,7 +590,7 @@ fun PeopleAndFriendsScreen(
                                                     } else {
                                                         followedUids + user.uid
                                                     }
-                                                    refreshRelationships()
+                                                    refreshRelationships(activeUid)
                                                 } else if (result is ProfileOperationResult.Error) {
                                                     Toast.makeText(context, result.message, Toast.LENGTH_SHORT).show()
                                                 }
@@ -564,8 +602,8 @@ fun PeopleAndFriendsScreen(
                                         }
                                     },
                                     isLoading = busy,
-                                    height = 32.dp,
-                                    minWidth = 72.dp
+                                    height = 36.dp,
+                                    minWidth = 88.dp
                                 )
                             }
 

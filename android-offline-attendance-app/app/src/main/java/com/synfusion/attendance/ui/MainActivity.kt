@@ -29,8 +29,10 @@ import com.synfusion.attendance.viewmodel.OnlineAuthViewModel
 import com.synfusion.attendance.viewmodel.OnlineProfileViewModel
 import com.synfusion.attendance.utils.collectAsStateWithLifecycle
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -228,6 +230,7 @@ fun OfflineDailyWorkApp(
     onClearExternalPdfUri: () -> Unit = {}
 ) {
     val navController = rememberNavController()
+    val coroutineScope = rememberCoroutineScope()
     val authViewModel: OfflineAuthViewModel = viewModel(factory = factory)
     val onlineAuthViewModel: OnlineAuthViewModel = viewModel(factory = factory)
     val onlineProfileViewModel: OnlineProfileViewModel = viewModel(factory = factory)
@@ -361,10 +364,16 @@ fun OfflineDailyWorkApp(
                 externalPdfUri = externalPdfUri,
                 onClearExternalPdfUri = onClearExternalPdfUri,
                 onLogout = {
-                    onlineAuthViewModel.signOut()
-                    authViewModel.logout()
-                    navController.navigate("login") {
-                        popUpTo(0) { inclusive = true }
+                    coroutineScope.launch {
+                        settingsViewModel.clearSessionState()
+                        onlineProfileViewModel.clearSessionState()
+                        val onlineJob = onlineAuthViewModel.signOut()
+                        val localJob = authViewModel.logout()
+                        onlineJob.join()
+                        localJob.join()
+                        navController.navigate("login") {
+                            popUpTo(0) { inclusive = true }
+                        }
                     }
                 }
             )

@@ -223,7 +223,7 @@ open class OfflinePreferencesRepository(val context: Context) {
         }
     }
 
-    suspend fun saveProfilePhotoPath(path: String?) {
+    open suspend fun saveProfilePhotoPath(path: String?) {
         context.offlineDataStore.edit { preferences ->
             if (path != null) {
                 preferences[PROFILE_PHOTO_PATH_KEY] = path
