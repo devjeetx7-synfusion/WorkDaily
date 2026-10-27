@@ -74,6 +74,7 @@ fun LiveProfileScreen(
     var isLoading by remember { mutableStateOf(true) }
     var publicProfile by remember { mutableStateOf<PublicProfile?>(null) }
     var isFollowingTarget by remember { mutableStateOf(false) }
+    var isFollowActionBusy by remember { mutableStateOf(false) }
     var loadError by remember { mutableStateOf<String?>(null) }
 
     val repository = remember { FirestorePublicProfileRepository() }
@@ -315,12 +316,12 @@ fun LiveProfileScreen(
             item {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     WorkDailyLiveAvatar(
                         name = displayName,
                         avatarUrl = avatarUrl,
-                        size = 88.dp,
+                        size = 82.dp,
                         isLive = false,
                         showBadge = false
                     )
@@ -335,7 +336,7 @@ fun LiveProfileScreen(
                         ) {
                             Text(
                                 text = displayName,
-                                fontSize = 20.sp,
+                                fontSize = 19.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface,
                                 maxLines = 1,
@@ -441,18 +442,27 @@ fun LiveProfileScreen(
                             FollowButton(
                                 isFollowing = isFollowingTarget,
                                 onToggle = {
-                                    val newStatus = !isFollowingTarget
-                                    isFollowingTarget = newStatus
-                                    val updatedProfile = publicProfile
-                                    if (updatedProfile != null) {
-                                        val newFollowerCount = if (newStatus) updatedProfile.followerCount + 1 else (updatedProfile.followerCount - 1).coerceAtLeast(0)
-                                        publicProfile = updatedProfile.copy(followerCount = newFollowerCount)
-                                    }
+                                    if (isFollowActionBusy) return@FollowButton
+                                    val previousStatus = isFollowingTarget
+                                    val newStatus = !previousStatus
+                                    isFollowActionBusy = true
                                     coroutineScope.launch {
-                                        if (newStatus) {
+                                        val result = if (newStatus) {
                                             followRepo.followUser(currentUserId, targetUser.uid)
                                         } else {
                                             followRepo.unfollowUser(currentUserId, targetUser.uid)
+                                        }
+                                        isFollowActionBusy = false
+                                        if (result is ProfileOperationResult.Success) {
+                                            isFollowingTarget = newStatus
+                                            val latestProfile = publicProfile
+                                            if (latestProfile != null) {
+                                                val newCount = if (newStatus) latestProfile.followerCount + 1
+                                                    else (latestProfile.followerCount - 1).coerceAtLeast(0)
+                                                publicProfile = latestProfile.copy(followerCount = newCount)
+                                            }
+                                        } else if (result is ProfileOperationResult.Error) {
+                                            Toast.makeText(context, result.message, Toast.LENGTH_SHORT).show()
                                         }
                                     }
                                 }
