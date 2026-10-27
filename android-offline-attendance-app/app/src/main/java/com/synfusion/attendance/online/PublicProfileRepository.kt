@@ -35,7 +35,10 @@ interface PublicProfileRepository {
         bio: String,
         profession: String,
         photoUrl: String?,
-        isPublic: Boolean
+        isPublic: Boolean,
+        gender: String = "",
+        dateOfBirth: String? = null,
+        countryCode: String = ""
     ): ProfileOperationResult<PublicProfile>
 
     suspend fun searchPublicProfiles(

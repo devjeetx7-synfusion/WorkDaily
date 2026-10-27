@@ -151,12 +151,12 @@ class FirebaseAuthRepository(
     }
 
     override suspend fun signOut() {
-        _authState.value = OnlineAuthState.Unauthenticated
         withContext(Dispatchers.IO) {
             try {
                 firebaseAuth?.signOut()
-            } catch (_: Exception) {
-                // Ignore sign-out errors
+            } catch (e: Exception) {
+                _authState.value = OnlineAuthState.Error("Sign-out failed: ${e.message ?: "Unknown error"}")
+                return@withContext
             }
             try {
                 val credentialManager = CredentialManager.create(context)
@@ -164,6 +164,8 @@ class FirebaseAuthRepository(
             } catch (_: Exception) {
                 // Credential Manager may be unavailable on non-GMS devices or in unit tests
             }
+            // AuthStateListener will fire and set Unauthenticated after Firebase sign-out completes.
+            // Set it explicitly here as well for immediate UI feedback.
             _authState.value = OnlineAuthState.Unauthenticated
         }
     }
