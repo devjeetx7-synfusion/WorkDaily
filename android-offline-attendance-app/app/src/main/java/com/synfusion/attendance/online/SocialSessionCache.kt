@@ -144,11 +144,12 @@ class SocialSessionManager(
             }
         }
 
-        if (deferredToAwait != null) {
-            return deferredToAwait.await()
+        val existingDeferred = deferredToAwait
+        if (existingDeferred != null) {
+            return existingDeferred.await()
         }
 
-        val myDeferred = createdDeferred!!
+        val myDeferred = createdDeferred ?: CompletableDeferred()
         try {
             val result = block(capturedEpoch)
             myDeferred.complete(result)
@@ -236,6 +237,29 @@ class SocialSessionManager(
                 }
                 is ProfileOperationResult.Error -> res
             }
+        }
+    }
+
+    /**
+     * Immediately seeds an updated [PublicProfile] into [ownerUid]'s session cache (e.g. after editing own profile)
+     * while preserving any authoritative follow counts already cached for that UID.
+     */
+    fun seedProfile(ownerUid: String, profile: PublicProfile) {
+        if (ownerUid.isBlank() || profile.uid.isBlank()) return
+        val stamp = clockMs()
+        updateForOwner(ownerUid) { snap ->
+            val existingCounts = snap.followCounts[profile.uid]
+            val mergedProfile = if (existingCounts != null) {
+                profile.copy(
+                    followerCount = existingCounts.value.followerCount,
+                    followingCount = existingCounts.value.followingCount
+                )
+            } else {
+                profile
+            }
+            snap.copy(
+                profiles = snap.profiles + (profile.uid to TimedEntry(mergedProfile, stamp, isAuthoritative = true))
+            )
         }
     }
 
@@ -709,8 +733,10 @@ class SocialSessionManager(
                         // restore pre-mutation counts so local counts never double-increment/decrement.
                         val finalCounts = if (!didMutateServer) {
                             val restored = snap.followCounts.toMutableMap()
-                            if (preActorCounts != null) restored[actorUid] = preActorCounts!! else restored.remove(actorUid)
-                            if (preTargetCounts != null) restored[targetUid] = preTargetCounts!! else restored.remove(targetUid)
+                            val savedActorCounts = preActorCounts
+                            val savedTargetCounts = preTargetCounts
+                            if (savedActorCounts != null) restored[actorUid] = savedActorCounts else restored.remove(actorUid)
+                            if (savedTargetCounts != null) restored[targetUid] = savedTargetCounts else restored.remove(targetUid)
                             restored
                         } else {
                             snap.followCounts

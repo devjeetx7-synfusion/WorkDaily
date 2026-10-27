@@ -931,12 +931,14 @@ fun ProfileScreen(
                 }
             }
 
-            if (activeUserListType != null && !currentUserId.isNullOrBlank()) {
+            val selectedOwnListType = activeUserListType
+            val activeSheetUid = currentUserId?.takeIf { it.isNotBlank() }
+            if (selectedOwnListType != null && activeSheetUid != null) {
                 UserRelationshipBottomSheet(
-                    targetUid = currentUserId!!,
-                    listType = activeUserListType!!,
-                    initialCount = if (activeUserListType == UserListType.FOLLOWERS) followerCount else followingCount,
-                    currentUserId = currentUserId,
+                    targetUid = activeSheetUid,
+                    listType = selectedOwnListType,
+                    initialCount = if (selectedOwnListType == UserListType.FOLLOWERS) followerCount else followingCount,
+                    currentUserId = activeSheetUid,
                     followRepo = followRepo,
                     blockRepo = blockRepo,
                     onDismiss = {

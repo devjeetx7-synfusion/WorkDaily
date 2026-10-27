@@ -228,7 +228,7 @@ fun WorkDailyLiveAvatar(
                     )
                 }
 
-                if (!avatarUrl.isNull_or_blank()) {
+                if (!avatarUrl.isNullOrBlank()) {
                     val cleanUrl = avatarUrl.trim()
                     val request = remember(cleanUrl) {
                         ImageRequest.Builder(context)
