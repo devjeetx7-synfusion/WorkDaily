@@ -4,7 +4,11 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.AggregateSource
 import com.google.firebase.firestore.FieldPath
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Source
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 
@@ -75,6 +79,8 @@ class FirestoreFollowRepository(
             val followerProfileRef = firestore.collection("public_profiles").document(followerUid)
             val targetProfileRef = firestore.collection("public_profiles").document(targetUid)
 
+            var createdRelationship = false
+
             firestore.runTransaction { transaction ->
                 // Firestore transaction rule: ALL READS MUST BE EXECUTED BEFORE ANY WRITES!
                 val followSnap = transaction.get(followRef)
@@ -88,7 +94,8 @@ class FirestoreFollowRepository(
                 }
 
                 if (followSnap.exists()) {
-                    // Already following - idempotent success
+                    // Already following - idempotent no-op
+                    createdRelationship = false
                     return@runTransaction
                 }
 
@@ -110,9 +117,10 @@ class FirestoreFollowRepository(
                     val currentFollowing = (followerSnap.getLong("followingCount") ?: 0L)
                     transaction.update(followerProfileRef, "followingCount", currentFollowing + 1)
                 }
+                createdRelationship = true
             }.await()
 
-            ProfileOperationResult.Success(true)
+            ProfileOperationResult.Success(createdRelationship)
         } catch (e: Exception) {
             val msg = if (e.message == "BLOCKED_RELATIONSHIP" || e.cause?.message == "BLOCKED_RELATIONSHIP") {
                 "Cannot follow this user due to block settings."
@@ -138,6 +146,8 @@ class FirestoreFollowRepository(
             val followerProfileRef = firestore.collection("public_profiles").document(followerUid)
             val targetProfileRef = firestore.collection("public_profiles").document(targetUid)
 
+            var removedRelationship = false
+
             firestore.runTransaction { transaction ->
                 // Firestore transaction rule: ALL READS MUST BE EXECUTED BEFORE ANY WRITES!
                 val followSnap = transaction.get(followRef)
@@ -145,7 +155,8 @@ class FirestoreFollowRepository(
                 val followerSnap = transaction.get(followerProfileRef)
 
                 if (!followSnap.exists()) {
-                    // Not following - idempotent success
+                    // Not following - idempotent no-op
+                    removedRelationship = false
                     return@runTransaction
                 }
 
@@ -162,9 +173,10 @@ class FirestoreFollowRepository(
                     val newCount = (currentFollowing - 1).coerceAtLeast(0L)
                     transaction.update(followerProfileRef, "followingCount", newCount)
                 }
+                removedRelationship = true
             }.await()
 
-            ProfileOperationResult.Success(true)
+            ProfileOperationResult.Success(removedRelationship)
         } catch (e: Exception) {
             ProfileOperationResult.Error(e.message ?: "Failed to unfollow user", cause = e)
         }
@@ -184,10 +196,11 @@ class FirestoreFollowRepository(
 
     override suspend fun isMutual(uidA: String, uidB: String): Boolean = withContext(Dispatchers.IO) {
         if (uidA.isBlank() || uidB.isBlank() || uidA == uidB) return@withContext false
-        val aFollowsB = isFollowing(uidA, uidB)
-        if (!aFollowsB) return@withContext false
-        val bFollowsA = isFollowing(uidB, uidA)
-        aFollowsB && bFollowsA
+        coroutineScope {
+            val aFollowsBDeferred = async { isFollowing(uidA, uidB) }
+            val bFollowsADeferred = async { isFollowing(uidB, uidA) }
+            aFollowsBDeferred.await() && bFollowsADeferred.await()
+        }
     }
 
     override suspend fun getFollowCounts(uid: String): ProfileOperationResult<FollowCounts> = withContext(Dispatchers.IO) {
@@ -197,26 +210,34 @@ class FirestoreFollowRepository(
 
         try {
             val firestore = firestoreSupplier()
-            val followersAgg = firestore.collection("follows")
-                .whereEqualTo("targetUid", uid)
-                .count()
-                .get(AggregateSource.SERVER)
-                .await()
-            val followingAgg = firestore.collection("follows")
-                .whereEqualTo("followerUid", uid)
-                .count()
-                .get(AggregateSource.SERVER)
-                .await()
+            val (followersAgg, followingAgg) = coroutineScope {
+                val followersDeferred = async {
+                    firestore.collection("follows")
+                        .whereEqualTo("targetUid", uid)
+                        .count()
+                        .get(AggregateSource.SERVER)
+                        .await()
+                }
+                val followingDeferred = async {
+                    firestore.collection("follows")
+                        .whereEqualTo("followerUid", uid)
+                        .count()
+                        .get(AggregateSource.SERVER)
+                        .await()
+                }
+                followersDeferred.await() to followingDeferred.await()
+            }
 
             val exactFollowers = followersAgg.count.coerceAtLeast(0L).toInt()
             val exactFollowing = followingAgg.count.coerceAtLeast(0L).toInt()
 
-            // Self-heal stored counters on own public_profiles doc if drifted
+            // Self-heal stored counters on own public_profiles doc only when drifted (fast local cache check first)
             val currentAuthUid = try { authSupplier().currentUser?.uid } catch (_: Exception) { null }
             if (currentAuthUid == uid) {
                 try {
                     val profileRef = firestore.collection("public_profiles").document(uid)
-                    val snap = profileRef.get().await()
+                    val cachedSnap = try { profileRef.get(Source.CACHE).await() } catch (_: Exception) { null }
+                    val snap = cachedSnap ?: profileRef.get().await()
                     if (snap.exists()) {
                         val storedFollowers = (snap.getLong("followerCount") ?: 0L).toInt()
                         val storedFollowing = (snap.getLong("followingCount") ?: 0L).toInt()
@@ -306,14 +327,18 @@ class FirestoreFollowRepository(
     private suspend fun fetchPublicProfilesPreservingOrder(
         firestore: FirebaseFirestore,
         orderedUids: List<String>
-    ): List<PublicProfile> {
-        val profileMap = mutableMapOf<String, PublicProfile>()
-        for (chunk in orderedUids.chunked(10)) {
-            val snap = firestore.collection("public_profiles")
-                .whereIn(FieldPath.documentId(), chunk)
-                .get()
-                .await()
+    ): List<PublicProfile> = coroutineScope {
+        val snapshots = orderedUids.chunked(10).map { chunk ->
+            async {
+                firestore.collection("public_profiles")
+                    .whereIn(FieldPath.documentId(), chunk)
+                    .get()
+                    .await()
+            }
+        }.awaitAll()
 
+        val profileMap = mutableMapOf<String, PublicProfile>()
+        for (snap in snapshots) {
             for (doc in snap.documents) {
                 val data = doc.data ?: continue
                 val uid = doc.id
@@ -335,6 +360,12 @@ class FirestoreFollowRepository(
                 )
             }
         }
-        return orderedUids.mapNotNull { profileMap[it] }
+        orderedUids.map { uid ->
+            profileMap[uid] ?: PublicProfile(
+                uid = uid,
+                displayName = "WorkDaily Member",
+                username = uid.take(10).lowercase()
+            )
+        }
     }
 }

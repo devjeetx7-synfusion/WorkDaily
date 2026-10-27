@@ -343,19 +343,31 @@ class OfflineSettingsViewModel(
                     return@launch
                 }
 
+                val existingPhotoUrl = com.synfusion.attendance.online.SocialSessionCache.manager
+                    .currentSnapshotFor(uid)
+                    ?.profiles
+                    ?.get(uid)
+                    ?.value
+                    ?.photoUrl
+
                 val pubResult = publicProfileRepository.updatePublicProfile(
                     firebaseUid = uid,
                     newUsername = cleanUsername,
                     displayName = name,
                     bio = bio,
                     profession = profession,
-                    photoUrl = currentState.googlePhotoUrl.ifBlank { null },
+                    photoUrl = currentState.googlePhotoUrl.ifBlank { existingPhotoUrl },
                     isPublic = true
                 )
 
-                if (pubResult is com.synfusion.attendance.online.ProfileOperationResult.Error) {
-                    _state.update { it.copy(isSaving = false, usernameError = pubResult.message, savedMessage = pubResult.message) }
-                    return@launch
+                when (pubResult) {
+                    is com.synfusion.attendance.online.ProfileOperationResult.Error -> {
+                        _state.update { it.copy(isSaving = false, usernameError = pubResult.message, savedMessage = pubResult.message) }
+                        return@launch
+                    }
+                    is com.synfusion.attendance.online.ProfileOperationResult.Success -> {
+                        com.synfusion.attendance.online.SocialSessionCache.manager.seedProfile(uid, pubResult.data)
+                    }
                 }
             }
 

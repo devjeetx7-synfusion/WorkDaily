@@ -1614,6 +1614,7 @@ fun BlockedUsersDestination(
                                             try {
                                                 when (val res = blockRepo.unblockUser(activeUid, user.uid)) {
                                                     is ProfileOperationResult.Success -> {
+                                                        com.synfusion.attendance.online.SocialSessionCache.manager.recordUnblockSuccess(activeUid, user.uid)
                                                         blockedProfiles = blockedProfiles.filterNot { it.uid == user.uid }
                                                         Toast.makeText(context, "Unblocked $userHandle", Toast.LENGTH_SHORT).show()
                                                     }

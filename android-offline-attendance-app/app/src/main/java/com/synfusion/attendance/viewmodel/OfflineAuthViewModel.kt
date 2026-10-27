@@ -640,6 +640,7 @@ class OfflineAuthViewModel(
         firebaseUid: String,
         photoUrl: String?
     ) {
+        com.synfusion.attendance.online.SocialSessionCache.onAuthenticatedUserChanged(firebaseUid)
         repository.saveCountryAndCurrency(user.countryCode, user.currencyCode)
         repository.saveOnlineAccountSetupCompleted(true)
         repository.saveLinkedFirebaseUid(firebaseUid)
@@ -804,6 +805,7 @@ class OfflineAuthViewModel(
                 }
 
                 // Online profile and username reservation saved successfully
+                com.synfusion.attendance.online.SocialSessionCache.onAuthenticatedUserChanged(googleAccount.uid)
                 repository.saveOnlineAccountSetupCompleted(true)
                 repository.saveLinkedFirebaseUid(googleAccount.uid)
                 repository.saveGooglePhotoUrl(googleAccount.photoUrl?.takeIf { it.isNotBlank() })
@@ -832,6 +834,7 @@ class OfflineAuthViewModel(
      */
     fun logout(): Job {
         resolutionJob?.cancel()
+        com.synfusion.attendance.online.SocialSessionCache.clear()
         _loginState.value = OfflineLoginState.Idle
         _accountResolutionState.value = AccountResolutionState.Idle
         return viewModelScope.launch {

@@ -29,18 +29,23 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import com.google.firebase.auth.FirebaseAuth
+import com.synfusion.attendance.utils.collectAsStateWithLifecycle
 import com.synfusion.attendance.live.ui.components.*
 import com.synfusion.attendance.live.viewmodel.LiveViewModel
 import com.synfusion.attendance.online.BlockRepository
-import com.synfusion.attendance.online.FirestoreBlockRepository
-import com.synfusion.attendance.online.FirestoreFollowRepository
-import com.synfusion.attendance.online.FirestorePublicProfileRepository
 import com.synfusion.attendance.online.FirestoreReportRepository
 import com.synfusion.attendance.online.FollowRepository
 import com.synfusion.attendance.online.ProfileOperationResult
 import com.synfusion.attendance.online.PublicProfile
+import com.synfusion.attendance.online.SocialSessionCache
+import com.synfusion.attendance.online.rememberCurrentFirebaseUid
+import com.synfusion.attendance.ui.components.PublicProfileScreenSkeleton
+import com.synfusion.attendance.ui.components.UserRowSkeletonList
+import com.synfusion.attendance.ui.components.WorkDailyErrorRetryState
+import com.synfusion.attendance.ui.components.WorkDailySubtleRefreshBar
 import com.synfusion.attendance.ui.components.icons.WorkDailyIcons
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 
 enum class UserListType {
@@ -68,13 +73,10 @@ fun LiveProfileScreen(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    val currentUserId = remember {
-        try {
-            FirebaseAuth.getInstance().currentUser?.uid
-        } catch (_: Exception) {
-            null
-        }
-    }
+    val currentUserId = rememberCurrentFirebaseUid().value
+    val socialSnapshot by SocialSessionCache.manager.snapshot.collectAsStateWithLifecycle(
+        initialValue = SocialSessionCache.manager.snapshot.value
+    )
 
     val isSelf = userId == null ||
         userId == "current_user" ||
@@ -91,94 +93,184 @@ fun LiveProfileScreen(
         return
     }
 
-    var isLoading by remember(userId) { mutableStateOf(true) }
-    var publicProfile by remember(userId) { mutableStateOf<PublicProfile?>(null) }
-    var followerCount by remember(userId) { mutableIntStateOf(0) }
-    var followingCount by remember(userId) { mutableIntStateOf(0) }
-    var isFollowingTarget by remember(userId) { mutableStateOf(false) }
-    var isFollowActionBusy by remember(userId) { mutableStateOf(false) }
-    var isBlocked by remember(userId) { mutableStateOf(false) }
+    val cachedProfile = remember(socialSnapshot, userId, currentUserId) {
+        if (socialSnapshot.ownerUid == currentUserId) {
+            socialSnapshot.profiles[userId]?.value
+        } else {
+            null
+        }
+    }
+    val cachedCounts = remember(socialSnapshot, userId, currentUserId) {
+        if (socialSnapshot.ownerUid == currentUserId) {
+            socialSnapshot.followCounts[userId]?.value
+        } else {
+            null
+        }
+    }
+
+    var isLoading by remember(userId) { mutableStateOf(cachedProfile == null) }
+    var isRefreshing by remember(userId) { mutableStateOf(false) }
+    var publicProfile by remember(userId) { mutableStateOf(cachedProfile) }
+    var followerCount by remember(userId) {
+        mutableIntStateOf(
+            cachedCounts?.followerCount
+                ?: cachedProfile?.followerCount?.coerceAtLeast(0)
+                ?: 0
+        )
+    }
+    var followingCount by remember(userId) {
+        mutableIntStateOf(
+            cachedCounts?.followingCount
+                ?: cachedProfile?.followingCount?.coerceAtLeast(0)
+                ?: 0
+        )
+    }
+    var isFollowingTarget by remember(userId) {
+        mutableStateOf(
+            socialSnapshot.ownerUid == currentUserId &&
+                socialSnapshot.followingIds?.value?.contains(userId) == true
+        )
+    }
+    var isBlocked by remember(userId) {
+        mutableStateOf(
+            socialSnapshot.ownerUid == currentUserId &&
+                socialSnapshot.blockedIds?.value?.contains(userId) == true
+        )
+    }
     var isBlockedByTarget by remember(userId) { mutableStateOf(false) }
     var isBlockActionBusy by remember(userId) { mutableStateOf(false) }
     var loadError by remember(userId) { mutableStateOf<String?>(null) }
     var activeUserListType by remember(userId) { mutableStateOf<UserListType?>(null) }
 
-    val repository = remember { FirestorePublicProfileRepository() }
-    val followRepo = remember { FirestoreFollowRepository() }
-    val blockRepo = remember { FirestoreBlockRepository() }
+    val followRepo = SocialSessionCache.followRepository
+    val blockRepo = SocialSessionCache.blockRepository
     val reportRepo = remember { FirestoreReportRepository() }
     val coroutineScope = rememberCoroutineScope()
 
-    suspend fun reconcileCounts(targetUid: String, fallbackProfile: PublicProfile? = publicProfile) {
-        when (val countsRes = followRepo.getFollowCounts(targetUid)) {
+    val isFollowActionBusy = remember(socialSnapshot, userId, currentUserId) {
+        socialSnapshot.ownerUid == currentUserId &&
+            socialSnapshot.inFlightFollowMutations.contains(userId)
+    }
+
+    // Keep displayed counts and follow state reactively synced with SocialSessionCache
+    LaunchedEffect(cachedCounts) {
+        if (cachedCounts != null) {
+            followerCount = cachedCounts.followerCount
+            followingCount = cachedCounts.followingCount
+        }
+    }
+    LaunchedEffect(cachedProfile) {
+        if (cachedProfile != null) {
+            publicProfile = cachedProfile
+        }
+    }
+    LaunchedEffect(socialSnapshot.followingIds, socialSnapshot.ownerUid, currentUserId) {
+        val followingSet = if (socialSnapshot.ownerUid == currentUserId) {
+            socialSnapshot.followingIds?.value
+        } else null
+        if (followingSet != null && !isBlocked && !isBlockedByTarget) {
+            isFollowingTarget = followingSet.contains(userId)
+        }
+    }
+
+    suspend fun reconcileCounts(targetUid: String, forceRefresh: Boolean = true) {
+        when (val countsRes = SocialSessionCache.manager.getFollowCounts(currentUserId, targetUid, forceRefresh = forceRefresh)) {
             is ProfileOperationResult.Success -> {
                 followerCount = countsRes.data.followerCount
                 followingCount = countsRes.data.followingCount
-                if (fallbackProfile != null) {
-                    publicProfile = fallbackProfile.copy(
-                        followerCount = countsRes.data.followerCount,
-                        followingCount = countsRes.data.followingCount
-                    )
-                }
             }
             is ProfileOperationResult.Error -> {
-                if (fallbackProfile != null) {
-                    followerCount = fallbackProfile.followerCount.coerceAtLeast(0)
-                    followingCount = fallbackProfile.followingCount.coerceAtLeast(0)
-                }
+                // Keep current state rather than overwriting with stale pre-mutation profile counts.
             }
         }
     }
 
-    suspend fun loadFullProfileState(showSpinner: Boolean) {
-        if (showSpinner && publicProfile == null) {
+    suspend fun loadFullProfileState(forceRefresh: Boolean) {
+        val hasExistingContent = publicProfile != null
+        if (!hasExistingContent) {
             isLoading = true
+        } else {
+            isRefreshing = true
         }
         loadError = null
 
-        when (val result = repository.getPublicProfile(userId)) {
-            is ProfileOperationResult.Success -> {
-                val loaded = result.data
-                publicProfile = loaded
-                if (loaded != null) {
-                    followerCount = loaded.followerCount.coerceAtLeast(0)
-                    followingCount = loaded.followingCount.coerceAtLeast(0)
-                    reconcileCounts(userId, loaded)
+        try {
+            coroutineScope {
+                val profileDeferred = async {
+                    SocialSessionCache.manager.getProfile(currentUserId, userId, forceRefresh = forceRefresh)
+                }
+                val countsDeferred = async {
+                    SocialSessionCache.manager.getFollowCounts(currentUserId, userId, forceRefresh = forceRefresh)
+                }
+
+                val viewerUid = currentUserId
+                val blockedByMeDeferred = if (!viewerUid.isNullOrBlank()) {
+                    async { blockRepo.isBlocked(viewerUid, userId) }
+                } else null
+                val blockedByTargetDeferred = if (!viewerUid.isNullOrBlank()) {
+                    async { blockRepo.isBlocked(userId, viewerUid) }
+                } else null
+                val followingDeferred = if (!viewerUid.isNullOrBlank()) {
+                    async { followRepo.isFollowing(viewerUid, userId) }
+                } else null
+
+                when (val profileRes = profileDeferred.await()) {
+                    is ProfileOperationResult.Success -> {
+                        val loaded = profileRes.data
+                        publicProfile = loaded
+                        if (loaded != null && cachedCounts == null) {
+                            followerCount = loaded.followerCount.coerceAtLeast(0)
+                            followingCount = loaded.followingCount.coerceAtLeast(0)
+                        }
+                    }
+                    is ProfileOperationResult.Error -> {
+                        if (publicProfile == null) {
+                            loadError = profileRes.message
+                        }
+                    }
+                }
+
+                when (val countsRes = countsDeferred.await()) {
+                    is ProfileOperationResult.Success -> {
+                        followerCount = countsRes.data.followerCount
+                        followingCount = countsRes.data.followingCount
+                    }
+                    is ProfileOperationResult.Error -> Unit
+                }
+
+                if (blockedByMeDeferred != null && blockedByTargetDeferred != null && followingDeferred != null) {
+                    val blockedByMe = blockedByMeDeferred.await()
+                    val blockedByThem = blockedByTargetDeferred.await()
+                    val followingNow = followingDeferred.await()
+                    isBlocked = blockedByMe
+                    isBlockedByTarget = blockedByThem
+                    isFollowingTarget = if (blockedByMe || blockedByThem) false else followingNow
+                } else {
+                    isBlocked = false
+                    isBlockedByTarget = false
+                    isFollowingTarget = false
                 }
             }
-            is ProfileOperationResult.Error -> {
-                if (publicProfile == null) {
-                    loadError = result.message
-                }
-            }
+        } finally {
+            isLoading = false
+            isRefreshing = false
         }
-
-        if (!currentUserId.isNullOrBlank()) {
-            isBlocked = blockRepo.isBlocked(currentUserId, userId)
-            isBlockedByTarget = blockRepo.isBlocked(userId, currentUserId)
-            isFollowingTarget = if (isBlocked || isBlockedByTarget) {
-                false
-            } else {
-                followRepo.isFollowing(currentUserId, userId)
-            }
-        } else {
-            isBlocked = false
-            isBlockedByTarget = false
-            isFollowingTarget = false
-        }
-
-        isLoading = false
     }
 
     LaunchedEffect(userId, currentUserId) {
-        loadFullProfileState(showSpinner = true)
+        loadFullProfileState(forceRefresh = false)
     }
 
     DisposableEffect(lifecycleOwner, userId, currentUserId) {
+        var handledInitialResume = false
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
-                coroutineScope.launch {
-                    loadFullProfileState(showSpinner = false)
+                if (!handledInitialResume) {
+                    handledInitialResume = true
+                } else {
+                    coroutineScope.launch {
+                        loadFullProfileState(forceRefresh = false)
+                    }
                 }
             }
         }
@@ -188,14 +280,26 @@ fun LiveProfileScreen(
         }
     }
 
-    if (isLoading) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background),
-            contentAlignment = Alignment.Center
-        ) {
-            CircularProgressIndicator(color = LivePrimaryEmerald)
+    if (isLoading && publicProfile == null) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("Profile", fontWeight = FontWeight.Bold, fontSize = 18.sp) },
+                    navigationIcon = {
+                        IconButton(onClick = onNavigateBack) {
+                            Icon(WorkDailyIcons.ArrowLeft, contentDescription = "Back")
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        titleContentColor = MaterialTheme.colorScheme.onSurface,
+                        navigationIconContentColor = MaterialTheme.colorScheme.onSurface
+                    )
+                )
+            },
+            containerColor = MaterialTheme.colorScheme.background
+        ) { padding ->
+            PublicProfileScreenSkeleton(modifier = Modifier.padding(padding))
         }
         return
     }
@@ -248,7 +352,7 @@ fun LiveProfileScreen(
                         if (loadError != null) {
                             OutlinedButton(
                                 onClick = {
-                                    coroutineScope.launch { loadFullProfileState(showSpinner = true) }
+                                    coroutineScope.launch { loadFullProfileState(forceRefresh = true) }
                                 },
                                 border = BorderStroke(1.dp, LivePrimaryEmerald)
                             ) {
@@ -282,7 +386,8 @@ fun LiveProfileScreen(
     var isSubmittingReport by remember { mutableStateOf(false) }
 
     fun performUnblock() {
-        if (currentUserId.isNullOrBlank()) {
+        val activeUid = currentUserId
+        if (activeUid.isNullOrBlank()) {
             Toast.makeText(context, "Sign in with Google to manage blocked accounts.", Toast.LENGTH_SHORT).show()
             return
         }
@@ -290,12 +395,13 @@ fun LiveProfileScreen(
         isBlockActionBusy = true
         coroutineScope.launch {
             try {
-                when (val res = blockRepo.unblockUser(currentUserId, targetUser.uid)) {
+                when (val res = blockRepo.unblockUser(activeUid, targetUser.uid)) {
                     is ProfileOperationResult.Success -> {
+                        SocialSessionCache.manager.recordUnblockSuccess(activeUid, targetUser.uid)
                         isBlocked = false
                         // Unblocking never auto-follows; verify actual follow state & counts
-                        isFollowingTarget = followRepo.isFollowing(currentUserId, targetUser.uid)
-                        reconcileCounts(targetUser.uid)
+                        isFollowingTarget = followRepo.isFollowing(activeUid, targetUser.uid)
+                        reconcileCounts(targetUser.uid, forceRefresh = true)
                         Toast.makeText(context, "Unblocked @$displayName", Toast.LENGTH_SHORT).show()
                     }
                     is ProfileOperationResult.Error -> {
@@ -332,16 +438,18 @@ fun LiveProfileScreen(
             confirmButton = {
                 Button(
                     onClick = {
-                        if (currentUserId.isNullOrBlank() || isBlockActionBusy) return@Button
+                        val activeUid = currentUserId
+                        if (activeUid.isNullOrBlank() || isBlockActionBusy) return@Button
                         isBlockActionBusy = true
                         coroutineScope.launch {
                             try {
-                                when (val res = blockRepo.blockUser(currentUserId, targetUser.uid)) {
+                                when (val res = blockRepo.blockUser(activeUid, targetUser.uid)) {
                                     is ProfileOperationResult.Success -> {
+                                        SocialSessionCache.manager.recordBlockSuccess(activeUid, targetUser.uid)
                                         isBlocked = true
                                         isFollowingTarget = false
                                         showBlockConfirmDialog = false
-                                        reconcileCounts(targetUser.uid)
+                                        reconcileCounts(targetUser.uid, forceRefresh = true)
                                         Toast.makeText(context, "Blocked @${targetUser.username}", Toast.LENGTH_SHORT).show()
                                     }
                                     is ProfileOperationResult.Error -> {
@@ -416,10 +524,11 @@ fun LiveProfileScreen(
             confirmButton = {
                 Button(
                     onClick = {
-                        if (reportReason.isNotBlank() && currentUserId != null) {
+                        val activeUid = currentUserId
+                        if (reportReason.isNotBlank() && !activeUid.isNullOrBlank()) {
                             isSubmittingReport = true
                             coroutineScope.launch {
-                                val res = reportRepo.submitReport(currentUserId, targetUser.uid, reportReason, reportDetails)
+                                val res = reportRepo.submitReport(activeUid, targetUser.uid, reportReason, reportDetails)
                                 isSubmittingReport = false
                                 showReportDialog = false
                                 if (res is ProfileOperationResult.Success) {
@@ -457,16 +566,17 @@ fun LiveProfileScreen(
             blockRepo = blockRepo,
             onDismiss = {
                 activeUserListType = null
+                val activeUid = currentUserId
                 coroutineScope.launch {
-                    reconcileCounts(targetUser.uid)
-                    if (!currentUserId.isNullOrBlank() && !isBlocked && !isBlockedByTarget) {
-                        isFollowingTarget = followRepo.isFollowing(currentUserId, targetUser.uid)
+                    reconcileCounts(targetUser.uid, forceRefresh = false)
+                    if (!activeUid.isNullOrBlank() && !isBlocked && !isBlockedByTarget) {
+                        isFollowingTarget = followRepo.isFollowing(activeUid, targetUser.uid)
                     }
                 }
             },
             onRelationshipChanged = {
                 coroutineScope.launch {
-                    reconcileCounts(targetUser.uid)
+                    reconcileCounts(targetUser.uid, forceRefresh = true)
                 }
             },
             onUserSelected = { selectedProfile ->
@@ -574,14 +684,20 @@ fun LiveProfileScreen(
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
-        LazyColumn(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(horizontal = 20.dp, vertical = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
+            WorkDailySubtleRefreshBar(visible = isRefreshing)
+
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 20.dp, vertical = 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
             item {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -812,11 +928,12 @@ fun LiveProfileScreen(
                         FollowButton(
                             isFollowing = isFollowingTarget,
                             onToggle = {
-                                if (currentUserId.isNullOrBlank()) {
+                                val activeUid = currentUserId
+                                if (activeUid.isNullOrBlank()) {
                                     Toast.makeText(context, "Sign in with Google to follow members.", Toast.LENGTH_SHORT).show()
                                     return@FollowButton
                                 }
-                                if (currentUserId == targetUser.uid) {
+                                if (activeUid == targetUser.uid) {
                                     return@FollowButton
                                 }
                                 if (isBlocked || isBlockedByTarget) {
@@ -829,31 +946,26 @@ fun LiveProfileScreen(
                                 val previousFollowers = followerCount
                                 val desiredStatus = !previousStatus
 
-                                isFollowActionBusy = true
+                                // Immediate UI response (also mirrored in SocialSessionCache)
+                                isFollowingTarget = desiredStatus
+                                followerCount = (previousFollowers + if (desiredStatus) 1 else -1).coerceAtLeast(0)
+
                                 coroutineScope.launch {
-                                    try {
-                                        val result = if (desiredStatus) {
-                                            followRepo.followUser(currentUserId, targetUser.uid)
-                                        } else {
-                                            followRepo.unfollowUser(currentUserId, targetUser.uid)
+                                    when (
+                                        val result = SocialSessionCache.manager.setFollowState(
+                                            ownerUid = activeUid,
+                                            targetProfile = targetUser,
+                                            shouldFollow = desiredStatus
+                                        )
+                                    ) {
+                                        is ProfileOperationResult.Success -> {
+                                            isFollowingTarget = desiredStatus
                                         }
-                                        when (result) {
-                                            is ProfileOperationResult.Success -> {
-                                                isFollowingTarget = desiredStatus
-                                                reconcileCounts(targetUser.uid)
-                                            }
-                                            is ProfileOperationResult.Error -> {
-                                                isFollowingTarget = previousStatus
-                                                followerCount = previousFollowers
-                                                Toast.makeText(context, result.message, Toast.LENGTH_SHORT).show()
-                                            }
+                                        is ProfileOperationResult.Error -> {
+                                            isFollowingTarget = previousStatus
+                                            followerCount = previousFollowers
+                                            Toast.makeText(context, result.message, Toast.LENGTH_SHORT).show()
                                         }
-                                    } catch (e: Exception) {
-                                        isFollowingTarget = previousStatus
-                                        followerCount = previousFollowers
-                                        Toast.makeText(context, e.message ?: "Operation failed", Toast.LENGTH_SHORT).show()
-                                    } finally {
-                                        isFollowActionBusy = false
                                     }
                                 }
                             },
@@ -910,6 +1022,7 @@ fun LiveProfileScreen(
                     }
                 }
             }
+            }
         }
     }
 }
@@ -930,49 +1043,155 @@ fun UserRelationshipBottomSheet(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
+    val socialSnapshot by SocialSessionCache.manager.snapshot.collectAsStateWithLifecycle(
+        initialValue = SocialSessionCache.manager.snapshot.value
+    )
 
-    var isLoading by remember(targetUid, listType) { mutableStateOf(true) }
+    val pageStep = 40
+    var currentLimit by rememberSaveable(targetUid, listType.name) { mutableIntStateOf(pageStep) }
+
+    val cachedOwnList = remember(socialSnapshot, targetUid, listType, currentUserId) {
+        if (!currentUserId.isNullOrBlank() && targetUid == currentUserId && socialSnapshot.ownerUid == currentUserId) {
+            when (listType) {
+                UserListType.FOLLOWERS -> socialSnapshot.followersList?.value
+                UserListType.FOLLOWING, UserListType.FRIENDS -> socialSnapshot.followingList?.value
+            }
+        } else {
+            null
+        }
+    }
+
+    var isLoading by remember(targetUid, listType) { mutableStateOf(cachedOwnList == null) }
+    var isRefreshing by remember(targetUid, listType) { mutableStateOf(false) }
+    var isLoadingMore by remember(targetUid, listType) { mutableStateOf(false) }
     var errorMessage by remember(targetUid, listType) { mutableStateOf<String?>(null) }
-    var users by remember(targetUid, listType) { mutableStateOf<List<PublicProfile>>(emptyList()) }
-    var myFollowingIds by remember(targetUid, listType) { mutableStateOf<Set<String>>(emptySet()) }
-    var blockedIds by remember(targetUid, listType) { mutableStateOf<Set<String>>(emptySet()) }
-    var busyUids by remember(targetUid, listType) { mutableStateOf<Set<String>>(emptySet()) }
+    var users by remember(targetUid, listType) { mutableStateOf(cachedOwnList ?: emptyList()) }
+    var myFollowingIds by remember(targetUid, listType) {
+        mutableStateOf(
+            if (!currentUserId.isNullOrBlank() && socialSnapshot.ownerUid == currentUserId) {
+                socialSnapshot.followingIds?.value ?: emptySet()
+            } else emptySet()
+        )
+    }
+    var myFollowerIds by remember(targetUid, listType) {
+        mutableStateOf(
+            if (!currentUserId.isNullOrBlank() && socialSnapshot.ownerUid == currentUserId) {
+                socialSnapshot.followerIds?.value ?: emptySet()
+            } else emptySet()
+        )
+    }
+    var blockedIds by remember(targetUid, listType) {
+        mutableStateOf(
+            if (!currentUserId.isNullOrBlank() && socialSnapshot.ownerUid == currentUserId) {
+                socialSnapshot.blockedIds?.value ?: emptySet()
+            } else emptySet()
+        )
+    }
     var searchQuery by rememberSaveable(targetUid, listType.name) { mutableStateOf("") }
 
-    suspend fun loadList() {
-        isLoading = true
+    LaunchedEffect(socialSnapshot.followingIds, socialSnapshot.followerIds, socialSnapshot.blockedIds, socialSnapshot.ownerUid, currentUserId) {
+        if (!currentUserId.isNullOrBlank() && socialSnapshot.ownerUid == currentUserId) {
+            socialSnapshot.followingIds?.value?.let { myFollowingIds = it }
+            socialSnapshot.followerIds?.value?.let { myFollowerIds = it }
+            socialSnapshot.blockedIds?.value?.let { blockedIds = it }
+        }
+    }
+    LaunchedEffect(cachedOwnList) {
+        if (cachedOwnList != null) {
+            users = cachedOwnList
+        }
+    }
+
+    suspend fun loadList(limitToFetch: Int = currentLimit, forceRefresh: Boolean = false, loadingMore: Boolean = false) {
+        val hasContent = users.isNotEmpty()
+        when {
+            loadingMore -> isLoadingMore = true
+            hasContent -> isRefreshing = true
+            else -> isLoading = true
+        }
         errorMessage = null
 
-        val listResult = when (listType) {
-            UserListType.FOLLOWERS -> followRepo.getFollowers(targetUid)
-            UserListType.FOLLOWING, UserListType.FRIENDS -> followRepo.getFollowing(targetUid)
-        }
+        try {
+            coroutineScope {
+                val listDeferred = async {
+                    if (!currentUserId.isNullOrBlank() && targetUid == currentUserId) {
+                        when (listType) {
+                            UserListType.FOLLOWERS -> SocialSessionCache.manager.getFollowersList(
+                                ownerUid = currentUserId,
+                                limit = limitToFetch,
+                                forceRefresh = forceRefresh
+                            )
+                            UserListType.FOLLOWING, UserListType.FRIENDS -> SocialSessionCache.manager.getFollowingList(
+                                ownerUid = currentUserId,
+                                limit = limitToFetch,
+                                forceRefresh = forceRefresh
+                            )
+                        }
+                    } else {
+                        when (listType) {
+                            UserListType.FOLLOWERS -> followRepo.getFollowers(targetUid, limit = limitToFetch)
+                            UserListType.FOLLOWING, UserListType.FRIENDS -> followRepo.getFollowing(targetUid, limit = limitToFetch)
+                        }
+                    }
+                }
 
-        if (!currentUserId.isNullOrBlank()) {
-            val myFollowingRes = followRepo.getFollowing(currentUserId)
-            if (myFollowingRes is ProfileOperationResult.Success) {
-                myFollowingIds = myFollowingRes.data.map { it.uid }.toSet()
-            }
-            val blockedRes = blockRepo.getBlockedUserIds(currentUserId)
-            if (blockedRes is ProfileOperationResult.Success) {
-                blockedIds = blockedRes.data.toSet()
-            }
-        }
+                val myFollowingDeferred = if (!currentUserId.isNullOrBlank()) {
+                    async {
+                        SocialSessionCache.manager.getFollowingList(
+                            ownerUid = currentUserId,
+                            forceRefresh = false
+                        )
+                    }
+                } else null
 
-        when (listResult) {
-            is ProfileOperationResult.Success -> {
-                users = listResult.data
-                isLoading = false
+                val blockedDeferred = if (!currentUserId.isNullOrBlank()) {
+                    async {
+                        SocialSessionCache.manager.getBlockedIds(
+                            ownerUid = currentUserId,
+                            forceRefresh = false
+                        )
+                    }
+                } else null
+
+                val countsDeferred = async {
+                    SocialSessionCache.manager.getFollowCounts(currentUserId, targetUid, forceRefresh = forceRefresh)
+                }
+
+                myFollowingDeferred?.await()?.let { res ->
+                    if (res is ProfileOperationResult.Success) {
+                        myFollowingIds = res.data.map { it.uid }.toSet()
+                    }
+                }
+                blockedDeferred?.await()?.let { res ->
+                    if (res is ProfileOperationResult.Success) {
+                        blockedIds = res.data
+                    }
+                }
+                countsDeferred.await()
+
+                when (val listResult = listDeferred.await()) {
+                    is ProfileOperationResult.Success -> {
+                        users = listResult.data
+                        errorMessage = null
+                    }
+                    is ProfileOperationResult.Error -> {
+                        if (users.isEmpty()) {
+                            errorMessage = listResult.message
+                        } else {
+                            Toast.makeText(context, listResult.message, Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
             }
-            is ProfileOperationResult.Error -> {
-                errorMessage = listResult.message
-                isLoading = false
-            }
+        } finally {
+            isLoading = false
+            isRefreshing = false
+            isLoadingMore = false
         }
     }
 
     LaunchedEffect(targetUid, listType, currentUserId) {
-        loadList()
+        loadList(limitToFetch = currentLimit, forceRefresh = false)
     }
 
     val title = when (listType) {
@@ -981,18 +1200,27 @@ fun UserRelationshipBottomSheet(
         UserListType.FRIENDS -> "Friends"
     }
 
-    val displayedCount = if (!isLoading && errorMessage == null) {
-        if (users.size < 100) users.size else maxOf(initialCount, users.size)
-    } else {
-        initialCount
+    val cachedTargetCounts = remember(socialSnapshot, targetUid, currentUserId) {
+        if (socialSnapshot.ownerUid == currentUserId) {
+            socialSnapshot.followCounts[targetUid]?.value
+        } else null
     }
 
-    val filteredUsers = remember(users, searchQuery) {
+    val displayedCount = when (listType) {
+        UserListType.FOLLOWERS -> cachedTargetCounts?.followerCount ?: initialCount
+        UserListType.FOLLOWING, UserListType.FRIENDS -> cachedTargetCounts?.followingCount ?: initialCount
+    }.coerceAtLeast(0)
+
+    val canLoadMore = !isLoading && errorMessage == null && searchQuery.isBlank() &&
+        users.size >= currentLimit && displayedCount > users.size
+
+    val filteredUsers = remember(users, searchQuery, blockedIds) {
+        val visible = users.filterNot { blockedIds.contains(it.uid) }
         val q = searchQuery.trim().removePrefix("@").lowercase()
         if (q.isBlank()) {
-            users
+            visible
         } else {
-            users.filter { profile ->
+            visible.filter { profile ->
                 profile.displayName.lowercase().contains(q) ||
                     profile.username.lowercase().contains(q)
             }
@@ -1014,7 +1242,7 @@ fun UserRelationshipBottomSheet(
                 .navigationBarsPadding()
                 .imePadding()
         ) {
-            // Sheet Header with Title + Count
+            // Sheet Header with Title + Authoritative Count
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1107,6 +1335,7 @@ fun UserRelationshipBottomSheet(
             }
 
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+            WorkDailySubtleRefreshBar(visible = isRefreshing)
 
             Box(
                 modifier = Modifier
@@ -1114,44 +1343,23 @@ fun UserRelationshipBottomSheet(
                     .fillMaxWidth()
             ) {
                 when {
-                    isLoading -> {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator(color = LivePrimaryEmerald)
-                        }
+                    isLoading && users.isEmpty() -> {
+                        UserRowSkeletonList(
+                            rowCount = 5,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                        )
                     }
 
-                    errorMessage != null -> {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(horizontal = 24.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.CloudOff,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(44.dp)
-                            )
-                            Spacer(modifier = Modifier.height(10.dp))
-                            Text(
-                                text = errorMessage ?: "Failed to load $title.",
-                                fontSize = 14.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                textAlign = TextAlign.Center
-                            )
-                            Spacer(modifier = Modifier.height(14.dp))
-                            Button(
-                                onClick = { coroutineScope.launch { loadList() } },
-                                colors = ButtonDefaults.buttonColors(containerColor = LivePrimaryEmerald)
-                            ) {
-                                Text("Retry", color = Color.White, fontWeight = FontWeight.Bold)
+                    errorMessage != null && users.isEmpty() -> {
+                        WorkDailyErrorRetryState(
+                            title = "Couldn't load $title",
+                            message = errorMessage ?: "Failed to load $title.",
+                            onRetry = {
+                                coroutineScope.launch {
+                                    loadList(limitToFetch = currentLimit, forceRefresh = true)
+                                }
                             }
-                        }
+                        )
                     }
 
                     filteredUsers.isEmpty() -> {
@@ -1196,7 +1404,9 @@ fun UserRelationshipBottomSheet(
                                 val memberUsername = if (member.username.isNotBlank()) "@${member.username}" else "@member"
                                 val isCurrentUserRow = currentUserId != null && member.uid == currentUserId
                                 val isRowFollowing = myFollowingIds.contains(member.uid)
-                                val isRowBusy = busyUids.contains(member.uid)
+                                val followsMe = myFollowerIds.contains(member.uid)
+                                val isRowBusy = socialSnapshot.ownerUid == currentUserId &&
+                                    socialSnapshot.inFlightFollowMutations.contains(member.uid)
                                 val isRowBlocked = blockedIds.contains(member.uid)
 
                                 Row(
@@ -1204,13 +1414,13 @@ fun UserRelationshipBottomSheet(
                                         .fillMaxWidth()
                                         .clip(RoundedCornerShape(14.dp))
                                         .clickable { onUserSelected(member) }
-                                        .padding(horizontal = 8.dp, vertical = 10.dp),
+                                        .padding(horizontal = 8.dp, vertical = 9.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     WorkDailyLiveAvatar(
                                         name = memberName,
                                         avatarUrl = member.photoUrl ?: "",
-                                        size = 46.dp,
+                                        size = 44.dp,
                                         isLive = false,
                                         showBadge = false
                                     )
@@ -1227,7 +1437,7 @@ fun UserRelationshipBottomSheet(
                                         ) {
                                             Text(
                                                 text = memberName,
-                                                fontSize = 15.sp,
+                                                fontSize = 14.sp,
                                                 fontWeight = FontWeight.SemiBold,
                                                 color = MaterialTheme.colorScheme.onSurface,
                                                 maxLines = 1,
@@ -1239,69 +1449,118 @@ fun UserRelationshipBottomSheet(
                                                     imageVector = Icons.Default.Verified,
                                                     contentDescription = "Verified",
                                                     tint = LivePrimaryEmerald,
-                                                    modifier = Modifier.size(15.dp)
+                                                    modifier = Modifier.size(14.dp)
                                                 )
                                             }
                                         }
 
-                                        Text(
-                                            text = memberUsername,
-                                            fontSize = 13.sp,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            Text(
+                                                text = memberUsername,
+                                                fontSize = 12.sp,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis,
+                                                modifier = Modifier.weight(1f, fill = false)
+                                            )
+                                            if (!isCurrentUserRow && followsMe && isRowFollowing) {
+                                                Text(
+                                                    text = "• Mutual",
+                                                    fontSize = 11.sp,
+                                                    fontWeight = FontWeight.Medium,
+                                                    color = LivePrimaryEmerald,
+                                                    maxLines = 1
+                                                )
+                                            }
+                                        }
                                     }
 
                                     if (!isCurrentUserRow && !isRowBlocked) {
                                         FollowButton(
                                             isFollowing = isRowFollowing,
                                             isLoading = isRowBusy,
-                                            height = 36.dp,
-                                            minWidth = 92.dp,
+                                            height = 34.dp,
+                                            minWidth = 88.dp,
                                             onToggle = {
-                                                if (currentUserId.isNullOrBlank()) {
+                                                val activeUid = currentUserId
+                                                if (activeUid.isNullOrBlank()) {
                                                     Toast.makeText(context, "Sign in with Google to follow members.", Toast.LENGTH_SHORT).show()
                                                     return@FollowButton
                                                 }
-                                                if (member.uid == currentUserId || isRowBusy) {
+                                                if (member.uid == activeUid || isRowBusy) {
                                                     return@FollowButton
                                                 }
                                                 val wasFollowing = isRowFollowing
                                                 val wantFollow = !wasFollowing
-                                                busyUids = busyUids + member.uid
+
+                                                myFollowingIds = if (wantFollow) {
+                                                    myFollowingIds + member.uid
+                                                } else {
+                                                    myFollowingIds - member.uid
+                                                }
 
                                                 coroutineScope.launch {
-                                                    try {
-                                                        val res = if (wantFollow) {
-                                                            followRepo.followUser(currentUserId, member.uid)
-                                                        } else {
-                                                            followRepo.unfollowUser(currentUserId, member.uid)
-                                                        }
-                                                        when (res) {
-                                                            is ProfileOperationResult.Success -> {
-                                                                myFollowingIds = if (wantFollow) {
-                                                                    myFollowingIds + member.uid
-                                                                } else {
-                                                                    myFollowingIds - member.uid
-                                                                }
-                                                                if (targetUid == currentUserId && listType == UserListType.FOLLOWING && !wantFollow) {
-                                                                    users = users.filterNot { it.uid == member.uid }
-                                                                }
-                                                                onRelationshipChanged()
+                                                    when (
+                                                        val res = SocialSessionCache.manager.setFollowState(
+                                                            ownerUid = activeUid,
+                                                            targetProfile = member,
+                                                            shouldFollow = wantFollow
+                                                        )
+                                                    ) {
+                                                        is ProfileOperationResult.Success -> {
+                                                            if (targetUid == activeUid && listType == UserListType.FOLLOWING && !wantFollow) {
+                                                                users = users.filterNot { it.uid == member.uid }
                                                             }
-                                                            is ProfileOperationResult.Error -> {
-                                                                Toast.makeText(context, res.message, Toast.LENGTH_SHORT).show()
-                                                            }
+                                                            onRelationshipChanged()
                                                         }
-                                                    } catch (e: Exception) {
-                                                        Toast.makeText(context, e.message ?: "Action failed", Toast.LENGTH_SHORT).show()
-                                                    } finally {
-                                                        busyUids = busyUids - member.uid
+                                                        is ProfileOperationResult.Error -> {
+                                                            myFollowingIds = if (wasFollowing) {
+                                                                myFollowingIds + member.uid
+                                                            } else {
+                                                                myFollowingIds - member.uid
+                                                            }
+                                                            Toast.makeText(context, res.message, Toast.LENGTH_SHORT).show()
+                                                        }
                                                     }
                                                 }
                                             }
                                         )
+                                    }
+                                }
+                            }
+
+                            if (canLoadMore) {
+                                item(key = "load_more_relationships") {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 10.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        OutlinedButton(
+                                            onClick = {
+                                                if (!isLoadingMore) {
+                                                    val nextLimit = currentLimit + pageStep
+                                                    currentLimit = nextLimit
+                                                    coroutineScope.launch {
+                                                        loadList(limitToFetch = nextLimit, forceRefresh = true, loadingMore = true)
+                                                    }
+                                                }
+                                            },
+                                            enabled = !isLoadingMore,
+                                            shape = RoundedCornerShape(18.dp),
+                                            border = BorderStroke(1.dp, LivePrimaryEmerald.copy(alpha = 0.5f))
+                                        ) {
+                                            Text(
+                                                text = if (isLoadingMore) "Loading…" else "Load more",
+                                                color = LivePrimaryEmerald,
+                                                fontSize = 13.sp,
+                                                fontWeight = FontWeight.SemiBold
+                                            )
+                                        }
                                     }
                                 }
                             }
