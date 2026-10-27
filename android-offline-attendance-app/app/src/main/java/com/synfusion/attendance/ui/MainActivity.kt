@@ -365,6 +365,7 @@ fun OfflineDailyWorkApp(
                 onClearExternalPdfUri = onClearExternalPdfUri,
                 onLogout = {
                     coroutineScope.launch {
+                        com.synfusion.attendance.online.SocialSessionCache.clear()
                         settingsViewModel.clearSessionState()
                         onlineProfileViewModel.clearSessionState()
                         val onlineJob = onlineAuthViewModel.signOut()

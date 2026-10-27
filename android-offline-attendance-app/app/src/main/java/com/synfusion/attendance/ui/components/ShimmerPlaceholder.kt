@@ -59,8 +59,7 @@ fun ShimmerBox(
     cornerRadius: Dp = 8.dp
 ) {
     val boxModifier = modifier
-        .fillMaxWidth(if (width == null) 1f else 1f)
-        .let { if (width != null) it.width(width) else it }
+        .let { if (width != null) it.width(width) else it.fillMaxWidth() }
         .height(height)
         .clip(RoundedCornerShape(cornerRadius))
         .shimmer()

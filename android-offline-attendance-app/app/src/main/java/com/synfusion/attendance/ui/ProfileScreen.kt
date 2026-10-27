@@ -45,10 +45,15 @@ import com.synfusion.attendance.live.ui.components.FollowButton
 import com.synfusion.attendance.live.ui.components.LivePrimaryEmerald
 import com.synfusion.attendance.live.ui.components.WorkDailyLiveAvatar
 import com.synfusion.attendance.live.viewmodel.LiveViewModel
+import com.synfusion.attendance.online.ProfileOperationResult
+import com.synfusion.attendance.online.SocialSessionCache
+import com.synfusion.attendance.online.rememberCurrentFirebaseUid
 import com.synfusion.attendance.rewards.ui.components.RewardCoinBalance
 import com.synfusion.attendance.rewards.ui.components.RewardsPurple
 import com.synfusion.attendance.rewards.viewmodel.RewardsViewModel
 import com.synfusion.attendance.ui.components.CropScreenDialog
+import com.synfusion.attendance.ui.components.ProfileCountValueSkeleton
+import com.synfusion.attendance.ui.components.WorkDailySubtleRefreshBar
 import com.synfusion.attendance.ui.responsive.LocalWindowSizeInfo
 import com.synfusion.attendance.ui.responsive.ResponsiveContainer
 import com.synfusion.attendance.utils.AmountFormatter
@@ -114,58 +119,75 @@ fun ProfileScreen(
 
     val lifecycleOwner = LocalLifecycleOwner.current
     val coroutineScope = rememberCoroutineScope()
-    var currentUserId by remember {
-        mutableStateOf(
-            try {
-                com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
-            } catch (_: Exception) {
-                null
-            }
-        )
+    val currentUserId = rememberCurrentFirebaseUid().value
+    val socialSnapshot by SocialSessionCache.manager.snapshot.collectAsStateWithLifecycle(
+        initialValue = SocialSessionCache.manager.snapshot.value
+    )
+
+    val followRepo = SocialSessionCache.followRepository
+    val blockRepo = SocialSessionCache.blockRepository
+
+    val cachedCountsEntry = remember(socialSnapshot, currentUserId) {
+        val uid = currentUserId
+        if (!uid.isNullOrBlank() && socialSnapshot.ownerUid == uid) {
+            socialSnapshot.followCounts[uid]
+        } else {
+            null
+        }
+    }
+    val cachedOwnProfile = remember(socialSnapshot, currentUserId) {
+        val uid = currentUserId
+        if (!uid.isNullOrBlank() && socialSnapshot.ownerUid == uid) {
+            socialSnapshot.profiles[uid]?.value
+        } else {
+            null
+        }
     }
 
-    var realFollowersCount by remember { mutableIntStateOf(0) }
-    var realFollowingCount by remember { mutableIntStateOf(0) }
-    val publicProfileRepo = remember { com.synfusion.attendance.online.FirestorePublicProfileRepository() }
-    val followRepo = remember { com.synfusion.attendance.online.FirestoreFollowRepository() }
-    val blockRepo = remember { com.synfusion.attendance.online.FirestoreBlockRepository() }
+    var isCountsLoading by remember(currentUserId) {
+        mutableStateOf(!currentUserId.isNullOrBlank() && cachedCountsEntry == null)
+    }
+    var countsLoadError by remember(currentUserId) { mutableStateOf<String?>(null) }
 
-    suspend fun refreshOwnFollowCounts(uid: String?) {
+    suspend fun refreshOwnFollowCounts(uid: String?, forceRefresh: Boolean) {
         if (uid.isNullOrBlank()) {
-            realFollowersCount = 0
-            realFollowingCount = 0
+            isCountsLoading = false
+            countsLoadError = null
             return
         }
-        when (val countsRes = followRepo.getFollowCounts(uid)) {
-            is com.synfusion.attendance.online.ProfileOperationResult.Success -> {
-                realFollowersCount = countsRes.data.followerCount
-                realFollowingCount = countsRes.data.followingCount
-            }
-            is com.synfusion.attendance.online.ProfileOperationResult.Error -> {
-                val res = publicProfileRepo.getPublicProfile(uid)
-                if (res is com.synfusion.attendance.online.ProfileOperationResult.Success && res.data != null) {
-                    realFollowersCount = res.data.followerCount.coerceAtLeast(0)
-                    realFollowingCount = res.data.followingCount.coerceAtLeast(0)
+        isCountsLoading = true
+        countsLoadError = null
+        try {
+            when (val countsRes = SocialSessionCache.manager.getFollowCounts(uid, uid, forceRefresh = forceRefresh)) {
+                is ProfileOperationResult.Success -> {
+                    countsLoadError = null
+                }
+                is ProfileOperationResult.Error -> {
+                    val hasCached = SocialSessionCache.manager.currentSnapshotFor(uid)?.followCounts?.get(uid) != null
+                    if (!hasCached) {
+                        countsLoadError = countsRes.message
+                    }
                 }
             }
+        } finally {
+            isCountsLoading = false
         }
     }
 
     LaunchedEffect(currentUserId) {
-        refreshOwnFollowCounts(currentUserId)
+        refreshOwnFollowCounts(currentUserId, forceRefresh = false)
     }
 
-    DisposableEffect(lifecycleOwner) {
+    DisposableEffect(lifecycleOwner, currentUserId) {
+        var handledInitialResume = false
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
-                val latestUid = try {
-                    com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
-                } catch (_: Exception) {
-                    null
-                }
-                currentUserId = latestUid
-                coroutineScope.launch {
-                    refreshOwnFollowCounts(latestUid)
+                if (!handledInitialResume) {
+                    handledInitialResume = true
+                } else if (!currentUserId.isNullOrBlank()) {
+                    coroutineScope.launch {
+                        refreshOwnFollowCounts(currentUserId, forceRefresh = false)
+                    }
                 }
             }
         }
@@ -175,8 +197,10 @@ fun ProfileScreen(
         }
     }
 
-    val followerCount = realFollowersCount
-    val followingCount = realFollowingCount
+    val followerCount = cachedCountsEntry?.value?.followerCount ?: 0
+    val followingCount = cachedCountsEntry?.value?.followingCount ?: 0
+    val showCountsSkeleton = !currentUserId.isNullOrBlank() && cachedCountsEntry == null && isCountsLoading
+    val showCountsError = !currentUserId.isNullOrBlank() && cachedCountsEntry == null && !isCountsLoading && countsLoadError != null
 
     val maskedPhone = remember(state.phone, activeCountry) {
         if (state.phone.length > 4) {
@@ -286,11 +310,17 @@ fun ProfileScreen(
                                         .data(imageModel)
                                         .crossfade(true)
                                     if (imageModel is java.io.File) {
-                                        builder.memoryCacheKey("${imageModel.absolutePath}_${imageModel.lastModified()}")
-                                            .diskCacheKey("${imageModel.absolutePath}_${imageModel.lastModified()}")
+                                        val key = "${imageModel.absolutePath}_${imageModel.lastModified()}"
+                                        builder.memoryCacheKey(key)
+                                            .diskCacheKey(key)
+                                            .networkCachePolicy(coil.request.CachePolicy.DISABLED)
+                                    } else {
+                                        val key = imageModel.toString()
+                                        builder.memoryCacheKey(key)
+                                            .diskCacheKey(key)
+                                            .networkCachePolicy(coil.request.CachePolicy.ENABLED)
                                     }
-                                    builder.networkCachePolicy(coil.request.CachePolicy.DISABLED)
-                                        .diskCachePolicy(coil.request.CachePolicy.ENABLED)
+                                    builder.diskCachePolicy(coil.request.CachePolicy.ENABLED)
                                         .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
                                         .build()
                                 } else null
@@ -362,8 +392,12 @@ fun ProfileScreen(
                             )
                         }
 
+                        val resolvedHandle = state.username
+                            .ifEmpty { cachedOwnProfile?.username.orEmpty() }
+                            .ifEmpty { state.name.lowercase().replace(" ", "").ifEmpty { "user" } }
+
                         Text(
-                            text = "@${state.username.ifEmpty { state.name.lowercase().replace(" ", "").ifEmpty { "user" } }}",
+                            text = "@$resolvedHandle",
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Medium,
                             color = LivePrimaryEmerald
@@ -384,59 +418,127 @@ fun ProfileScreen(
                         color = MaterialTheme.colorScheme.surface,
                         border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f))
                     ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 12.dp),
-                            horizontalArrangement = Arrangement.SpaceEvenly,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            WorkDailySubtleRefreshBar(
+                                visible = isCountsLoading && cachedCountsEntry != null
+                            )
+
+                            Row(
                                 modifier = Modifier
-                                    .weight(1f)
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .clickable {
-                                        if (!currentUserId.isNullOrBlank()) {
-                                            activeUserListType = UserListType.FOLLOWERS
-                                        } else {
-                                            onNavigatePeople()
+                                    .fillMaxWidth()
+                                    .padding(vertical = 12.dp),
+                                horizontalArrangement = Arrangement.SpaceEvenly,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .clickable {
+                                            if (!currentUserId.isNullOrBlank()) {
+                                                activeUserListType = UserListType.FOLLOWERS
+                                            } else {
+                                                onNavigatePeople()
+                                            }
+                                        }
+                                        .padding(vertical = 4.dp)
+                                ) {
+                                    when {
+                                        showCountsSkeleton -> {
+                                            ProfileCountValueSkeleton()
+                                            Spacer(modifier = Modifier.height(3.dp))
+                                        }
+                                        showCountsError -> {
+                                            Text(
+                                                text = "—",
+                                                fontSize = 18.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                        else -> {
+                                            Text(
+                                                text = "$followerCount",
+                                                fontSize = 18.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.onSurface
+                                            )
                                         }
                                     }
-                                    .padding(vertical = 4.dp)
-                            ) {
-                                Text(
-                                    text = "$followerCount",
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Text("Followers", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text("Followers", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+
+                                Box(modifier = Modifier.height(24.dp).width(1.dp).background(MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)))
+
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .clickable {
+                                            if (!currentUserId.isNullOrBlank()) {
+                                                activeUserListType = UserListType.FOLLOWING
+                                            } else {
+                                                onNavigatePeople()
+                                            }
+                                        }
+                                        .padding(vertical = 4.dp)
+                                ) {
+                                    when {
+                                        showCountsSkeleton -> {
+                                            ProfileCountValueSkeleton()
+                                            Spacer(modifier = Modifier.height(3.dp))
+                                        }
+                                        showCountsError -> {
+                                            Text(
+                                                text = "—",
+                                                fontSize = 18.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                        else -> {
+                                            Text(
+                                                text = "$followingCount",
+                                                fontSize = 18.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.onSurface
+                                            )
+                                        }
+                                    }
+                                    Text("Following", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
                             }
 
-                            Box(modifier = Modifier.height(24.dp).width(1.dp).background(MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)))
-
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .clickable {
-                                        if (!currentUserId.isNullOrBlank()) {
-                                            activeUserListType = UserListType.FOLLOWING
-                                        } else {
-                                            onNavigatePeople()
+                            if (showCountsError) {
+                                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            coroutineScope.launch {
+                                                refreshOwnFollowCounts(currentUserId, forceRefresh = true)
+                                            }
                                         }
-                                    }
-                                    .padding(vertical = 4.dp)
-                            ) {
-                                Text(
-                                    text = "$followingCount",
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Text("Following", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                                    horizontalArrangement = Arrangement.Center,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Refresh,
+                                        contentDescription = "Retry",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = "Couldn't load counts • Tap to retry",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
                             }
                         }
                     }
@@ -840,12 +942,12 @@ fun ProfileScreen(
                     onDismiss = {
                         activeUserListType = null
                         coroutineScope.launch {
-                            refreshOwnFollowCounts(currentUserId)
+                            refreshOwnFollowCounts(currentUserId, forceRefresh = false)
                         }
                     },
                     onRelationshipChanged = {
                         coroutineScope.launch {
-                            refreshOwnFollowCounts(currentUserId)
+                            refreshOwnFollowCounts(currentUserId, forceRefresh = true)
                         }
                     },
                     onUserSelected = { selectedProfile ->

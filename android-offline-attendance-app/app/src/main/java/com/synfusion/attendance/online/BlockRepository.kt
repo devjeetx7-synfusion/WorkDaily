@@ -4,6 +4,9 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldPath
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 
@@ -139,7 +142,11 @@ class FirestoreBlockRepository(
 
     override suspend fun isEitherBlocked(uidA: String, uidB: String): Boolean = withContext(Dispatchers.IO) {
         if (uidA.isBlank() || uidB.isBlank()) return@withContext false
-        isBlocked(uidA, uidB) || isBlocked(uidB, uidA)
+        coroutineScope {
+            val ab = async { isBlocked(uidA, uidB) }
+            val ba = async { isBlocked(uidB, uidA) }
+            ab.await() || ba.await()
+        }
     }
 
     override suspend fun getBlockedUserIds(blockerUid: String): ProfileOperationResult<List<String>> = withContext(Dispatchers.IO) {
@@ -177,12 +184,19 @@ class FirestoreBlockRepository(
                 return@withContext ProfileOperationResult.Success(emptyList())
             }
 
+            val snapshots = coroutineScope {
+                blockedUids.chunked(10).map { chunk ->
+                    async {
+                        firestore.collection("public_profiles")
+                            .whereIn(FieldPath.documentId(), chunk)
+                            .get()
+                            .await()
+                    }
+                }.awaitAll()
+            }
+
             val profileMap = mutableMapOf<String, PublicProfile>()
-            for (chunk in blockedUids.chunked(10)) {
-                val profilesSnap = firestore.collection("public_profiles")
-                    .whereIn(FieldPath.documentId(), chunk)
-                    .get()
-                    .await()
+            for (profilesSnap in snapshots) {
                 for (doc in profilesSnap.documents) {
                     val data = doc.data ?: continue
                     profileMap[doc.id] = PublicProfile(

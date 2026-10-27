@@ -34,10 +34,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import coil.compose.SubcomposeAsyncImage
+import coil.request.CachePolicy
 import coil.request.ImageRequest
 import com.synfusion.attendance.live.model.*
 import com.synfusion.attendance.live.viewmodel.LiveViewModel
+import com.synfusion.attendance.ui.components.WorkDailyPulseDots
 
 // WorkDaily Live Design System Tokens
 val LivePrimaryEmerald = Color(0xFF0F9F7A)
@@ -214,35 +217,39 @@ fun WorkDailyLiveAvatar(
                     .background(LivePrimaryEmerald.copy(alpha = 0.15f)),
                 contentAlignment = Alignment.Center
             ) {
+                var imageLoaded by remember(avatarUrl) { mutableStateOf(false) }
+
+                if (!imageLoaded) {
+                    Text(
+                        text = initials,
+                        fontSize = (size.value * 0.36f).sp,
+                        fontWeight = FontWeight.Bold,
+                        color = LivePrimaryEmerald
+                    )
+                }
+
                 if (!avatarUrl.isNull_or_blank()) {
-                    val request = remember(avatarUrl) {
+                    val cleanUrl = avatarUrl.trim()
+                    val request = remember(cleanUrl) {
                         ImageRequest.Builder(context)
-                            .data(avatarUrl)
-                            .crossfade(true)
+                            .data(cleanUrl)
+                            .memoryCacheKey(cleanUrl)
+                            .diskCacheKey(cleanUrl)
+                            .memoryCachePolicy(CachePolicy.ENABLED)
+                            .diskCachePolicy(CachePolicy.ENABLED)
+                            .networkCachePolicy(CachePolicy.ENABLED)
+                            .crossfade(120)
                             .build()
                     }
-                    SubcomposeAsyncImage(
+                    AsyncImage(
                         model = request,
                         contentDescription = "$name Avatar",
                         modifier = Modifier
                             .fillMaxSize()
                             .clip(CircleShape),
                         contentScale = ContentScale.Crop,
-                        error = {
-                            Text(
-                                text = initials,
-                                fontSize = (size.value * 0.36f).sp,
-                                fontWeight = FontWeight.Bold,
-                                color = LivePrimaryEmerald
-                            )
-                        }
-                    )
-                } else {
-                    Text(
-                        text = initials,
-                        fontSize = (size.value * 0.36f).sp,
-                        fontWeight = FontWeight.Bold,
-                        color = LivePrimaryEmerald
+                        onSuccess = { imageLoaded = true },
+                        onError = { imageLoaded = false }
                     )
                 }
             }
@@ -454,10 +461,10 @@ fun FollowButton(
             contentPadding = PaddingValues(horizontal = horizontalPadding, vertical = 0.dp)
         ) {
             if (isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(spinnerSize),
+                WorkDailyPulseDots(
                     color = LivePrimaryEmerald,
-                    strokeWidth = 2.dp
+                    dotSize = if (isLarge) 6.dp else 4.5.dp,
+                    spacing = 3.5.dp
                 )
             } else {
                 Row(
@@ -501,10 +508,10 @@ fun FollowButton(
             contentPadding = PaddingValues(horizontal = horizontalPadding, vertical = 0.dp)
         ) {
             if (isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(spinnerSize),
+                WorkDailyPulseDots(
                     color = Color.White,
-                    strokeWidth = 2.dp
+                    dotSize = if (isLarge) 6.dp else 4.5.dp,
+                    spacing = 3.5.dp
                 )
             } else {
                 Row(

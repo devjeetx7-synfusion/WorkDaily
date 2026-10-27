@@ -3,6 +3,8 @@ package com.synfusion.attendance.online
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import java.util.Locale
@@ -253,7 +255,7 @@ class FirestorePublicProfileRepository(
         currentUserId: String?,
         limit: Int
     ): ProfileOperationResult<List<PublicProfile>> = withContext(Dispatchers.IO) {
-        val normalizedQuery = UsernameValidator.normalize(query)
+        val normalizedQuery = UsernameValidator.normalize(query).removePrefix("@").trim()
         if (normalizedQuery.isBlank()) {
             return@withContext ProfileOperationResult.Success(emptyList())
         }
@@ -262,23 +264,28 @@ class FirestorePublicProfileRepository(
             val firestore = firestoreSupplier()
             val endQuery = normalizedQuery + "\uf8ff"
 
-            // Prefix search by username
-            val usernameQuerySnap = firestore.collection("public_profiles")
-                .whereGreaterThanOrEqualTo("usernameLower", normalizedQuery)
-                .whereLessThanOrEqualTo("usernameLower", endQuery)
-                .limit(limit.toLong())
-                .get()
-                .await()
+            // Execute prefix searches by username and display name concurrently
+            val (usernameQuerySnap, displayNameQuerySnap) = coroutineScope {
+                val usernameDeferred = async {
+                    firestore.collection("public_profiles")
+                        .whereGreaterThanOrEqualTo("usernameLower", normalizedQuery)
+                        .whereLessThanOrEqualTo("usernameLower", endQuery)
+                        .limit(limit.toLong())
+                        .get()
+                        .await()
+                }
+                val displayNameDeferred = async {
+                    firestore.collection("public_profiles")
+                        .whereGreaterThanOrEqualTo("displayNameLower", normalizedQuery)
+                        .whereLessThanOrEqualTo("displayNameLower", endQuery)
+                        .limit(limit.toLong())
+                        .get()
+                        .await()
+                }
+                usernameDeferred.await() to displayNameDeferred.await()
+            }
 
-            // Prefix search by display name
-            val displayNameQuerySnap = firestore.collection("public_profiles")
-                .whereGreaterThanOrEqualTo("displayNameLower", normalizedQuery)
-                .whereLessThanOrEqualTo("displayNameLower", endQuery)
-                .limit(limit.toLong())
-                .get()
-                .await()
-
-            val combined = mutableMapOf<String, PublicProfile>()
+            val combined = LinkedHashMap<String, PublicProfile>()
 
             for (doc in usernameQuerySnap.documents) {
                 val profile = mapSnapshotToProfile(doc.data, doc.id)
@@ -289,12 +296,20 @@ class FirestorePublicProfileRepository(
 
             for (doc in displayNameQuerySnap.documents) {
                 val profile = mapSnapshotToProfile(doc.data, doc.id)
-                if (profile.isPublic && profile.uid != currentUserId) {
+                if (profile.isPublic && profile.uid != currentUserId && !combined.containsKey(profile.uid)) {
                     combined[profile.uid] = profile
                 }
             }
 
-            val results = combined.values.take(limit)
+            val results = combined.values
+                .sortedWith(
+                    compareBy<PublicProfile>(
+                        { !it.usernameLower.equals(normalizedQuery, ignoreCase = true) },
+                        { !it.usernameLower.startsWith(normalizedQuery) },
+                        { it.displayNameLower }
+                    )
+                )
+                .take(limit)
             ProfileOperationResult.Success(results)
         } catch (e: Exception) {
             ProfileOperationResult.Error(
