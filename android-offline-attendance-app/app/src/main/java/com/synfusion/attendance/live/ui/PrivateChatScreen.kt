@@ -131,39 +131,46 @@ fun PrivateChatScreen(
     val blockRepo = SocialSessionCache.blockRepository
     val chatRepo = SocialSessionCache.chatRepository
 
-    val conversationId = remember(currentUserId, friendId) {
-        if (!currentUserId.isNullOrBlank() && friendId.isNotBlank()) {
-            chatRepo.getConversationId(currentUserId!!, friendId)
+    val activeViewerUid: String? = currentUserId?.takeIf { it.isNotBlank() }
+
+    val conversationId = remember(activeViewerUid, friendId) {
+        if (activeViewerUid != null && friendId.isNotBlank()) {
+            chatRepo.getConversationId(activeViewerUid, friendId)
         } else {
             ""
         }
     }
 
-    val cachedFriendProfile = remember(socialSnapshot, friendId, currentUserId) {
-        if (socialSnapshot.ownerUid == currentUserId) {
+    val cachedFriendProfile: PublicProfile? = remember(socialSnapshot, friendId, activeViewerUid) {
+        if (activeViewerUid != null && socialSnapshot.ownerUid == activeViewerUid) {
             socialSnapshot.profiles[friendId]?.value
         } else {
             null
         }
     }
 
-    val cachedMessages = remember(socialSnapshot, conversationId, currentUserId) {
-        if (!currentUserId.isNullOrBlank() && conversationId.isNotBlank()) {
-            SocialSessionCache.manager.getCachedChatMessages(currentUserId, conversationId)
+    val cachedMessages: List<FirestoreChatMessage>? = remember(socialSnapshot, conversationId, activeViewerUid) {
+        if (activeViewerUid != null && conversationId.isNotBlank() && socialSnapshot.ownerUid == activeViewerUid) {
+            socialSnapshot.chatMessages[conversationId]
         } else {
             null
         }
     }
 
-    val cachedKnownMutual = remember(socialSnapshot, friendId, currentUserId) {
-        if (!currentUserId.isNullOrBlank() && socialSnapshot.ownerUid == currentUserId) {
-            val following = socialSnapshot.followingIds?.value
-            val followers = socialSnapshot.followerIds?.value
-            val blocked = socialSnapshot.blockedIds?.value
-            if (following != null && followers != null && blocked?.contains(friendId) != true) {
-                following.contains(friendId) && followers.contains(friendId)
+    val cachedKnownMutual: Boolean? = remember(socialSnapshot, friendId, activeViewerUid) {
+        if (activeViewerUid != null && socialSnapshot.ownerUid == activeViewerUid) {
+            val cachedPeer = socialSnapshot.chatRelationships[friendId]?.value
+            if (cachedPeer != null) {
+                !cachedPeer.isBlockedByMe && !cachedPeer.isBlockedByPeer && cachedPeer.isMutual
             } else {
-                null
+                val following = socialSnapshot.myFollowedUids?.value
+                val followers = socialSnapshot.myFollowerUids?.value
+                val blocked = socialSnapshot.myBlockedUids?.value
+                if (following != null && followers != null && blocked?.contains(friendId) != true) {
+                    following.contains(friendId) && followers.contains(friendId)
+                } else {
+                    null
+                }
             }
         } else {
             null
@@ -177,23 +184,31 @@ fun PrivateChatScreen(
     var isMutualFriend by remember(friendId) {
         mutableStateOf(cachedKnownMutual ?: (cachedMessages != null))
     }
-    var isBlocked by remember(friendId) {
+    var isBlocked by remember(friendId, activeViewerUid) {
         mutableStateOf(
-            socialSnapshot.ownerUid == currentUserId &&
-                socialSnapshot.blockedIds?.value?.contains(friendId) == true
+            activeViewerUid != null &&
+                socialSnapshot.ownerUid == activeViewerUid &&
+                (
+                    socialSnapshot.myBlockedUids?.value?.contains(friendId) == true ||
+                        socialSnapshot.chatRelationships[friendId]?.value?.let { it.isBlockedByMe || it.isBlockedByPeer } == true
+                    )
         )
     }
-    var isBlockedByMe by remember(friendId) {
+    var isBlockedByMe by remember(friendId, activeViewerUid) {
         mutableStateOf(
-            socialSnapshot.ownerUid == currentUserId &&
-                socialSnapshot.blockedIds?.value?.contains(friendId) == true
+            activeViewerUid != null &&
+                socialSnapshot.ownerUid == activeViewerUid &&
+                (
+                    socialSnapshot.myBlockedUids?.value?.contains(friendId) == true ||
+                        socialSnapshot.chatRelationships[friendId]?.value?.isBlockedByMe == true
+                    )
         )
     }
     var relationshipError by remember(friendId) { mutableStateOf<String?>(null) }
     var isBlockActionBusy by remember(friendId) { mutableStateOf(false) }
     var showBlockConfirmDialog by remember(friendId) { mutableStateOf(false) }
     var showMenu by remember(friendId) { mutableStateOf(false) }
-    var friendProfile by remember(friendId) { mutableStateOf(cachedFriendProfile) }
+    var friendProfile by remember(friendId) { mutableStateOf<PublicProfile?>(cachedFriendProfile) }
 
     LaunchedEffect(cachedFriendProfile) {
         if (cachedFriendProfile != null) {
@@ -202,15 +217,17 @@ fun PrivateChatScreen(
     }
 
     var messageLimit by rememberSaveable(conversationId) { mutableIntStateOf(INITIAL_CHAT_PAGE_SIZE) }
-    var feedState by remember(conversationId) {
-        mutableStateOf(
-            ChatMessagesFeedState(
-                messages = cachedMessages ?: emptyList(),
-                isInitialLoading = cachedMessages == null,
-                errorMessage = null,
-                hasMoreOlder = (cachedMessages?.size ?: 0) >= INITIAL_CHAT_PAGE_SIZE
-            )
-        )
+    var remoteMessages by remember(conversationId) {
+        mutableStateOf<List<FirestoreChatMessage>>(cachedMessages ?: emptyList())
+    }
+    var isFeedInitialLoading by remember(conversationId) {
+        mutableStateOf(cachedMessages == null)
+    }
+    var feedErrorMessage by remember(conversationId) {
+        mutableStateOf<String?>(null)
+    }
+    var hasMoreOlderMessages by remember(conversationId) {
+        mutableStateOf((cachedMessages?.size ?: 0) >= INITIAL_CHAT_PAGE_SIZE)
     }
     var isLoadingOlder by remember(conversationId) { mutableStateOf(false) }
     var outgoingQueue by remember(conversationId) { mutableStateOf<List<OutgoingQueueItem>>(emptyList()) }
@@ -218,8 +235,8 @@ fun PrivateChatScreen(
     var isInputFocused by remember { mutableStateOf(false) }
 
     suspend fun refreshChatRelationshipState(forceRefresh: Boolean) {
-        val viewerUid = currentUserId
-        if (viewerUid.isNullOrBlank() || friendId.isBlank()) {
+        val viewerUid = currentUserId?.takeIf { it.isNotBlank() }
+        if (viewerUid == null || friendId.isBlank()) {
             isCheckingMutual = false
             isRefreshingHeader = false
             return
@@ -235,12 +252,16 @@ fun PrivateChatScreen(
 
         try {
             coroutineScope {
-                val profileDeferred = async {
-                    SocialSessionCache.manager.getProfile(viewerUid, friendId, forceRefresh = forceRefresh)
+                val profileDeferred = async<ProfileOperationResult<PublicProfile?>> {
+                    SocialSessionCache.manager.getPublicProfile(
+                        ownerUid = viewerUid,
+                        targetUid = friendId,
+                        forceRefresh = forceRefresh
+                    )
                 }
-                val blockedByCurrentDeferred = async { blockRepo.isBlocked(viewerUid, friendId) }
-                val blockedByOtherDeferred = async { blockRepo.isBlocked(friendId, viewerUid) }
-                val mutualDeferred = async { followRepo.isMutual(viewerUid, friendId) }
+                val blockedByCurrentDeferred = async<Boolean> { blockRepo.isBlocked(viewerUid, friendId) }
+                val blockedByOtherDeferred = async<Boolean> { blockRepo.isBlocked(friendId, viewerUid) }
+                val mutualDeferred = async<Boolean> { followRepo.isMutual(viewerUid, friendId) }
 
                 val blockedByCurrent = blockedByCurrentDeferred.await()
                 val blockedByOther = blockedByOtherDeferred.await()
@@ -251,7 +272,8 @@ fun PrivateChatScreen(
                 val mutual = if (!blockedEither) mutualDeferred.await() else false
                 isMutualFriend = mutual
 
-                when (val profRes = profileDeferred.await()) {
+                val profRes: ProfileOperationResult<PublicProfile?> = profileDeferred.await()
+                when (profRes) {
                     is ProfileOperationResult.Success -> {
                         if (profRes.data != null) {
                             friendProfile = profRes.data
@@ -300,8 +322,8 @@ fun PrivateChatScreen(
     // Single deduplicated message listener scoped to active conversationId + messageLimit
     var listenerRetryNonce by remember(conversationId) { mutableIntStateOf(0) }
     LaunchedEffect(conversationId, messageLimit, isMutualFriend, isBlocked, listenerRetryNonce) {
-        val viewerUid = currentUserId
-        if (viewerUid.isNullOrBlank() || conversationId.isBlank() || isBlocked || (!isMutualFriend && isCheckingMutual.not())) {
+        val viewerUid = currentUserId?.takeIf { it.isNotBlank() }
+        if (viewerUid == null || conversationId.isBlank() || isBlocked || (!isMutualFriend && !isCheckingMutual)) {
             isLoadingOlder = false
             return@LaunchedEffect
         }
@@ -310,26 +332,48 @@ fun PrivateChatScreen(
         }
 
         chatRepo.observeMessagesFeed(conversationId = conversationId, limit = messageLimit).collect { nextState ->
-            feedState = if (nextState.messages.isEmpty() && nextState.errorMessage != null && feedState.messages.isNotEmpty()) {
-                feedState.copy(isInitialLoading = false, errorMessage = nextState.errorMessage)
-            } else {
-                nextState
-            }
-            isLoadingOlder = false
-
-            if (!nextState.isInitialLoading && nextState.errorMessage == null) {
-                SocialSessionCache.manager.cacheChatMessages(viewerUid, conversationId, nextState.messages)
+            when (nextState) {
+                is ChatMessagesFeedState.Loading -> {
+                    if (remoteMessages.isEmpty()) {
+                        isFeedInitialLoading = true
+                    }
+                }
+                is ChatMessagesFeedState.Loaded -> {
+                    remoteMessages = nextState.messages
+                    hasMoreOlderMessages = nextState.hasMoreOlder
+                    isFeedInitialLoading = false
+                    feedErrorMessage = null
+                    isLoadingOlder = false
+                    SocialSessionCache.manager.cacheConversationMessages(
+                        ownerUid = viewerUid,
+                        conversationId = conversationId,
+                        messages = nextState.messages
+                    )
+                }
+                is ChatMessagesFeedState.Error -> {
+                    val isPermissionOnUninitialized = remoteMessages.isEmpty() &&
+                        isMutualFriend &&
+                        !isBlocked &&
+                        nextState.message.contains("PERMISSION_DENIED", ignoreCase = true)
+                    isFeedInitialLoading = false
+                    isLoadingOlder = false
+                    if (!isPermissionOnUninitialized && remoteMessages.isEmpty()) {
+                        feedErrorMessage = nextState.message
+                    } else if (isPermissionOnUninitialized) {
+                        feedErrorMessage = null
+                    }
+                }
             }
         }
     }
 
     // Guarded markMessagesAsRead: only runs when there is at least one unread incoming message
     var lastMarkedUnreadId by remember(conversationId) { mutableStateOf<String?>(null) }
-    LaunchedEffect(feedState.messages, currentUserId, conversationId, isMutualFriend, isBlocked) {
-        val viewerUid = currentUserId ?: return@LaunchedEffect
+    LaunchedEffect(remoteMessages, currentUserId, conversationId, isMutualFriend, isBlocked) {
+        val viewerUid = currentUserId?.takeIf { it.isNotBlank() } ?: return@LaunchedEffect
         if (conversationId.isBlank() || !isMutualFriend || isBlocked) return@LaunchedEffect
 
-        val latestUnreadIncoming = feedState.messages.lastOrNull { msg ->
+        val latestUnreadIncoming = remoteMessages.lastOrNull { msg ->
             msg.senderUid != viewerUid && msg.status != MessageStatus.READ
         }
         if (latestUnreadIncoming != null && latestUnreadIncoming.id != lastMarkedUnreadId) {
@@ -339,9 +383,9 @@ fun PrivateChatScreen(
     }
 
     // Merge server messages with local pending/failed queue (deduplicating confirmed sends)
-    val mergedTimeline = remember(feedState.messages, outgoingQueue, currentUserId) {
+    val mergedTimeline = remember(remoteMessages, outgoingQueue, currentUserId) {
         buildChatTimeline(
-            remoteMessages = feedState.messages,
+            remoteMessages = remoteMessages,
             outgoingQueue = outgoingQueue,
             currentUserId = currentUserId
         )
@@ -874,16 +918,17 @@ fun PrivateChatScreen(
                     }
                 }
 
-                feedState.isInitialLoading && mergedTimeline.isEmpty() -> {
+                isFeedInitialLoading && mergedTimeline.isEmpty() -> {
                     ChatMessagesSkeleton(modifier = Modifier.fillMaxSize())
                 }
 
-                feedState.errorMessage != null && mergedTimeline.isEmpty() -> {
+                feedErrorMessage != null && mergedTimeline.isEmpty() -> {
                     WorkDailyErrorRetryState(
                         title = "Couldn't load messages",
-                        message = feedState.errorMessage ?: "Failed to load conversation.",
+                        message = feedErrorMessage ?: "Failed to load conversation.",
                         onRetry = {
-                            feedState = feedState.copy(isInitialLoading = true, errorMessage = null)
+                            isFeedInitialLoading = true
+                            feedErrorMessage = null
                             listenerRetryNonce += 1
                         }
                     )
@@ -939,7 +984,7 @@ fun PrivateChatScreen(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp)
                     ) {
-                        if (feedState.hasMoreOlder) {
+                        if (hasMoreOlderMessages) {
                             item(key = "load_older_messages") {
                                 Box(
                                     modifier = Modifier

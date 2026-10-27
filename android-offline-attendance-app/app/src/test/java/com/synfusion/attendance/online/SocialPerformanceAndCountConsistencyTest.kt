@@ -2,8 +2,6 @@ package com.synfusion.attendance.online
 
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -91,36 +89,34 @@ class SocialPerformanceAndCountConsistencyTest {
         var nextFollowError: String? = null
         var nextCountsError: String? = null
 
-        override suspend fun followUser(currentUid: String, targetUid: String): ProfileOperationResult<Boolean> {
+        override suspend fun followUser(followerUid: String, targetUid: String): ProfileOperationResult<Boolean> {
             followCalls.incrementAndGet()
             followBarrier?.await()
             nextFollowError?.let { msg ->
                 nextFollowError = null
                 return ProfileOperationResult.Error(msg)
             }
-            if (currentUid == targetUid) {
+            if (followerUid == targetUid) {
                 return ProfileOperationResult.Error("Cannot follow yourself")
             }
-            val added = edges.add(currentUid to targetUid)
+            val added = edges.add(followerUid to targetUid)
             return ProfileOperationResult.Success(added)
         }
 
-        override suspend fun unfollowUser(currentUid: String, targetUid: String): ProfileOperationResult<Boolean> {
+        override suspend fun unfollowUser(followerUid: String, targetUid: String): ProfileOperationResult<Boolean> {
             unfollowCalls.incrementAndGet()
             followBarrier?.await()
             nextFollowError?.let { msg ->
                 nextFollowError = null
                 return ProfileOperationResult.Error(msg)
             }
-            val removed = edges.remove(currentUid to targetUid)
+            val removed = edges.remove(followerUid to targetUid)
             return ProfileOperationResult.Success(removed)
         }
 
-        override suspend fun isFollowing(currentUid: String, targetUid: String): Boolean {
-            return edges.contains(currentUid to targetUid)
+        override suspend fun isFollowing(followerUid: String, targetUid: String): Boolean {
+            return edges.contains(followerUid to targetUid)
         }
-
-        override fun observeIsFollowing(currentUid: String, targetUid: String): Flow<Boolean> = emptyFlow()
 
         override suspend fun isMutual(uidA: String, uidB: String): Boolean {
             return isFollowing(uidA, uidB) && isFollowing(uidB, uidA)
@@ -134,30 +130,23 @@ class SocialPerformanceAndCountConsistencyTest {
             return ProfileOperationResult.Success(profiles)
         }
 
-        override suspend fun getFollowing(targetUid: String, limit: Int): ProfileOperationResult<List<PublicProfile>> {
-            val followingIds = edges.filter { it.first == targetUid }.map { it.second }.take(limit)
+        override suspend fun getFollowing(followerUid: String, limit: Int): ProfileOperationResult<List<PublicProfile>> {
+            val followingIds = edges.filter { it.first == followerUid }.map { it.second }.take(limit)
             val profiles = followingIds.map { uid ->
                 profileStore[uid] ?: PublicProfile(uid = uid, displayName = "WorkDaily Member")
             }
             return ProfileOperationResult.Success(profiles)
         }
 
-        override suspend fun getMutualFriends(currentUid: String): ProfileOperationResult<List<PublicProfile>> {
-            val mutualIds = edges.filter { it.first == currentUid }
-                .map { it.second }
-                .filter { other -> edges.contains(other to currentUid) }
-            return ProfileOperationResult.Success(mutualIds.mapNotNull { profileStore[it] })
-        }
-
-        override suspend fun getFollowCounts(targetUid: String): ProfileOperationResult<FollowCounts> {
+        override suspend fun getFollowCounts(uid: String): ProfileOperationResult<FollowCounts> {
             getCountsCalls.incrementAndGet()
             countsBarrier?.await()
             nextCountsError?.let { msg ->
                 nextCountsError = null
                 return ProfileOperationResult.Error(msg)
             }
-            val followers = edges.count { it.second == targetUid }
-            val following = edges.count { it.first == targetUid }
+            val followers = edges.count { it.second == uid }
+            val following = edges.count { it.first == uid }
             return ProfileOperationResult.Success(FollowCounts(followerCount = followers, followingCount = following))
         }
     }
@@ -185,6 +174,10 @@ class SocialPerformanceAndCountConsistencyTest {
 
         override suspend fun getBlockedUserIds(blockerUid: String): ProfileOperationResult<List<String>> {
             return ProfileOperationResult.Success(blocked.filter { it.first == blockerUid }.map { it.second })
+        }
+
+        override suspend fun removeFollower(targetUid: String, followerUid: String): ProfileOperationResult<Boolean> {
+            return ProfileOperationResult.Success(true)
         }
 
         override suspend fun getBlockedProfiles(blockerUid: String): ProfileOperationResult<List<PublicProfile>> {
@@ -215,7 +208,7 @@ class SocialPerformanceAndCountConsistencyTest {
             publicProfileRepository = profileRepo,
             followRepository = followRepo,
             blockRepository = blockRepo,
-            clock = { now }
+            clockMs = { now }
         )
 
         val initialOwnCounts = manager.getFollowCounts("uid_a", "uid_a")
@@ -225,29 +218,33 @@ class SocialPerformanceAndCountConsistencyTest {
 
         // User A follows User B
         val followRes = manager.setFollowState(
-            ownerUid = "uid_a",
-            targetProfile = profileRepo.profiles.getValue("uid_b"),
-            shouldFollow = true
+            actorUid = "uid_a",
+            targetUid = "uid_b",
+            wantFollow = true,
+            targetProfileHint = profileRepo.profiles.getValue("uid_b")
         )
         assertTrue(followRes is ProfileOperationResult.Success)
 
-        val snapshotAfterFollow = manager.currentSnapshotFor("uid_a")!!
-        assertEquals(FollowCounts(followerCount = 0, followingCount = 1), snapshotAfterFollow.followCounts["uid_a"]?.value)
-        assertEquals(FollowCounts(followerCount = 1, followingCount = 0), snapshotAfterFollow.followCounts["uid_b"]?.value)
-        assertTrue(snapshotAfterFollow.followingIds?.value?.contains("uid_b") == true)
+        val snapshotAfterFollow = manager.currentSnapshotFor("uid_a")
+        assertNotNull(snapshotAfterFollow)
+        assertEquals(FollowCounts(followerCount = 0, followingCount = 1), snapshotAfterFollow?.followCounts?.get("uid_a")?.value)
+        assertEquals(FollowCounts(followerCount = 1, followingCount = 0), snapshotAfterFollow?.followCounts?.get("uid_b")?.value)
+        assertTrue(snapshotAfterFollow?.myFollowedUids?.value?.contains("uid_b") == true)
 
         // User A unfollows User B
         val unfollowRes = manager.setFollowState(
-            ownerUid = "uid_a",
-            targetProfile = profileRepo.profiles.getValue("uid_b"),
-            shouldFollow = false
+            actorUid = "uid_a",
+            targetUid = "uid_b",
+            wantFollow = false,
+            targetProfileHint = profileRepo.profiles.getValue("uid_b")
         )
         assertTrue(unfollowRes is ProfileOperationResult.Success)
 
-        val snapshotAfterUnfollow = manager.currentSnapshotFor("uid_a")!!
-        assertEquals(FollowCounts(followerCount = 0, followingCount = 0), snapshotAfterUnfollow.followCounts["uid_a"]?.value)
-        assertEquals(FollowCounts(followerCount = 0, followingCount = 0), snapshotAfterUnfollow.followCounts["uid_b"]?.value)
-        assertFalse(snapshotAfterUnfollow.followingIds?.value?.contains("uid_b") == true)
+        val snapshotAfterUnfollow = manager.currentSnapshotFor("uid_a")
+        assertNotNull(snapshotAfterUnfollow)
+        assertEquals(FollowCounts(followerCount = 0, followingCount = 0), snapshotAfterUnfollow?.followCounts?.get("uid_a")?.value)
+        assertEquals(FollowCounts(followerCount = 0, followingCount = 0), snapshotAfterUnfollow?.followCounts?.get("uid_b")?.value)
+        assertFalse(snapshotAfterUnfollow?.myFollowedUids?.value?.contains("uid_b") == true)
     }
 
     @Test
@@ -261,31 +258,33 @@ class SocialPerformanceAndCountConsistencyTest {
             publicProfileRepository = profileRepo,
             followRepository = followRepo,
             blockRepository = FakeBlockRepo(),
-            clock = { 5_000L }
+            clockMs = { 5_000L }
         )
 
         manager.getFollowCounts("uid_a", "uid_a")
         manager.getFollowCounts("uid_a", "uid_b")
-        manager.getFollowingList("uid_a")
+        manager.getFollowingList("uid_a", "uid_a")
 
         followRepo.nextFollowError = "Permission denied"
         val res = manager.setFollowState(
-            ownerUid = "uid_a",
-            targetProfile = profileRepo.profiles.getValue("uid_b"),
-            shouldFollow = true
+            actorUid = "uid_a",
+            targetUid = "uid_b",
+            wantFollow = true,
+            targetProfileHint = profileRepo.profiles.getValue("uid_b")
         )
 
         assertTrue(res is ProfileOperationResult.Error)
-        val snap = manager.currentSnapshotFor("uid_a")!!
-        assertEquals(FollowCounts(0, 0), snap.followCounts["uid_a"]?.value)
-        assertEquals(FollowCounts(0, 0), snap.followCounts["uid_b"]?.value)
-        assertFalse(snap.followingIds?.value?.contains("uid_b") == true)
-        assertTrue(snap.followingList?.value.orEmpty().isEmpty())
-        assertTrue(snap.inFlightFollowMutations.isEmpty())
+        val snap = manager.currentSnapshotFor("uid_a")
+        assertNotNull(snap)
+        assertEquals(FollowCounts(0, 0), snap?.followCounts?.get("uid_a")?.value)
+        assertEquals(FollowCounts(0, 0), snap?.followCounts?.get("uid_b")?.value)
+        assertFalse(snap?.myFollowedUids?.value?.contains("uid_b") == true)
+        assertTrue(snap?.followingLists?.get("uid_a")?.value?.users.orEmpty().isEmpty())
+        assertTrue(snap?.activeMutations.orEmpty().isEmpty())
     }
 
     @Test
-    fun `duplicate concurrent follow taps coalesce without double incrementing counts`() = runTest {
+    fun `duplicate concurrent follow taps ignore second in-flight tap without double incrementing counts`() = runTest {
         val profileRepo = FakePublicProfileRepo().apply {
             profiles["uid_a"] = sampleProfile("uid_a", "arjun", "Arjun")
             profiles["uid_b"] = sampleProfile("uid_b", "priya", "Priya")
@@ -298,26 +297,38 @@ class SocialPerformanceAndCountConsistencyTest {
             publicProfileRepository = profileRepo,
             followRepository = followRepo,
             blockRepository = FakeBlockRepo(),
-            clock = { 10_000L }
+            clockMs = { 10_000L }
         )
         manager.getFollowCounts("uid_a", "uid_a")
         manager.getFollowCounts("uid_a", "uid_b")
 
         val firstTap = async {
-            manager.setFollowState("uid_a", profileRepo.profiles.getValue("uid_b"), shouldFollow = true)
+            manager.setFollowState(
+                actorUid = "uid_a",
+                targetUid = "uid_b",
+                wantFollow = true,
+                targetProfileHint = profileRepo.profiles.getValue("uid_b")
+            )
         }
         val secondTap = async {
-            manager.setFollowState("uid_a", profileRepo.profiles.getValue("uid_b"), shouldFollow = true)
+            manager.setFollowState(
+                actorUid = "uid_a",
+                targetUid = "uid_b",
+                wantFollow = true,
+                targetProfileHint = profileRepo.profiles.getValue("uid_b")
+            )
         }
 
         barrier.complete(Unit)
-        assertTrue(firstTap.await() is ProfileOperationResult.Success)
-        assertTrue(secondTap.await() is ProfileOperationResult.Success)
+        val results = listOf(firstTap.await(), secondTap.await())
+        assertEquals(1, results.count { it is ProfileOperationResult.Success })
+        assertEquals(1, results.count { it == null })
 
         assertEquals(1, followRepo.followCalls.get())
-        val snap = manager.currentSnapshotFor("uid_a")!!
-        assertEquals(1, snap.followCounts["uid_a"]?.value?.followingCount)
-        assertEquals(1, snap.followCounts["uid_b"]?.value?.followerCount)
+        val snap = manager.currentSnapshotFor("uid_a")
+        assertNotNull(snap)
+        assertEquals(1, snap?.followCounts?.get("uid_a")?.value?.followingCount)
+        assertEquals(1, snap?.followCounts?.get("uid_b")?.value?.followerCount)
     }
 
     @Test
@@ -336,7 +347,7 @@ class SocialPerformanceAndCountConsistencyTest {
             publicProfileRepository = profileRepo,
             followRepository = followRepo,
             blockRepository = FakeBlockRepo(),
-            clock = { now }
+            clockMs = { now }
         )
 
         val call1 = async { manager.getFollowCounts("uid_a", "uid_a") }
@@ -369,7 +380,7 @@ class SocialPerformanceAndCountConsistencyTest {
             publicProfileRepository = profileRepo,
             followRepository = followRepo,
             blockRepository = FakeBlockRepo(),
-            clock = { now }
+            clockMs = { now }
         )
 
         val initial = manager.getFollowCounts("uid_a", "uid_a") as ProfileOperationResult.Success
@@ -398,14 +409,14 @@ class SocialPerformanceAndCountConsistencyTest {
             publicProfileRepository = profileRepo,
             followRepository = followRepo,
             blockRepository = FakeBlockRepo(),
-            clock = { 1_000L },
+            clockMs = { 1_000L },
             onClearExternalCaches = { externalClearedCount += 1 }
         )
 
         manager.getFollowCounts("uid_a", "uid_a")
-        manager.getFollowingList("uid_a")
+        manager.getFollowingList("uid_a", "uid_a")
         manager.searchProfiles("uid_a", "@pri")
-        manager.cacheChatMessages(
+        manager.cacheConversationMessages(
             ownerUid = "uid_a",
             conversationId = "uid_a_uid_b",
             messages = listOf(
@@ -419,13 +430,13 @@ class SocialPerformanceAndCountConsistencyTest {
             )
         )
 
-        assertNotNull(manager.getCachedChatMessages("uid_a", "uid_a_uid_b"))
-        assertNull(manager.getCachedChatMessages("uid_c", "uid_a_uid_b"))
+        assertNotNull(manager.currentSnapshotFor("uid_a")?.chatMessages?.get("uid_a_uid_b"))
+        assertNull(manager.currentSnapshotFor("uid_c")?.chatMessages?.get("uid_a_uid_b"))
 
         // Switch to User C -> User A's cached data is completely purged
         manager.onAuthenticatedUserChanged("uid_c")
         assertNull(manager.currentSnapshotFor("uid_a"))
-        assertNull(manager.getCachedChatMessages("uid_a", "uid_a_uid_b"))
+        assertNull(manager.currentSnapshotFor("uid_a")?.chatMessages?.get("uid_a_uid_b"))
         assertTrue(manager.currentSnapshotFor("uid_c")?.followCounts.orEmpty().isEmpty())
         assertEquals(1, externalClearedCount)
 

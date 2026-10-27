@@ -34,6 +34,7 @@ import com.synfusion.attendance.live.ui.components.*
 import com.synfusion.attendance.live.viewmodel.LiveViewModel
 import com.synfusion.attendance.online.BlockRepository
 import com.synfusion.attendance.online.FirestoreReportRepository
+import com.synfusion.attendance.online.FollowCounts
 import com.synfusion.attendance.online.FollowRepository
 import com.synfusion.attendance.online.ProfileOperationResult
 import com.synfusion.attendance.online.PublicProfile
@@ -89,19 +90,21 @@ fun LiveProfileScreen(
         }
     }
 
-    if (isSelf || userId == null) {
+    if (isSelf || userId.isNullOrBlank()) {
         return
     }
 
-    val cachedProfile = remember(socialSnapshot, userId, currentUserId) {
-        if (socialSnapshot.ownerUid == currentUserId) {
+    val activeViewerUid: String? = currentUserId?.takeIf { it.isNotBlank() }
+
+    val cachedProfile: PublicProfile? = remember(socialSnapshot, userId, activeViewerUid) {
+        if (activeViewerUid != null && socialSnapshot.ownerUid == activeViewerUid) {
             socialSnapshot.profiles[userId]?.value
         } else {
             null
         }
     }
-    val cachedCounts = remember(socialSnapshot, userId, currentUserId) {
-        if (socialSnapshot.ownerUid == currentUserId) {
+    val cachedCounts: FollowCounts? = remember(socialSnapshot, userId, activeViewerUid) {
+        if (activeViewerUid != null && socialSnapshot.ownerUid == activeViewerUid) {
             socialSnapshot.followCounts[userId]?.value
         } else {
             null
@@ -110,7 +113,7 @@ fun LiveProfileScreen(
 
     var isLoading by remember(userId) { mutableStateOf(cachedProfile == null) }
     var isRefreshing by remember(userId) { mutableStateOf(false) }
-    var publicProfile by remember(userId) { mutableStateOf(cachedProfile) }
+    var publicProfile by remember(userId) { mutableStateOf<PublicProfile?>(cachedProfile) }
     var followerCount by remember(userId) {
         mutableIntStateOf(
             cachedCounts?.followerCount
@@ -125,20 +128,23 @@ fun LiveProfileScreen(
                 ?: 0
         )
     }
-    var isFollowingTarget by remember(userId) {
+    var isFollowingTarget by remember(userId, activeViewerUid) {
         mutableStateOf(
-            socialSnapshot.ownerUid == currentUserId &&
-                socialSnapshot.followingIds?.value?.contains(userId) == true
+            activeViewerUid != null &&
+                socialSnapshot.ownerUid == activeViewerUid &&
+                socialSnapshot.myFollowedUids?.value?.contains(userId) == true
         )
     }
-    var isBlocked by remember(userId) {
+    var isBlocked by remember(userId, activeViewerUid) {
         mutableStateOf(
-            socialSnapshot.ownerUid == currentUserId &&
-                socialSnapshot.blockedIds?.value?.contains(userId) == true
+            activeViewerUid != null &&
+                socialSnapshot.ownerUid == activeViewerUid &&
+                socialSnapshot.myBlockedUids?.value?.contains(userId) == true
         )
     }
     var isBlockedByTarget by remember(userId) { mutableStateOf(false) }
     var isBlockActionBusy by remember(userId) { mutableStateOf(false) }
+    var isFollowMutatingLocal by remember(userId) { mutableStateOf(false) }
     var loadError by remember(userId) { mutableStateOf<String?>(null) }
     var activeUserListType by remember(userId) { mutableStateOf<UserListType?>(null) }
 
@@ -147,10 +153,11 @@ fun LiveProfileScreen(
     val reportRepo = remember { FirestoreReportRepository() }
     val coroutineScope = rememberCoroutineScope()
 
-    val isFollowActionBusy = remember(socialSnapshot, userId, currentUserId) {
-        socialSnapshot.ownerUid == currentUserId &&
-            socialSnapshot.inFlightFollowMutations.contains(userId)
-    }
+    val isFollowActionBusy = isFollowMutatingLocal || (
+        activeViewerUid != null &&
+            socialSnapshot.ownerUid == activeViewerUid &&
+            socialSnapshot.activeMutations.contains("follow:$activeViewerUid:$userId")
+        )
 
     // Keep displayed counts and follow state reactively synced with SocialSessionCache
     LaunchedEffect(cachedCounts) {
@@ -164,17 +171,44 @@ fun LiveProfileScreen(
             publicProfile = cachedProfile
         }
     }
-    LaunchedEffect(socialSnapshot.followingIds, socialSnapshot.ownerUid, currentUserId) {
-        val followingSet = if (socialSnapshot.ownerUid == currentUserId) {
-            socialSnapshot.followingIds?.value
-        } else null
+    LaunchedEffect(socialSnapshot.myFollowedUids, socialSnapshot.ownerUid, activeViewerUid) {
+        val followingSet = if (activeViewerUid != null && socialSnapshot.ownerUid == activeViewerUid) {
+            socialSnapshot.myFollowedUids?.value
+        } else {
+            null
+        }
         if (followingSet != null && !isBlocked && !isBlockedByTarget) {
             isFollowingTarget = followingSet.contains(userId)
         }
     }
+    LaunchedEffect(socialSnapshot.myBlockedUids, socialSnapshot.ownerUid, activeViewerUid) {
+        val blockedSet = if (activeViewerUid != null && socialSnapshot.ownerUid == activeViewerUid) {
+            socialSnapshot.myBlockedUids?.value
+        } else {
+            null
+        }
+        if (blockedSet != null) {
+            val nowBlocked = blockedSet.contains(userId)
+            isBlocked = nowBlocked
+            if (nowBlocked) {
+                isFollowingTarget = false
+            }
+        }
+    }
 
     suspend fun reconcileCounts(targetUid: String, forceRefresh: Boolean = true) {
-        when (val countsRes = SocialSessionCache.manager.getFollowCounts(currentUserId, targetUid, forceRefresh = forceRefresh)) {
+        if (targetUid.isBlank()) return
+        val viewerUid = currentUserId?.takeIf { it.isNotBlank() }
+        val countsRes: ProfileOperationResult<FollowCounts> = if (viewerUid != null) {
+            SocialSessionCache.manager.getFollowCounts(
+                ownerUid = viewerUid,
+                targetUid = targetUid,
+                forceRefresh = forceRefresh
+            )
+        } else {
+            followRepo.getFollowCounts(targetUid)
+        }
+        when (countsRes) {
             is ProfileOperationResult.Success -> {
                 followerCount = countsRes.data.followerCount
                 followingCount = countsRes.data.followingCount
@@ -196,27 +230,45 @@ fun LiveProfileScreen(
 
         try {
             coroutineScope {
-                val profileDeferred = async {
-                    SocialSessionCache.manager.getProfile(currentUserId, userId, forceRefresh = forceRefresh)
+                val viewerUid = currentUserId?.takeIf { it.isNotBlank() }
+
+                val profileDeferred = async<ProfileOperationResult<PublicProfile?>> {
+                    if (viewerUid != null) {
+                        SocialSessionCache.manager.getPublicProfile(
+                            ownerUid = viewerUid,
+                            targetUid = userId,
+                            forceRefresh = forceRefresh
+                        )
+                    } else {
+                        SocialSessionCache.publicProfileRepository.getPublicProfile(userId)
+                    }
                 }
-                val countsDeferred = async {
-                    SocialSessionCache.manager.getFollowCounts(currentUserId, userId, forceRefresh = forceRefresh)
+                val countsDeferred = async<ProfileOperationResult<FollowCounts>> {
+                    if (viewerUid != null) {
+                        SocialSessionCache.manager.getFollowCounts(
+                            ownerUid = viewerUid,
+                            targetUid = userId,
+                            forceRefresh = forceRefresh
+                        )
+                    } else {
+                        followRepo.getFollowCounts(userId)
+                    }
                 }
 
-                val viewerUid = currentUserId
-                val blockedByMeDeferred = if (!viewerUid.isNullOrBlank()) {
-                    async { blockRepo.isBlocked(viewerUid, userId) }
+                val blockedByMeDeferred = if (viewerUid != null) {
+                    async<Boolean> { blockRepo.isBlocked(viewerUid, userId) }
                 } else null
-                val blockedByTargetDeferred = if (!viewerUid.isNullOrBlank()) {
-                    async { blockRepo.isBlocked(userId, viewerUid) }
+                val blockedByTargetDeferred = if (viewerUid != null) {
+                    async<Boolean> { blockRepo.isBlocked(userId, viewerUid) }
                 } else null
-                val followingDeferred = if (!viewerUid.isNullOrBlank()) {
-                    async { followRepo.isFollowing(viewerUid, userId) }
+                val followingDeferred = if (viewerUid != null) {
+                    async<Boolean> { followRepo.isFollowing(viewerUid, userId) }
                 } else null
 
-                when (val profileRes = profileDeferred.await()) {
+                val profileRes: ProfileOperationResult<PublicProfile?> = profileDeferred.await()
+                when (profileRes) {
                     is ProfileOperationResult.Success -> {
-                        val loaded = profileRes.data
+                        val loaded: PublicProfile? = profileRes.data
                         publicProfile = loaded
                         if (loaded != null && cachedCounts == null) {
                             followerCount = loaded.followerCount.coerceAtLeast(0)
@@ -230,12 +282,15 @@ fun LiveProfileScreen(
                     }
                 }
 
-                when (val countsRes = countsDeferred.await()) {
+                val countsRes: ProfileOperationResult<FollowCounts> = countsDeferred.await()
+                when (countsRes) {
                     is ProfileOperationResult.Success -> {
                         followerCount = countsRes.data.followerCount
                         followingCount = countsRes.data.followingCount
                     }
-                    is ProfileOperationResult.Error -> Unit
+                    is ProfileOperationResult.Error -> {
+                        // Preserve any existing/profile fallback counts on transient count-fetch errors.
+                    }
                 }
 
                 if (blockedByMeDeferred != null && blockedByTargetDeferred != null && followingDeferred != null) {
@@ -556,11 +611,12 @@ fun LiveProfileScreen(
         )
     }
 
-    if (activeUserListType != null) {
+    val selectedListType = activeUserListType
+    if (selectedListType != null && targetUser.uid.isNotBlank()) {
         UserRelationshipBottomSheet(
             targetUid = targetUser.uid,
-            listType = activeUserListType!!,
-            initialCount = if (activeUserListType == UserListType.FOLLOWERS) followerCount else followingCount,
+            listType = selectedListType,
+            initialCount = if (selectedListType == UserListType.FOLLOWERS) followerCount else followingCount,
             currentUserId = currentUserId,
             followRepo = followRepo,
             blockRepo = blockRepo,
@@ -928,12 +984,12 @@ fun LiveProfileScreen(
                         FollowButton(
                             isFollowing = isFollowingTarget,
                             onToggle = {
-                                val activeUid = currentUserId
-                                if (activeUid.isNullOrBlank()) {
+                                val activeUid = currentUserId?.takeIf { it.isNotBlank() }
+                                if (activeUid == null) {
                                     Toast.makeText(context, "Sign in with Google to follow members.", Toast.LENGTH_SHORT).show()
                                     return@FollowButton
                                 }
-                                if (activeUid == targetUser.uid) {
+                                if (targetUser.uid.isBlank() || activeUid == targetUser.uid) {
                                     return@FollowButton
                                 }
                                 if (isBlocked || isBlockedByTarget) {
@@ -947,25 +1003,36 @@ fun LiveProfileScreen(
                                 val desiredStatus = !previousStatus
 
                                 // Immediate UI response (also mirrored in SocialSessionCache)
+                                isFollowMutatingLocal = true
                                 isFollowingTarget = desiredStatus
                                 followerCount = (previousFollowers + if (desiredStatus) 1 else -1).coerceAtLeast(0)
 
                                 coroutineScope.launch {
-                                    when (
-                                        val result = SocialSessionCache.manager.setFollowState(
-                                            ownerUid = activeUid,
-                                            targetProfile = targetUser,
-                                            shouldFollow = desiredStatus
+                                    try {
+                                        val result: ProfileOperationResult<Boolean>? = SocialSessionCache.manager.setFollowState(
+                                            actorUid = activeUid,
+                                            targetUid = targetUser.uid,
+                                            wantFollow = desiredStatus,
+                                            targetProfileHint = targetUser
                                         )
-                                    ) {
-                                        is ProfileOperationResult.Success -> {
-                                            isFollowingTarget = desiredStatus
+                                        when (result) {
+                                            is ProfileOperationResult.Success -> {
+                                                isFollowingTarget = desiredStatus
+                                                reconcileCounts(targetUser.uid, forceRefresh = false)
+                                            }
+                                            is ProfileOperationResult.Error -> {
+                                                isFollowingTarget = previousStatus
+                                                followerCount = previousFollowers
+                                                Toast.makeText(context, result.message, Toast.LENGTH_SHORT).show()
+                                            }
+                                            null -> {
+                                                // Duplicate tap while a follow/unfollow mutation was already active
+                                                isFollowingTarget = previousStatus
+                                                followerCount = previousFollowers
+                                            }
                                         }
-                                        is ProfileOperationResult.Error -> {
-                                            isFollowingTarget = previousStatus
-                                            followerCount = previousFollowers
-                                            Toast.makeText(context, result.message, Toast.LENGTH_SHORT).show()
-                                        }
+                                    } finally {
+                                        isFollowMutatingLocal = false
                                     }
                                 }
                             },
@@ -1049,60 +1116,81 @@ fun UserRelationshipBottomSheet(
 
     val pageStep = 40
     var currentLimit by rememberSaveable(targetUid, listType.name) { mutableIntStateOf(pageStep) }
+    val activeViewerUid: String? = currentUserId?.takeIf { it.isNotBlank() }
 
-    val cachedOwnList = remember(socialSnapshot, targetUid, listType, currentUserId) {
-        if (!currentUserId.isNullOrBlank() && targetUid == currentUserId && socialSnapshot.ownerUid == currentUserId) {
+    val cachedList: List<PublicProfile>? = remember(socialSnapshot, targetUid, listType, activeViewerUid) {
+        if (activeViewerUid != null && targetUid.isNotBlank() && socialSnapshot.ownerUid == activeViewerUid) {
             when (listType) {
-                UserListType.FOLLOWERS -> socialSnapshot.followersList?.value
-                UserListType.FOLLOWING, UserListType.FRIENDS -> socialSnapshot.followingList?.value
+                UserListType.FOLLOWERS -> socialSnapshot.followersLists[targetUid]?.value?.users
+                UserListType.FOLLOWING, UserListType.FRIENDS -> socialSnapshot.followingLists[targetUid]?.value?.users
             }
         } else {
             null
         }
     }
 
-    var isLoading by remember(targetUid, listType) { mutableStateOf(cachedOwnList == null) }
+    var isLoading by remember(targetUid, listType) { mutableStateOf(cachedList == null) }
     var isRefreshing by remember(targetUid, listType) { mutableStateOf(false) }
     var isLoadingMore by remember(targetUid, listType) { mutableStateOf(false) }
     var errorMessage by remember(targetUid, listType) { mutableStateOf<String?>(null) }
-    var users by remember(targetUid, listType) { mutableStateOf(cachedOwnList ?: emptyList()) }
-    var myFollowingIds by remember(targetUid, listType) {
-        mutableStateOf(
-            if (!currentUserId.isNullOrBlank() && socialSnapshot.ownerUid == currentUserId) {
-                socialSnapshot.followingIds?.value ?: emptySet()
-            } else emptySet()
+    var users by remember(targetUid, listType) { mutableStateOf<List<PublicProfile>>(cachedList ?: emptyList()) }
+    var myFollowingIds by remember(targetUid, listType, activeViewerUid) {
+        mutableStateOf<Set<String>>(
+            if (activeViewerUid != null && socialSnapshot.ownerUid == activeViewerUid) {
+                socialSnapshot.myFollowedUids?.value ?: emptySet()
+            } else {
+                emptySet()
+            }
         )
     }
-    var myFollowerIds by remember(targetUid, listType) {
-        mutableStateOf(
-            if (!currentUserId.isNullOrBlank() && socialSnapshot.ownerUid == currentUserId) {
-                socialSnapshot.followerIds?.value ?: emptySet()
-            } else emptySet()
+    var myFollowerIds by remember(targetUid, listType, activeViewerUid) {
+        mutableStateOf<Set<String>>(
+            if (activeViewerUid != null && socialSnapshot.ownerUid == activeViewerUid) {
+                socialSnapshot.myFollowerUids?.value ?: emptySet()
+            } else {
+                emptySet()
+            }
         )
     }
-    var blockedIds by remember(targetUid, listType) {
-        mutableStateOf(
-            if (!currentUserId.isNullOrBlank() && socialSnapshot.ownerUid == currentUserId) {
-                socialSnapshot.blockedIds?.value ?: emptySet()
-            } else emptySet()
+    var blockedIds by remember(targetUid, listType, activeViewerUid) {
+        mutableStateOf<Set<String>>(
+            if (activeViewerUid != null && socialSnapshot.ownerUid == activeViewerUid) {
+                socialSnapshot.myBlockedUids?.value ?: emptySet()
+            } else {
+                emptySet()
+            }
         )
     }
+    var mutatingRowIds by remember(targetUid, listType) { mutableStateOf<Set<String>>(emptySet()) }
     var searchQuery by rememberSaveable(targetUid, listType.name) { mutableStateOf("") }
 
-    LaunchedEffect(socialSnapshot.followingIds, socialSnapshot.followerIds, socialSnapshot.blockedIds, socialSnapshot.ownerUid, currentUserId) {
-        if (!currentUserId.isNullOrBlank() && socialSnapshot.ownerUid == currentUserId) {
-            socialSnapshot.followingIds?.value?.let { myFollowingIds = it }
-            socialSnapshot.followerIds?.value?.let { myFollowerIds = it }
-            socialSnapshot.blockedIds?.value?.let { blockedIds = it }
+    LaunchedEffect(
+        socialSnapshot.myFollowedUids,
+        socialSnapshot.myFollowerUids,
+        socialSnapshot.myBlockedUids,
+        socialSnapshot.ownerUid,
+        activeViewerUid
+    ) {
+        if (activeViewerUid != null && socialSnapshot.ownerUid == activeViewerUid) {
+            socialSnapshot.myFollowedUids?.value?.let { myFollowingIds = it }
+            socialSnapshot.myFollowerUids?.value?.let { myFollowerIds = it }
+            socialSnapshot.myBlockedUids?.value?.let { blockedIds = it }
         }
     }
-    LaunchedEffect(cachedOwnList) {
-        if (cachedOwnList != null) {
-            users = cachedOwnList
+    LaunchedEffect(cachedList) {
+        if (cachedList != null) {
+            users = cachedList
         }
     }
 
     suspend fun loadList(limitToFetch: Int = currentLimit, forceRefresh: Boolean = false, loadingMore: Boolean = false) {
+        if (targetUid.isBlank()) {
+            users = emptyList()
+            isLoading = false
+            isRefreshing = false
+            isLoadingMore = false
+            return
+        }
         val hasContent = users.isNotEmpty()
         when {
             loadingMore -> isLoadingMore = true
@@ -1113,16 +1201,20 @@ fun UserRelationshipBottomSheet(
 
         try {
             coroutineScope {
-                val listDeferred = async {
-                    if (!currentUserId.isNullOrBlank() && targetUid == currentUserId) {
+                val viewerUid = currentUserId?.takeIf { it.isNotBlank() }
+
+                val listDeferred = async<ProfileOperationResult<List<PublicProfile>>> {
+                    if (viewerUid != null) {
                         when (listType) {
                             UserListType.FOLLOWERS -> SocialSessionCache.manager.getFollowersList(
-                                ownerUid = currentUserId,
+                                ownerUid = viewerUid,
+                                targetUid = targetUid,
                                 limit = limitToFetch,
                                 forceRefresh = forceRefresh
                             )
                             UserListType.FOLLOWING, UserListType.FRIENDS -> SocialSessionCache.manager.getFollowingList(
-                                ownerUid = currentUserId,
+                                ownerUid = viewerUid,
+                                targetUid = targetUid,
                                 limit = limitToFetch,
                                 forceRefresh = forceRefresh
                             )
@@ -1135,26 +1227,35 @@ fun UserRelationshipBottomSheet(
                     }
                 }
 
-                val myFollowingDeferred = if (!currentUserId.isNullOrBlank()) {
-                    async {
+                val myFollowingDeferred = if (viewerUid != null) {
+                    async<ProfileOperationResult<List<PublicProfile>>> {
                         SocialSessionCache.manager.getFollowingList(
-                            ownerUid = currentUserId,
+                            ownerUid = viewerUid,
+                            targetUid = viewerUid,
                             forceRefresh = false
                         )
                     }
                 } else null
 
-                val blockedDeferred = if (!currentUserId.isNullOrBlank()) {
-                    async {
-                        SocialSessionCache.manager.getBlockedIds(
-                            ownerUid = currentUserId,
+                val blockedDeferred = if (viewerUid != null) {
+                    async<ProfileOperationResult<Set<String>>> {
+                        SocialSessionCache.manager.getBlockedUserIds(
+                            ownerUid = viewerUid,
                             forceRefresh = false
                         )
                     }
                 } else null
 
-                val countsDeferred = async {
-                    SocialSessionCache.manager.getFollowCounts(currentUserId, targetUid, forceRefresh = forceRefresh)
+                val countsDeferred = async<ProfileOperationResult<FollowCounts>> {
+                    if (viewerUid != null) {
+                        SocialSessionCache.manager.getFollowCounts(
+                            ownerUid = viewerUid,
+                            targetUid = targetUid,
+                            forceRefresh = forceRefresh
+                        )
+                    } else {
+                        followRepo.getFollowCounts(targetUid)
+                    }
                 }
 
                 myFollowingDeferred?.await()?.let { res ->
@@ -1169,7 +1270,8 @@ fun UserRelationshipBottomSheet(
                 }
                 countsDeferred.await()
 
-                when (val listResult = listDeferred.await()) {
+                val listResult: ProfileOperationResult<List<PublicProfile>> = listDeferred.await()
+                when (listResult) {
                     is ProfileOperationResult.Success -> {
                         users = listResult.data
                         errorMessage = null
@@ -1200,10 +1302,12 @@ fun UserRelationshipBottomSheet(
         UserListType.FRIENDS -> "Friends"
     }
 
-    val cachedTargetCounts = remember(socialSnapshot, targetUid, currentUserId) {
-        if (socialSnapshot.ownerUid == currentUserId) {
+    val cachedTargetCounts = remember(socialSnapshot, targetUid, activeViewerUid) {
+        if (activeViewerUid != null && socialSnapshot.ownerUid == activeViewerUid) {
             socialSnapshot.followCounts[targetUid]?.value
-        } else null
+        } else {
+            null
+        }
     }
 
     val displayedCount = when (listType) {
@@ -1402,11 +1506,14 @@ fun UserRelationshipBottomSheet(
                             items(filteredUsers, key = { it.uid }) { member ->
                                 val memberName = member.displayName.ifBlank { "WorkDaily Member" }
                                 val memberUsername = if (member.username.isNotBlank()) "@${member.username}" else "@member"
-                                val isCurrentUserRow = currentUserId != null && member.uid == currentUserId
+                                val isCurrentUserRow = activeViewerUid != null && member.uid == activeViewerUid
                                 val isRowFollowing = myFollowingIds.contains(member.uid)
                                 val followsMe = myFollowerIds.contains(member.uid)
-                                val isRowBusy = socialSnapshot.ownerUid == currentUserId &&
-                                    socialSnapshot.inFlightFollowMutations.contains(member.uid)
+                                val isRowBusy = mutatingRowIds.contains(member.uid) || (
+                                    activeViewerUid != null &&
+                                        socialSnapshot.ownerUid == activeViewerUid &&
+                                        socialSnapshot.activeMutations.contains("follow:$activeViewerUid:${member.uid}")
+                                    )
                                 val isRowBlocked = blockedIds.contains(member.uid)
 
                                 Row(
@@ -1485,17 +1592,18 @@ fun UserRelationshipBottomSheet(
                                             height = 34.dp,
                                             minWidth = 88.dp,
                                             onToggle = {
-                                                val activeUid = currentUserId
-                                                if (activeUid.isNullOrBlank()) {
+                                                val activeUid = currentUserId?.takeIf { it.isNotBlank() }
+                                                if (activeUid == null) {
                                                     Toast.makeText(context, "Sign in with Google to follow members.", Toast.LENGTH_SHORT).show()
                                                     return@FollowButton
                                                 }
-                                                if (member.uid == activeUid || isRowBusy) {
+                                                if (member.uid.isBlank() || member.uid == activeUid || isRowBusy) {
                                                     return@FollowButton
                                                 }
                                                 val wasFollowing = isRowFollowing
                                                 val wantFollow = !wasFollowing
 
+                                                mutatingRowIds = mutatingRowIds + member.uid
                                                 myFollowingIds = if (wantFollow) {
                                                     myFollowingIds + member.uid
                                                 } else {
@@ -1503,27 +1611,39 @@ fun UserRelationshipBottomSheet(
                                                 }
 
                                                 coroutineScope.launch {
-                                                    when (
-                                                        val res = SocialSessionCache.manager.setFollowState(
-                                                            ownerUid = activeUid,
-                                                            targetProfile = member,
-                                                            shouldFollow = wantFollow
+                                                    try {
+                                                        val res: ProfileOperationResult<Boolean>? = SocialSessionCache.manager.setFollowState(
+                                                            actorUid = activeUid,
+                                                            targetUid = member.uid,
+                                                            wantFollow = wantFollow,
+                                                            targetProfileHint = member
                                                         )
-                                                    ) {
-                                                        is ProfileOperationResult.Success -> {
-                                                            if (targetUid == activeUid && listType == UserListType.FOLLOWING && !wantFollow) {
-                                                                users = users.filterNot { it.uid == member.uid }
+                                                        when (res) {
+                                                            is ProfileOperationResult.Success -> {
+                                                                if (targetUid == activeUid && listType == UserListType.FOLLOWING && !wantFollow) {
+                                                                    users = users.filterNot { it.uid == member.uid }
+                                                                }
+                                                                onRelationshipChanged()
                                                             }
-                                                            onRelationshipChanged()
-                                                        }
-                                                        is ProfileOperationResult.Error -> {
-                                                            myFollowingIds = if (wasFollowing) {
-                                                                myFollowingIds + member.uid
-                                                            } else {
-                                                                myFollowingIds - member.uid
+                                                            is ProfileOperationResult.Error -> {
+                                                                myFollowingIds = if (wasFollowing) {
+                                                                    myFollowingIds + member.uid
+                                                                } else {
+                                                                    myFollowingIds - member.uid
+                                                                }
+                                                                Toast.makeText(context, res.message, Toast.LENGTH_SHORT).show()
                                                             }
-                                                            Toast.makeText(context, res.message, Toast.LENGTH_SHORT).show()
+                                                            null -> {
+                                                                // Duplicate tap while mutation already active; restore pre-tap state
+                                                                myFollowingIds = if (wasFollowing) {
+                                                                    myFollowingIds + member.uid
+                                                                } else {
+                                                                    myFollowingIds - member.uid
+                                                                }
+                                                            }
                                                         }
+                                                    } finally {
+                                                        mutatingRowIds = mutatingRowIds - member.uid
                                                     }
                                                 }
                                             }

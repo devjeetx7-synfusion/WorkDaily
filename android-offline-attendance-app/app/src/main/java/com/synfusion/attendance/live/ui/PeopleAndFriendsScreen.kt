@@ -43,6 +43,7 @@ import com.synfusion.attendance.live.ui.components.FollowButton
 import com.synfusion.attendance.live.ui.components.LivePrimaryEmerald
 import com.synfusion.attendance.live.ui.components.WorkDailyLiveAvatar
 import com.synfusion.attendance.live.viewmodel.LiveViewModel
+import com.synfusion.attendance.online.FollowCounts
 import com.synfusion.attendance.online.ProfileOperationResult
 import com.synfusion.attendance.online.PublicProfile
 import com.synfusion.attendance.online.SocialSessionCache
@@ -98,52 +99,66 @@ fun PeopleAndFriendsScreen(
     var searchQuery by rememberSaveable { mutableStateOf("") }
     var isSearchFocused by remember { mutableStateOf(false) }
 
-    val cachedFollowers = remember(socialSnapshot, currentUserId) {
-        if (!currentUserId.isNullOrBlank() && socialSnapshot.ownerUid == currentUserId) {
-            socialSnapshot.followersList?.value
-        } else null
+    val activeViewerUid: String? = currentUserId?.takeIf { it.isNotBlank() }
+
+    val cachedFollowers: List<PublicProfile>? = remember(socialSnapshot, activeViewerUid) {
+        if (activeViewerUid != null && socialSnapshot.ownerUid == activeViewerUid) {
+            socialSnapshot.followersLists[activeViewerUid]?.value?.users
+        } else {
+            null
+        }
     }
-    val cachedFollowing = remember(socialSnapshot, currentUserId) {
-        if (!currentUserId.isNullOrBlank() && socialSnapshot.ownerUid == currentUserId) {
-            socialSnapshot.followingList?.value
-        } else null
+    val cachedFollowing: List<PublicProfile>? = remember(socialSnapshot, activeViewerUid) {
+        if (activeViewerUid != null && socialSnapshot.ownerUid == activeViewerUid) {
+            socialSnapshot.followingLists[activeViewerUid]?.value?.users
+        } else {
+            null
+        }
     }
-    val cachedCounts = remember(socialSnapshot, currentUserId) {
-        val uid = currentUserId
-        if (!uid.isNullOrBlank() && socialSnapshot.ownerUid == uid) {
-            socialSnapshot.followCounts[uid]?.value
-        } else null
+    val cachedCounts: FollowCounts? = remember(socialSnapshot, activeViewerUid) {
+        if (activeViewerUid != null && socialSnapshot.ownerUid == activeViewerUid) {
+            socialSnapshot.followCounts[activeViewerUid]?.value
+        } else {
+            null
+        }
     }
 
     var followersLimit by rememberSaveable(currentUserId) { mutableIntStateOf(PEOPLE_PAGE_STEP) }
     var followingLimit by rememberSaveable(currentUserId) { mutableIntStateOf(PEOPLE_PAGE_STEP) }
 
-    var followersList by remember(currentUserId) { mutableStateOf(cachedFollowers ?: emptyList()) }
-    var followingList by remember(currentUserId) { mutableStateOf(cachedFollowing ?: emptyList()) }
+    var followersList by remember(currentUserId) { mutableStateOf<List<PublicProfile>>(cachedFollowers ?: emptyList()) }
+    var followingList by remember(currentUserId) { mutableStateOf<List<PublicProfile>>(cachedFollowing ?: emptyList()) }
     var followedUids by remember(currentUserId) {
-        mutableStateOf(
-            if (!currentUserId.isNullOrBlank() && socialSnapshot.ownerUid == currentUserId) {
-                socialSnapshot.followingIds?.value ?: emptySet()
-            } else emptySet()
+        mutableStateOf<Set<String>>(
+            if (activeViewerUid != null && socialSnapshot.ownerUid == activeViewerUid) {
+                socialSnapshot.myFollowedUids?.value ?: emptySet()
+            } else {
+                emptySet()
+            }
         )
     }
     var followerUids by remember(currentUserId) {
-        mutableStateOf(
-            if (!currentUserId.isNullOrBlank() && socialSnapshot.ownerUid == currentUserId) {
-                socialSnapshot.followerIds?.value ?: emptySet()
-            } else emptySet()
+        mutableStateOf<Set<String>>(
+            if (activeViewerUid != null && socialSnapshot.ownerUid == activeViewerUid) {
+                socialSnapshot.myFollowerUids?.value ?: emptySet()
+            } else {
+                emptySet()
+            }
         )
     }
     var blockedUids by remember(currentUserId) {
-        mutableStateOf(
-            if (!currentUserId.isNullOrBlank() && socialSnapshot.ownerUid == currentUserId) {
-                socialSnapshot.blockedIds?.value ?: emptySet()
-            } else emptySet()
+        mutableStateOf<Set<String>>(
+            if (activeViewerUid != null && socialSnapshot.ownerUid == activeViewerUid) {
+                socialSnapshot.myBlockedUids?.value ?: emptySet()
+            } else {
+                emptySet()
+            }
         )
     }
+    var mutatingRowIds by remember(currentUserId) { mutableStateOf<Set<String>>(emptySet()) }
 
     var isRelationshipsInitialLoading by remember(currentUserId) {
-        mutableStateOf(!currentUserId.isNullOrBlank() && (cachedFollowers == null || cachedFollowing == null))
+        mutableStateOf(activeViewerUid != null && (cachedFollowers == null || cachedFollowing == null))
     }
     var isRelationshipsRefreshing by remember(currentUserId) { mutableStateOf(false) }
     var isLoadingMoreRelationships by remember(currentUserId) { mutableStateOf(false) }
@@ -167,16 +182,16 @@ fun PeopleAndFriendsScreen(
         if (cachedFollowing != null) followingList = cachedFollowing
     }
     LaunchedEffect(
-        socialSnapshot.followingIds,
-        socialSnapshot.followerIds,
-        socialSnapshot.blockedIds,
+        socialSnapshot.myFollowedUids,
+        socialSnapshot.myFollowerUids,
+        socialSnapshot.myBlockedUids,
         socialSnapshot.ownerUid,
-        currentUserId
+        activeViewerUid
     ) {
-        if (!currentUserId.isNullOrBlank() && socialSnapshot.ownerUid == currentUserId) {
-            socialSnapshot.followingIds?.value?.let { followedUids = it }
-            socialSnapshot.followerIds?.value?.let { followerUids = it }
-            socialSnapshot.blockedIds?.value?.let { blockedUids = it }
+        if (activeViewerUid != null && socialSnapshot.ownerUid == activeViewerUid) {
+            socialSnapshot.myFollowedUids?.value?.let { followedUids = it }
+            socialSnapshot.myFollowerUids?.value?.let { followerUids = it }
+            socialSnapshot.myBlockedUids?.value?.let { blockedUids = it }
         }
     }
 
@@ -227,24 +242,26 @@ fun PeopleAndFriendsScreen(
 
         try {
             coroutineScope {
-                val blockedDeferred = async {
-                    SocialSessionCache.manager.getBlockedIds(targetUid, forceRefresh = forceRefresh)
+                val blockedDeferred = async<ProfileOperationResult<Set<String>>> {
+                    SocialSessionCache.manager.getBlockedUserIds(targetUid, forceRefresh = forceRefresh)
                 }
-                val followersDeferred = async {
+                val followersDeferred = async<ProfileOperationResult<List<PublicProfile>>> {
                     SocialSessionCache.manager.getFollowersList(
                         ownerUid = targetUid,
+                        targetUid = targetUid,
                         limit = followersLimit,
                         forceRefresh = forceRefresh
                     )
                 }
-                val followingDeferred = async {
+                val followingDeferred = async<ProfileOperationResult<List<PublicProfile>>> {
                     SocialSessionCache.manager.getFollowingList(
                         ownerUid = targetUid,
+                        targetUid = targetUid,
                         limit = followingLimit,
                         forceRefresh = forceRefresh
                     )
                 }
-                val countsDeferred = async {
+                val countsDeferred = async<ProfileOperationResult<FollowCounts>> {
                     SocialSessionCache.manager.getFollowCounts(
                         ownerUid = targetUid,
                         targetUid = targetUid,
@@ -326,7 +343,7 @@ fun PeopleAndFriendsScreen(
 
         val warmCached = SocialSessionCache.manager
             .currentSnapshotFor(currentUserId)
-            ?.searches
+            ?.searchResults
             ?.get(normalized.lowercase())
             ?.value
 
@@ -849,14 +866,16 @@ fun PeopleAndFriendsScreen(
                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
                     ) {
                         items(displayedUsers, key = { it.uid }) { user ->
-                            val activeUid = currentUserId
-                            val isSelfRow = !activeUid.isNullOrBlank() && activeUid == user.uid
+                            val activeUid = currentUserId?.takeIf { it.isNotBlank() }
+                            val isSelfRow = activeUid != null && activeUid == user.uid
                             val isFollowingUser = followedUids.contains(user.uid)
                             val followsMe = followerUids.contains(user.uid)
                             val isMutual = isFollowingUser && followsMe
-                            val isRowBusy = !activeUid.isNullOrBlank() &&
-                                socialSnapshot.ownerUid == activeUid &&
-                                socialSnapshot.inFlightFollowMutations.contains(user.uid)
+                            val isRowBusy = mutatingRowIds.contains(user.uid) || (
+                                activeUid != null &&
+                                    socialSnapshot.ownerUid == activeUid &&
+                                    socialSnapshot.activeMutations.contains("follow:$activeUid:${user.uid}")
+                                )
 
                             val displayName = user.displayName.ifBlank { "WorkDaily Member" }
                             val handle = if (user.username.isNotBlank()) "@${user.username}" else "@member"
@@ -952,7 +971,7 @@ fun PeopleAndFriendsScreen(
                                     }
                                 }
 
-                                if (!activeUid.isNullOrBlank() && !isSelfRow) {
+                                if (activeUid != null && !isSelfRow) {
                                     Spacer(modifier = Modifier.width(8.dp))
 
                                     FollowButton(
@@ -961,11 +980,12 @@ fun PeopleAndFriendsScreen(
                                         height = 34.dp,
                                         minWidth = 86.dp,
                                         onToggle = {
-                                            if (isRowBusy) return@FollowButton
+                                            if (isRowBusy || user.uid.isBlank()) return@FollowButton
                                             val wasFollowing = isFollowingUser
                                             val wantFollow = !wasFollowing
 
                                             // Row-scoped optimistic update (synced via SocialSessionCache)
+                                            mutatingRowIds = mutatingRowIds + user.uid
                                             followedUids = if (wantFollow) {
                                                 followedUids + user.uid
                                             } else {
@@ -973,22 +993,33 @@ fun PeopleAndFriendsScreen(
                                             }
 
                                             scope.launch {
-                                                when (
-                                                    val result = SocialSessionCache.manager.setFollowState(
-                                                        ownerUid = activeUid,
-                                                        targetProfile = user,
-                                                        shouldFollow = wantFollow
+                                                try {
+                                                    val result: ProfileOperationResult<Boolean>? = SocialSessionCache.manager.setFollowState(
+                                                        actorUid = activeUid,
+                                                        targetUid = user.uid,
+                                                        wantFollow = wantFollow,
+                                                        targetProfileHint = user
                                                     )
-                                                ) {
-                                                    is ProfileOperationResult.Success -> Unit
-                                                    is ProfileOperationResult.Error -> {
-                                                        followedUids = if (wasFollowing) {
-                                                            followedUids + user.uid
-                                                        } else {
-                                                            followedUids - user.uid
+                                                    when (result) {
+                                                        is ProfileOperationResult.Success -> Unit
+                                                        is ProfileOperationResult.Error -> {
+                                                            followedUids = if (wasFollowing) {
+                                                                followedUids + user.uid
+                                                            } else {
+                                                                followedUids - user.uid
+                                                            }
+                                                            Toast.makeText(context, result.message, Toast.LENGTH_SHORT).show()
                                                         }
-                                                        Toast.makeText(context, result.message, Toast.LENGTH_SHORT).show()
+                                                        null -> {
+                                                            followedUids = if (wasFollowing) {
+                                                                followedUids + user.uid
+                                                            } else {
+                                                                followedUids - user.uid
+                                                            }
+                                                        }
                                                     }
+                                                } finally {
+                                                    mutatingRowIds = mutatingRowIds - user.uid
                                                 }
                                             }
                                         }
