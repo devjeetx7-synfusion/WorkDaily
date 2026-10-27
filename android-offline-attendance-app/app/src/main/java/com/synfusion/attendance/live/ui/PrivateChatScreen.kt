@@ -212,8 +212,7 @@ fun PrivateChatScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
-                .imePadding(),
+                .padding(paddingValues),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             if (isCheckingMutual) {
@@ -353,11 +352,13 @@ fun PrivateChatScreen(
                     }
                 }
 
-                // Theme-Aware Compact Composer Bar
+                // Theme-Aware Compact Composer Bar with Navigation Bar Insets
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(MaterialTheme.colorScheme.surface)
+                        .navigationBarsPadding()
+                        .imePadding()
                         .padding(horizontal = 12.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp)

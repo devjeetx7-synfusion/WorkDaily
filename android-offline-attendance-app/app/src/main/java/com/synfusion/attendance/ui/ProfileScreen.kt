@@ -51,6 +51,7 @@ import com.synfusion.attendance.utils.AmountFormatter
 import com.synfusion.attendance.utils.collectAsStateWithLifecycle
 import com.synfusion.attendance.viewmodel.OfflineSettingsState
 import com.synfusion.attendance.viewmodel.OfflineSettingsViewModel
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -348,7 +349,7 @@ fun ProfileScreen(
                                 modifier = Modifier
                                     .weight(1f)
                                     .clip(RoundedCornerShape(12.dp))
-                                    .clickable { onNavigatePeople() }
+                                    .clickable { activeUserListType = UserListType.FOLLOWERS }
                                     .padding(vertical = 4.dp)
                             ) {
                                 Text(
@@ -367,7 +368,7 @@ fun ProfileScreen(
                                 modifier = Modifier
                                     .weight(1f)
                                     .clip(RoundedCornerShape(12.dp))
-                                    .clickable { onNavigatePeople() }
+                                    .clickable { activeUserListType = UserListType.FOLLOWING }
                                     .padding(vertical = 4.dp)
                             ) {
                                 Text(
@@ -771,22 +772,51 @@ fun ProfileScreen(
 
             if (activeUserListType != null) {
                 val listType = activeUserListType!!
+                var sheetUsers by remember { mutableStateOf<List<com.synfusion.attendance.online.PublicProfile>>(emptyList()) }
+                var isSheetLoading by remember { mutableStateOf(true) }
+                var followedSet by remember { mutableStateOf<Set<String>>(emptySet()) }
+                var busyUids by remember { mutableStateOf<Set<String>>(emptySet()) }
+                val followRepo = remember { com.synfusion.attendance.online.FirestoreFollowRepository() }
+                val coroutineScope = rememberCoroutineScope()
+
+                LaunchedEffect(listType, currentUserId) {
+                    if (currentUserId != null) {
+                        isSheetLoading = true
+                        val res = if (listType == UserListType.FOLLOWERS) {
+                            followRepo.getFollowers(currentUserId)
+                        } else {
+                            followRepo.getFollowing(currentUserId)
+                        }
+                        if (res is com.synfusion.attendance.online.ProfileOperationResult.Success) {
+                            sheetUsers = res.data
+                        }
+                        val followingRes = followRepo.getFollowing(currentUserId)
+                        if (followingRes is com.synfusion.attendance.online.ProfileOperationResult.Success) {
+                            followedSet = followingRes.data.map { it.uid }.toSet()
+                        }
+                        isSheetLoading = false
+                    }
+                }
+
                 ModalBottomSheet(
                     onDismissRequest = { activeUserListType = null },
-                    sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+                    sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false),
                     containerColor = MaterialTheme.colorScheme.surface,
-                    shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+                    shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+                    windowInsets = WindowInsets(0.dp),
+                    dragHandle = { BottomSheetDefaults.DragHandle() }
                 ) {
                     val title = when (listType) {
-                        UserListType.FOLLOWERS -> "Followers"
-                        UserListType.FOLLOWING -> "Following"
-                        UserListType.FRIENDS -> "Followers"
+                        UserListType.FOLLOWERS -> "Followers (${sheetUsers.size})"
+                        UserListType.FOLLOWING -> "Following (${sheetUsers.size})"
+                        UserListType.FRIENDS -> "Followers (${sheetUsers.size})"
                     }
 
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                            .fillMaxHeight(0.85f)
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Row(
@@ -800,38 +830,42 @@ fun ProfileScreen(
                             }
                         }
 
-                        val listUsers = remember(publicUsers, listType) {
-                            when (listType) {
-                                UserListType.FOLLOWING -> publicUsers.filter { it.isFollowing }
-                                else -> publicUsers
-                            }
-                        }
-
-                        if (listUsers.isEmpty()) {
+                        if (isSheetLoading) {
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(180.dp),
+                                    .weight(1f),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text("No users found in $title", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
+                                CircularProgressIndicator(color = LivePrimaryEmerald)
+                            }
+                        } else if (sheetUsers.isEmpty()) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .weight(1f),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("No users found in $title", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                             }
                         } else {
                             LazyColumn(
-                                modifier = Modifier.heightIn(max = 360.dp),
-                                verticalArrangement = Arrangement.spacedBy(10.dp)
+                                modifier = Modifier.weight(1f),
+                                verticalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
-                                items(listUsers, key = { it.id }) { user ->
+                                items(sheetUsers, key = { it.uid }) { user ->
+                                    val isFollowingUser = followedSet.contains(user.uid)
+                                    val busy = user.uid in busyUids
+
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .clip(RoundedCornerShape(12.dp))
-                                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
                                             .clickable {
                                                 activeUserListType = null
-                                                onNavigateMessages()
+                                                onNavigatePeople()
                                             }
-                                            .padding(12.dp),
+                                            .padding(vertical = 10.dp, horizontal = 6.dp),
                                         horizontalArrangement = Arrangement.SpaceBetween,
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
@@ -841,23 +875,55 @@ fun ProfileScreen(
                                             modifier = Modifier.weight(1f)
                                         ) {
                                             WorkDailyLiveAvatar(
-                                                name = user.name,
-                                                avatarUrl = user.avatar,
-                                                size = 40.dp,
-                                                isLive = user.isLiveNow,
+                                                name = user.displayName,
+                                                avatarUrl = user.photoUrl ?: "",
+                                                size = 44.dp,
+                                                isLive = false,
                                                 showBadge = false
                                             )
-                                            Column {
-                                                Text(user.name, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                                                Text(user.profession, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                                    Text(user.displayName, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                                                    if (user.isVerified) {
+                                                        Icon(Icons.Default.Verified, contentDescription = "Verified", tint = LivePrimaryEmerald, modifier = Modifier.size(14.dp))
+                                                    }
+                                                }
+                                                Text("@${user.username}", fontSize = 12.sp, color = LivePrimaryEmerald)
+                                                if (user.profession.isNotBlank()) {
+                                                    Text(user.profession, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                }
                                             }
                                         }
 
-                                        FollowButton(
-                                            isFollowing = user.isFollowing,
-                                            onToggle = { liveViewModel?.toggleFollowCreator(user.id) }
-                                        )
+                                        if (currentUserId != null && currentUserId != user.uid) {
+                                            FollowButton(
+                                                isFollowing = isFollowingUser,
+                                                onToggle = {
+                                                    if (busy) return@FollowButton
+                                                    val wasFollowing = isFollowingUser
+                                                    busyUids = busyUids + user.uid
+                                                    coroutineScope.launch {
+                                                        try {
+                                                            val res = if (wasFollowing) followRepo.unfollowUser(currentUserId, user.uid) else followRepo.followUser(currentUserId, user.uid)
+                                                            if (res is com.synfusion.attendance.online.ProfileOperationResult.Success) {
+                                                                followedSet = if (wasFollowing) followedSet - user.uid else followedSet + user.uid
+                                                                realFollowersCount = (followRepo.getFollowers(currentUserId) as? com.synfusion.attendance.online.ProfileOperationResult.Success)?.data?.size ?: realFollowersCount
+                                                                realFollowingCount = (followRepo.getFollowing(currentUserId) as? com.synfusion.attendance.online.ProfileOperationResult.Success)?.data?.size ?: realFollowingCount
+                                                            }
+                                                        } catch (e: Exception) {
+                                                            // handle failure
+                                                        } finally {
+                                                            busyUids = busyUids - user.uid
+                                                        }
+                                                    }
+                                                },
+                                                isLoading = busy,
+                                                height = 32.dp,
+                                                minWidth = 72.dp
+                                            )
+                                        }
                                     }
+                                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
                                 }
                             }
                         }

@@ -268,14 +268,17 @@ open class OfflinePreferencesRepository(val context: Context) {
     }
 
     /**
-     * Clears active session tokens (auth_token and user_role) during sign-out.
-     * Preserves UserEntity, attendance records, summaries, backup files, and
-     * linked_firebase_uid metadata (for account mismatch protection).
+     * Clears active session tokens and online account bindings during sign-out.
+     * Preserves UserEntity, attendance records, summaries, and local backup files,
+     * while allowing account switching for Google Sign-In.
      */
     open suspend fun clearAuthSession() {
         context.offlineDataStore.edit { preferences ->
             preferences.remove(TOKEN_KEY)
             preferences.remove(ROLE_KEY)
+            preferences.remove(LINKED_FIREBASE_UID_KEY)
+            preferences.remove(ONLINE_ACCOUNT_SETUP_COMPLETED_KEY)
+            preferences.remove(GOOGLE_PHOTO_URL_KEY)
         }
     }
 

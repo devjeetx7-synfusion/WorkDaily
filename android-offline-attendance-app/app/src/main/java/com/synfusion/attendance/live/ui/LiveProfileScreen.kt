@@ -405,12 +405,14 @@ fun LiveProfileScreen(
                         horizontalArrangement = Arrangement.SpaceEvenly,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        var activeTargetUserListType by remember { mutableStateOf<UserListType?>(null) }
+
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             modifier = Modifier
                                 .weight(1f)
                                 .clip(RoundedCornerShape(8.dp))
-                                .clickable { onNavigatePeople() }
+                                .clickable { activeTargetUserListType = UserListType.FOLLOWERS }
                                 .padding(vertical = 4.dp)
                         ) {
                             Text(
@@ -440,7 +442,7 @@ fun LiveProfileScreen(
                             modifier = Modifier
                                 .weight(1f)
                                 .clip(RoundedCornerShape(8.dp))
-                                .clickable { onNavigatePeople() }
+                                .clickable { activeTargetUserListType = UserListType.FOLLOWING }
                                 .padding(vertical = 4.dp)
                         ) {
                             Text(
@@ -456,6 +458,158 @@ fun LiveProfileScreen(
                                 fontWeight = FontWeight.Medium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
+                        }
+
+                        if (activeTargetUserListType != null) {
+                            val listType = activeTargetUserListType!!
+                            var sheetUsers by remember { mutableStateOf<List<PublicProfile>>(emptyList()) }
+                            var isSheetLoading by remember { mutableStateOf(true) }
+                            var followedSet by remember { mutableStateOf<Set<String>>(emptySet()) }
+                            var busyUids by remember { mutableStateOf<Set<String>>(emptySet()) }
+
+                            LaunchedEffect(listType, targetUser.uid, currentUserId) {
+                                isSheetLoading = true
+                                val res = if (listType == UserListType.FOLLOWERS) {
+                                    followRepo.getFollowers(targetUser.uid)
+                                } else {
+                                    followRepo.getFollowing(targetUser.uid)
+                                }
+                                if (res is ProfileOperationResult.Success) {
+                                    sheetUsers = res.data
+                                }
+                                if (currentUserId != null) {
+                                    val myFollowingRes = followRepo.getFollowing(currentUserId)
+                                    if (myFollowingRes is ProfileOperationResult.Success) {
+                                        followedSet = myFollowingRes.data.map { it.uid }.toSet()
+                                    }
+                                }
+                                isSheetLoading = false
+                            }
+
+                            ModalBottomSheet(
+                                onDismissRequest = { activeTargetUserListType = null },
+                                sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false),
+                                containerColor = MaterialTheme.colorScheme.surface,
+                                shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+                                windowInsets = WindowInsets(0.dp),
+                                dragHandle = { BottomSheetDefaults.DragHandle() }
+                            ) {
+                                val sheetTitle = when (listType) {
+                                    UserListType.FOLLOWERS -> "Followers (${sheetUsers.size})"
+                                    UserListType.FOLLOWING -> "Following (${sheetUsers.size})"
+                                    UserListType.FRIENDS -> "Followers (${sheetUsers.size})"
+                                }
+
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .fillMaxHeight(0.85f)
+                                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(sheetTitle, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                                        IconButton(onClick = { activeTargetUserListType = null }) {
+                                            Icon(Icons.Default.Close, contentDescription = "Close")
+                                        }
+                                    }
+
+                                    if (isSheetLoading) {
+                                        Box(
+                                            modifier = Modifier.fillMaxWidth().weight(1f),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            CircularProgressIndicator(color = LivePrimaryEmerald)
+                                        }
+                                    } else if (sheetUsers.isEmpty()) {
+                                        Box(
+                                            modifier = Modifier.fillMaxWidth().weight(1f),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text("No users found in $sheetTitle", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
+                                        }
+                                    } else {
+                                        LazyColumn(
+                                            modifier = Modifier.weight(1f),
+                                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            items(sheetUsers, key = { it.uid }) { user ->
+                                                val isFollowingUser = followedSet.contains(user.uid)
+                                                val busy = user.uid in busyUids
+
+                                                Row(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .clip(RoundedCornerShape(12.dp))
+                                                        .clickable {
+                                                            activeTargetUserListType = null
+                                                            onNavigatePeople()
+                                                        }
+                                                        .padding(vertical = 10.dp, horizontal = 6.dp),
+                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Row(
+                                                        verticalAlignment = Alignment.CenterVertically,
+                                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                                        modifier = Modifier.weight(1f)
+                                                    ) {
+                                                        WorkDailyLiveAvatar(
+                                                            name = user.displayName,
+                                                            avatarUrl = user.photoUrl ?: "",
+                                                            size = 44.dp,
+                                                            isLive = false,
+                                                            showBadge = false
+                                                        )
+                                                        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                                                Text(user.displayName, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                                                                if (user.isVerified) {
+                                                                    Icon(Icons.Default.Verified, contentDescription = "Verified", tint = LivePrimaryEmerald, modifier = Modifier.size(14.dp))
+                                                                }
+                                                            }
+                                                            Text("@${user.username}", fontSize = 12.sp, color = LivePrimaryEmerald)
+                                                            if (user.profession.isNotBlank()) {
+                                                                Text(user.profession, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                                            }
+                                                        }
+                                                    }
+
+                                                    if (currentUserId != null && currentUserId != user.uid) {
+                                                        FollowButton(
+                                                            isFollowing = isFollowingUser,
+                                                            onToggle = {
+                                                                if (busy) return@FollowButton
+                                                                val wasFollowing = isFollowingUser
+                                                                busyUids = busyUids + user.uid
+                                                                coroutineScope.launch {
+                                                                    try {
+                                                                        val res = if (wasFollowing) followRepo.unfollowUser(currentUserId, user.uid) else followRepo.followUser(currentUserId, user.uid)
+                                                                        if (res is ProfileOperationResult.Success) {
+                                                                            followedSet = if (wasFollowing) followedSet - user.uid else followedSet + user.uid
+                                                                        }
+                                                                    } catch (_: Exception) {
+                                                                    } finally {
+                                                                        busyUids = busyUids - user.uid
+                                                                    }
+                                                                }
+                                                            },
+                                                            isLoading = busy,
+                                                            height = 32.dp,
+                                                            minWidth = 72.dp
+                                                        )
+                                                    }
+                                                }
+                                                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }

@@ -12,6 +12,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -1302,15 +1304,133 @@ fun PrivacySafetyDestination() {
     }
 
     if (showBlockedSheet) {
+        val currentUserId = remember {
+            try { com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid } catch (_: Exception) { null }
+        }
+        val blockRepo = remember { com.synfusion.attendance.online.FirestoreBlockRepository() }
+        val publicProfileRepo = remember { com.synfusion.attendance.online.FirestorePublicProfileRepository() }
+        val coroutineScope = rememberCoroutineScope()
+
+        var blockedProfiles by remember { mutableStateOf<List<com.synfusion.attendance.online.PublicProfile>>(emptyList()) }
+        var isLoadingBlocked by remember { mutableStateOf(true) }
+        var unblockingUids by remember { mutableStateOf<Set<String>>(emptySet()) }
+
+        LaunchedEffect(currentUserId) {
+            if (currentUserId != null) {
+                isLoadingBlocked = true
+                val result = blockRepo.getBlockedUserIds(currentUserId)
+                if (result is com.synfusion.attendance.online.ProfileOperationResult.Success) {
+                    val profiles = mutableListOf<com.synfusion.attendance.online.PublicProfile>()
+                    for (uid in result.data) {
+                        val profRes = publicProfileRepo.getPublicProfile(uid)
+                        if (profRes is com.synfusion.attendance.online.ProfileOperationResult.Success && profRes.data != null) {
+                            profiles.add(profRes.data)
+                        }
+                    }
+                    blockedProfiles = profiles
+                }
+                isLoadingBlocked = false
+            } else {
+                isLoadingBlocked = false
+            }
+        }
+
         ModalBottomSheet(
             onDismissRequest = { showBlockedSheet = false },
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false),
             containerColor = MaterialTheme.colorScheme.surface,
-            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+            windowInsets = WindowInsets(0.dp),
+            dragHandle = { BottomSheetDefaults.DragHandle() }
         ) {
-            Column(modifier = Modifier.fillMaxWidth().padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("Blocked Users", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                Text("No blocked accounts currently.", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Spacer(modifier = Modifier.height(16.dp))
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight(0.75f)
+                    .padding(horizontal = 20.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Blocked Users (${blockedProfiles.size})", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                    IconButton(onClick = { showBlockedSheet = false }) {
+                        Icon(Icons.Default.Close, contentDescription = "Close")
+                    }
+                }
+
+                if (isLoadingBlocked) {
+                    Box(modifier = Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = com.synfusion.attendance.live.ui.components.LivePrimaryEmerald)
+                    }
+                } else if (blockedProfiles.isEmpty()) {
+                    Box(modifier = Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
+                        Text("No blocked users in your account.", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(blockedProfiles, key = { it.uid }) { user ->
+                            val isUnblocking = user.uid in unblockingUids
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .padding(vertical = 8.dp, horizontal = 4.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    com.synfusion.attendance.live.ui.components.WorkDailyLiveAvatar(
+                                        name = user.displayName,
+                                        avatarUrl = user.photoUrl ?: "",
+                                        size = 40.dp,
+                                        isLive = false,
+                                        showBadge = false
+                                    )
+                                    Column {
+                                        Text(user.displayName, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                                        Text("@${user.username}", fontSize = 12.sp, color = com.synfusion.attendance.live.ui.components.LivePrimaryEmerald)
+                                    }
+                                }
+
+                                OutlinedButton(
+                                    onClick = {
+                                        if (currentUserId != null && !isUnblocking) {
+                                            unblockingUids = unblockingUids + user.uid
+                                            coroutineScope.launch {
+                                                val res = blockRepo.unblockUser(currentUserId, user.uid)
+                                                if (res is com.synfusion.attendance.online.ProfileOperationResult.Success) {
+                                                    blockedProfiles = blockedProfiles.filter { it.uid != user.uid }
+                                                }
+                                                unblockingUids = unblockingUids - user.uid
+                                            }
+                                        }
+                                    },
+                                    enabled = !isUnblocking,
+                                    shape = RoundedCornerShape(20.dp),
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+                                    modifier = Modifier.height(32.dp)
+                                ) {
+                                    if (isUnblocking) {
+                                        CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 1.5.dp)
+                                    } else {
+                                        Text("Unblock", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                                    }
+                                }
+                            }
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                        }
+                    }
+                }
             }
         }
     }
