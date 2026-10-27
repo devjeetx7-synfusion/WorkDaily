@@ -765,7 +765,8 @@ class OfflineAuthViewModel(
                     )
                     val onlineSyncResult = onlineProfileRepository.ensureOnlineProfile(onlineProfile)
                     if (onlineSyncResult is ProfileSyncResult.WorkspaceMismatch) {
-                        publicProfileError = onlineSyncResult.reason
+                        publicProfileError =
+                            "Workspace mismatch: this Google account is already linked to workspace ${onlineSyncResult.existingLocalWorkspaceIdInFirestore} (current workspace: ${onlineSyncResult.currentLocalWorkspaceId})."
                     } else {
                         val cleanUsername = enteredUsername.trim().removePrefix("@")
                         val pubResult = if (cleanUsername.isNotBlank()) {
