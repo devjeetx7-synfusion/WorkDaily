@@ -934,8 +934,9 @@ fun EditProfileDestination(
             isError = bioError != null
         )
 
-        if (bioError != null) {
-            Text(bioError!!, color = MaterialTheme.colorScheme.error, fontSize = 12.sp, modifier = Modifier.fillMaxWidth().padding(start = 4.dp))
+        val err = bioError
+        if (err != null) {
+            Text(err, color = MaterialTheme.colorScheme.error, fontSize = 12.sp, modifier = Modifier.fillMaxWidth().padding(start = 4.dp))
         }
 
         Spacer(modifier = Modifier.height(12.dp))

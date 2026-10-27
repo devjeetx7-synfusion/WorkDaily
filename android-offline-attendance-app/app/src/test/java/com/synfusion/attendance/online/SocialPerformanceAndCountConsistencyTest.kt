@@ -55,7 +55,10 @@ class SocialPerformanceAndCountConsistencyTest {
                 bio = bio,
                 profession = profession,
                 photoUrl = photoUrl,
-                isPublic = isPublic
+                isPublic = isPublic,
+                gender = gender,
+                dateOfBirth = dateOfBirth,
+                countryCode = countryCode
             )
             profiles[firebaseUid] = updated
             return ProfileOperationResult.Success(updated)
