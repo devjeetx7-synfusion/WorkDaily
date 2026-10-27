@@ -29,9 +29,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import com.synfusion.attendance.data.model.CountryRepository
 import com.synfusion.attendance.utils.collectAsStateWithLifecycle
 import com.synfusion.attendance.live.ui.components.*
 import com.synfusion.attendance.live.viewmodel.LiveViewModel
+import java.util.Locale
 import com.synfusion.attendance.online.BlockRepository
 import com.synfusion.attendance.online.FirestoreReportRepository
 import com.synfusion.attendance.online.FollowCounts
@@ -434,6 +436,7 @@ fun LiveProfileScreen(
     val avatarUrl = targetUser.photoUrl ?: ""
 
     var showMenu by remember { mutableStateOf(false) }
+    var showPhotoPreview by remember { mutableStateOf(false) }
     var showBlockConfirmDialog by remember { mutableStateOf(false) }
     var showReportDialog by remember { mutableStateOf(false) }
     var reportReason by remember { mutableStateOf("") }
@@ -611,6 +614,38 @@ fun LiveProfileScreen(
         )
     }
 
+    // Photo preview dialog
+    if (showPhotoPreview && avatarUrl.isNotBlank()) {
+        AlertDialog(
+            onDismissRequest = { showPhotoPreview = false },
+            containerColor = MaterialTheme.colorScheme.surface,
+            title = { Text("Profile Photo", fontWeight = FontWeight.Bold) },
+            text = {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                        .aspectRatio(1f)
+                        .clip(RoundedCornerShape(12.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    coil.compose.AsyncImage(
+                        model = avatarUrl,
+                        contentDescription = "Profile Photo Preview",
+                        modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(12.dp)),
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showPhotoPreview = false }) {
+                    Text("Close")
+                }
+            },
+            dismissButton = null
+        )
+    }
+
     val selectedListType = activeUserListType
     if (selectedListType != null && targetUser.uid.isNotBlank()) {
         UserRelationshipBottomSheet(
@@ -759,13 +794,20 @@ fun LiveProfileScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    WorkDailyLiveAvatar(
-                        name = displayName,
-                        avatarUrl = avatarUrl,
-                        size = 88.dp,
-                        isLive = false,
-                        showBadge = false
-                    )
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier.clickable {
+                            showPhotoPreview = true
+                        }
+                    ) {
+                        WorkDailyLiveAvatar(
+                            name = displayName,
+                            avatarUrl = avatarUrl,
+                            size = 88.dp,
+                            isLive = false,
+                            showBadge = false
+                        )
+                    }
 
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -811,6 +853,49 @@ fun LiveProfileScreen(
                                 fontWeight = FontWeight.SemiBold,
                                 color = LivePrimaryEmerald,
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                            )
+                        }
+
+                        // Gender icon (icon-only), Age, Country flag + name
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.padding(top = 6.dp)
+                        ) {
+                            // Gender icon
+                            Icon(
+                                imageVector = when (targetUser.gender.lowercase()) {
+                                    "female" -> Icons.Default.Woman
+                                    else -> Icons.Default.Man
+                                },
+                                contentDescription = "Gender",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(16.dp)
+                            )
+
+                            // Age
+                            if (targetUser.dateOfBirth != null) {
+                                val age = calculateAge(targetUser.dateOfBirth!!)
+                                Text(
+                                    text = "$age",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = " • ",
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.outlineVariant
+                                )
+                            }
+
+                            // Country flag + name
+                            val activeCountry = CountryRepository.getCountry(targetUser.countryCode.ifEmpty { "IN" })
+                            Text(
+                                text = "${activeCountry.flagEmoji} ${activeCountry.displayName}",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
 
@@ -1689,5 +1774,17 @@ fun UserRelationshipBottomSheet(
                 }
             }
         }
+    }
+}
+
+/** Calculates age in years from a "yyyy-MM-dd" date string. */
+private fun calculateAge(dob: String): Int {
+    try {
+        val parts = dob.split("-").map { it.toInt() }
+        if (parts.size != 3) return 0
+        val birth = java.time.LocalDate.of(parts[0], parts[1], parts[2])
+        return java.time.Period.between(birth, java.time.LocalDate.now()).years
+    } catch (_: Exception) {
+        return 0
     }
 }

@@ -33,6 +33,8 @@ data class OfflineSettingsState(
     val originalPhone: String = "",
     val gender: String = "Male",
     val originalGender: String = "Male",
+    val dateOfBirth: String? = null,
+    val originalDateOfBirth: String? = null,
     val profession: String = "Site Worker",
     val originalProfession: String = "Site Worker",
     val bio: String = "",
@@ -260,7 +262,9 @@ class OfflineSettingsViewModel(
             return
         }
 
-        if (cleaned == _state.value.originalUsername) {
+        // An unchanged username (case-insensitive) belongs to the authenticated user and is always valid.
+        val original = _state.value.originalUsername
+        if (cleaned.equals(original, ignoreCase = true)) {
             _state.update { it.copy(usernameAvailability = com.synfusion.attendance.online.UsernameAvailabilityResult.Available, isCheckingUsername = false) }
             return
         }
@@ -320,6 +324,10 @@ class OfflineSettingsViewModel(
         _state.update { it.copy(gender = newGender) }
     }
 
+    fun onDateOfBirthChange(newDob: String?) {
+        _state.update { it.copy(dateOfBirth = newDob) }
+    }
+
     fun onProfessionChange(newProfession: String) {
         _state.update { it.copy(profession = newProfession) }
     }
@@ -337,6 +345,27 @@ class OfflineSettingsViewModel(
             val uid = try { com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid } catch (e: Exception) { null }
 
             if (uid != null && cleanUsername.isNotBlank()) {
+                // Defense in depth: re-verify username availability at the save boundary,
+                // excluding the current authenticated user so an unchanged username is always accepted.
+                val availability = publicProfileRepository.checkUsernameAvailability(cleanUsername, uid)
+                when (availability) {
+                    is com.synfusion.attendance.online.UsernameAvailabilityResult.AlreadyTaken -> {
+                        _state.update { it.copy(isSaving = false, usernameError = "Username @$cleanUsername is already taken by another user", savedMessage = "Username @$cleanUsername is already taken by another user") }
+                        return@launch
+                    }
+                    is com.synfusion.attendance.online.UsernameAvailabilityResult.Invalid -> {
+                        _state.update { it.copy(isSaving = false, usernameError = availability.reason, savedMessage = availability.reason) }
+                        return@launch
+                    }
+                    is com.synfusion.attendance.online.UsernameAvailabilityResult.Error -> {
+                        _state.update { it.copy(isSaving = false, usernameError = availability.message, savedMessage = availability.message) }
+                        return@launch
+                    }
+                    is com.synfusion.attendance.online.UsernameAvailabilityResult.Available -> {
+                        // Proceed to save
+                    }
+                }
+
                 val validation = com.synfusion.attendance.online.UsernameValidator.validate(cleanUsername)
                 if (validation is com.synfusion.attendance.online.UsernameValidationResult.Invalid) {
                     _state.update { it.copy(isSaving = false, usernameError = validation.reason, savedMessage = validation.reason) }
@@ -357,7 +386,10 @@ class OfflineSettingsViewModel(
                     bio = bio,
                     profession = profession,
                     photoUrl = currentState.googlePhotoUrl.ifBlank { existingPhotoUrl },
-                    isPublic = true
+                    isPublic = true,
+                    gender = currentState.gender,
+                    dateOfBirth = currentState.dateOfBirth,
+                    countryCode = currentState.countryCode
                 )
 
                 when (pubResult) {
@@ -371,7 +403,7 @@ class OfflineSettingsViewModel(
                 }
             }
 
-            _state.update { it.copy(name = name, username = cleanUsername, originalUsername = cleanUsername, profession = profession, bio = bio) }
+            _state.update { it.copy(name = name, username = cleanUsername, originalUsername = cleanUsername, profession = profession, bio = bio, originalBio = bio) }
             saveChanges()
         }
     }

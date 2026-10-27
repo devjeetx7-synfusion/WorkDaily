@@ -913,15 +913,31 @@ fun EditProfileDestination(
             singleLine = true
         )
 
+        var bioError by remember { mutableStateOf<String?>(null) }
+
         OutlinedTextField(
             value = bioText,
-            onValueChange = { bioText = it },
+            onValueChange = { newValue ->
+                bioText = newValue
+                if (newValue.length > 150) {
+                    bioError = "Bio must be 150 characters or fewer"
+                    bioText = newValue.take(150)
+                } else {
+                    bioError = null
+                }
+            },
             label = { Text("Bio") },
             leadingIcon = { Icon(Icons.Default.Description, null) },
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
-            maxLines = 3
+            maxLines = 3,
+            maxLength = 150,
+            isError = bioError != null
         )
+
+        if (bioError != null) {
+            Text(bioError!!, color = MaterialTheme.colorScheme.error, fontSize = 12.sp, modifier = Modifier.fillMaxWidth().padding(start = 4.dp))
+        }
 
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -1063,6 +1079,37 @@ fun PersonalWorkDetailsDestination(
                 }
             }
         }
+        // DATE OF BIRTH
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Text(
+                text = "Date of Birth",
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+            )
+            OutlinedTextField(
+                value = state.dateOfBirth.orEmpty(),
+                onValueChange = { viewModel.onDateOfBirthChange(it.takeIf { it.isNotEmpty() }) },
+                label = { Text("YYYY-MM-DD") },
+                leadingIcon = { Icon(Icons.Default.Cake, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Date)
+            )
+            if (state.dateOfBirth != null) {
+                val age = calculateAge(state.dateOfBirth!!)
+                Text(
+                    text = "Age: $age",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 4.dp, top = 4.dp)
+                )
+            }
+        }
+
         Box(modifier = Modifier.fillMaxWidth()) {
             OutlinedTextField(
                 value = "${activeCountry.flagEmoji} ${activeCountry.displayName} (${activeCountry.currencySymbol})",
@@ -2297,5 +2344,17 @@ fun ContactIconItem(
             tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(28.dp)
         )
+    }
+}
+
+/** Calculates age in years from a "yyyy-MM-dd" date string. */
+private fun calculateAge(dob: String): Int {
+    try {
+        val parts = dob.split("-").map { it.toInt() }
+        if (parts.size != 3) return 0
+        val birth = java.time.LocalDate.of(parts[0], parts[1], parts[2])
+        return java.time.Period.between(birth, java.time.LocalDate.now()).years
+    } catch (_: Exception) {
+        return 0
     }
 }

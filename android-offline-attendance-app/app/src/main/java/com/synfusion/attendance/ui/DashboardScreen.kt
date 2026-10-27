@@ -381,8 +381,10 @@ fun DashboardScreen(
                                                         item {
                                                             HeaderSection(
                                                                 state = dashboardState,
+                                                                googlePhotoUrl = settingsState.googlePhotoUrl,
                                                                 onProfileClick = { bottomNavController.navigate("profile") },
                                                                 onSearchClick = { bottomNavController.navigate("live_people") },
+                                                                onMessagesClick = { bottomNavController.navigate("messages") },
                                                                 onNotificationClick = { bottomNavController.navigate("notifications_center") }
                                                             )
                                                         }
@@ -432,9 +434,11 @@ fun DashboardScreen(
                                                         item {
                                                             HeaderSection(
                                                                 state = dashboardState,
+                                                                googlePhotoUrl = settingsState.googlePhotoUrl,
                                                                 onProfileClick = { bottomNavController.navigate("profile") },
                                                                 onSearchClick = { bottomNavController.navigate("live_people") },
                                                                 onNotificationClick = { bottomNavController.navigate("notifications_center") }
+                                                                onMessagesClick = { bottomNavController.navigate("messages") },
                                                             )
                                                         }
                                                         item {
@@ -582,6 +586,14 @@ fun DashboardScreen(
                     onNavigateBack = { bottomNavController.navigateUp() },
                     onNavigateSettings = { bottomNavController.navigate("notification_settings") },
                     onNavigateDestination = { route -> bottomNavController.navigate(route) }
+                )
+            }
+            composable("messages") {
+                ChatListScreen(
+                    viewModel = liveViewModel,
+                    onNavigateBack = { bottomNavController.navigateUp() },
+                    onNavigatePrivateChat = { friendId -> bottomNavController.navigate("live_private_chat/$friendId") },
+                    onNavigateUserProfile = { userId -> bottomNavController.navigate("live_profile?userId=$userId") }
                 )
             }
             composable("notification_settings") {
@@ -1074,8 +1086,10 @@ fun DashboardShimmer() {
 @Composable
 fun HeaderSection(
     state: OfflineDashboardState,
+    googlePhotoUrl: String = "",
     onProfileClick: () -> Unit = {},
     onSearchClick: () -> Unit = {},
+    onMessagesClick: () -> Unit = {},
     onNotificationClick: () -> Unit = {}
 ) {
     val context = LocalContext.current
@@ -1092,7 +1106,7 @@ fun HeaderSection(
         if (state.photoUrl.isNotEmpty()) java.io.File(state.photoUrl) else null
     }
     val showLocalImage = imageFile != null && imageFile.exists()
-    val imageRequest = remember(state.photoUrl, showLocalImage) {
+    val localImageRequest = remember(state.photoUrl, showLocalImage) {
         if (imageFile != null && showLocalImage) {
             coil.request.ImageRequest.Builder(context)
                 .data(imageFile)
@@ -1100,6 +1114,24 @@ fun HeaderSection(
                 .memoryCacheKey("${state.photoUrl}_${imageFile.lastModified()}")
                 .diskCacheKey("${state.photoUrl}_${imageFile.lastModified()}")
                 .networkCachePolicy(coil.request.CachePolicy.DISABLED)
+                .diskCachePolicy(coil.request.CachePolicy.ENABLED)
+                .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
+                .build()
+        } else null
+    }
+
+    // Remote photo URL (Google photo or Firestore public profile photo) as fallback
+    val remotePhotoUrl = remember(state.photoUrl, googlePhotoUrl) {
+        if (showLocalImage) null else googlePhotoUrl.takeIf { it.isNotBlank() }
+    }
+    val remoteImageRequest = remember(remotePhotoUrl) {
+        if (remotePhotoUrl != null) {
+            coil.request.ImageRequest.Builder(context)
+                .data(remotePhotoUrl)
+                .crossfade(true)
+                .memoryCacheKey(remotePhotoUrl)
+                .diskCacheKey(remotePhotoUrl)
+                .networkCachePolicy(coil.request.CachePolicy.ENABLED)
                 .diskCachePolicy(coil.request.CachePolicy.ENABLED)
                 .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
                 .build()
@@ -1126,9 +1158,41 @@ fun HeaderSection(
                         .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
                     contentAlignment = Alignment.Center
                 ) {
-                    if (showLocalImage && imageRequest != null) {
+                    if (showLocalImage && localImageRequest != null) {
                         coil.compose.SubcomposeAsyncImage(
-                            model = imageRequest,
+                            model = localImageRequest,
+                            contentDescription = "Profile Photo",
+                            modifier = Modifier.fillMaxSize().clip(CircleShape),
+                            contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                            error = {
+                                if (remoteImageRequest != null) {
+                                    coil.compose.SubcomposeAsyncImage(
+                                        model = remoteImageRequest,
+                                        contentDescription = "Profile Photo",
+                                        modifier = Modifier.fillMaxSize().clip(CircleShape),
+                                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                                        error = {
+                                            Text(
+                                                text = avatarLetters,
+                                                color = MaterialTheme.colorScheme.primary,
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 14.sp
+                                            )
+                                        }
+                                    )
+                                } else {
+                                    Text(
+                                        text = avatarLetters,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 14.sp
+                                    )
+                                }
+                            }
+                        )
+                    } else if (remoteImageRequest != null) {
+                        coil.compose.SubcomposeAsyncImage(
+                            model = remoteImageRequest,
                             contentDescription = "Profile Photo",
                             modifier = Modifier.fillMaxSize().clip(CircleShape),
                             contentScale = androidx.compose.ui.layout.ContentScale.Crop,
@@ -1203,6 +1267,25 @@ fun HeaderSection(
                         contentDescription = "Search People",
                         tint = MaterialTheme.colorScheme.onBackground
                     )
+                }
+
+                IconButton(onClick = onMessagesClick) {
+                    Box {
+                        Icon(
+                            imageVector = com.synfusion.attendance.ui.components.icons.WorkDailyIcons.Message,
+                            contentDescription = "Messages",
+                            tint = MaterialTheme.colorScheme.onBackground
+                        )
+                        if (state.unreadMessageCount > 0) {
+                            Badge(
+                                modifier = Modifier.align(Alignment.TopEnd),
+                                containerColor = MaterialTheme.colorScheme.error,
+                                contentColor = Color.White,
+                                content = { Text(text = state.unreadMessageCount.min(99).toString(), color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold) },
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
                 }
 
                 IconButton(onClick = onNotificationClick) {

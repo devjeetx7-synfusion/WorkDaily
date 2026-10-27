@@ -50,6 +50,7 @@ data class OfflineDashboardState(
     // Offline state placeholders
     val showOfflineBottomSheet: Boolean = false,
     val hasShownOfflineSheet: Boolean = false,
+    val unreadMessageCount: Int = 0,
 
     val errorMessage: String? = null,
     val todayAdvanceAmount: Double? = null,

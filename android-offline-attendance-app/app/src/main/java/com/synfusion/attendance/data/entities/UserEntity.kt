@@ -17,5 +17,6 @@ data class UserEntity(
     val gender: String = "Male",
     val profession: String = "Site Worker",
     val bio: String = "",
+    val dateOfBirth: Long? = null,
     val createdAt: Long = System.currentTimeMillis()
 )
