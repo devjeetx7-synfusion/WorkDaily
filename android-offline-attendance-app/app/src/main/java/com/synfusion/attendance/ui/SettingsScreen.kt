@@ -1018,7 +1018,8 @@ fun PersonalWorkDetailsDestination(
     viewModel: OfflineSettingsViewModel
 ) {
     var showCountryPickerSheet by remember { mutableStateOf(false) }
-    var selectedGender by remember { mutableStateOf(state.gender) }
+    // Keyed on state.gender so the selector reflects a confirmed change (and a reload from disk).
+    var selectedGender by remember(state.gender) { mutableStateOf(state.gender) }
     var showGenderConfirmDialog by remember { mutableStateOf(false) }
     var pendingGenderChange by remember { mutableStateOf<String?>(null) }
     val activeCountry = remember(state.countryCode) { CountryRepository.getCountry(state.countryCode) }
@@ -1225,6 +1226,44 @@ fun PersonalWorkDetailsDestination(
                 showCountryPickerSheet = false
             },
             onDismiss = { showCountryPickerSheet = false }
+        )
+    }
+
+    // Confirmation step for the gender selector above. Without this dialog the
+    // pendingGenderChange / showGenderConfirmDialog state was written but never read,
+    // so tapping an option did nothing and OfflineSettingsViewModel.onGenderChange was unreachable.
+    val requestedGender: String? = pendingGenderChange
+    if (showGenderConfirmDialog && requestedGender != null) {
+        val confirmedGender: String = requestedGender
+        AlertDialog(
+            onDismissRequest = {
+                showGenderConfirmDialog = false
+                pendingGenderChange = null
+            },
+            title = { Text("Change gender", fontWeight = FontWeight.Bold) },
+            text = { Text("Update your gender from \"$selectedGender\" to \"$confirmedGender\"?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.onGenderChange(confirmedGender)
+                        showGenderConfirmDialog = false
+                        pendingGenderChange = null
+                    },
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Confirm", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showGenderConfirmDialog = false
+                        pendingGenderChange = null
+                    }
+                ) {
+                    Text("Cancel")
+                }
+            }
         )
     }
 }

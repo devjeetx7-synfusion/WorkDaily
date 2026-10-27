@@ -49,16 +49,20 @@ class SocialPerformanceAndCountConsistencyTest {
             dateOfBirth: String?,
             countryCode: String
         ): ProfileOperationResult<PublicProfile> {
-            val updated = (profiles[firebaseUid] ?: PublicProfile(uid = firebaseUid)).copy(
+            val existing = profiles[firebaseUid] ?: PublicProfile(uid = firebaseUid)
+            val updated = existing.copy(
                 username = newUsername,
                 displayName = displayName,
                 bio = bio,
                 profession = profession,
                 photoUrl = photoUrl,
                 isPublic = isPublic,
-                gender = gender,
-                dateOfBirth = dateOfBirth,
-                countryCode = countryCode
+                // Preserve the optional attributes a caller may not manage, so the Google
+                // sign-up path (which relies on the interface defaults "", null, "") cannot
+                // erase gender/dateOfBirth/countryCode already saved from Settings.
+                gender = gender.ifBlank { existing.gender },
+                dateOfBirth = dateOfBirth?.takeIf { it.isNotBlank() } ?: existing.dateOfBirth,
+                countryCode = countryCode.ifBlank { existing.countryCode }
             )
             profiles[firebaseUid] = updated
             return ProfileOperationResult.Success(updated)

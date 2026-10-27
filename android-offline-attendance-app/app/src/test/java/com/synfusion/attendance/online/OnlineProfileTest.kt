@@ -94,6 +94,9 @@ private class FakeTestPublicProfileRepository : PublicProfileRepository {
             bio = bio,
             profession = profession,
             photoUrl = photoUrl,
+            gender = gender.ifBlank { existing?.gender ?: "" },
+            dateOfBirth = dateOfBirth?.takeIf { it.isNotBlank() } ?: existing?.dateOfBirth,
+            countryCode = countryCode.ifBlank { existing?.countryCode ?: "" },
             isPublic = isPublic
         )
         publicProfiles[firebaseUid] = updated

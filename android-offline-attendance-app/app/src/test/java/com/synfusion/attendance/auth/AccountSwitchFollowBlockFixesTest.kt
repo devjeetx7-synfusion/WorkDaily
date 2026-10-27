@@ -324,6 +324,9 @@ private class MultiAccountFakePublicProfileRepository : PublicProfileRepository 
             bio = bio,
             profession = profession.ifBlank { "Site Worker" },
             photoUrl = photoUrl,
+            gender = gender.ifBlank { current?.gender ?: "" },
+            dateOfBirth = dateOfBirth?.takeIf { it.isNotBlank() } ?: current?.dateOfBirth,
+            countryCode = countryCode.ifBlank { current?.countryCode ?: "" },
             isPublic = isPublic,
             isVerified = current?.isVerified ?: false,
             followerCount = current?.followerCount ?: 0,
@@ -731,8 +734,8 @@ class AccountSwitchFollowBlockFixesTest {
 
         publicProfileRepo.ensureOrCreatePublicProfile("uid-1", "User One", null)
         publicProfileRepo.ensureOrCreatePublicProfile("uid-2", "User Two", null)
-        publicProfileRepo.updatePublicProfile("uid-1", "user_one", "User One", "", "Mason", null, true)
-        publicProfileRepo.updatePublicProfile("uid-2", "user_two", "User Two", "", "Carpenter", null, true)
+        publicProfileRepo.updatePublicProfile("uid-1", "user_one", "User One", "", "Mason", null, true, "", null, "")
+        publicProfileRepo.updatePublicProfile("uid-2", "user_two", "User Two", "", "Carpenter", null, true, "", null, "")
 
         // User 1 follows User 2
         assertTrue(harness.followUser("uid-1", "uid-2") is ProfileOperationResult.Success)
@@ -747,7 +750,10 @@ class AccountSwitchFollowBlockFixesTest {
             bio = "Updated bio",
             profession = "Lead Mason",
             photoUrl = null,
-            isPublic = true
+            isPublic = true,
+            gender = "Male",
+            dateOfBirth = "1994-05-21",
+            countryCode = "IN"
         )
         assertTrue(updatedRes is ProfileOperationResult.Success)
         assertEquals("Profile edit must not reset followingCount to 0", 1, publicProfileRepo.publicProfiles["uid-1"]?.followingCount)

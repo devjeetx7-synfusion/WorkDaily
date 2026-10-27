@@ -81,6 +81,26 @@ fun ChatListScreen(
         return null
     }
 
+    // Without this the shared snapshot cache is never populated for conversation participants,
+    // so every row falls through resolveProfile() to "Unknown User". Fetch each participant
+    // through the existing SocialSessionCache manager: it caches into the snapshot StateFlow
+    // this screen already observes, so no second profile store or messaging repository is added.
+    val participantUids = remember(conversations, currentUserId) {
+        conversations
+            .mapNotNull { otherParticipantUid(it) }
+            .distinct()
+    }
+
+    LaunchedEffect(participantUids, currentUserId) {
+        val viewerUid = currentUserId?.takeIf { it.isNotBlank() } ?: return@LaunchedEffect
+        participantUids.forEach { uid ->
+            val alreadyCached = SocialSessionCache.manager.snapshot.value.profiles[uid]?.value != null
+            if (!alreadyCached) {
+                SocialSessionCache.manager.getPublicProfile(ownerUid = viewerUid, targetUid = uid)
+            }
+        }
+    }
+
     val unreadTotal = conversations.sumOf { conv ->
         conv.unreadCounts[currentUserId ?: ""] ?: 0
     }

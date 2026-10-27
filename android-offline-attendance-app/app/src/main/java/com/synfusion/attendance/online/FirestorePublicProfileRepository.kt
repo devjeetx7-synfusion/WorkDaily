@@ -153,6 +153,9 @@ class FirestorePublicProfileRepository(
         }
     }
 
+    // NOTE: Kotlin forbids re-declaring default values on an override; the defaults
+    // for gender / dateOfBirth / countryCode live on [PublicProfileRepository.updatePublicProfile]
+    // and are applied at every call site resolved through that contract.
     override suspend fun updatePublicProfile(
         firebaseUid: String,
         newUsername: String,
@@ -191,6 +194,16 @@ class FirestorePublicProfileRepository(
                 val existingIsVerified = txProfileSnap.getBoolean("isVerified") ?: currentSnap.getBoolean("isVerified") ?: false
                 val existingCreatedAt = txProfileSnap.getLong("createdAt") ?: createdAt
 
+                // Preserve the optional profile attributes that a caller may not manage.
+                // Callers such as the Google sign-up flow invoke updatePublicProfile() without
+                // gender/dateOfBirth/countryCode and therefore rely on the contract defaults
+                // ("", null, ""). Writing those defaults verbatim would silently erase data the
+                // user saved from Settings, so fall back to the stored values instead.
+                // Mirrors the existing merge convention used for OnlineProfile.countryCode.
+                val existingGender = txProfileSnap.getString("gender") ?: currentSnap.getString("gender") ?: ""
+                val existingDateOfBirth = txProfileSnap.getString("dateOfBirth") ?: currentSnap.getString("dateOfBirth")
+                val existingCountryCode = txProfileSnap.getString("countryCode") ?: currentSnap.getString("countryCode") ?: ""
+
                 val newUsernameRef = firestore.collection("usernames").document(newNormalized)
                 val newUsernameSnap = if (txOldUsernameLower != newNormalized) {
                     transaction.get(newUsernameRef)
@@ -226,9 +239,9 @@ class FirestorePublicProfileRepository(
                     bio = bio.trim(),
                     profession = profession.trim().ifEmpty { "Site Worker" },
                     photoUrl = photoUrl,
-                    gender = gender,
-                    dateOfBirth = dateOfBirth,
-                    countryCode = countryCode,
+                    gender = gender.trim().ifBlank { existingGender },
+                    dateOfBirth = dateOfBirth?.trim()?.takeIf { it.isNotBlank() } ?: existingDateOfBirth,
+                    countryCode = countryCode.trim().ifBlank { existingCountryCode },
                     isPublic = isPublic,
                     isVerified = existingIsVerified,
                     followerCount = existingFollowerCount,
