@@ -292,7 +292,10 @@ private class MultiAccountFakePublicProfileRepository : PublicProfileRepository 
         bio: String,
         profession: String,
         photoUrl: String?,
-        isPublic: Boolean
+        isPublic: Boolean,
+        gender: String,
+        dateOfBirth: String?,
+        countryCode: String
     ): ProfileOperationResult<PublicProfile> {
         networkError?.let { return ProfileOperationResult.Error(it) }
         val validation = UsernameValidator.validate(newUsername)

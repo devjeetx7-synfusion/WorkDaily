@@ -918,12 +918,12 @@ fun EditProfileDestination(
         OutlinedTextField(
             value = bioText,
             onValueChange = { newValue ->
-                bioText = newValue
-                if (newValue.length > 150) {
-                    bioError = "Bio must be 150 characters or fewer"
-                    bioText = newValue.take(150)
-                } else {
+                if (newValue.length <= 150) {
+                    bioText = newValue
                     bioError = null
+                } else {
+                    bioText = newValue.take(150)
+                    bioError = "Bio must be 150 characters or fewer"
                 }
             },
             label = { Text("Bio") },
@@ -931,12 +931,12 @@ fun EditProfileDestination(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
             maxLines = 3,
-            maxLength = 150,
             isError = bioError != null
         )
 
-        if (bioError != null) {
-            Text(bioError!!, color = MaterialTheme.colorScheme.error, fontSize = 12.sp, modifier = Modifier.fillMaxWidth().padding(start = 4.dp))
+        val err = bioError
+        if (err != null) {
+            Text(err, color = MaterialTheme.colorScheme.error, fontSize = 12.sp, modifier = Modifier.fillMaxWidth().padding(start = 4.dp))
         }
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -1091,12 +1091,12 @@ fun PersonalWorkDetailsDestination(
             OutlinedTextField(
                 value = state.dateOfBirth.orEmpty(),
                 onValueChange = { viewModel.onDateOfBirthChange(it.takeIf { it.isNotEmpty() }) },
-                label = { Text("YYYY-MM-DD") },
+                label = { Text("Date of Birth (YYYY-MM-DD)") },
                 leadingIcon = { Icon(Icons.Default.Cake, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Date)
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii)
             )
             if (state.dateOfBirth != null) {
                 val age = calculateAge(state.dateOfBirth!!)

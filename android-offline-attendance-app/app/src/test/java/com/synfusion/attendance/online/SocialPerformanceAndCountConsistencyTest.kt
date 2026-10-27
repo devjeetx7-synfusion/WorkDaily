@@ -44,7 +44,10 @@ class SocialPerformanceAndCountConsistencyTest {
             bio: String,
             profession: String,
             photoUrl: String?,
-            isPublic: Boolean
+            isPublic: Boolean,
+            gender: String,
+            dateOfBirth: String?,
+            countryCode: String
         ): ProfileOperationResult<PublicProfile> {
             val updated = (profiles[firebaseUid] ?: PublicProfile(uid = firebaseUid)).copy(
                 username = newUsername,
@@ -52,7 +55,10 @@ class SocialPerformanceAndCountConsistencyTest {
                 bio = bio,
                 profession = profession,
                 photoUrl = photoUrl,
-                isPublic = isPublic
+                isPublic = isPublic,
+                gender = gender,
+                dateOfBirth = dateOfBirth,
+                countryCode = countryCode
             )
             profiles[firebaseUid] = updated
             return ProfileOperationResult.Success(updated)
