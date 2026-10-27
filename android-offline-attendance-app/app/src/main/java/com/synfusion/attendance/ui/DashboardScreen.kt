@@ -437,8 +437,8 @@ fun DashboardScreen(
                                                                 googlePhotoUrl = settingsState.googlePhotoUrl,
                                                                 onProfileClick = { bottomNavController.navigate("profile") },
                                                                 onSearchClick = { bottomNavController.navigate("live_people") },
-                                                                onNotificationClick = { bottomNavController.navigate("notifications_center") }
-                                                                onMessagesClick = { bottomNavController.navigate("messages") },
+                                                                onNotificationClick = { bottomNavController.navigate("notifications_center") },
+                                                                onMessagesClick = { bottomNavController.navigate("messages") }
                                                             )
                                                         }
                                                         item {
@@ -1272,17 +1272,16 @@ fun HeaderSection(
                 IconButton(onClick = onMessagesClick) {
                     Box {
                         Icon(
-                            imageVector = com.synfusion.attendance.ui.components.icons.WorkDailyIcons.Message,
+                            imageVector = com.synfusion.attendance.ui.components.icons.WorkDailyIcons.Chat,
                             contentDescription = "Messages",
                             tint = MaterialTheme.colorScheme.onBackground
                         )
                         if (state.unreadMessageCount > 0) {
                             Badge(
-                                modifier = Modifier.align(Alignment.TopEnd),
+                                modifier = Modifier.align(Alignment.TopEnd).size(18.dp),
                                 containerColor = MaterialTheme.colorScheme.error,
                                 contentColor = Color.White,
-                                content = { Text(text = state.unreadMessageCount.min(99).toString(), color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold) },
-                                modifier = Modifier.size(18.dp)
+                                content = { Text(text = kotlin.math.min(state.unreadMessageCount, 99).toString(), color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold) }
                             )
                         }
                     }
