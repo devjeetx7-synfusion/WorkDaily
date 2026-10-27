@@ -403,60 +403,84 @@ fun DiamondBalanceChip(
 }
 
 /**
- * WorkDaily Branded Follow Button using LivePrimaryEmerald (`0xFF0F9F7A`).
+ * WorkDaily Branded Follow Button using WorkDaily Brand Emerald (`LivePrimaryEmerald` / 0xFF0F9F7A).
+ * Supports optional loading indicator and customizable height/width.
  */
 @Composable
 fun FollowButton(
     isFollowing: Boolean,
     onToggle: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isLoading: Boolean = false,
+    height: Dp = 28.dp,
+    minWidth: Dp = 64.dp
 ) {
+    val cornerRadius = height / 2
     if (isFollowing) {
         OutlinedButton(
             onClick = onToggle,
+            enabled = !isLoading,
             modifier = modifier
-                .height(28.dp)
-                .defaultMinSize(minWidth = 64.dp),
-            shape = RoundedCornerShape(14.dp),
-            border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.35f)),
+                .height(height)
+                .defaultMinSize(minWidth = minWidth),
+            shape = RoundedCornerShape(cornerRadius),
+            border = androidx.compose.foundation.BorderStroke(1.dp, LivePrimaryEmerald),
             colors = ButtonDefaults.outlinedButtonColors(
-                containerColor = Color.White.copy(alpha = 0.15f),
-                contentColor = Color.White
+                containerColor = LivePrimaryEmerald.copy(alpha = 0.12f),
+                contentColor = LivePrimaryEmerald
             ),
-            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp)
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
         ) {
-            Text(
-                text = "Following",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
-                softWrap = false,
-                overflow = TextOverflow.Clip,
-                style = TextStyle(platformStyle = PlatformTextStyle(includeFontPadding = false))
-            )
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(if (height >= 40.dp) 18.dp else 14.dp),
+                    color = LivePrimaryEmerald,
+                    strokeWidth = 2.dp
+                )
+            } else {
+                Text(
+                    text = "Following",
+                    fontSize = if (height >= 40.dp) 14.sp else 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Clip,
+                    style = TextStyle(platformStyle = PlatformTextStyle(includeFontPadding = false))
+                )
+            }
         }
     } else {
         Button(
             onClick = onToggle,
+            enabled = !isLoading,
             modifier = modifier
-                .height(28.dp)
-                .defaultMinSize(minWidth = 56.dp),
-            shape = RoundedCornerShape(14.dp),
+                .height(height)
+                .defaultMinSize(minWidth = minWidth),
+            shape = RoundedCornerShape(cornerRadius),
             colors = ButtonDefaults.buttonColors(
                 containerColor = LivePrimaryEmerald,
-                contentColor = Color.White
+                contentColor = Color.White,
+                disabledContainerColor = LivePrimaryEmerald.copy(alpha = 0.6f)
             ),
             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
         ) {
-            Text(
-                text = "Follow",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                softWrap = false,
-                overflow = TextOverflow.Clip,
-                style = TextStyle(platformStyle = PlatformTextStyle(includeFontPadding = false))
-            )
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(if (height >= 40.dp) 18.dp else 14.dp),
+                    color = Color.White,
+                    strokeWidth = 2.dp
+                )
+            } else {
+                Text(
+                    text = "Follow",
+                    fontSize = if (height >= 40.dp) 14.sp else 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Clip,
+                    style = TextStyle(platformStyle = PlatformTextStyle(includeFontPadding = false))
+                )
+            }
         }
     }
 }

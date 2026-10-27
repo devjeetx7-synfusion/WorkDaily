@@ -48,7 +48,8 @@ fun LiveProfileScreen(
     onNavigateStudio: () -> Unit = {},
     onNavigateLiveRoom: (String) -> Unit = {},
     onNavigatePrivateChat: (String) -> Unit = {},
-    onNavigateDemoControls: () -> Unit = {}
+    onNavigateDemoControls: () -> Unit = {},
+    onNavigatePeople: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val isSelf = userId == null || userId == "current_user" || userId == "user_me"
@@ -135,8 +136,11 @@ fun LiveProfileScreen(
                 Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Icon(Icons.Default.PersonOff, contentDescription = null, modifier = Modifier.size(56.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text("This profile is unavailable or does not exist.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
-                    Button(onClick = onNavigateBack) {
-                        Text("Go Back")
+                    Button(
+                        onClick = onNavigateBack,
+                        colors = ButtonDefaults.buttonColors(containerColor = LivePrimaryEmerald)
+                    ) {
+                        Text("Go Back", color = Color.White)
                     }
                 }
             }
@@ -212,9 +216,10 @@ fun LiveProfileScreen(
                             }
                         }
                     },
-                    enabled = reportReason.isNotBlank() && !isSubmittingReport
+                    enabled = reportReason.isNotBlank() && !isSubmittingReport,
+                    colors = ButtonDefaults.buttonColors(containerColor = LivePrimaryEmerald)
                 ) {
-                    Text("Submit Report")
+                    Text("Submit Report", color = Color.White)
                 }
             },
             dismissButton = {
@@ -311,17 +316,17 @@ fun LiveProfileScreen(
                 .padding(paddingValues)
                 .padding(horizontal = 20.dp, vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(18.dp)
+            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             item {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     WorkDailyLiveAvatar(
                         name = displayName,
                         avatarUrl = avatarUrl,
-                        size = 82.dp,
+                        size = 88.dp,
                         isLive = false,
                         showBadge = false
                     )
@@ -336,7 +341,7 @@ fun LiveProfileScreen(
                         ) {
                             Text(
                                 text = displayName,
-                                fontSize = 19.sp,
+                                fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface,
                                 maxLines = 1,
@@ -354,7 +359,7 @@ fun LiveProfileScreen(
 
                         Text(
                             text = username,
-                            fontSize = 13.sp,
+                            fontSize = 14.sp,
                             fontWeight = FontWeight.Medium,
                             color = LivePrimaryEmerald
                         )
@@ -365,10 +370,10 @@ fun LiveProfileScreen(
                         ) {
                             Text(
                                 text = profession,
-                                fontSize = 11.sp,
+                                fontSize = 12.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 color = LivePrimaryEmerald,
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
                             )
                         }
 
@@ -385,104 +390,147 @@ fun LiveProfileScreen(
                 }
             }
 
-            // Truthful zero statistics
+            // Statistics Card: Followers and Following side-by-side
             item {
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
                     color = MaterialTheme.colorScheme.surface,
-                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f))
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 12.dp),
+                            .padding(vertical = 14.dp),
                         horizontalArrangement = Arrangement.SpaceEvenly,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.weight(1f).padding(vertical = 4.dp)
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable { onNavigatePeople() }
+                                .padding(vertical = 4.dp)
                         ) {
                             Text(
                                 text = "${targetUser.followerCount}",
-                                fontSize = 18.sp,
+                                fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
-                            Text("Followers", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "Followers",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
 
-                        Box(modifier = Modifier.height(24.dp).width(1.dp).background(MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)))
+                        Box(
+                            modifier = Modifier
+                                .height(28.dp)
+                                .width(1.dp)
+                                .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                        )
 
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.weight(1f).padding(vertical = 4.dp)
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable { onNavigatePeople() }
+                                .padding(vertical = 4.dp)
                         ) {
                             Text(
                                 text = "${targetUser.followingCount}",
-                                fontSize = 18.sp,
+                                fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
-                            Text("Following", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "Following",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
                     }
                 }
             }
 
-            // Action Buttons
+            // Action Buttons: Balanced side-by-side Follow/Following and Message
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     if (currentUserId != null && currentUserId != targetUser.uid) {
-                        Box(modifier = Modifier.weight(1f)) {
-                            FollowButton(
-                                isFollowing = isFollowingTarget,
-                                onToggle = {
-                                    if (isFollowActionBusy) return@FollowButton
-                                    val previousStatus = isFollowingTarget
-                                    val newStatus = !previousStatus
-                                    isFollowActionBusy = true
-                                    coroutineScope.launch {
+                        FollowButton(
+                            isFollowing = isFollowingTarget,
+                            onToggle = {
+                                if (isFollowActionBusy) return@FollowButton
+                                val previousStatus = isFollowingTarget
+                                val newStatus = !previousStatus
+                                isFollowActionBusy = true
+                                coroutineScope.launch {
+                                    try {
                                         val result = if (newStatus) {
                                             followRepo.followUser(currentUserId, targetUser.uid)
                                         } else {
                                             followRepo.unfollowUser(currentUserId, targetUser.uid)
                                         }
-                                        isFollowActionBusy = false
                                         if (result is ProfileOperationResult.Success) {
                                             isFollowingTarget = newStatus
                                             val latestProfile = publicProfile
                                             if (latestProfile != null) {
-                                                val newCount = if (newStatus) latestProfile.followerCount + 1
-                                                    else (latestProfile.followerCount - 1).coerceAtLeast(0)
-                                                publicProfile = latestProfile.copy(followerCount = newCount)
+                                                val updatedFollowerCount = if (newStatus) {
+                                                    latestProfile.followerCount + 1
+                                                } else {
+                                                    (latestProfile.followerCount - 1).coerceAtLeast(0)
+                                                }
+                                                publicProfile = latestProfile.copy(followerCount = updatedFollowerCount)
                                             }
                                         } else if (result is ProfileOperationResult.Error) {
                                             Toast.makeText(context, result.message, Toast.LENGTH_SHORT).show()
                                         }
+                                    } catch (e: Exception) {
+                                        Toast.makeText(context, e.message ?: "Operation failed", Toast.LENGTH_SHORT).show()
+                                    } finally {
+                                        isFollowActionBusy = false
                                     }
                                 }
-                            )
-                        }
+                            },
+                            isLoading = isFollowActionBusy,
+                            height = 48.dp,
+                            minWidth = 0.dp,
+                            modifier = Modifier.weight(1f)
+                        )
                     }
 
                     OutlinedButton(
                         onClick = { onNavigatePrivateChat(targetUser.uid) },
-                        modifier = Modifier.weight(1f).height(44.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, LivePrimaryEmerald)
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                        shape = RoundedCornerShape(24.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.5.dp, LivePrimaryEmerald),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = Color.Transparent,
+                            contentColor = LivePrimaryEmerald
+                        ),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.Chat,
-                            contentDescription = null,
+                            contentDescription = "Message",
                             tint = LivePrimaryEmerald,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(18.dp)
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = "Message",
                             color = LivePrimaryEmerald,
