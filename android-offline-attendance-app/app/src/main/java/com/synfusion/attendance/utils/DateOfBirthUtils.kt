@@ -107,4 +107,66 @@ object DateOfBirthUtils {
             null
         }
     }
+
+    // ---------------------------------------------------------------------------------------------
+    // Picker support
+    //
+    // The date-of-birth picker needs the same calendar rules the validator already enforces, so
+    // they live here beside it rather than being re-derived in the UI. Keeping one source of truth
+    // is what stops the picker from offering a date that validate() would then reject.
+    //
+    // `now` is injectable throughout: age is a function of the current date, so pinning it makes
+    // the "age updates as time passes" behaviour testable without waiting for a birthday.
+    // ---------------------------------------------------------------------------------------------
+
+    /**
+     * Birth years the picker may offer, newest first.
+     *
+     * Bounded below by [MAX_AGE_YEARS] -- a plausibility guard against nonsensical dates, not a
+     * restriction on who may use the app. Bounded above by the current year so no future date can
+     * be constructed.
+     */
+    fun selectableYears(now: LocalDate = LocalDate.now()): List<Int> {
+        val latest = now.year
+        val earliest = latest - MAX_AGE_YEARS.toInt()
+        return (earliest..latest).reversed()
+    }
+
+    /**
+     * Number of valid days in [month] of [year], honouring leap years.
+     *
+     * This is what makes 29 February selectable in a leap year and impossible in a common one,
+     * instead of relying on a fixed 28/30/31 table.
+     */
+    fun daysInMonth(year: Int, month: Int): Int = try {
+        java.time.YearMonth.of(year, month).lengthOfMonth()
+    } catch (_: Exception) {
+        0
+    }
+
+    /**
+     * Whole years between the stored date of birth and [now], or `null` when there is no usable
+     * value.
+     *
+     * Returns `null` -- never 0 -- for a missing, malformed or future date, so callers can tell
+     * "no date of birth recorded" apart from "a newborn". Age is always derived on demand from the
+     * stored date; it is never persisted, so it cannot go stale.
+     */
+    fun ageInYears(dob: String?, now: LocalDate = LocalDate.now()): Int? {
+        val birth = parse(dob) ?: return null
+        if (birth.isAfter(now)) return null
+        val years = java.time.Period.between(birth, now).years
+        return if (years < 0) null else years
+    }
+
+    /**
+     * Human-readable age such as "22 years old", or `null` when there is no usable date of birth.
+     *
+     * The profile shows this instead of the raw date, which keeps an exact birth date off a screen
+     * other people can see while still conveying the age.
+     */
+    fun ageLabel(dob: String?, now: LocalDate = LocalDate.now()): String? {
+        val years = ageInYears(dob, now) ?: return null
+        return if (years == 1) "1 year old" else "$years years old"
+    }
 }

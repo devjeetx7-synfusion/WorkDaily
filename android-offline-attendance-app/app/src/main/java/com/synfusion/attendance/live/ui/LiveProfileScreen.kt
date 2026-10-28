@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.synfusion.attendance.data.model.CountryRepository
+import com.synfusion.attendance.utils.DateOfBirthUtils
 import com.synfusion.attendance.utils.collectAsStateWithLifecycle
 import com.synfusion.attendance.live.ui.components.*
 import com.synfusion.attendance.live.viewmodel.LiveViewModel
@@ -42,6 +43,7 @@ import com.synfusion.attendance.online.ProfileOperationResult
 import com.synfusion.attendance.online.PublicProfile
 import com.synfusion.attendance.online.SocialSessionCache
 import com.synfusion.attendance.online.rememberCurrentFirebaseUid
+import com.synfusion.attendance.ui.components.GenderSymbol
 import com.synfusion.attendance.ui.components.PublicProfileScreenSkeleton
 import com.synfusion.attendance.ui.components.UserRowSkeletonList
 import com.synfusion.attendance.ui.components.WorkDailyErrorRetryState
@@ -862,22 +864,23 @@ fun LiveProfileScreen(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             modifier = Modifier.padding(top = 6.dp)
                         ) {
-                            // Gender icon
-                            Icon(
-                                imageVector = when (targetUser.gender.lowercase()) {
-                                    "female" -> Icons.Default.Woman
-                                    else -> Icons.Default.Man
-                                },
-                                contentDescription = "Gender",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(16.dp)
-                            )
+                            // Gender symbol, drawn as a vector path.
+                            //
+                            // The previous `when` ended in `else -> Icons.Default.Man`, which
+                            // silently presented every unset, unrecognised and transgender profile
+                            // as male -- PublicProfile.gender defaults to "", so that was the common
+                            // case rather than an edge case. GenderSymbol renders nothing when the
+                            // value is blank or unknown, and carries a distinct symbol for
+                            // Transgender, so no gender is ever assigned by default.
+                            GenderSymbol(gender = targetUser.gender, size = 16.dp)
 
-                            // Age
-                            if (targetUser.dateOfBirth != null) {
-                                val age = calculateAge(targetUser.dateOfBirth!!)
+                            // Age, derived on demand from the stored date rather than shown as the
+                            // raw date of birth, which is more personal than a public profile needs
+                            // to expose.
+                            val ageLabel = DateOfBirthUtils.ageLabel(targetUser.dateOfBirth)
+                            if (ageLabel != null) {
                                 Text(
-                                    text = "$age",
+                                    text = ageLabel,
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Medium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -1778,13 +1781,7 @@ fun UserRelationshipBottomSheet(
 }
 
 /** Calculates age in years from a "yyyy-MM-dd" date string. */
-private fun calculateAge(dob: String): Int {
-    try {
-        val parts = dob.split("-").map { it.toInt() }
-        if (parts.size != 3) return 0
-        val birth = java.time.LocalDate.of(parts[0], parts[1], parts[2])
-        return java.time.Period.between(birth, java.time.LocalDate.now()).years
-    } catch (_: Exception) {
-        return 0
-    }
-}
+// Age is derived by DateOfBirthUtils.ageLabel. The private calculateAge that used to live here
+// returned 0 for a missing or malformed date, which is indistinguishable from a newborn, and the
+// bare number it produced read as a count rather than an age. It became unused when the profile
+// row switched to the shared helper.

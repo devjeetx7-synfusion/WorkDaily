@@ -49,14 +49,18 @@ import com.synfusion.attendance.live.ui.components.WorkDailyLiveAvatar
 import com.synfusion.attendance.online.FirestoreBlockRepository
 import com.synfusion.attendance.online.ProfileOperationResult
 import com.synfusion.attendance.online.PublicProfile
-import com.synfusion.attendance.ui.components.CountrySelectionBottomSheet
 import com.synfusion.attendance.ui.components.CropScreenDialog
+import com.synfusion.attendance.ui.components.DateOfBirthPickerDialog
 import com.synfusion.attendance.ui.components.InstagramIcon
 import com.synfusion.attendance.ui.components.WhatsAppIcon
+import com.synfusion.attendance.ui.components.genderColor
+import com.synfusion.attendance.ui.components.genderIconFor
+import com.synfusion.attendance.ui.components.genderIdentityFrom
 import com.synfusion.attendance.ui.responsive.LocalWindowSizeInfo
 import com.synfusion.attendance.ui.responsive.ResponsiveContainer
 import com.synfusion.attendance.utils.AmountFormatter
 import com.synfusion.attendance.utils.CurrencyVisualTransformation
+import com.synfusion.attendance.utils.DateOfBirthUtils
 import com.synfusion.attendance.utils.collectAsStateWithLifecycle
 import com.synfusion.attendance.utils.getActivity
 import com.synfusion.attendance.viewmodel.OfflineSettingsState
@@ -1017,7 +1021,6 @@ fun PersonalWorkDetailsDestination(
     state: OfflineSettingsState,
     viewModel: OfflineSettingsViewModel
 ) {
-    var showCountryPickerSheet by remember { mutableStateOf(false) }
     // Keyed on state.gender so the selector reflects a confirmed change (and a reload from disk).
     var selectedGender by remember(state.gender) { mutableStateOf(state.gender) }
     var showGenderConfirmDialog by remember { mutableStateOf(false) }
@@ -1047,6 +1050,7 @@ fun PersonalWorkDetailsDestination(
             ) {
                 listOf("Male", "Female", "Transgender").forEach { genderOption ->
                     val isSelected = selectedGender == genderOption
+                    val identity = genderIdentityFrom(genderOption)
                     Surface(
                         modifier = Modifier
                             .weight(1f)
@@ -1065,13 +1069,37 @@ fun PersonalWorkDetailsDestination(
                         ),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Box(
-                            contentAlignment = Alignment.Center,
-                            modifier = Modifier.fillMaxSize()
+                        Row(
+                            modifier = Modifier.fillMaxSize().padding(horizontal = 4.dp),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
+                            // Symbol drawn as a vector path rather than the ♂/♀/⚧ text glyph, which
+                            // renders inconsistently across fonts and Android versions and is
+                            // missing from some fonts entirely.
+                            //
+                            // Tint follows the selection: the coloured identity hue on an
+                            // unselected chip, onPrimary when selected so it stays legible against
+                            // the primary fill instead of clashing with it.
+                            val icon = genderIconFor(identity)
+                            if (icon != null && identity != null) {
+                                Icon(
+                                    imageVector = icon,
+                                    contentDescription = null,
+                                    tint = if (isSelected) {
+                                        MaterialTheme.colorScheme.onPrimary
+                                    } else {
+                                        genderColor(identity)
+                                    },
+                                    modifier = Modifier.size(15.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                            }
                             Text(
                                 text = genderOption,
-                                fontSize = 13.sp,
+                                fontSize = 11.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                 color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
                             )
@@ -1081,6 +1109,12 @@ fun PersonalWorkDetailsDestination(
             }
         }
         // DATE OF BIRTH
+        //
+        // Read-only field that opens DateOfBirthPickerDialog. The previous free-text "YYYY-MM-DD"
+        // entry could not prevent invalid calendar dates, had a hand-rolled validator that
+        // disagreed with DateOfBirthUtils, and offered no way to express "no date of birth" other
+        // than an empty string. The picker can only emit real dates, so the local validator is
+        // gone and DateOfBirthUtils is the single source of calendar rules again.
         Column(modifier = Modifier.fillMaxWidth()) {
             Text(
                 text = "Date of Birth",
@@ -1089,92 +1123,89 @@ fun PersonalWorkDetailsDestination(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
             )
-            var dobText by remember(state.dateOfBirth) { mutableStateOf(state.dateOfBirth.orEmpty()) }
-            var dobError by remember { mutableStateOf<String?>(null) }
+            var showDobPicker by remember { mutableStateOf(false) }
 
-            fun validateDob(input: String): String? {
-                if (input.isBlank()) return null
-                if (input.length != 10) return "Use YYYY-MM-DD format"
-                try {
-                    val parts = input.split("-")
-                    if (parts.size != 3) return "Use YYYY-MM-DD format"
-                    val year = parts[0].toInt()
-                    val month = parts[1].toInt()
-                    val day = parts[2].toInt()
-                    if (year < 1900) return "Invalid birth year"
-                    if (month !in 1..12) return "Invalid month (01-12)"
-                    val date = java.time.LocalDate.of(year, month, day)
-                    if (date.isAfter(java.time.LocalDate.now())) return "Date cannot be in the future"
-                } catch (e: Exception) {
-                    return "Invalid date"
-                }
-                return null
+            Box(modifier = Modifier.fillMaxWidth()) {
+                OutlinedTextField(
+                    value = state.dateOfBirth.orEmpty(),
+                    onValueChange = {},
+                    readOnly = true,
+                    enabled = false,
+                    label = { Text("YYYY-MM-DD") },
+                    placeholder = { Text("Tap to select") },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Default.Cake,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    },
+                    trailingIcon = { Icon(Icons.Default.ArrowDropDown, contentDescription = null) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                        disabledBorderColor = MaterialTheme.colorScheme.outline,
+                        disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                )
+                // Disabled fields do not receive clicks, so the overlay carries the interaction,
+                // mirroring the existing pattern used elsewhere on this screen.
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .clickable { showDobPicker = true }
+                )
             }
 
-            OutlinedTextField(
-                value = dobText,
-                onValueChange = { newValue ->
-                    val filtered = newValue.filter { it.isDigit() || it == '-' }.take(10)
-                    dobText = filtered
-                    val err = validateDob(filtered)
-                    dobError = err
-                    if (err == null) {
-                        viewModel.onDateOfBirthChange(filtered.takeIf { it.isNotEmpty() })
-                    }
-                },
-                label = { Text("YYYY-MM-DD") },
-                placeholder = { Text("1995-08-15") },
-                leadingIcon = { Icon(Icons.Default.Cake, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-                isError = dobError != null,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-            )
-            if (dobError != null) {
+            // Age is derived from the stored date on demand, so it advances on the user's birthday
+            // with nothing cached to go stale. Shown instead of the raw date: an exact birth date
+            // is more personal than the profile needs to expose.
+            DateOfBirthUtils.ageLabel(state.dateOfBirth)?.let { label ->
                 Text(
-                    text = dobError!!,
+                    text = label,
                     fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.error,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(start = 4.dp, top = 4.dp)
                 )
-            } else if (!state.dateOfBirth.isNullOrBlank()) {
-                val age = calculateAge(state.dateOfBirth!!)
-                if (age > 0) {
-                    Text(
-                        text = "Age: $age years",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(start = 4.dp, top = 4.dp)
-                    )
-                }
+            }
+
+            if (showDobPicker) {
+                DateOfBirthPickerDialog(
+                    initialDob = state.dateOfBirth,
+                    onDismiss = { showDobPicker = false },
+                    onConfirm = { selected ->
+                        // Persists through the existing profile repository path; the dialog emits
+                        // the canonical "yyyy-MM-dd" string, so the stored format is unchanged.
+                        viewModel.onDateOfBirthChange(selected)
+                        showDobPicker = false
+                    }
+                )
             }
         }
 
-        Box(modifier = Modifier.fillMaxWidth()) {
-            OutlinedTextField(
-                value = "${activeCountry.flagEmoji} ${activeCountry.displayName} (${activeCountry.currencySymbol})",
-                onValueChange = {},
-                readOnly = true,
-                label = { Text("Country & Region") },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                leadingIcon = { Icon(Icons.Default.Public, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-                trailingIcon = { Icon(Icons.Default.ArrowDropDown, contentDescription = null) },
-                enabled = false,
-                colors = OutlinedTextFieldDefaults.colors(
-                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                    disabledBorderColor = MaterialTheme.colorScheme.outline,
-                    disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+        // Country and currency, read-only. The tap overlay and dropdown chevron are removed:
+        // SUPPORTED_COUNTRIES holds one configuration, so the picker could only re-select the
+        // value already stored. state.countryCode and state.currencyCode are untouched and still
+        // persist through the existing profile path, so nothing downstream that depends on them
+        // (currency formatting, phone calling code, backup manifest, backend contract) changes.
+        OutlinedTextField(
+            value = "${activeCountry.flagEmoji} ${activeCountry.displayName} (${activeCountry.currencySymbol})",
+            onValueChange = {},
+            readOnly = true,
+            label = { Text("Country & Region") },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            leadingIcon = { Icon(Icons.Default.Public, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+            enabled = false,
+            colors = OutlinedTextFieldDefaults.colors(
+                disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                disabledBorderColor = MaterialTheme.colorScheme.outline,
+                disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .clickable { showCountryPickerSheet = true }
-            )
-        }
+        )
 
         OutlinedTextField(
             value = if (state.dailyWage > 0) state.dailyWage.toInt().toString() else "",
@@ -1216,17 +1247,6 @@ fun PersonalWorkDetailsDestination(
                 Text("Save Details", fontWeight = FontWeight.Bold)
             }
         }
-    }
-
-    if (showCountryPickerSheet) {
-        CountrySelectionBottomSheet(
-            selectedCountryCode = state.countryCode,
-            onCountrySelected = { country ->
-                viewModel.onCountryChange(country.countryCode)
-                showCountryPickerSheet = false
-            },
-            onDismiss = { showCountryPickerSheet = false }
-        )
     }
 
     // Confirmation step for the gender selector above. Without this dialog the
@@ -2427,14 +2447,12 @@ fun ContactIconItem(
     }
 }
 
-/** Calculates age in years from a "yyyy-MM-dd" date string. */
-private fun calculateAge(dob: String): Int {
-    try {
-        val parts = dob.split("-").map { it.toInt() }
-        if (parts.size != 3) return 0
-        val birth = java.time.LocalDate.of(parts[0], parts[1], parts[2])
-        return java.time.Period.between(birth, java.time.LocalDate.now()).years
-    } catch (_: Exception) {
-        return 0
-    }
-}
+/**
+ * Age is derived by [com.synfusion.attendance.utils.DateOfBirthUtils.ageLabel].
+ *
+ * A private `calculateAge` used to live here and duplicated that logic, disagreeing with it in two
+ * ways: it returned 0 for a missing or invalid date, which is indistinguishable from a newborn, and
+ * it rejected any birth year before 1900, an arbitrary cutoff the canonical validator does not
+ * impose. It became unused when the free-text field was replaced by the picker, so it is removed
+ * rather than left to drift from the single source of truth.
+ */

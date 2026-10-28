@@ -64,7 +64,6 @@ import com.synfusion.attendance.backup.RestoreManager
 import com.synfusion.attendance.data.entities.UserEntity
 import com.synfusion.attendance.data.model.CountryConfig
 import com.synfusion.attendance.data.model.CountryRepository
-import com.synfusion.attendance.ui.components.CountrySelectionBottomSheet
 import com.synfusion.attendance.ui.responsive.ResponsiveContainer
 import com.synfusion.attendance.utils.getActivity
 import com.synfusion.attendance.viewmodel.AccountResolutionState
@@ -133,7 +132,6 @@ fun LoginScreen(
     var showProfessionSheet by remember { mutableStateOf(false) }
 
     var selectedCountry by remember { mutableStateOf(CountryRepository.DEFAULT_COUNTRY) }
-    var showCountryBottomSheet by remember { mutableStateOf(false) }
 
     var isConsentChecked by rememberSaveable { mutableStateOf(false) }
     var showTermsSheet by rememberSaveable { mutableStateOf(false) }
@@ -146,11 +144,21 @@ fun LoginScreen(
     LaunchedEffect(Unit) {
         withContext(Dispatchers.IO) {
             val user = authViewModel.getExistingUser()
-            val deviceCountryCode = Locale.getDefault().country
-            val detected = CountryRepository.getCountry(deviceCountryCode)
+            // Country is resolved only from data the app owns, in priority order:
+            //   1. the country already saved on this device's workspace -- reused verbatim, so an
+            //      existing user's stored value is never overwritten on launch;
+            //   2. CountryRepository.DEFAULT_COUNTRY, the single supported configuration.
+            // getCountry() returns DEFAULT_COUNTRY for a null or unsupported code, so one call
+            // covers both the saved-value and the fallback case.
+            //
+            // Device locale is deliberately not consulted. Locale reports language and region
+            // preferences, not verified physical location, so treating it as proof of country is
+            // unsound. It was also inert here: SUPPORTED_COUNTRIES holds only India, so
+            // getCountry(locale) already returned DEFAULT_COUNTRY for every non-IN locale.
+            val resolvedCountry = CountryRepository.getCountry(user?.countryCode)
             withContext(Dispatchers.Main) {
                 existingUser = user
-                selectedCountry = detected
+                selectedCountry = resolvedCountry
             }
 
             // Scan for smart backup
@@ -1251,46 +1259,38 @@ fun LoginScreen(
 
                             Spacer(modifier = Modifier.height(16.dp))
 
-                            // COUNTRY SELECTION FIELD
-                            Box(modifier = Modifier.fillMaxWidth()) {
-                                OutlinedTextField(
-                                    value = "${selectedCountry.flagEmoji} ${selectedCountry.displayName} — ${selectedCountry.currencySymbol}",
-                                    onValueChange = {},
-                                    readOnly = true,
-                                    label = { Text(stringResource(R.string.country_label)) },
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable { showCountryBottomSheet = true },
-                                    shape = RoundedCornerShape(16.dp),
-                                    leadingIcon = {
-                                        Icon(
-                                            Icons.Default.Public,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.primary
-                                        )
-                                    },
-                                    trailingIcon = {
-                                        Icon(
-                                            Icons.Default.ArrowDropDown,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    },
-                                    enabled = false,
-                                    colors = OutlinedTextFieldDefaults.colors(
-                                        disabledTextColor = MaterialTheme.colorScheme.onSurface,
-                                        disabledBorderColor = MaterialTheme.colorScheme.outline,
-                                        disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        disabledLeadingIconColor = MaterialTheme.colorScheme.primary,
-                                        disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
+                            // COUNTRY (read-only)
+                            //
+                            // No longer a control. The dropdown chevron and the tap targets are
+                            // gone because there is nothing to choose: SUPPORTED_COUNTRIES holds a
+                            // single configuration, so the sheet could only ever re-select the
+                            // country already in use. The field stays as a read-only statement of
+                            // the resolved country and its currency, and the countryCode /
+                            // currencyCode values it displays are still persisted and sent to the
+                            // backend exactly as before -- only the ability to change them by hand
+                            // is removed.
+                            OutlinedTextField(
+                                value = "${selectedCountry.flagEmoji} ${selectedCountry.displayName} — ${selectedCountry.currencySymbol}",
+                                onValueChange = {},
+                                readOnly = true,
+                                label = { Text(stringResource(R.string.country_label)) },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp),
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Default.Public,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary
                                     )
+                                },
+                                enabled = false,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                                    disabledBorderColor = MaterialTheme.colorScheme.outline,
+                                    disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    disabledLeadingIconColor = MaterialTheme.colorScheme.primary
                                 )
-                                Box(
-                                    modifier = Modifier
-                                        .matchParentSize()
-                                        .clickable { showCountryBottomSheet = true }
-                                )
-                            }
+                            )
 
                             Spacer(modifier = Modifier.height(16.dp))
 
@@ -1490,17 +1490,6 @@ fun LoginScreen(
         }
         if (showPrivacySheet) {
             PrivacyPolicyBottomSheet(onDismiss = { showPrivacySheet = false })
-        }
-
-        if (showCountryBottomSheet) {
-            CountrySelectionBottomSheet(
-                selectedCountryCode = selectedCountry.countryCode,
-                onCountrySelected = { country ->
-                    selectedCountry = country
-                    showCountryBottomSheet = false
-                },
-                onDismiss = { showCountryBottomSheet = false }
-            )
         }
 
         if (showProfessionSheet) {
