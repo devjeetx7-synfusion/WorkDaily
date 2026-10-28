@@ -15,6 +15,17 @@ enum class WatchPartyPlaybackStatus {
     ENDED
 }
 
+data class WatchPartyPlaylistItem(
+    val id: String = "",
+    val videoId: String = "",
+    val videoUrl: String = "",
+    val title: String = "",
+    val thumbnailUrl: String = "",
+    val addedByUserId: String = "",
+    val addedByUserName: String = "Host",
+    val addedAtMillis: Long = System.currentTimeMillis()
+)
+
 data class WatchPartyState(
     val roomId: String = "",
     val videoId: String = "",
@@ -23,7 +34,11 @@ data class WatchPartyState(
     val positionSeconds: Float = 0f,
     val updatedAtMillis: Long = System.currentTimeMillis(),
     val hostUserId: String = "",
-    val revision: Long = 0L
+    val revision: Long = 0L,
+    val playlist: List<WatchPartyPlaylistItem> = emptyList(),
+    val activePlaylistItemId: String? = null,
+    val isMuted: Boolean = false,
+    val isTurnedOff: Boolean = false
 )
 
 enum class GuestRequestStatus {
