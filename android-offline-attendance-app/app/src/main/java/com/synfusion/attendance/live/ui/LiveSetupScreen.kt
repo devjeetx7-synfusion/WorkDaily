@@ -21,15 +21,39 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 import com.synfusion.attendance.live.model.LiveRoomType
 import com.synfusion.attendance.live.ui.components.*
 import com.synfusion.attendance.live.viewmodel.LiveViewModel
 
-fun extractYouTubeVideoId(url: String): String? {
-    if (url.isBlank()) return null
-    val regex = "(?<=watch\\?v=|/videos/|embed\\/|youtu\\.be\\/|\\/v\\/|\\/e\\/|watch\\?v%3D|watch\\?feature=player_embedded&v=|%2Fvideos%2F|embed%2F|youtu\\.be%2F|%2Fv%2F)[^#\\&\\?\\n]*".toRegex()
-    val match = regex.find(url)
-    return if (match != null && match.value.length == 11) match.value else if (url.trim().length == 11) url.trim() else null
+fun extractYouTubeVideoId(input: String): String? {
+    if (input.isBlank()) return null
+    val trimmed = input.trim()
+    if (trimmed.matches(Regex("^[a-zA-Z0-9_-]{11}$"))) {
+        return trimmed
+    }
+    val pattern = "(?:youtube\\.com\\/(?:[^\\/]+\\/.+\\/|(?:v|e(?:mbed)?)\\/" +
+            "|.*[?&]v=)|youtu\\.be\\/|youtube\\.com\\/shorts\\/)([a-zA-Z0-9_-]{11})"
+    val regex = Regex(pattern, RegexOption.IGNORE_CASE)
+    val match = regex.find(trimmed)
+    if (match != null && match.groupValues.size >= 2) {
+        return match.groupValues[1]
+    }
+    return null
+}
+
+fun extractYouTubePlaylistId(input: String): String? {
+    if (input.isBlank()) return null
+    val trimmed = input.trim()
+    if (trimmed.matches(Regex("^(PL|LL|EC|UU|FL|RD|UL)[a-zA-Z0-9_-]+$"))) {
+        return trimmed
+    }
+    val regex = Regex("[?&]list=([a-zA-Z0-9_-]+)", RegexOption.IGNORE_CASE)
+    val match = regex.find(trimmed)
+    if (match != null && match.groupValues.size >= 2) {
+        return match.groupValues[1]
+    }
+    return null
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -45,6 +69,7 @@ fun LiveSetupScreen(
     var micEnabled by remember { mutableStateOf(true) }
     var isFrontCamera by remember { mutableStateOf(true) }
     var youtubeUrl by remember { mutableStateOf("") }
+    var showYouTubeBrowser by remember { mutableStateOf(false) }
     var isSubmitting by remember { mutableStateOf(false) }
 
     var showAdvancedSettings by remember { mutableStateOf(false) }
@@ -125,28 +150,67 @@ fun LiveSetupScreen(
                 )
 
                 if (selectedType == LiveRoomType.YOUTUBE_WATCH_PARTY) {
-                    OutlinedTextField(
-                        value = youtubeUrl,
-                        onValueChange = { youtubeUrl = it },
-                        placeholder = { Text("Paste YouTube Video URL or Video ID", color = Color.Gray, fontSize = 13.sp) },
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White,
-                            focusedBorderColor = Color(0xFFEF4444),
-                            unfocusedBorderColor = Color.Gray
-                        ),
-                        shape = RoundedCornerShape(14.dp)
-                    )
-                    val videoId = extractYouTubeVideoId(youtubeUrl)
-                    if (youtubeUrl.isNotBlank()) {
-                        Text(
-                            text = if (videoId != null) "✓ Valid Video ID: $videoId" else "⚠️ Invalid YouTube URL or ID",
-                            color = if (videoId != null) LivePrimaryMint else Color(0xFFF87171),
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        OutlinedTextField(
+                            value = youtubeUrl,
+                            onValueChange = { youtubeUrl = it },
+                            placeholder = { Text("Paste YouTube Video / Playlist URL or ID", color = Color.Gray, fontSize = 13.sp) },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = Color.White,
+                                unfocusedTextColor = Color.White,
+                                focusedBorderColor = Color(0xFFEF4444),
+                                unfocusedBorderColor = Color.Gray
+                            ),
+                            shape = RoundedCornerShape(14.dp),
+                            trailingIcon = {
+                                if (youtubeUrl.isNotBlank()) {
+                                    IconButton(onClick = { youtubeUrl = "" }) {
+                                        Icon(Icons.Default.Clear, contentDescription = "Clear", tint = Color.LightGray)
+                                    }
+                                }
+                            }
                         )
+
+                        // Browse YouTube Web Button
+                        OutlinedButton(
+                            onClick = { showYouTubeBrowser = true },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(20.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = Color(0xFFF87171)
+                            ),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFEF4444).copy(alpha = 0.6f))
+                        ) {
+                            Icon(Icons.Default.Language, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Browse YouTube Website", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                        }
+
+                        val videoId = extractYouTubeVideoId(youtubeUrl)
+                        val playlistId = extractYouTubePlaylistId(youtubeUrl)
+
+                        if (youtubeUrl.isNotBlank()) {
+                            val isValid = videoId != null || playlistId != null
+                            val statusText = when {
+                                videoId != null -> "✓ Valid Video ID: $videoId"
+                                playlistId != null -> "✓ Valid Playlist ID: $playlistId"
+                                else -> "⚠️ Invalid YouTube URL, Video ID, or Playlist ID"
+                            }
+                            Text(
+                                text = statusText,
+                                color = if (isValid) LivePrimaryMint else Color(0xFFF87171),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
                     }
                 }
 
@@ -289,8 +353,10 @@ fun LiveSetupScreen(
                     if (isSubmitting) return@Button
 
                     val videoId = if (selectedType == LiveRoomType.YOUTUBE_WATCH_PARTY) extractYouTubeVideoId(youtubeUrl) else null
-                    if (selectedType == LiveRoomType.YOUTUBE_WATCH_PARTY && videoId == null) {
-                        Toast.makeText(context, "Please enter a valid YouTube video URL or ID", Toast.LENGTH_SHORT).show()
+                    val playlistId = if (selectedType == LiveRoomType.YOUTUBE_WATCH_PARTY) extractYouTubePlaylistId(youtubeUrl) else null
+
+                    if (selectedType == LiveRoomType.YOUTUBE_WATCH_PARTY && videoId == null && playlistId == null) {
+                        Toast.makeText(context, "Please select or enter a valid YouTube video or playlist", Toast.LENGTH_SHORT).show()
                         return@Button
                     }
 
@@ -311,7 +377,10 @@ fun LiveSetupScreen(
                         description = "",
                         isPublic = isPublic,
                         allowGuestRequests = allowGuestRequests,
-                        showGifts = showGifts
+                        showGifts = showGifts,
+                        youtubeVideoUrl = if (youtubeUrl.isNotBlank()) youtubeUrl.trim() else null,
+                        youtubeVideoId = videoId,
+                        youtubePlaylistId = playlistId
                     )
 
                     Toast.makeText(context, "You are LIVE! 🔴", Toast.LENGTH_SHORT).show()
@@ -336,6 +405,18 @@ fun LiveSetupScreen(
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Start Live", fontSize = 15.sp, fontWeight = FontWeight.Bold)
             }
+        }
+
+        // YouTube Website Browser Bottom Sheet Dialog
+        if (showYouTubeBrowser) {
+            YouTubeBrowserBottomSheet(
+                onDismiss = { showYouTubeBrowser = false },
+                onSelectContent = { url, videoId, playlistId ->
+                    youtubeUrl = url
+                    showYouTubeBrowser = false
+                    Toast.makeText(context, "YouTube content selected! ✓", Toast.LENGTH_SHORT).show()
+                }
+            )
         }
 
         // Room Settings Modal Bottom Sheet
@@ -395,6 +476,194 @@ fun LiveSetupScreen(
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun YouTubeBrowserBottomSheet(
+    onDismiss: () -> Unit,
+    onSelectContent: (url: String, videoId: String?, playlistId: String?) -> Unit
+) {
+    var currentUrl by remember { mutableStateOf("https://m.youtube.com") }
+    var detectedVideoId by remember { mutableStateOf<String?>(null) }
+    var detectedPlaylistId by remember { mutableStateOf<String?>(null) }
+    var isLoading by remember { mutableStateOf(true) }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        windowInsets = WindowInsets(0.dp),
+        containerColor = Color(0xFF111827),
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(0.88f)
+        ) {
+            // Header Bar
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Language,
+                        contentDescription = null,
+                        tint = Color(0xFFEF4444),
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Text(
+                        text = "Browse YouTube",
+                        color = Color.White,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                IconButton(onClick = onDismiss, modifier = Modifier.size(32.dp)) {
+                    Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
+                }
+            }
+
+            // WebView Container
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+            ) {
+                AndroidView(
+                    factory = { context ->
+                        android.webkit.WebView(context).apply {
+                            layoutParams = android.view.ViewGroup.LayoutParams(
+                                android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                                android.view.ViewGroup.LayoutParams.MATCH_PARENT
+                            )
+                            settings.apply {
+                                javaScriptEnabled = true
+                                domStorageEnabled = true
+                                loadWithOverviewMode = true
+                                useWideViewPort = true
+                                builtInZoomControls = false
+                                displayZoomControls = false
+                            }
+                            webViewClient = object : android.webkit.WebViewClient() {
+                                override fun shouldOverrideUrlLoading(
+                                    view: android.webkit.WebView?,
+                                    request: android.webkit.WebResourceRequest?
+                                ): Boolean {
+                                    val uri = request?.url ?: return false
+                                    val host = uri.host?.lowercase() ?: ""
+                                    // Security policy: Restrict navigation to YouTube domains only
+                                    val isAllowedHost = host.endsWith("youtube.com") || host.endsWith("youtu.be")
+                                    return if (isAllowedHost) {
+                                        false
+                                    } else {
+                                        Toast.makeText(context, "External link restricted", Toast.LENGTH_SHORT).show()
+                                        true
+                                    }
+                                }
+
+                                override fun onPageStarted(view: android.webkit.WebView?, url: String?, favicon: android.graphics.Bitmap?) {
+                                    super.onPageStarted(view, url, favicon)
+                                    isLoading = true
+                                    url?.let {
+                                        currentUrl = it
+                                        detectedVideoId = extractYouTubeVideoId(it)
+                                        detectedPlaylistId = extractYouTubePlaylistId(it)
+                                    }
+                                }
+
+                                override fun onPageFinished(view: android.webkit.WebView?, url: String?) {
+                                    super.onPageFinished(view, url)
+                                    isLoading = false
+                                    url?.let {
+                                        currentUrl = it
+                                        detectedVideoId = extractYouTubeVideoId(it)
+                                        detectedPlaylistId = extractYouTubePlaylistId(it)
+                                    }
+                                }
+
+                                override fun doUpdateVisitedHistory(view: android.webkit.WebView?, url: String?, isReload: Boolean) {
+                                    super.doUpdateVisitedHistory(view, url, isReload)
+                                    url?.let {
+                                        currentUrl = it
+                                        detectedVideoId = extractYouTubeVideoId(it)
+                                        detectedPlaylistId = extractYouTubePlaylistId(it)
+                                    }
+                                }
+                            }
+                            loadUrl("https://m.youtube.com")
+                        }
+                    },
+                    modifier = Modifier.fillMaxSize()
+                )
+
+                if (isLoading) {
+                    LinearProgressIndicator(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .align(Alignment.TopCenter),
+                        color = Color(0xFFEF4444)
+                    )
+                }
+            }
+
+            // Bottom Sticky Selector Bar
+            Surface(
+                color = Color(0xFF1F2937),
+                shadowElevation = 8.dp,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .navigationBarsPadding(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    val vId = detectedVideoId
+                    val pId = detectedPlaylistId
+
+                    if (vId != null || pId != null) {
+                        Text(
+                            text = if (vId != null) "✓ Detected Video ID: $vId" else "✓ Detected Playlist ID: $pId",
+                            color = LivePrimaryMint,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Button(
+                            onClick = {
+                                onSelectContent(currentUrl, vId, pId)
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp),
+                            shape = RoundedCornerShape(24.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626))
+                        ) {
+                            Icon(Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = if (vId != null) "Use Selected Video" else "Use Selected Playlist",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp
+                            )
+                        }
+                    } else {
+                        Text(
+                            text = "Navigate to any YouTube video or playlist to select it.",
+                            color = Color.LightGray,
+                            fontSize = 12.sp
+                        )
+                    }
                 }
             }
         }

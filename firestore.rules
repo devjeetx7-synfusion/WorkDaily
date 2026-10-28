@@ -168,6 +168,31 @@ service cloud.firestore {
       }
     }
 
+    // WorkDaily Live Rooms and YouTube Watch Party Realtime State
+    match /live_rooms/{roomId} {
+      allow get, list: if isAuthenticated();
+
+      allow create: if isAuthenticated()
+                    && request.resource.data.hostUserId == request.auth.uid;
+
+      // Only room host can update room or watch party state
+      allow update: if isAuthenticated()
+                    && (resource.data.hostUserId == request.auth.uid
+                        || request.resource.data.hostUserId == request.auth.uid);
+
+      allow delete: if isAuthenticated()
+                    && resource.data.hostUserId == request.auth.uid;
+
+      match /messages/{messageId} {
+        allow get, list: if isAuthenticated();
+
+        allow create: if isAuthenticated()
+                      && request.resource.data.senderId == request.auth.uid;
+
+        allow update, delete: if false;
+      }
+    }
+
     // Deny access to any other unmapped collections by default
     match /{document=**} {
       allow read, write: if false;

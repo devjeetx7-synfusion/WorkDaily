@@ -3,12 +3,23 @@ package com.synfusion.attendance.live.data
 import android.content.Context
 import android.content.SharedPreferences
 import com.synfusion.attendance.live.model.*
+import com.synfusion.attendance.online.FirestoreLiveRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import java.util.UUID
 
 class DemoLiveRepository(context: Context? = null) {
+
+    private val repositoryScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    private val firestoreLiveRepository = FirestoreLiveRepository()
+    private var activeRoomSyncJob: Job? = null
 
     private val inMemoryPrefs = HashMap<String, Any>()
     private val prefs: SharedPreferences? = context?.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -622,12 +633,64 @@ class DemoLiveRepository(context: Context? = null) {
     }
 
     fun setActiveRoom(roomId: String?) {
+        activeRoomSyncJob?.cancel()
         if (roomId == null) {
             _activeRoom.value = null
             return
         }
         val room = _liveRooms.value.find { it.id == roomId }
         _activeRoom.value = room
+
+        // Start Firestore real-time synchronization for active room
+        activeRoomSyncJob = repositoryScope.launch {
+            launch {
+                firestoreLiveRepository.observeWatchPartyState(roomId).collectLatest { remoteState ->
+                    if (remoteState != null) {
+                        val currentRoom = _liveRooms.value.find { it.id == roomId } ?: return@collectLatest
+                        val currentRevision = currentRoom.watchPartyState?.revision ?: 0L
+                        if (remoteState.revision > currentRevision) {
+                            val updatedRoom = currentRoom.copy(watchPartyState = remoteState)
+                            _liveRooms.value = _liveRooms.value.map { if (it.id == roomId) updatedRoom else it }
+                            if (_activeRoom.value?.id == roomId) {
+                                _activeRoom.value = updatedRoom
+                            }
+                        }
+                    }
+                }
+            }
+            launch {
+                firestoreLiveRepository.observeLiveChatMessages(roomId).collectLatest { remoteMessages ->
+                    if (remoteMessages.isNotEmpty()) {
+                        val currentMap = _chatMessagesMap.value.toMutableMap()
+                        currentMap[roomId] = remoteMessages
+                        _chatMessagesMap.value = currentMap
+                    }
+                }
+            }
+        }
+    }
+
+    fun updateWatchPartyState(roomId: String, status: WatchPartyPlaybackStatus, positionSeconds: Float) {
+        val currentRooms = _liveRooms.value
+        val room = currentRooms.find { it.id == roomId } ?: return
+        val currentState = room.watchPartyState ?: WatchPartyState(roomId = roomId, hostUserId = room.hostUserId)
+        val newRevision = currentState.revision + 1L
+        val updatedState = currentState.copy(
+            status = status,
+            positionSeconds = positionSeconds,
+            updatedAtMillis = System.currentTimeMillis(),
+            revision = newRevision
+        )
+        val updatedRoom = room.copy(watchPartyState = updatedState)
+        _liveRooms.value = currentRooms.map { if (it.id == roomId) updatedRoom else it }
+        if (_activeRoom.value?.id == roomId) {
+            _activeRoom.value = updatedRoom
+        }
+
+        // Publish updated watch party state to Firestore if online
+        repositoryScope.launch {
+            firestoreLiveRepository.publishWatchPartyState(roomId, updatedState)
+        }
     }
 
     fun startLiveStream(
@@ -638,10 +701,27 @@ class DemoLiveRepository(context: Context? = null) {
         description: String = "",
         isPublic: Boolean = true,
         allowGuestRequests: Boolean = true,
-        showGifts: Boolean = true
+        showGifts: Boolean = true,
+        youtubeVideoUrl: String? = null,
+        youtubeVideoId: String? = null,
+        youtubePlaylistId: String? = null
     ): LiveRoom {
+        val roomId = "room_" + UUID.randomUUID().toString().take(8)
+        val initialWatchPartyState = if (type == LiveRoomType.YOUTUBE_WATCH_PARTY && (!youtubeVideoId.isNullOrBlank() || !youtubePlaylistId.isNullOrBlank())) {
+            WatchPartyState(
+                roomId = roomId,
+                videoId = youtubeVideoId ?: "",
+                playlistId = youtubePlaylistId,
+                status = WatchPartyPlaybackStatus.UNSTARTED,
+                positionSeconds = 0f,
+                updatedAtMillis = System.currentTimeMillis(),
+                hostUserId = "creator_me",
+                revision = 1L
+            )
+        } else null
+
         val newRoom = LiveRoom(
-            id = "room_" + UUID.randomUUID().toString().take(8),
+            id = roomId,
             title = title.ifBlank { "Live Site Workday Discussion" },
             creatorId = "creator_me",
             creatorName = "You (Host)",
@@ -660,7 +740,11 @@ class DemoLiveRepository(context: Context? = null) {
             description = description,
             isPublic = isPublic,
             allowGuestRequests = allowGuestRequests,
-            showGifts = showGifts
+            showGifts = showGifts,
+            youtubeVideoUrl = youtubeVideoUrl,
+            youtubeVideoId = youtubeVideoId,
+            youtubePlaylistId = youtubePlaylistId,
+            watchPartyState = initialWatchPartyState
         )
         _liveRooms.value = listOf(newRoom) + _liveRooms.value
         _activeRoom.value = newRoom

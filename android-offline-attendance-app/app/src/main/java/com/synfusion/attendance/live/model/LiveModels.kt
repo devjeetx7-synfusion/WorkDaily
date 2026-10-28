@@ -7,6 +7,25 @@ enum class LiveRoomType {
     YOUTUBE_WATCH_PARTY
 }
 
+enum class WatchPartyPlaybackStatus {
+    UNSTARTED,
+    PLAYING,
+    PAUSED,
+    BUFFERING,
+    ENDED
+}
+
+data class WatchPartyState(
+    val roomId: String = "",
+    val videoId: String = "",
+    val playlistId: String? = null,
+    val status: WatchPartyPlaybackStatus = WatchPartyPlaybackStatus.UNSTARTED,
+    val positionSeconds: Float = 0f,
+    val updatedAtMillis: Long = System.currentTimeMillis(),
+    val hostUserId: String = "",
+    val revision: Long = 0L
+)
+
 enum class GuestRequestStatus {
     PENDING,
     APPROVED,
@@ -146,7 +165,9 @@ data class LiveRoom(
     val pinnedMessage: ChatMessage? = null,
     val startTimeMillis: Long = System.currentTimeMillis(),
     val youtubeVideoUrl: String? = null,
-    val youtubeVideoId: String? = null
+    val youtubeVideoId: String? = null,
+    val youtubePlaylistId: String? = null,
+    val watchPartyState: WatchPartyState? = null
 )
 
 data class LiveCreator(

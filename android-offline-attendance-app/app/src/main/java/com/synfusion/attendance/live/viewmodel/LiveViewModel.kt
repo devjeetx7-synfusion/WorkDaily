@@ -141,6 +141,10 @@ class LiveViewModel(application: Application) : AndroidViewModel(application) {
         repository.setActiveRoom(roomId)
     }
 
+    fun updateWatchPartyState(roomId: String, status: WatchPartyPlaybackStatus, positionSeconds: Float) {
+        repository.updateWatchPartyState(roomId, status, positionSeconds)
+    }
+
     fun startLiveStream(
         title: String,
         category: String,
@@ -149,10 +153,14 @@ class LiveViewModel(application: Application) : AndroidViewModel(application) {
         description: String = "",
         isPublic: Boolean = true,
         allowGuestRequests: Boolean = true,
-        showGifts: Boolean = true
+        showGifts: Boolean = true,
+        youtubeVideoUrl: String? = null,
+        youtubeVideoId: String? = null,
+        youtubePlaylistId: String? = null
     ): LiveRoom {
         return repository.startLiveStream(
-            title, category, type, tags, description, isPublic, allowGuestRequests, showGifts
+            title, category, type, tags, description, isPublic, allowGuestRequests, showGifts,
+            youtubeVideoUrl, youtubeVideoId, youtubePlaylistId
         )
     }
 
