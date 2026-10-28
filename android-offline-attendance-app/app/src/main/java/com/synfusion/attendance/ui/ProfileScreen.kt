@@ -52,11 +52,13 @@ import com.synfusion.attendance.rewards.ui.components.RewardCoinBalance
 import com.synfusion.attendance.rewards.ui.components.RewardsPurple
 import com.synfusion.attendance.rewards.viewmodel.RewardsViewModel
 import com.synfusion.attendance.ui.components.CropScreenDialog
+import com.synfusion.attendance.ui.components.GenderSymbol
 import com.synfusion.attendance.ui.components.ProfileCountValueSkeleton
 import com.synfusion.attendance.ui.components.WorkDailySubtleRefreshBar
 import com.synfusion.attendance.ui.responsive.LocalWindowSizeInfo
 import com.synfusion.attendance.ui.responsive.ResponsiveContainer
 import com.synfusion.attendance.utils.AmountFormatter
+import com.synfusion.attendance.utils.DateOfBirthUtils
 import com.synfusion.attendance.utils.collectAsStateWithLifecycle
 import com.synfusion.attendance.viewmodel.OfflineSettingsState
 import com.synfusion.attendance.viewmodel.OfflineSettingsViewModel
@@ -84,6 +86,10 @@ fun ProfileScreen(
     val state by viewModel.state.collectAsStateWithLifecycle(initialValue = OfflineSettingsState())
     val walletSummary by rewardsViewModel?.walletSummary?.collectAsState() ?: remember { mutableStateOf(null) }
     val creatorEarning by liveViewModel?.creatorEarning?.collectAsState() ?: remember { mutableStateOf(null) }
+    // The viewer's own diamond wallet. Distinct from creatorEarning.availableDiamonds, which is
+    // what a creator has earned and can cash out -- two different balances that must not be
+    // substituted for one another.
+    val diamondWallet by liveViewModel?.wallet?.collectAsState() ?: remember { mutableStateOf(null) }
     val followedIds by liveViewModel?.followedCreatorIds?.collectAsState() ?: remember { mutableStateOf(emptySet()) }
     val publicUsers by liveViewModel?.publicUsers?.collectAsState() ?: remember { mutableStateOf(emptyList()) }
 
@@ -91,7 +97,9 @@ fun ProfileScreen(
     val snackbarHostState = remember { SnackbarHostState() }
 
     var selectedUriForCrop by remember { mutableStateOf<Uri?>(null) }
-    var showPhotoActionSheet by remember { mutableStateOf(false) }
+    // The photo action sheet is gone (see the preview dialog below); the picker and crop chain it
+    // used to trigger are deliberately retained so the upload implementation still exists.
+    var showPhotoPreview by remember { mutableStateOf(false) }
     var activeUserListType by remember { mutableStateOf<UserListType?>(null) }
     var showBlockedUsersSheet by remember { mutableStateOf(false) }
     var isPhoneMasked by remember { mutableStateOf(true) }
@@ -115,6 +123,31 @@ fun ProfileScreen(
         else if (currentPhotoPath.isNotEmpty()) java.io.File(currentPhotoPath)
         else if (googlePhotoUrl.isNotEmpty()) googlePhotoUrl
         else null
+    }
+
+    // Hoisted from inside the avatar Box so the preview dialog renders through the very same Coil
+    // request -- same cache keys, same crossfade, same file-vs-URL cache policy. Building a second
+    // request for the dialog would have duplicated that tuning and let the two drift apart.
+    val imageRequest = remember(imageModel) {
+        if (imageModel != null) {
+            val builder = coil.request.ImageRequest.Builder(context)
+                .data(imageModel)
+                .crossfade(true)
+            if (imageModel is java.io.File) {
+                val key = "${imageModel.absolutePath}_${imageModel.lastModified()}"
+                builder.memoryCacheKey(key)
+                    .diskCacheKey(key)
+                    .networkCachePolicy(coil.request.CachePolicy.DISABLED)
+            } else {
+                val key = imageModel.toString()
+                builder.memoryCacheKey(key)
+                    .diskCacheKey(key)
+                    .networkCachePolicy(coil.request.CachePolicy.ENABLED)
+            }
+            builder.diskCachePolicy(coil.request.CachePolicy.ENABLED)
+                .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
+                .build()
+        } else null
     }
 
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -301,31 +334,9 @@ fun ProfileScreen(
                                 .clip(CircleShape)
                                 .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
                                 .border(3.dp, LivePrimaryEmerald.copy(alpha = 0.35f), CircleShape)
-                                .clickable { showPhotoActionSheet = true },
+                                .clickable(enabled = imageModel != null) { showPhotoPreview = true },
                             contentAlignment = Alignment.Center
                         ) {
-                            val imageRequest = remember(imageModel) {
-                                if (imageModel != null) {
-                                    val builder = coil.request.ImageRequest.Builder(context)
-                                        .data(imageModel)
-                                        .crossfade(true)
-                                    if (imageModel is java.io.File) {
-                                        val key = "${imageModel.absolutePath}_${imageModel.lastModified()}"
-                                        builder.memoryCacheKey(key)
-                                            .diskCacheKey(key)
-                                            .networkCachePolicy(coil.request.CachePolicy.DISABLED)
-                                    } else {
-                                        val key = imageModel.toString()
-                                        builder.memoryCacheKey(key)
-                                            .diskCacheKey(key)
-                                            .networkCachePolicy(coil.request.CachePolicy.ENABLED)
-                                    }
-                                    builder.diskCachePolicy(coil.request.CachePolicy.ENABLED)
-                                        .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
-                                        .build()
-                                } else null
-                            }
-
                             if (imageModel != null && imageRequest != null) {
                                 coil.compose.SubcomposeAsyncImage(
                                     model = imageRequest,
@@ -351,23 +362,8 @@ fun ProfileScreen(
                             }
                         }
 
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.BottomEnd)
-                                .size(34.dp)
-                                .clip(CircleShape)
-                                .background(LivePrimaryEmerald)
-                                .border(2.dp, MaterialTheme.colorScheme.surface, CircleShape)
-                                .clickable { showPhotoActionSheet = true },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.PhotoCamera,
-                                contentDescription = "Edit Profile Photo",
-                                tint = Color.White,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
+                        // The camera badge that opened the change-photo sheet is removed along with
+                        // it, so no affordance on this screen still offers to change the picture.
                     }
 
                     Column(
@@ -384,6 +380,9 @@ fun ProfileScreen(
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
+                            // Renders nothing when gender is unset or unrecognised, so the profile
+                            // never implies a gender the user did not choose.
+                            GenderSymbol(gender = state.gender, size = 18.dp)
                             Icon(
                                 imageVector = Icons.Default.Verified,
                                 contentDescription = "Verified Member",
@@ -402,6 +401,19 @@ fun ProfileScreen(
                             fontWeight = FontWeight.Medium,
                             color = LivePrimaryEmerald
                         )
+
+                        // Human-readable age instead of the raw date of birth. Derived on every
+                        // recomposition from the stored date, so it advances on the user's birthday
+                        // with nothing cached to go stale, and age is never persisted in place of
+                        // the date itself.
+                        DateOfBirthUtils.ageLabel(state.dateOfBirth)?.let { ageLabel ->
+                            Text(
+                                text = ageLabel,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
 
                         Text(
                             text = if (state.bio.isNotBlank()) state.bio else "WorkDaily Verified Member • ${state.profession.ifEmpty { "Site Worker" }}",
@@ -708,12 +720,25 @@ fun ProfileScreen(
                                         verticalArrangement = Arrangement.spacedBy(4.dp)
                                     ) {
                                         Text("Available Coins", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                        RewardCoinBalance(
-                                            amount = walletSummary?.totalBalance ?: 150,
-                                            fontSize = 18,
-                                            textColor = RewardsPurple,
-                                            coinSize = 20.dp
-                                        )
+                                        // No invented fallback: a null walletSummary means no
+                                        // rewards source was supplied, and rendering 150 there
+                                        // showed a balance the user does not have.
+                                        val availableCoins = walletSummary?.totalBalance
+                                        if (availableCoins == null) {
+                                            Text(
+                                                text = "—",
+                                                fontSize = 18.sp,
+                                                fontWeight = FontWeight.ExtraBold,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        } else {
+                                            RewardCoinBalance(
+                                                amount = availableCoins,
+                                                fontSize = 18,
+                                                textColor = RewardsPurple,
+                                                coinSize = 20.dp
+                                            )
+                                        }
                                     }
                                 }
 
@@ -730,8 +755,15 @@ fun ProfileScreen(
                                         verticalArrangement = Arrangement.spacedBy(4.dp)
                                     ) {
                                         Text("Live Diamonds", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        // Sourced from the viewer's diamond wallet, not creator
+                                        // earnings. The previous wiring displayed
+                                        // creatorEarning.availableDiamonds here, so a creator's
+                                        // cashable balance was presented as the user's spendable
+                                        // diamonds.
                                         Text(
-                                            text = "${creatorEarning?.availableDiamonds ?: 500} 💎",
+                                            text = diamondWallet?.diamondBalance
+                                                ?.let { "$it 💎" }
+                                                ?: "—",
                                             fontSize = 18.sp,
                                             fontWeight = FontWeight.ExtraBold,
                                             color = LivePrimaryEmerald
@@ -784,7 +816,9 @@ fun ProfileScreen(
                                     ) {
                                         Text("Lifetime Earned", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         Text(
-                                            text = "₹${(creatorEarning?.totalRupeesEarned ?: 600.0).toInt()}",
+                                            text = creatorEarning?.totalRupeesEarned
+                                                ?.let { "${activeCountry.currencySymbol}${it.toInt()}" }
+                                                ?: "—",
                                             fontSize = 18.sp,
                                             fontWeight = FontWeight.ExtraBold,
                                             color = LivePrimaryEmerald
@@ -803,7 +837,9 @@ fun ProfileScreen(
                                     ) {
                                         Text("Available Balance", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         Text(
-                                            text = "${creatorEarning?.availableDiamonds ?: 900} 💎",
+                                            text = creatorEarning?.availableDiamonds
+                                                ?.let { "$it 💎" }
+                                                ?: "—",
                                             fontSize = 18.sp,
                                             fontWeight = FontWeight.ExtraBold,
                                             color = MaterialTheme.colorScheme.onSurface
@@ -846,89 +882,61 @@ fun ProfileScreen(
                 )
             }
 
-            // Photo Action Sheet Modal
-            if (showPhotoActionSheet) {
-                ModalBottomSheet(
-                    onDismissRequest = { showPhotoActionSheet = false },
-                    sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+            // Profile photo preview. Tapping the avatar opens this instead of a change-photo sheet:
+            // the image is shown at a fixed 1:1 frame with ContentScale.Fit, so the whole photo is
+            // visible and never stretched or cropped, and it dismisses on the button, on scrim tap
+            // and on back. The saved image, its URL and the avatar fallback are all untouched.
+            if (showPhotoPreview) {
+                AlertDialog(
+                    onDismissRequest = { showPhotoPreview = false },
                     containerColor = MaterialTheme.colorScheme.surface,
-                    shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-                    windowInsets = WindowInsets(0.dp),
-                    dragHandle = { BottomSheetDefaults.DragHandle() }
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 24.dp, vertical = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
+                    title = {
                         Text(
-                            text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.profile_photo),
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.padding(bottom = 8.dp)
+                            text = androidx.compose.ui.res.stringResource(
+                                com.synfusion.attendance.R.string.profile_photo
+                            ),
+                            fontWeight = FontWeight.Bold
                         )
-
-                        Row(
+                    },
+                    text = {
+                        Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
-                                .clickable {
-                                    showPhotoActionSheet = false
-                                    photoPickerLauncher.launch("image/*")
-                                }
-                                .padding(vertical = 12.dp, horizontal = 16.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                                .aspectRatio(1f)
+                                .clip(RoundedCornerShape(12.dp)),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.PhotoCamera,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Text(
-                                text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.change_photo),
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-
-                        if (imageModel != null) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .clickable {
-                                        showPhotoActionSheet = false
-                                        viewModel.onProfileImageSelected(null)
-                                        viewModel.onRemoveProfilePhoto()
-                                        viewModel.saveChanges()
+                            if (imageModel != null && imageRequest != null) {
+                                coil.compose.SubcomposeAsyncImage(
+                                    model = imageRequest,
+                                    contentDescription = "Profile photo preview",
+                                    modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(12.dp)),
+                                    contentScale = androidx.compose.ui.layout.ContentScale.Fit,
+                                    error = {
+                                        Icon(
+                                            imageVector = Icons.Default.Person,
+                                            contentDescription = "Default Avatar",
+                                            modifier = Modifier.size(64.dp),
+                                            tint = LivePrimaryEmerald
+                                        )
                                     }
-                                    .padding(vertical = 12.dp, horizontal = 16.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Delete,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.error,
-                                    modifier = Modifier.size(24.dp)
                                 )
-                                Spacer(modifier = Modifier.width(16.dp))
-                                Text(
-                                    text = androidx.compose.ui.res.stringResource(com.synfusion.attendance.R.string.remove_photo),
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = MaterialTheme.colorScheme.error
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.Person,
+                                    contentDescription = "Default Avatar",
+                                    modifier = Modifier.size(64.dp),
+                                    tint = LivePrimaryEmerald
                                 )
                             }
                         }
-                        Spacer(modifier = Modifier.height(24.dp))
+                    },
+                    confirmButton = {
+                        TextButton(onClick = { showPhotoPreview = false }) {
+                            Text("Close", fontWeight = FontWeight.Bold)
+                        }
                     }
-                }
+                )
             }
 
             val selectedOwnListType = activeUserListType

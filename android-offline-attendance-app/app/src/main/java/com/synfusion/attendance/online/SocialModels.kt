@@ -16,6 +16,30 @@ data class FirestoreConversation(
 )
 
 /**
+ * The participant on the other end of a 1:1 conversation, or `null` when there is none.
+ *
+ * Conversations are keyed `min(uid)_max(uid)` and hold both participants, so the peer is whichever
+ * entry is not the viewer. Returns `null` -- never the viewer's own UID -- for a malformed or
+ * self-only document, which lets the caller skip the row instead of rendering a chat with oneself
+ * or navigating to `live_private_chat/` with an empty argument.
+ */
+fun FirestoreConversation.otherParticipant(currentUid: String?): String? =
+    participants.firstOrNull { it != currentUid }
+
+/**
+ * Total unread messages across conversations, counted for [currentUid] only.
+ *
+ * `unreadCounts` is keyed per participant, so summing the map's values would credit a user with
+ * their peer's unread messages as well. Entries for other participants and conversations with no
+ * counter at all -- which is every conversation written before the counter existed -- contribute
+ * zero rather than being treated as missing data.
+ */
+fun List<FirestoreConversation>.unreadTotalFor(currentUid: String?): Int {
+    val uid = currentUid ?: return 0
+    return sumOf { it.unreadCounts[uid] ?: 0 }
+}
+
+/**
  * Delivery / Read status for a message.
  */
 enum class MessageStatus {

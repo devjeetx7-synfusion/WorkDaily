@@ -593,7 +593,11 @@ fun DashboardScreen(
                     viewModel = liveViewModel,
                     onNavigateBack = { bottomNavController.navigateUp() },
                     onNavigatePrivateChat = { friendId -> bottomNavController.navigate("live_private_chat/$friendId") },
-                    onNavigateUserProfile = { userId -> bottomNavController.navigate("live_profile?userId=$userId") }
+                    onNavigateUserProfile = { userId -> bottomNavController.navigate("live_profile?userId=$userId") },
+                    // Routes to the existing people directory rather than a new picker, so
+                    // starting a conversation still goes through getOrCreateConversation and
+                    // cannot create a duplicate thread.
+                    onNavigatePeople = { bottomNavController.navigate("live_people") }
                 )
             }
             composable("notification_settings") {

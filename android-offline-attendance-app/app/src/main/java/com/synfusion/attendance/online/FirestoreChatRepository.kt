@@ -1,6 +1,7 @@
 package com.synfusion.attendance.online
 
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import kotlinx.coroutines.Dispatchers
@@ -24,6 +25,20 @@ sealed class ChatMessagesFeedState {
     data class Error(val message: String) : ChatMessagesFeedState()
 }
 
+/**
+ * State of the conversation list, mirroring [ChatMessagesFeedState].
+ *
+ * The list previously surfaced as a bare `Flow<List<FirestoreConversation>>`, which could not
+ * distinguish "still loading" and "the query failed" from "this user has no conversations" --
+ * all three arrived as an empty list. That is why a failed query rendered as a silent, empty
+ * inbox. Callers that only need the list can keep using [ChatRepository.observeConversations].
+ */
+sealed class ChatListState {
+    object Loading : ChatListState()
+    data class Loaded(val conversations: List<FirestoreConversation>) : ChatListState()
+    data class Error(val message: String) : ChatListState()
+}
+
 interface ChatRepository {
     fun getConversationId(uid1: String, uid2: String): String
     suspend fun getOrCreateConversation(currentUid: String, friendUid: String): ProfileOperationResult<FirestoreConversation>
@@ -41,6 +56,18 @@ interface ChatRepository {
     suspend fun sendMessage(senderUid: String, recipientUid: String, text: String): ProfileOperationResult<FirestoreChatMessage>
     suspend fun markMessagesAsDelivered(conversationId: String, recipientUid: String): ProfileOperationResult<Boolean>
     suspend fun markMessagesAsRead(conversationId: String, recipientUid: String): ProfileOperationResult<Boolean>
+
+    /**
+     * Conversation list with explicit loading and error states.
+     *
+     * [observeConversations] returns a bare list, which cannot distinguish "still loading" and
+     * "the query failed" from "this user genuinely has no conversations" -- all three arrive as
+     * an empty list, so a backend failure renders as a silent, empty inbox. Callers that render
+     * a list to a user should prefer this. The default keeps existing implementations compiling.
+     */
+    fun observeConversationsState(currentUid: String): Flow<ChatListState> {
+        return observeConversations(currentUid).map { ChatListState.Loaded(it) }
+    }
 }
 
 class FirestoreChatRepository(
@@ -179,21 +206,39 @@ class FirestoreChatRepository(
         }
     }
 
-    override fun observeConversations(currentUid: String): Flow<List<FirestoreConversation>> = callbackFlow {
+    override fun observeConversations(currentUid: String): Flow<List<FirestoreConversation>> {
+        return observeConversationsState(currentUid).map { state ->
+            when (state) {
+                is ChatListState.Loaded -> state.conversations
+                else -> emptyList()
+            }
+        }
+    }
+
+    override fun observeConversationsState(currentUid: String): Flow<ChatListState> = callbackFlow {
         if (currentUid.isBlank()) {
-            trySend(emptyList())
+            trySend(ChatListState.Loaded(emptyList()))
             close()
             return@callbackFlow
         }
 
+        trySend(ChatListState.Loading)
+
         val firestore = firestoreSupplier()
+        // Deliberately no orderBy() here. Combining whereArrayContains() with orderBy() on a
+        // different field requires a Firestore composite index, and this project declares none
+        // (there is no firestore.indexes.json), so the query is rejected outright. The previous
+        // listener then swallowed that rejection as an empty list, which is exactly why a user
+        // with real conversations saw an empty inbox. Newest-first ordering is applied to the
+        // mapped list below instead: same presentation, no index dependency.
         val query = firestore.collection("conversations")
             .whereArrayContains("participants", currentUid)
-            .orderBy("lastTimestamp", Query.Direction.DESCENDING)
 
         val registration = query.addSnapshotListener { snapshot, error ->
             if (error != null) {
-                trySend(emptyList())
+                // Surface the failure. Reporting an empty list here made a rejected or
+                // permission-denied query indistinguishable from "no conversations yet".
+                trySend(ChatListState.Error(error.message ?: "Failed to load conversations"))
                 return@addSnapshotListener
             }
 
@@ -209,15 +254,31 @@ class FirestoreChatRepository(
                         lastMessage = data["lastMessage"] as? String ?: "",
                         lastSenderUid = data["lastSenderUid"] as? String ?: "",
                         lastTimestamp = (data["lastTimestamp"] as? Number)?.toLong() ?: System.currentTimeMillis(),
+                        unreadCounts = unreadCountsFrom(data["unreadCounts"]),
                         createdAt = (data["createdAt"] as? Number)?.toLong() ?: System.currentTimeMillis(),
                         updatedAt = (data["updatedAt"] as? Number)?.toLong() ?: System.currentTimeMillis()
                     )
-                }
-                trySend(list)
+                }.sortedByDescending { it.lastTimestamp }
+                trySend(ChatListState.Loaded(list))
             }
         }
 
         awaitClose { registration.remove() }
+    }
+
+    /**
+     * Reads the denormalised `unreadCounts` map off a conversation document.
+     *
+     * Firestore stores integers as Long, and documents written before the counter existed have no
+     * such field at all, so anything unparseable degrades to "no unread" rather than throwing.
+     */
+    private fun unreadCountsFrom(raw: Any?): Map<String, Int> {
+        val map = raw as? Map<*, *> ?: return emptyMap()
+        return map.entries.mapNotNull { (key, value) ->
+            val uid = key as? String ?: return@mapNotNull null
+            val count = (value as? Number)?.toInt() ?: return@mapNotNull null
+            uid to count
+        }.toMap()
     }
 
     override fun observeMessagesFeed(
@@ -391,7 +452,12 @@ class FirestoreChatRepository(
                 "lastMessage" to trimmedText,
                 "lastSenderUid" to senderUid,
                 "lastTimestamp" to now,
-                "updatedAt" to now
+                "updatedAt" to now,
+                // Denormalised unread counter for the recipient, incremented atomically so two
+                // concurrent sends cannot lose a count. This conversation document is already
+                // being written in this batch, so maintaining the counter here adds no new
+                // write and no new security-rule surface.
+                "unreadCounts.$recipientUid" to FieldValue.increment(1)
             )
 
             try {
@@ -465,30 +531,43 @@ class FirestoreChatRepository(
 
         try {
             val firestore = firestoreSupplier()
-            val querySnap = firestore.collection("conversations")
-                .document(conversationId)
+            val convRef = firestore.collection("conversations").document(conversationId)
+            val querySnap = convRef
                 .collection("messages")
                 .whereEqualTo("recipientUid", recipientUid)
                 .whereIn("status", listOf(MessageStatus.SENT.name, MessageStatus.DELIVERED.name))
                 .get()
                 .await()
 
-            if (querySnap.documents.isEmpty()) {
-                return@withContext ProfileOperationResult.Success(true)
+            if (querySnap.documents.isNotEmpty()) {
+                val now = System.currentTimeMillis()
+                firestore.runBatch { batch ->
+                    for (doc in querySnap.documents) {
+                        batch.update(
+                            doc.reference,
+                            mapOf(
+                                "status" to MessageStatus.READ.name,
+                                "readAt" to now
+                            )
+                        )
+                    }
+                }.await()
             }
 
-            val now = System.currentTimeMillis()
-            firestore.runBatch { batch ->
-                for (doc in querySnap.documents) {
-                    batch.update(
-                        doc.reference,
-                        mapOf(
-                            "status" to MessageStatus.READ.name,
-                            "readAt" to now
-                        )
-                    )
-                }
-            }.await()
+            // Clear this recipient's denormalised unread counter.
+            //
+            // Deliberately NOT part of the batch above. firestore.rules gates conversation-document
+            // updates on isMutualFollower() and isNotBlocked(), while message updates are gated only
+            // on participation. Batching them would let a later unfollow or block permanently
+            // prevent messages from being marked read -- losing read receipts to fix a cosmetic
+            // badge is the wrong trade. Best-effort, and unconditional so a counter that drifted
+            // away from the real unread set is corrected on the next open even when no message
+            // matched the query.
+            try {
+                convRef.update(mapOf("unreadCounts.$recipientUid" to 0)).await()
+            } catch (_: Exception) {
+                // Messages are already marked read; a stale badge is recoverable on the next open.
+            }
 
             ProfileOperationResult.Success(true)
         } catch (e: Exception) {
