@@ -208,11 +208,12 @@ class LiveViewModel(application: Application) : AndroidViewModel(application) {
             null
         } ?: return null
 
-        val repository = SocialSessionCache.publicProfileRepository
-        val cached = runCatching { repository.getPublicProfile(firebaseUser.uid) }.getOrNull()
+        // Shadowing the class-level `repository` (DemoLiveRepository) here was confusing.
+        val profileRepository = SocialSessionCache.publicProfileRepository
+        val cached = runCatching { profileRepository.getPublicProfile(firebaseUser.uid) }.getOrNull()
         val profile = (cached as? ProfileOperationResult.Success)?.data
             ?: (runCatching {
-                repository.ensureOrCreatePublicProfile(
+                profileRepository.ensureOrCreatePublicProfile(
                     firebaseUser.uid,
                     firebaseUser.displayName,
                     firebaseUser.photoUrl?.toString()

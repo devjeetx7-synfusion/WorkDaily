@@ -38,7 +38,7 @@ import java.util.UUID
  * live_rooms/{roomId}                                  room + host metadata + live flag
  * live_rooms/{roomId}/members/{uid}                    presence/membership (uid-keyed => no dupes)
  * live_rooms/{roomId}/watch_party/state                shared playback state (single doc)
- * live_rooms/{roomId}/watch_party/playlist/{videoId}   playlist items (rarely written)
+ * live_rooms/{roomId}/watch_party_playlist/{videoId}   playlist items (rarely written)
  * live_rooms/{roomId}/messages/{clientMessageId}       persistent chat (bounded reads)
  * ```
  *
@@ -62,7 +62,17 @@ class FirestoreLiveRoomBackend(
         const val MESSAGES = "messages"
         const val WATCH_PARTY = "watch_party"
         const val STATE = "state"
-        const val PLAYLIST = "playlist"
+
+        /**
+         * Playlist rows live in their own room-level collection.
+         *
+         * A Firestore path alternates collection/document, so `watch_party/playlist/{id}` (as a
+         * sibling of the `state` document) is not addressable: `CollectionReference` exposes no
+         * `collection()` and the security-rule path would have an odd number of segments. Keeping the
+         * queue in `watch_party_playlist` preserves the important property (playback writes never
+         * rewrite the queue) with a valid path.
+         */
+        const val WATCH_PARTY_PLAYLIST = "watch_party_playlist"
     }
 
     private fun currentUid(): String? = try {
@@ -74,7 +84,7 @@ class FirestoreLiveRoomBackend(
     private fun rooms() = firestoreSupplier().collection(ROOMS)
     private fun roomRef(roomId: String) = rooms().document(roomId)
     private fun stateRef(roomId: String) = roomRef(roomId).collection(WATCH_PARTY).document(STATE)
-    private fun playlistRef(roomId: String) = roomRef(roomId).collection(WATCH_PARTY).collection(PLAYLIST)
+    private fun playlistRef(roomId: String) = roomRef(roomId).collection(WATCH_PARTY_PLAYLIST)
     private fun membersRef(roomId: String) = roomRef(roomId).collection(MEMBERS)
     private fun messagesRef(roomId: String) = roomRef(roomId).collection(MESSAGES)
 
@@ -165,13 +175,14 @@ class FirestoreLiveRoomBackend(
                 val batch = firestore.batch()
                 batch.set(stateRef(roomId), stateToMap(state))
                 val selection = request.selection
-                if (selection != null && selection.isVideoPlayable) {
+                val selectedVideoId = selection?.videoId
+                if (selection != null && selection.isVideoPlayable && selectedVideoId != null) {
                     val item = WatchPartyPlaylistItem(
-                        id = selection.videoId!!,
-                        videoId = selection.videoId,
+                        id = selectedVideoId,
+                        videoId = selectedVideoId,
                         videoUrl = selection.canonicalUrl,
-                        title = "YouTube Video (${selection.videoId})",
-                        thumbnailUrl = com.synfusion.attendance.live.watchparty.YouTubeLinkParser.thumbnailUrl(selection.videoId),
+                        title = "YouTube Video ($selectedVideoId)",
+                        thumbnailUrl = com.synfusion.attendance.live.watchparty.YouTubeLinkParser.thumbnailUrl(selectedVideoId),
                         addedByUserId = host.uid,
                         addedByUserName = host.displayName,
                         addedAtMillis = now
@@ -533,29 +544,43 @@ class FirestoreLiveRoomBackend(
             return LiveOperationResult.Error("Only the host can edit the playlist.", isAuthError = true)
         }
         return try {
+            // NOTE: the Android SDK's Transaction can only read Documents (there is no
+            // Transaction.get(Query)), so the playlist duplicate/capacity checks use plain reads.
+            // The transaction below then re-reads the room + playback documents and performs the
+            // actual writes atomically against the freshest state.
+            val roomSnapshot = roomRef(roomId).get().awaitTask()
+            if (!roomSnapshot.exists()) {
+                return LiveOperationResult.Error("This live room no longer exists.")
+            }
+            if (roomSnapshot.getString("hostUserId") != uid) {
+                return LiveOperationResult.Error("Only the host can edit the playlist.", isAuthError = true)
+            }
+            if (roomSnapshot.getBoolean("isLive") != true) {
+                return LiveOperationResult.Error("This live room has ended.")
+            }
+
+            val existing = playlistRef(roomId).get().awaitTask().documents.mapNotNull { document ->
+                documentToPlaylistItem(document.id, document.data.orEmpty())
+            }
+            if (existing.any { it.id == item.id || it.videoId == item.videoId }) {
+                return LiveOperationResult.Error("That video is already in the playlist.", isConflict = true)
+            }
+            if (existing.size >= WatchPartyPlaylistLogic.MAX_PLAYLIST_SIZE) {
+                return LiveOperationResult.Error("This playlist is full.")
+            }
+
             val firestore = firestoreSupplier()
             firestore.runTransaction { transaction ->
-                val roomSnapshot = transaction.get(roomRef(roomId))
-                if (!roomSnapshot.exists()) throw LiveRoomFailure("This live room no longer exists.")
-                if (roomSnapshot.getString("hostUserId") != uid) {
+                val freshRoom = transaction.get(roomRef(roomId))
+                if (!freshRoom.exists()) throw LiveRoomFailure("This live room no longer exists.")
+                if (freshRoom.getString("hostUserId") != uid) {
                     throw LiveRoomFailure("Only the host can edit the playlist.", isAuthError = true)
                 }
-                if (roomSnapshot.getBoolean("isLive") != true) throw LiveRoomFailure("This live room has ended.")
+                if (freshRoom.getBoolean("isLive") != true) throw LiveRoomFailure("This live room has ended.")
 
                 val stateSnapshot = transaction.get(stateRef(roomId))
                 if (!stateSnapshot.exists()) throw LiveRoomFailure("Watch Party is not enabled for this room.")
                 val currentState = documentToWatchParty(roomId, stateSnapshot.data.orEmpty())
-
-                val playlistSnapshot = transaction.get(playlistRef(roomId))
-                val existing = playlistSnapshot.documents.mapNotNull { document ->
-                    documentToPlaylistItem(document.id, document.data.orEmpty())
-                }
-                if (existing.any { it.id == item.id || it.videoId == item.videoId }) {
-                    throw LiveRoomConflict("That video is already in the playlist.")
-                }
-                if (existing.size >= WatchPartyPlaylistLogic.MAX_PLAYLIST_SIZE) {
-                    throw LiveRoomFailure("This playlist is full.")
-                }
 
                 val activeWasEmpty = currentState.activePlaylistItemId.isNullOrBlank() || currentState.videoId.isBlank()
                 val nextState = currentState.copy(
@@ -586,21 +611,38 @@ class FirestoreLiveRoomBackend(
             return LiveOperationResult.Error("Only the host can edit the playlist.", isAuthError = true)
         }
         return try {
+            // Plain read for the queue (Transaction cannot read a Query); the transaction re-reads
+            // the room + playback documents before writing so the revision chain stays intact.
+            val roomSnapshot = roomRef(roomId).get().awaitTask()
+            if (!roomSnapshot.exists()) {
+                return LiveOperationResult.Error("This live room no longer exists.")
+            }
+            if (roomSnapshot.getString("hostUserId") != uid) {
+                return LiveOperationResult.Error("Only the host can edit the playlist.", isAuthError = true)
+            }
+            if (roomSnapshot.getBoolean("isLive") != true) {
+                return LiveOperationResult.Error("This live room has ended.")
+            }
+
+            val existing = playlistRef(roomId).get().awaitTask().documents.mapNotNull { document ->
+                documentToPlaylistItem(document.id, document.data.orEmpty())
+            }
+            if (existing.none { it.id == itemId }) {
+                return LiveOperationResult.Error("Playlist entry was already removed.", isConflict = true)
+            }
+
             val firestore = firestoreSupplier()
             firestore.runTransaction { transaction ->
-                val roomSnapshot = transaction.get(roomRef(roomId))
-                if (!roomSnapshot.exists()) throw LiveRoomFailure("This live room no longer exists.")
-                if (roomSnapshot.getString("hostUserId") != uid) {
+                val freshRoom = transaction.get(roomRef(roomId))
+                if (!freshRoom.exists()) throw LiveRoomFailure("This live room no longer exists.")
+                if (freshRoom.getString("hostUserId") != uid) {
                     throw LiveRoomFailure("Only the host can edit the playlist.", isAuthError = true)
                 }
+                if (freshRoom.getBoolean("isLive") != true) throw LiveRoomFailure("This live room has ended.")
+
                 val stateSnapshot = transaction.get(stateRef(roomId))
                 if (!stateSnapshot.exists()) throw LiveRoomFailure("Watch Party is not enabled for this room.")
                 val currentState = documentToWatchParty(roomId, stateSnapshot.data.orEmpty())
-
-                val playlistSnapshot = transaction.get(playlistRef(roomId))
-                val existing = playlistSnapshot.documents.mapNotNull { document ->
-                    documentToPlaylistItem(document.id, document.data.orEmpty())
-                }
 
                 when (val mutation = WatchPartyPlaylistLogic.removeItem(
                     current = currentState,
