@@ -300,6 +300,19 @@ fun CleanLiveRoomGridCard(
 ) {
     val context = LocalContext.current
 
+    val previewImageUrl = remember(room.thumbnailUrl, room.creatorAvatar, room.youtubeVideoId, room.watchPartyState, room.type) {
+        val ytThumb = room.youtubeVideoId?.takeIf { it.isNotBlank() }?.let { "https://img.youtube.com/vi/$it/hqdefault.jpg" }
+            ?: room.watchPartyState?.playlist?.firstOrNull()?.thumbnailUrl?.takeIf { it.isNotBlank() }
+
+        when {
+            room.type == com.synfusion.attendance.live.model.LiveRoomType.YOUTUBE_WATCH_PARTY && !ytThumb.isNullOrBlank() -> ytThumb
+            !room.thumbnailUrl.isNullOrBlank() -> room.thumbnailUrl
+            !ytThumb.isNullOrBlank() -> ytThumb
+            !room.creatorAvatar.isNullOrBlank() -> room.creatorAvatar
+            else -> null
+        }
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -309,11 +322,11 @@ fun CleanLiveRoomGridCard(
         colors = CardDefaults.cardColors(containerColor = LiveSurfaceDark)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            // High Quality Thumbnail Preview or Trade Backdrop
-            if (!room.thumbnailUrl.isNull_or_blank()) {
-                val request = remember(room.thumbnailUrl) {
+            // Full-Card Image Preview (Host Avatar / YouTube Thumbnail / Custom Thumbnail)
+            if (!previewImageUrl.isNullOrBlank()) {
+                val request = remember(previewImageUrl) {
                     ImageRequest.Builder(context)
-                        .data(room.thumbnailUrl)
+                        .data(previewImageUrl)
                         .crossfade(true)
                         .build()
                 }
@@ -323,6 +336,9 @@ fun CleanLiveRoomGridCard(
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop,
                     error = {
+                        TradeBackdrop(room = room)
+                    },
+                    loading = {
                         TradeBackdrop(room = room)
                     }
                 )
@@ -338,7 +354,7 @@ fun CleanLiveRoomGridCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                CompactLiveBadge(text = "LIVE")
+                CompactLiveBadge(text = if (room.type == com.synfusion.attendance.live.model.LiveRoomType.YOUTUBE_WATCH_PARTY) "WATCH PARTY" else "LIVE")
                 ViewerCountChip(count = room.viewerCount)
             }
 

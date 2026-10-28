@@ -109,4 +109,9 @@ interface LiveRoomBackend {
         beforeTimestampMillis: Long,
         limit: Int
     ): LiveOperationResult<List<ChatMessage>>
+
+    suspend fun sendSystemEvent(
+        roomId: String,
+        message: ChatMessage
+    ): LiveOperationResult<ChatMessage>
 }

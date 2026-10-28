@@ -291,9 +291,9 @@ class LiveRoomBackendTest {
         assertEquals("Namaste", message.message)
         assertEquals("c_2", message.clientMessageId)
 
-        val persisted = backend.observeMessages(room.id, 50).first()
-        assertEquals(1, persisted.size)
-        assertEquals(viewer.uid, persisted.first().senderId)
+        val userMessages = backend.observeMessages(room.id, 50).first().filter { !it.isSystemMessage && it.eventType == null }
+        assertEquals(1, userMessages.size)
+        assertEquals(viewer.uid, userMessages.first().senderId)
     }
 
     @Test
@@ -304,7 +304,8 @@ class LiveRoomBackendTest {
 
         backend.sendMessage(room.id, viewer, "first", "c_dup")
         backend.sendMessage(room.id, viewer, "first", "c_dup")
-        assertEquals(1, backend.observeMessages(room.id, 50).first().size)
+        val userMessages = backend.observeMessages(room.id, 50).first().filter { !it.isSystemMessage && it.eventType == null }
+        assertEquals(1, userMessages.size)
     }
 
     @Test

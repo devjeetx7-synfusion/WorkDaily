@@ -20,6 +20,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
 import com.synfusion.attendance.live.model.*
 import com.synfusion.attendance.live.ui.components.*
 import com.synfusion.attendance.live.viewmodel.LiveViewModel
@@ -30,7 +31,7 @@ fun HostControlsSheet(
     room: LiveRoom,
     viewModel: LiveViewModel,
     onDismiss: () -> Unit,
-    onEndLiveConfirmed: () -> Unit
+    onEndLiveConfirmed: suspend () -> LiveOperationResult<Unit>
 ) {
     val guestRequestsMap by viewModel.guestRequestsMap.collectAsState()
     val guestRequests = guestRequestsMap[room.id] ?: emptyList()
@@ -285,24 +286,41 @@ fun HostControlsSheet(
         }
 
         if (showEndConfirmDialog) {
+            val coroutineScope = rememberCoroutineScope()
+            var isEnding by remember { mutableStateOf(false) }
+
             AlertDialog(
-                onDismissRequest = { showEndConfirmDialog = false },
+                onDismissRequest = { if (!isEnding) showEndConfirmDialog = false },
                 title = { Text("End Live Stream?", fontWeight = FontWeight.Bold) },
                 text = { Text("Are you sure you want to end your live stream? A summary of views and earnings will be generated.") },
                 confirmButton = {
                     Button(
                         onClick = {
-                            showEndConfirmDialog = false
-                            onDismiss()
-                            onEndLiveConfirmed()
+                            if (!isEnding) {
+                                isEnding = true
+                                coroutineScope.launch {
+                                    val result = onEndLiveConfirmed()
+                                    isEnding = false
+                                    if (result is LiveOperationResult.Success) {
+                                        showEndConfirmDialog = false
+                                        onDismiss()
+                                    } else if (result is LiveOperationResult.Error) {
+                                        Toast.makeText(context, result.message, Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            }
                         },
+                        enabled = !isEnding,
                         colors = ButtonDefaults.buttonColors(containerColor = LiveRed)
                     ) {
-                        Text("End Stream Now", fontWeight = FontWeight.Bold)
+                        Text(if (isEnding) "Ending..." else "End Stream Now", fontWeight = FontWeight.Bold)
                     }
                 },
                 dismissButton = {
-                    TextButton(onClick = { showEndConfirmDialog = false }) {
+                    TextButton(
+                        onClick = { showEndConfirmDialog = false },
+                        enabled = !isEnding
+                    ) {
                         Text("Cancel")
                     }
                 }

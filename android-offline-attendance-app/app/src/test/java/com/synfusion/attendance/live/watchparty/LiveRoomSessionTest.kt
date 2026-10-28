@@ -185,7 +185,7 @@ class LiveRoomSessionTest {
         assertFalse(session.isMember.value)
         session.sendMessage("hello")
         delay(200)
-        assertTrue(session.messages.value.isEmpty())
+        assertTrue(session.messages.value.none { it.message == "hello" })
         assertEquals(1, backend.observeMembers(roomId).first().size)
 
         session.stop()

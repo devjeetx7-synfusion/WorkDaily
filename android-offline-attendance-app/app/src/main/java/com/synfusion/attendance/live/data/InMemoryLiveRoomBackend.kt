@@ -124,6 +124,43 @@ class InMemoryLiveRoomBackend(
                 }
             }
         }
+        // Write initial system messages for room creation
+        val startMsgId = "sys_start_$roomId"
+        val startMsg = ChatMessage(
+            id = startMsgId,
+            roomId = roomId,
+            senderId = host.uid,
+            senderName = host.displayName,
+            senderAvatar = host.photoUrl,
+            senderUsername = host.username,
+            message = "${host.displayName} started the live broadcast",
+            timestamp = now,
+            clientMessageId = startMsgId,
+            isSystemMessage = true,
+            eventType = "LIVE_STARTED"
+        )
+        val initialMsgs = mutableListOf(startMsg)
+
+        if (request.type == LiveRoomType.YOUTUBE_WATCH_PARTY) {
+            val wpMsgId = "sys_wp_$roomId"
+            initialMsgs.add(
+                ChatMessage(
+                    id = wpMsgId,
+                    roomId = roomId,
+                    senderId = host.uid,
+                    senderName = "WorkDaily System",
+                    senderAvatar = "",
+                    senderUsername = "workdaily",
+                    message = "${host.displayName} started a Watch Party",
+                    timestamp = now + 1,
+                    clientMessageId = wpMsgId,
+                    isSystemMessage = true,
+                    eventType = "WATCH_PARTY_STARTED"
+                )
+            )
+        }
+        messages.update { it + (roomId to initialMsgs) }
+
         // The host is a room member from the moment the room exists.
         joinRoom(roomId, host)
         return LiveOperationResult.Success(rooms.value.getValue(roomId))
@@ -149,6 +186,25 @@ class InMemoryLiveRoomBackend(
             current + (roomId to existing.copy(isLive = false, endedAtMillis = clock(), statusText = "ENDED"))
         }
         activeRoomByHost.update { it - hostUid }
+
+        val endMsgId = "sys_end_$roomId"
+        val existingMsgs = messages.value[roomId].orEmpty()
+        if (existingMsgs.none { it.clientMessageId == endMsgId }) {
+            val endMsg = ChatMessage(
+                id = endMsgId,
+                roomId = roomId,
+                senderId = hostUid,
+                senderName = "WorkDaily System",
+                senderAvatar = "",
+                senderUsername = "workdaily",
+                message = "Live broadcast ended by host",
+                timestamp = clock(),
+                clientMessageId = endMsgId,
+                isSystemMessage = true,
+                eventType = "LIVE_ENDED"
+            )
+            messages.update { it + (roomId to (existingMsgs + endMsg)) }
+        }
         return LiveOperationResult.Success(Unit)
     }
 
@@ -173,6 +229,25 @@ class InMemoryLiveRoomBackend(
                 nowMillis = now
             ).copy(joinedAtMillis = existing?.joinedAtMillis ?: now)
             current + (roomId to roomMembers)
+        }
+
+        val joinMsgId = "sys_join_${roomId}_${identity.uid}"
+        val existingMsgs = messages.value[roomId].orEmpty()
+        if (existingMsgs.none { it.clientMessageId == joinMsgId }) {
+            val joinMsg = ChatMessage(
+                id = joinMsgId,
+                roomId = roomId,
+                senderId = identity.uid,
+                senderName = identity.displayName,
+                senderAvatar = identity.photoUrl,
+                senderUsername = identity.username,
+                message = "${identity.displayName} joined the live",
+                timestamp = now,
+                clientMessageId = joinMsgId,
+                isSystemMessage = false,
+                eventType = "USER_JOINED"
+            )
+            messages.update { it + (roomId to (existingMsgs + joinMsg)) }
         }
         return LiveOperationResult.Success(Unit)
     }
@@ -398,5 +473,16 @@ class InMemoryLiveRoomBackend(
             .filter { it.timestamp < beforeTimestampMillis }
             .sortedWith(compareBy({ it.timestamp }, { it.id }))
         return LiveOperationResult.Success(if (older.size <= limit) older else older.takeLast(limit))
+    }
+
+    override suspend fun sendSystemEvent(
+        roomId: String,
+        message: ChatMessage
+    ): LiveOperationResult<ChatMessage> {
+        val list = messages.value[roomId].orEmpty()
+        if (list.none { it.id == message.id || (message.clientMessageId != null && it.clientMessageId == message.clientMessageId) }) {
+            messages.update { it + (roomId to (list + message)) }
+        }
+        return LiveOperationResult.Success(message)
     }
 }

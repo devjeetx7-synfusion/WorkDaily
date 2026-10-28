@@ -63,12 +63,14 @@ fun LiveRoomScreen(
 ) {
     val sessionState by viewModel.roomSessionState.collectAsState()
     val liveRooms by viewModel.liveRooms.collectAsState()
+    val demoRooms by viewModel.demoRooms.collectAsState()
 
     val activeState = sessionState as? LiveRoomSessionState.Active
     val activeRoom = activeState?.room?.takeIf { it.id == roomId }
-    val demoRoom = liveRooms.firstOrNull { it.id == roomId }?.takeIf { it.isDemoRoom }
+    val realRoom = liveRooms.firstOrNull { it.id == roomId }
+    val demoRoom = demoRooms.firstOrNull { it.id == roomId }?.takeIf { it.isDemoRoom }
     // Ended rooms are rendered as an explicit "Live ended" state, never as a playable room.
-    val room = activeRoom ?: demoRoom
+    val room = activeRoom ?: realRoom ?: demoRoom
 
     if (room == null) {
         when (val state = sessionState) {
@@ -773,9 +775,15 @@ private fun LiveRoomScreenContent(
                     viewModel = viewModel,
                     onDismiss = { showHostControlsSheet = false },
                     onEndLiveConfirmed = {
-                        showHostControlsSheet = false
-                        if (isSessionRoom) viewModel.endActiveLiveRoom() else viewModel.endLiveStream(room.id)
-                        onNavigateSummary(room.id)
+                        val result = if (isSessionRoom) viewModel.endActiveLiveRoom() else {
+                            val summary = viewModel.endLiveStream(room.id)
+                            if (summary != null) LiveOperationResult.Success(Unit)
+                            else LiveOperationResult.Error("Failed to end live stream.")
+                        }
+                        if (result is LiveOperationResult.Success) {
+                            onNavigateSummary(room.id)
+                        }
+                        result
                     }
                 )
             }
@@ -837,24 +845,43 @@ private fun LiveRoomScreenContent(
 
             // Broadcaster End Live Confirmation AlertDialog
             if (showEndLiveConfirmationDialog) {
+                var isEnding by remember { mutableStateOf(false) }
                 AlertDialog(
-                    onDismissRequest = { showEndLiveConfirmationDialog = false },
+                    onDismissRequest = { if (!isEnding) showEndLiveConfirmationDialog = false },
                     title = { Text("End Live Broadcast?", fontWeight = FontWeight.Bold) },
                     text = { Text("Are you sure you want to end this live stream session? Viewers will be notified.") },
                     confirmButton = {
                         Button(
                             onClick = {
-                                showEndLiveConfirmationDialog = false
-                                if (isSessionRoom) viewModel.endActiveLiveRoom() else viewModel.endLiveStream(room.id)
-                                onNavigateSummary(room.id)
+                                if (!isEnding) {
+                                    isEnding = true
+                                    coroutineScope.launch {
+                                        val result = if (isSessionRoom) viewModel.endActiveLiveRoom() else {
+                                            val summary = viewModel.endLiveStream(room.id)
+                                            if (summary != null) LiveOperationResult.Success(Unit)
+                                            else LiveOperationResult.Error("Failed to end live stream.")
+                                        }
+                                        isEnding = false
+                                        if (result is LiveOperationResult.Success) {
+                                            showEndLiveConfirmationDialog = false
+                                            onNavigateSummary(room.id)
+                                        } else if (result is LiveOperationResult.Error) {
+                                            Toast.makeText(context, result.message, Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                }
                             },
+                            enabled = !isEnding,
                             colors = ButtonDefaults.buttonColors(containerColor = LiveRed)
                         ) {
-                            Text("End Live", fontWeight = FontWeight.Bold, color = Color.White)
+                            Text(if (isEnding) "Ending..." else "End Live", fontWeight = FontWeight.Bold, color = Color.White)
                         }
                     },
                     dismissButton = {
-                        TextButton(onClick = { showEndLiveConfirmationDialog = false }) {
+                        TextButton(
+                            onClick = { showEndLiveConfirmationDialog = false },
+                            enabled = !isEnding
+                        ) {
                             Text("Cancel")
                         }
                     },
