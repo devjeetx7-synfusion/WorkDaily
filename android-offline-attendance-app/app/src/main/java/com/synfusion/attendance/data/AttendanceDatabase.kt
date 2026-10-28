@@ -20,7 +20,7 @@ import com.synfusion.attendance.notifications.data.NotificationEntity
         SummaryEntity::class,
         NotificationEntity::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = true
 )
 abstract class AttendanceDatabase : RoomDatabase() {
@@ -83,10 +83,50 @@ abstract class AttendanceDatabase : RoomDatabase() {
 
         val MIGRATION_4_5 = object : Migration(4, 5) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                db.execSQL("ALTER TABLE users ADD COLUMN gender TEXT NOT NULL DEFAULT 'Male'")
-                db.execSQL("ALTER TABLE users ADD COLUMN profession TEXT NOT NULL DEFAULT 'Site Worker'")
-                db.execSQL("ALTER TABLE users ADD COLUMN bio TEXT NOT NULL DEFAULT ''")
-                db.execSQL("ALTER TABLE users ADD COLUMN dateOfBirth INTEGER DEFAULT NULL")
+                // Guarded rather than unconditional. The exported 4.json already contains
+                // gender/profession/bio while 3.json does not, so a device reaches this step
+                // either with those columns missing (it came up through v3) or already present
+                // (it was created fresh at v4 by onCreate). An unguarded ALTER TABLE aborts with
+                // "duplicate column name" in the second case, failing the whole upgrade.
+                //
+                // dateOfBirth belongs here as well: 5.json declares it, so a device migrating
+                // 4 -> 5 must end up with the column or every query touching it fails with
+                // "no such column: dateOfBirth".
+                db.addColumnIfMissing("users", "gender", "TEXT NOT NULL DEFAULT 'Male'")
+                db.addColumnIfMissing("users", "profession", "TEXT NOT NULL DEFAULT 'Site Worker'")
+                db.addColumnIfMissing("users", "bio", "TEXT NOT NULL DEFAULT ''")
+                db.addColumnIfMissing("users", "dateOfBirth", "INTEGER")
+            }
+        }
+
+        /**
+         * Adds [UserEntity.dateOfBirth] for devices that are ALREADY on version 5.
+         *
+         * This migration is the actual fix for the reported crash, and it only exists because the
+         * version number is bumped to 6. `dateOfBirth` was introduced while the database was still
+         * declared `version = 5`, so two structurally different schemas shipped under one version:
+         *
+         *   9dbceadf8fdd0b6bd9ed4c0e670c8c0a -- v5 without dateOfBirth (eaa7147)
+         *   48d5cc40621697a7417a9fa65a3b1c43 -- v5 with dateOfBirth    (8744f56)
+         *
+         * An installed device carries user_version = 5 with the older hash. Because the stored
+         * version already equals the declared version, SQLiteOpenHelper runs neither onCreate nor
+         * onUpgrade; Room goes straight to onOpen -> checkIdentity, compares the two hashes and
+         * throws "Room cannot verify the data integrity". Adding the column to MIGRATION_4_5
+         * cannot reach that population -- MIGRATION_4_5 only runs during a 4 -> 5 upgrade, which
+         * is precisely what never happens for a device already on 5. Bumping to 6 forces
+         * onUpgrade(5, 6), which adds the column and lets Room rewrite the identity hash.
+         *
+         * Guarded because a device that installed the later v5 build already has the column, and
+         * an unguarded ALTER TABLE would abort with "duplicate column name: dateOfBirth".
+         *
+         * Emitted as plain `INTEGER` with no DEFAULT clause so it matches the createSql Room
+         * generates for 5.json/6.json exactly, leaving a migrated column indistinguishable from a
+         * created one (`DEFAULT NULL` would record dflt_value='NULL' instead of none).
+         */
+        val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.addColumnIfMissing("users", "dateOfBirth", "INTEGER")
             }
         }
 
@@ -102,7 +142,13 @@ abstract class AttendanceDatabase : RoomDatabase() {
                         "synfusion_offline_attendance_db"
                     )
                     .setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING)
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                    .addMigrations(
+                        MIGRATION_1_2,
+                        MIGRATION_2_3,
+                        MIGRATION_3_4,
+                        MIGRATION_4_5,
+                        MIGRATION_5_6
+                    )
                     .fallbackToDestructiveMigration()
                     .build()
                     INSTANCE = instance
@@ -135,4 +181,40 @@ abstract class AttendanceDatabase : RoomDatabase() {
             }
         }
     }
+}
+
+/**
+ * Adds `table.column` only when it is not already present.
+ *
+ * This guard is required rather than merely defensive. The exported schemas show that the
+ * migration chain and the schema versions drifted apart: `3.json` has no `gender`/`profession`/
+ * `bio` columns but `4.json` already does, while `MIGRATION_4_5` is the step that adds them.
+ * A device therefore reaches `MIGRATION_4_5` either with those columns missing (it came up
+ * through v3) or already present (it was created fresh at v4 by `onCreate`). An unguarded
+ * `ALTER TABLE ... ADD COLUMN` aborts with "duplicate column name" in the second case, which
+ * fails the whole upgrade and leaves the database unusable.
+ *
+ * Reading the live column set with `PRAGMA table_info` makes each step converge on the same
+ * final schema regardless of the path a device took to get there.
+ */
+private fun SupportSQLiteDatabase.addColumnIfMissing(
+    table: String,
+    column: String,
+    definition: String
+) {
+    if (!hasColumn(table, column)) {
+        execSQL("ALTER TABLE $table ADD COLUMN $column $definition")
+    }
+}
+
+private fun SupportSQLiteDatabase.hasColumn(table: String, column: String): Boolean {
+    // Cursor implements Closeable, so `use` guarantees it is released even if reading throws.
+    query("PRAGMA table_info(`$table`)").use { cursor ->
+        val nameIndex = cursor.getColumnIndex("name")
+        if (nameIndex < 0) return false
+        while (cursor.moveToNext()) {
+            if (cursor.getString(nameIndex) == column) return true
+        }
+    }
+    return false
 }
