@@ -246,6 +246,10 @@ class BackupRestoreManagerTest {
             dailyWage = 600.0,
             countryCode = "IN",
             currencyCode = "INR",
+            gender = "Female",
+            profession = "Mason",
+            bio = "Ten years on site",
+            dateOfBirth = 631152000000L,
             createdAt = 1000000L
         )
 
@@ -276,9 +280,79 @@ class BackupRestoreManagerTest {
 
         assertEquals(1, deserialized.users.size)
         assertEquals("Test Worker", deserialized.users.first().name)
+        // These four were previously dropped between UserEntity and the backup payload, so a
+        // restore reset them to entity defaults. They must now survive the canonical round trip.
+        assertEquals("Female", deserialized.users.first().gender)
+        assertEquals("Mason", deserialized.users.first().profession)
+        assertEquals("Ten years on site", deserialized.users.first().bio)
+        assertEquals(631152000000L, deserialized.users.first().dateOfBirth)
         assertEquals(1, deserialized.attendance.size)
         assertEquals("Night shift", deserialized.attendance.first().note)
         assertEquals(500.0, deserialized.attendance.first().advanceAmount, 0.01)
+    }
+
+    /**
+     * The migration hop is where the profile fields were previously lost: UserV1Dto carried nine
+     * of UserEntity's thirteen fields, so gender/profession/bio/dateOfBirth never reached the
+     * canonical payload and a restore reset them to entity defaults.
+     */
+    @Test
+    fun testV1ToCanonicalPreservesProfileFields() {
+        val rawUser = UserV1Dto(
+            id = "u_profile",
+            name = "Profile User",
+            phoneNumber = "9000000001",
+            email = "profile@workdaily.in",
+            role = "personal",
+            dailyWage = 650.0,
+            countryCode = "IN",
+            currencyCode = "INR",
+            gender = "Female",
+            profession = "Electrician",
+            bio = "Works the night shift",
+            dateOfBirth = 631152000000L,
+            createdAt = 1700000000000L
+        )
+
+        val canonical = MigrationRegistry.migrateToCanonical(
+            rawPayload = BackupV1Payload(users = listOf(rawUser)),
+            formatVersion = 1,
+            manifest = null,
+            logger = logger
+        )
+
+        val user = canonical.users.first()
+        assertEquals("Female", user.gender)
+        assertEquals("Electrician", user.profession)
+        assertEquals("Works the night shift", user.bio)
+        assertEquals(631152000000L, user.dateOfBirth)
+    }
+
+    /**
+     * Backups written before these keys existed must still restore. Adding the fields to
+     * UserV1Dto is backward compatible precisely because they are nullable: Gson leaves them
+     * null and the migration substitutes the UserEntity defaults, so an old backup behaves
+     * exactly as it did before this change rather than failing or blanking the profile.
+     *
+     * This is also why CURRENT_BACKUP_FORMAT_VERSION stays at 1 -- the change is additive, so
+     * bumping would only make older app versions reject backups they can perfectly well read.
+     */
+    @Test
+    fun testV1ToCanonicalDefaultsProfileFieldsForLegacyBackups() {
+        val legacyUser = UserV1Dto(id = "u_legacy", name = "Legacy Profile", dailyWage = 500.0)
+
+        val canonical = MigrationRegistry.migrateToCanonical(
+            rawPayload = BackupV1Payload(users = listOf(legacyUser)),
+            formatVersion = 1,
+            manifest = null,
+            logger = logger
+        )
+
+        val user = canonical.users.first()
+        assertEquals("Male", user.gender)
+        assertEquals("Site Worker", user.profession)
+        assertEquals("", user.bio)
+        assertNull(user.dateOfBirth)
     }
 
     @Test

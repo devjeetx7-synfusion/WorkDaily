@@ -47,6 +47,18 @@ class V1ToCanonicalMigration : BackupMigration {
                 dailyWage = u.dailyWage ?: 500.0,
                 countryCode = userCountry,
                 currencyCode = userCurrency,
+                // Backups written before these keys existed deserialize them as null. Fall back to
+                // the same defaults UserEntity declares, so restoring an old backup yields exactly
+                // what it does today rather than blank strings or a crash.
+                //
+                // Blank is treated as absent for gender/profession (mirroring the countryCode and
+                // currencyCode handling above) because an empty value is not a meaningful one. For
+                // bio it is meaningful -- an empty bio is a legitimate thing for a user to have --
+                // so only a genuine null falls back.
+                gender = u.gender?.takeIf { it.isNotBlank() } ?: "Male",
+                profession = u.profession?.takeIf { it.isNotBlank() } ?: "Site Worker",
+                bio = u.bio ?: "",
+                dateOfBirth = u.dateOfBirth,
                 createdAt = u.createdAt ?: System.currentTimeMillis()
             )
         }
