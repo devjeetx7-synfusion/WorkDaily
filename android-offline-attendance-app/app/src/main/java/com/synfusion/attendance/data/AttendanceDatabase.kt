@@ -83,29 +83,46 @@ abstract class AttendanceDatabase : RoomDatabase() {
 
         val MIGRATION_4_5 = object : Migration(4, 5) {
             override fun migrate(db: SupportSQLiteDatabase) {
-                // Guarded: the exported 4.json already contains these three columns, while 3.json
-                // does not. Depending on which build a device installed, it may reach this step
-                // with the columns already present, and an unguarded ALTER TABLE would then fail
-                // with "duplicate column name" and abort the whole upgrade.
+                // Guarded rather than unconditional. The exported 4.json already contains
+                // gender/profession/bio while 3.json does not, so a device reaches this step
+                // either with those columns missing (it came up through v3) or already present
+                // (it was created fresh at v4 by onCreate). An unguarded ALTER TABLE aborts with
+                // "duplicate column name" in the second case, failing the whole upgrade.
+                //
+                // dateOfBirth belongs here as well: 5.json declares it, so a device migrating
+                // 4 -> 5 must end up with the column or every query touching it fails with
+                // "no such column: dateOfBirth".
                 db.addColumnIfMissing("users", "gender", "TEXT NOT NULL DEFAULT 'Male'")
                 db.addColumnIfMissing("users", "profession", "TEXT NOT NULL DEFAULT 'Site Worker'")
                 db.addColumnIfMissing("users", "bio", "TEXT NOT NULL DEFAULT ''")
+                db.addColumnIfMissing("users", "dateOfBirth", "INTEGER")
             }
         }
 
         /**
-         * Adds [UserEntity.dateOfBirth].
+         * Adds [UserEntity.dateOfBirth] for devices that are ALREADY on version 5.
          *
-         * The column was introduced while the database was still declared as `version = 5`, so the
-         * v5 schema shipped in two different shapes: builds before the change wrote identity hash
-         * `9dbceadf8fdd0b6bd9ed4c0e670c8c0a`, builds after it wrote
-         * `48d5cc40621697a7417a9fa65a3b1c43`. Because the version number was unchanged, Room never
-         * ran an upgrade for those devices -- it went straight to `onOpen` -> `checkIdentity` and
-         * threw "Room cannot verify the data integrity". Bumping to 6 gives the column a real
-         * migration path so existing data is preserved instead of the app crash-looping.
+         * This migration is the actual fix for the reported crash, and it only exists because the
+         * version number is bumped to 6. `dateOfBirth` was introduced while the database was still
+         * declared `version = 5`, so two structurally different schemas shipped under one version:
          *
-         * `dateOfBirth` is a nullable `Long?` with no default, so the column is added as a plain
-         * nullable INTEGER. Column position is irrelevant: Room compares columns by name.
+         *   9dbceadf8fdd0b6bd9ed4c0e670c8c0a -- v5 without dateOfBirth (eaa7147)
+         *   48d5cc40621697a7417a9fa65a3b1c43 -- v5 with dateOfBirth    (8744f56)
+         *
+         * An installed device carries user_version = 5 with the older hash. Because the stored
+         * version already equals the declared version, SQLiteOpenHelper runs neither onCreate nor
+         * onUpgrade; Room goes straight to onOpen -> checkIdentity, compares the two hashes and
+         * throws "Room cannot verify the data integrity". Adding the column to MIGRATION_4_5
+         * cannot reach that population -- MIGRATION_4_5 only runs during a 4 -> 5 upgrade, which
+         * is precisely what never happens for a device already on 5. Bumping to 6 forces
+         * onUpgrade(5, 6), which adds the column and lets Room rewrite the identity hash.
+         *
+         * Guarded because a device that installed the later v5 build already has the column, and
+         * an unguarded ALTER TABLE would abort with "duplicate column name: dateOfBirth".
+         *
+         * Emitted as plain `INTEGER` with no DEFAULT clause so it matches the createSql Room
+         * generates for 5.json/6.json exactly, leaving a migrated column indistinguishable from a
+         * created one (`DEFAULT NULL` would record dflt_value='NULL' instead of none).
          */
         val MIGRATION_5_6 = object : Migration(5, 6) {
             override fun migrate(db: SupportSQLiteDatabase) {
@@ -186,7 +203,7 @@ private fun SupportSQLiteDatabase.addColumnIfMissing(
     definition: String
 ) {
     if (!hasColumn(table, column)) {
-        execSQL("ALTER TABLE `$table` ADD COLUMN `$column` $definition")
+        execSQL("ALTER TABLE $table ADD COLUMN $column $definition")
     }
 }
 
