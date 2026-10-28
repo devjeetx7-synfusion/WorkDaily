@@ -43,9 +43,13 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.synfusion.attendance.live.model.*
 import com.synfusion.attendance.live.ui.components.*
 import com.synfusion.attendance.live.viewmodel.LiveViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * Resolves the room from the live session (real, persisted room) or from the demo discovery cache,
+ * and renders explicit loading / unavailable / ended states instead of fabricating a room.
+ */
 @Composable
 fun LiveRoomScreen(
     roomId: String,
@@ -57,28 +61,129 @@ fun LiveRoomScreen(
     onNavigateFullProfile: (String) -> Unit = {},
     onPagingLockChange: (Boolean) -> Unit = {}
 ) {
+    val sessionState by viewModel.roomSessionState.collectAsState()
     val liveRooms by viewModel.liveRooms.collectAsState()
+
+    val activeState = sessionState as? LiveRoomSessionState.Active
+    val activeRoom = activeState?.room?.takeIf { it.id == roomId }
+    val demoRoom = liveRooms.firstOrNull { it.id == roomId }?.takeIf { it.isDemoRoom }
+    // Ended rooms are rendered as an explicit "Live ended" state, never as a playable room.
+    val room = activeRoom ?: demoRoom
+
+    if (room == null) {
+        when (val state = sessionState) {
+            is LiveRoomSessionState.Loading -> LiveRoomStateScreen(
+                title = "Connecting to live room…",
+                message = "Joining the room and loading its messages.",
+                isLoading = true,
+                onBack = onNavigateBack
+            )
+
+            is LiveRoomSessionState.Unavailable -> LiveRoomStateScreen(
+                title = "Live room unavailable",
+                message = state.message,
+                onBack = onNavigateBack
+            )
+
+            is LiveRoomSessionState.Ended -> LiveRoomStateScreen(
+                title = "Live ended",
+                message = "This live room has ended. The recording is not available.",
+                onBack = onNavigateBack
+            )
+
+            is LiveRoomSessionState.Error -> LiveRoomStateScreen(
+                title = "Could not open this live room",
+                message = state.message,
+                onBack = onNavigateBack,
+                onRetry = { viewModel.retryActiveRoom() }
+            )
+
+            else -> LiveRoomStateScreen(
+                title = "Connecting to live room…",
+                message = "Joining the room and loading its messages.",
+                isLoading = true,
+                onBack = onNavigateBack
+            )
+        }
+        return
+    }
+
+    LiveRoomScreenContent(
+        room = room,
+        isSessionRoom = activeRoom != null,
+        viewModel = viewModel,
+        onNavigateBack = onNavigateBack,
+        onNavigateWallet = onNavigateWallet,
+        onNavigateSummary = onNavigateSummary,
+        onNavigatePrivateChat = onNavigatePrivateChat,
+        onNavigateFullProfile = onNavigateFullProfile,
+        onPagingLockChange = onPagingLockChange
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun LiveRoomScreenContent(
+    room: LiveRoom,
+    isSessionRoom: Boolean,
+    viewModel: LiveViewModel,
+    onNavigateBack: () -> Unit,
+    onNavigateWallet: () -> Unit,
+    onNavigateSummary: (String) -> Unit = {},
+    onNavigatePrivateChat: (String) -> Unit = {},
+    onNavigateFullProfile: (String) -> Unit = {},
+    onPagingLockChange: (Boolean) -> Unit = {}
+) {
     val chatMessagesMap by viewModel.chatMessagesMap.collectAsState()
     val followedCreatorIds by viewModel.followedCreatorIds.collectAsState()
     val audioSeatsMap by viewModel.audioSeatsMap.collectAsState()
 
-    val room = liveRooms.find { it.id == roomId } ?: liveRooms.firstOrNull() ?: LiveRoom(
-        id = roomId,
-        title = "Live Site Stream",
-        creatorId = "creator_1",
-        creatorName = "Rajesh Sharma",
-        creatorAvatar = "",
-        category = "Site Safety",
-        type = LiveRoomType.VIDEO,
-        viewerCount = 240
-    )
+    val sessionState by viewModel.roomSessionState.collectAsState()
+    val sessionMessages by viewModel.sessionMessages.collectAsState()
+    val sessionMembers by viewModel.sessionMembers.collectAsState()
+    val sessionIsChatLoading by viewModel.sessionIsChatLoading.collectAsState()
+    val sessionHasMoreHistory by viewModel.sessionHasMoreHistory.collectAsState()
+    val sessionWatchParty by viewModel.sessionWatchParty.collectAsState()
+    val sessionPlaylist by viewModel.sessionPlaylist.collectAsState()
+    val sessionIsPlaylistLoading by viewModel.sessionIsPlaylistLoading.collectAsState()
+    val sessionNotice by viewModel.sessionNotice.collectAsState()
+    val liveHint by viewModel.liveHint.collectAsState()
+    val liveIdentity by viewModel.liveIdentity.collectAsState()
+    val followingUids by viewModel.followingUids.collectAsState()
+    val followBusyUids by viewModel.followBusyUids.collectAsState()
 
-    val chatMessages = chatMessagesMap[room.id] ?: emptyList()
+    val chatMessages = if (isSessionRoom) sessionMessages else (chatMessagesMap[room.id] ?: emptyList())
     val giftOverlayEvents by viewModel.giftOverlayEvents.collectAsState()
     val soundEnabled by viewModel.soundEnabled.collectAsState()
-    val isFollowing = followedCreatorIds.contains(room.creatorId)
-    val isHost = room.isHost || room.creatorId == "creator_me" || room.creatorId == "user_me"
+    val isFollowing = if (liveIdentity != null) {
+        followingUids.contains(room.creatorId)
+    } else {
+        followedCreatorIds.contains(room.creatorId)
+    }
+    val isHost = if (isSessionRoom) {
+        (sessionState as? LiveRoomSessionState.Active)?.isHost == true
+    } else {
+        room.isHost || (liveIdentity?.uid != null && room.creatorId == liveIdentity?.uid)
+    }
+    val viewerCount = if (isSessionRoom) {
+        (sessionState as? LiveRoomSessionState.Active)?.viewerCount ?: 0
+    } else {
+        room.viewerCount
+    }
     val audioSeats = audioSeatsMap[room.id] ?: emptyList()
+    var locallyMuted by remember(room.id) { mutableStateOf(false) }
+
+    // Real live duration, derived from the persisted room start time (never a fake counter).
+    var liveDurationSeconds by remember(room.id, room.startTimeMillis) {
+        mutableLongStateOf(liveElapsedSeconds(room.startTimeMillis, System.currentTimeMillis()))
+    }
+    LaunchedEffect(room.id, room.startTimeMillis, room.isLive) {
+        while (room.isLive) {
+            liveDurationSeconds = liveElapsedSeconds(room.startTimeMillis, System.currentTimeMillis())
+            delay(1_000L)
+        }
+    }
+
 
     val roomGiftEvents = remember(giftOverlayEvents, room.id) {
         giftOverlayEvents.filter { it.roomId == room.id }
@@ -97,6 +202,14 @@ fun LiveRoomScreen(
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
     val coroutineScope = rememberCoroutineScope()
+
+    // Surface session/host notices (send failures, playback conflicts, auth problems).
+    val activeNotice = sessionNotice ?: liveHint
+    LaunchedEffect(activeNotice?.id) {
+        val notice = activeNotice ?: return@LaunchedEffect
+        Toast.makeText(context, notice.message, Toast.LENGTH_SHORT).show()
+        if (sessionNotice != null) viewModel.consumeSessionNotice(notice.id) else viewModel.consumeLiveHint()
+    }
 
     // Keyboard Visibility Detection
     val isKeyboardVisible = WindowInsets.ime.asPaddingValues().calculateBottomPadding() > 0.dp
@@ -151,7 +264,10 @@ fun LiveRoomScreen(
 
     LaunchedEffect(room.id) {
         viewModel.setActiveRoom(room.id)
-        viewModel.onUserJoinedRoom(room.id, "You")
+        if (!isSessionRoom) {
+            // Demo/offline room: keep the local join marker. Persisted rooms rely on real presence.
+            viewModel.onUserJoinedRoom(room.id, "You")
+        }
     }
 
     LaunchedEffect(chatListState.isScrollInProgress) {
@@ -210,10 +326,19 @@ fun LiveRoomScreen(
                         }
                     )
                     LiveRoomType.TEXT -> TextStageCanvas(room = room)
-                    LiveRoomType.YOUTUBE_WATCH_PARTY -> YouTubeWatchPartyStageCanvas(
-                        room = room,
-                        watchPartyState = room.watchPartyState,
+                    LiveRoomType.YOUTUBE_WATCH_PARTY -> WatchPartyStage(
+                        roomId = room.id,
+                        watchPartyState = sessionWatchParty ?: room.watchPartyState,
+                        playlist = if (isSessionRoom) sessionPlaylist else room.watchPartyState?.playlist.orEmpty(),
+                        roomYoutubeVideoId = room.youtubeVideoId,
+                        roomYoutubeVideoUrl = room.youtubeVideoUrl,
+                        roomYoutubePlaylistId = room.youtubePlaylistId,
                         isHost = isHost,
+                        isSessionBacked = isSessionRoom,
+                        isLive = room.isLive,
+                        playlistLoading = if (isSessionRoom) sessionIsPlaylistLoading else false,
+                        locallyMuted = locallyMuted,
+                        onToggleLocalMute = { locallyMuted = !locallyMuted },
                         viewModel = viewModel
                     )
                 }
@@ -284,7 +409,14 @@ fun LiveRoomScreen(
                         if (!isHost) {
                             FollowButton(
                                 isFollowing = isFollowing,
-                                onToggle = { viewModel.toggleFollowCreator(room.creatorId, room.id) }
+                                enabled = !followBusyUids.contains(room.creatorId),
+                                onToggle = {
+                                    if (liveIdentity != null) {
+                                        viewModel.toggleFollowUser(room.creatorId)
+                                    } else {
+                                        viewModel.toggleFollowCreator(room.creatorId, room.id)
+                                    }
+                                }
                             )
                         }
                     }
@@ -297,23 +429,48 @@ fun LiveRoomScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
+                    // Live duration badge (real elapsed time since the room started).
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = Color.Black.copy(alpha = 0.45f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.15f))
+                    ) {
+                        Text(
+                            text = formatLiveDuration(liveDurationSeconds),
+                            color = Color.White,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 4.dp)
+                        )
+                    }
+
                     ViewerCountChip(
-                        count = room.viewerCount,
+                        count = viewerCount,
                         onClick = { showViewerListSheet = true }
                     )
 
                     IconButton(
                         onClick = {
-                            viewModel.onShareLiveStream(room.id, "You")
+                            if (!isSessionRoom) {
+                                // Demo rooms keep the local system-chat event; real rooms rely on the
+                                // shared link only (attribution comes from the signed-in account).
+                                viewModel.onShareLiveStream(room.id, liveIdentity?.displayName ?: "A viewer")
+                            }
+                            val shareText = com.synfusion.attendance.live.watchparty.LiveShareLink.buildShareText(
+                                roomId = room.id,
+                                title = room.title,
+                                hostName = room.creatorName,
+                                isWatchParty = room.type == LiveRoomType.YOUTUBE_WATCH_PARTY
+                            )
                             val shareIntent = Intent(Intent.ACTION_SEND).apply {
                                 type = "text/plain"
-                                putExtra(Intent.EXTRA_SUBJECT, "Watch ${room.creatorName} Live on WorkDaily")
                                 putExtra(
-                                    Intent.EXTRA_TEXT,
-                                    "Join ${room.creatorName}'s live stream '${room.title}' on WorkDaily!\nhttps://workdaily.app/live/${room.id}"
+                                    Intent.EXTRA_SUBJECT,
+                                    com.synfusion.attendance.live.watchparty.LiveShareLink.buildShareSubject(room.title)
                                 )
+                                putExtra(Intent.EXTRA_TEXT, shareText)
                             }
-                            context.startActivity(Intent.createChooser(shareIntent, "Share Live Stream"))
+                            context.startActivity(Intent.createChooser(shareIntent, "Share Live"))
                         },
                         modifier = Modifier
                             .size(32.dp)
@@ -412,18 +569,64 @@ fun LiveRoomScreen(
                         modifier = Modifier.fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
+                        if (isSessionRoom && sessionIsChatLoading && chatMessages.isEmpty()) {
+                            item(key = "chat_loading") {
+                                Text(
+                                    "Loading chat…",
+                                    color = Color.White.copy(alpha = 0.7f),
+                                    fontSize = 11.sp,
+                                    modifier = Modifier.padding(start = 4.dp, bottom = 4.dp)
+                                )
+                            }
+                        }
+                        if (isSessionRoom && sessionHasMoreHistory) {
+                            item(key = "load_older") {
+                                TextButton(
+                                    onClick = { viewModel.loadOlderRoomMessages() },
+                                    modifier = Modifier.padding(start = 4.dp)
+                                ) {
+                                    Text("Load earlier messages", color = Color.White.copy(alpha = 0.75f), fontSize = 11.sp)
+                                }
+                            }
+                        }
                         items(
                             items = chatMessages,
                             key = { it.id }
                         ) { msg ->
-                            val isMsgSenderFollowed = followedCreatorIds.contains(msg.senderId)
+                            val isMsgSenderFollowed = if (liveIdentity != null) {
+                                followingUids.contains(msg.senderId)
+                            } else {
+                                followedCreatorIds.contains(msg.senderId)
+                            }
                             LiveCommentItem(
                                 message = msg,
                                 onUserClick = { selectedProfileUserId = it },
-                                onFollowClick = { senderId -> viewModel.toggleFollowCreator(senderId, room.id) },
+                                onFollowClick = { senderId ->
+                                    if (liveIdentity != null) viewModel.toggleFollowUser(senderId)
+                                    else viewModel.toggleFollowCreator(senderId, room.id)
+                                },
                                 isFollowingUser = isMsgSenderFollowed,
-                                currentUserId = "current_user"
+                                currentUserId = liveIdentity?.uid ?: "current_user"
                             )
+                            // Optimistic send state for persisted room chat (retry on failure).
+                            if (isSessionRoom && (msg.isPending || msg.isFailed)) {
+                                Text(
+                                    text = if (msg.isFailed) "Not sent — tap to retry" else "Sending…",
+                                    color = if (msg.isFailed) Color(0xFFF87171) else Color.White.copy(alpha = 0.6f),
+                                    fontSize = 10.sp,
+                                    modifier = Modifier
+                                        .padding(start = 8.dp, bottom = 2.dp)
+                                        .then(
+                                            if (msg.isFailed) {
+                                                Modifier.clickable {
+                                                    msg.clientMessageId?.let { viewModel.retryRoomMessage(it) }
+                                                }
+                                            } else {
+                                                Modifier
+                                            }
+                                        )
+                                )
+                            }
                         }
                     }
 
@@ -506,7 +709,7 @@ fun LiveRoomScreen(
                         IconButton(
                             onClick = {
                                 if (chatInput.isNotBlank()) {
-                                    viewModel.sendChatMessage(room.id, chatInput.trim())
+                                    viewModel.sendRoomMessage(room.id, chatInput.trim())
                                     chatInput = ""
                                     userScrolledUp = false
                                     focusManager.clearFocus()
@@ -571,32 +774,65 @@ fun LiveRoomScreen(
                     onDismiss = { showHostControlsSheet = false },
                     onEndLiveConfirmed = {
                         showHostControlsSheet = false
-                        viewModel.endLiveStream(room.id)
+                        if (isSessionRoom) viewModel.endActiveLiveRoom() else viewModel.endLiveStream(room.id)
                         onNavigateSummary(room.id)
                     }
                 )
             }
 
             if (showViewerListSheet) {
-                LiveViewerListBottomSheet(
-                    room = room,
-                    viewModel = viewModel,
-                    onDismiss = { showViewerListSheet = false },
-                    onSelectViewerProfile = { viewerId ->
-                        showViewerListSheet = false
-                        selectedProfileUserId = viewerId
-                    }
-                )
+                if (isSessionRoom) {
+                    LiveRoomMembersSheet(
+                        members = sessionMembers,
+                        isHost = isHost,
+                        currentUid = liveIdentity?.uid,
+                        followingUids = followingUids,
+                        followBusyUids = followBusyUids,
+                        onFollowToggle = { targetUid -> viewModel.toggleFollowUser(targetUid) },
+                        onOpenProfile = { targetUid ->
+                            showViewerListSheet = false
+                            selectedProfileUserId = targetUid
+                        },
+                        onRemoveMember = { targetUid -> viewModel.removeRoomParticipant(targetUid) },
+                        onDismiss = { showViewerListSheet = false }
+                    )
+                } else {
+                    LiveViewerListBottomSheet(
+                        room = room,
+                        viewModel = viewModel,
+                        onDismiss = { showViewerListSheet = false },
+                        onSelectViewerProfile = { viewerId ->
+                            showViewerListSheet = false
+                            selectedProfileUserId = viewerId
+                        }
+                    )
+                }
             }
 
             selectedProfileUserId?.let { targetId ->
-                LiveProfileBottomSheet(
-                    userId = targetId,
-                    viewModel = viewModel,
-                    onDismiss = { selectedProfileUserId = null },
-                    onNavigatePrivateChat = onNavigatePrivateChat,
-                    onNavigateFullProfile = onNavigateFullProfile
-                )
+                val realMember = if (isSessionRoom) sessionMembers.firstOrNull { it.uid == targetId } else null
+                if (isSessionRoom && realMember != null) {
+                    LiveMemberProfileSheet(
+                        member = realMember,
+                        isSelf = liveIdentity?.uid == targetId,
+                        isFollowing = followingUids.contains(targetId),
+                        followBusy = followBusyUids.contains(targetId),
+                        onToggleFollow = { viewModel.toggleFollowUser(targetId) },
+                        onOpenFullProfile = {
+                            selectedProfileUserId = null
+                            onNavigateFullProfile(targetId)
+                        },
+                        onDismiss = { selectedProfileUserId = null }
+                    )
+                } else {
+                    LiveProfileBottomSheet(
+                        userId = targetId,
+                        viewModel = viewModel,
+                        onDismiss = { selectedProfileUserId = null },
+                        onNavigatePrivateChat = onNavigatePrivateChat,
+                        onNavigateFullProfile = onNavigateFullProfile
+                    )
+                }
             }
 
             // Broadcaster End Live Confirmation AlertDialog
@@ -609,7 +845,7 @@ fun LiveRoomScreen(
                         Button(
                             onClick = {
                                 showEndLiveConfirmationDialog = false
-                                viewModel.endLiveStream(room.id)
+                                if (isSessionRoom) viewModel.endActiveLiveRoom() else viewModel.endLiveStream(room.id)
                                 onNavigateSummary(room.id)
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = LiveRed)
@@ -624,280 +860,6 @@ fun LiveRoomScreen(
                     },
                     shape = RoundedCornerShape(16.dp)
                 )
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun WatchPartyPlaylistBottomSheet(
-    roomId: String,
-    watchPartyState: WatchPartyState?,
-    isHost: Boolean,
-    viewModel: LiveViewModel,
-    onDismiss: () -> Unit
-) {
-    val context = LocalContext.current
-    var inputUrl by remember { mutableStateOf("") }
-    var inputTitle by remember { mutableStateOf("") }
-    var inputError by remember { mutableStateOf<String?>(null) }
-
-    val playlist = watchPartyState?.playlist ?: emptyList()
-    val activeItemId = watchPartyState?.activePlaylistItemId
-    val isMuted = watchPartyState?.isMuted == true
-
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        windowInsets = WindowInsets(0.dp),
-        containerColor = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .fillMaxHeight(0.85f)
-                .imePadding()
-                .navigationBarsPadding()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            // Header Bar
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.QueueMusic,
-                        contentDescription = null,
-                        tint = Color(0xFFEF4444),
-                        modifier = Modifier.size(22.dp)
-                    )
-                    Text(
-                        text = "Watch Party Playlist",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    // Mute Toggle
-                    IconButton(onClick = { viewModel.toggleMuteWatchParty(roomId) }) {
-                        Icon(
-                            imageVector = if (isMuted) Icons.Default.VolumeOff else Icons.Default.VolumeUp,
-                            contentDescription = "Mute",
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-
-                    // Turn Off Watch Party (Host only)
-                    if (isHost) {
-                        TextButton(
-                            onClick = {
-                                viewModel.turnOffWatchParty(roomId)
-                                onDismiss()
-                            },
-                            colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFFF87171))
-                        ) {
-                            Text("Turn Off", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                        }
-                    }
-
-                    IconButton(onClick = onDismiss) {
-                        Icon(Icons.Default.Close, contentDescription = "Close", tint = MaterialTheme.colorScheme.onSurface)
-                    }
-                }
-            }
-
-            // Add Video Input Section
-            Surface(
-                shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier.padding(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        text = "Add YouTube Video to Playlist",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        OutlinedTextField(
-                            value = inputUrl,
-                            onValueChange = {
-                                inputUrl = it
-                                inputError = null
-                            },
-                            placeholder = { Text("Paste YouTube URL or Video ID", fontSize = 12.sp) },
-                            modifier = Modifier.weight(1f),
-                            singleLine = true,
-                            shape = RoundedCornerShape(12.dp)
-                        )
-
-                        Button(
-                            onClick = {
-                                val parsedId = extractYouTubeVideoId(inputUrl)
-                                if (parsedId == null) {
-                                    inputError = "Invalid YouTube video URL or ID"
-                                    return@Button
-                                }
-                                val success = viewModel.addVideoToPlaylist(roomId, inputUrl.trim(), inputTitle)
-                                if (success) {
-                                    inputUrl = ""
-                                    inputTitle = ""
-                                    inputError = null
-                                    Toast.makeText(context, "Added to playlist! 🎵", Toast.LENGTH_SHORT).show()
-                                } else {
-                                    inputError = "Video is already in the playlist"
-                                }
-                            },
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626))
-                        ) {
-                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Add", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                        }
-                    }
-
-                    inputError?.let { err ->
-                        Text(text = err, color = Color(0xFFF87171), fontSize = 11.sp, fontWeight = FontWeight.Medium)
-                    }
-                }
-            }
-
-            Text(
-                text = "Playlist Items (${playlist.size})",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
-            // Scrollable Playlist List
-            if (playlist.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Icon(Icons.Default.MusicNote, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(40.dp))
-                        Text("No videos in playlist yet", color = Color.Gray, fontSize = 13.sp)
-                    }
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = PaddingValues(bottom = 16.dp)
-                ) {
-                    items(
-                        items = playlist,
-                        key = { it.id }
-                    ) { item ->
-                        val isActive = item.id == activeItemId
-
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = if (isActive) Color(0xFFDC2626).copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                            border = androidx.compose.foundation.BorderStroke(
-                                1.dp,
-                                if (isActive) Color(0xFFEF4444) else Color.Transparent
-                            ),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(10.dp),
-                                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                // Thumbnail badge
-                                Surface(
-                                    shape = RoundedCornerShape(8.dp),
-                                    color = Color.Black,
-                                    modifier = Modifier.size(width = 64.dp, height = 42.dp)
-                                ) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        Icon(Icons.Default.PlayCircle, contentDescription = null, tint = Color(0xFFEF4444), modifier = Modifier.size(24.dp))
-                                    }
-                                }
-
-                                Column(
-                                    modifier = Modifier.weight(1f),
-                                    verticalArrangement = Arrangement.spacedBy(2.dp)
-                                ) {
-                                    Text(
-                                        text = item.title,
-                                        fontSize = 13.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                    Text(
-                                        text = "Added by ${item.addedByUserName}",
-                                        fontSize = 11.sp,
-                                        color = Color.Gray
-                                    )
-                                    if (isActive) {
-                                        Text(
-                                            text = "▶ PLAYING NOW",
-                                            fontSize = 10.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = LivePrimaryMint
-                                        )
-                                    }
-                                }
-
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    if (!isActive) {
-                                        IconButton(
-                                            onClick = { viewModel.selectPlaylistItem(roomId, item.id) },
-                                            modifier = Modifier.size(32.dp)
-                                        ) {
-                                            Icon(Icons.Default.PlayArrow, contentDescription = "Play", tint = LivePrimaryMint)
-                                        }
-                                    }
-
-                                    if (isHost || item.addedByUserId == "creator_me") {
-                                        IconButton(
-                                            onClick = { viewModel.removeVideoFromPlaylist(roomId, item.id) },
-                                            modifier = Modifier.size(32.dp)
-                                        ) {
-                                            Icon(Icons.Default.Delete, contentDescription = "Remove", tint = Color(0xFFF87171), modifier = Modifier.size(18.dp))
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
             }
         }
     }
@@ -1065,399 +1027,6 @@ fun TextStageCanvas(room: LiveRoom) {
             }
             Text("Group Text Chat Room", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
             Text(room.title, fontSize = 14.sp, color = Color.LightGray)
-        }
-    }
-}
-
-@Composable
-fun YouTubeWatchPartyStageCanvas(
-    room: LiveRoom,
-    watchPartyState: WatchPartyState?,
-    isHost: Boolean,
-    viewModel: LiveViewModel
-) {
-    val videoId = remember(watchPartyState?.videoId, room.youtubeVideoId, room.youtubeVideoUrl) {
-        watchPartyState?.videoId.takeIf { !it.isNullOrBlank() }
-            ?: room.youtubeVideoId
-            ?: room.youtubeVideoUrl?.let { extractYouTubeVideoId(it) }
-    }
-    val playlistId = watchPartyState?.playlistId ?: room.youtubePlaylistId
-
-    var webViewRef by remember { mutableStateOf<android.webkit.WebView?>(null) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
-    var isReady by remember { mutableStateOf(false) }
-    var isApplyingRemoteCommand by remember { mutableStateOf(false) }
-    var lastAppliedRevision by remember { mutableLongStateOf(0L) }
-
-    var isHidden by remember { mutableStateOf(false) }
-    var showPlaylistSheet by remember { mutableStateOf(false) }
-
-    // Touch Dragging State with Clamping Offset
-    var offsetX by remember { mutableFloatStateOf(0f) }
-    var offsetY by remember { mutableFloatStateOf(0f) }
-
-    // On dispose, clean up WebView
-    DisposableEffect(Unit) {
-        onDispose {
-            webViewRef?.apply {
-                stopLoading()
-                loadUrl("about:blank")
-                destroy()
-            }
-            webViewRef = null
-        }
-    }
-
-    // Handle remote WatchPartyState updates
-    LaunchedEffect(watchPartyState, isReady) {
-        val state = watchPartyState ?: return@LaunchedEffect
-        val webView = webViewRef ?: return@LaunchedEffect
-        if (!isReady) return@LaunchedEffect
-
-        if (state.revision > lastAppliedRevision) {
-            lastAppliedRevision = state.revision
-            isApplyingRemoteCommand = true
-
-            val now = System.currentTimeMillis()
-            val elapsedSeconds = if (state.status == WatchPartyPlaybackStatus.PLAYING) {
-                ((now - state.updatedAtMillis).coerceAtLeast(0L)) / 1000f
-            } else 0f
-
-            val expectedPosition = state.positionSeconds + elapsedSeconds
-
-            when (state.status) {
-                WatchPartyPlaybackStatus.PLAYING -> {
-                    webView.evaluateJavascript("seekTo($expectedPosition); playVideo();", null)
-                }
-                WatchPartyPlaybackStatus.PAUSED -> {
-                    webView.evaluateJavascript("seekTo(${state.positionSeconds}); pauseVideo();", null)
-                }
-                WatchPartyPlaybackStatus.ENDED -> {
-                    webView.evaluateJavascript("pauseVideo();", null)
-                }
-                else -> {}
-            }
-
-            isApplyingRemoteCommand = false
-        }
-    }
-
-    // Handle Mute state change
-    LaunchedEffect(watchPartyState?.isMuted) {
-        val isMuted = watchPartyState?.isMuted == true
-        webViewRef?.evaluateJavascript(if (isMuted) "muteVideo();" else "unMuteVideo();", null)
-    }
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black),
-        contentAlignment = Alignment.TopCenter
-    ) {
-        val isTurnedOff = watchPartyState?.isTurnedOff == true
-
-        if (isTurnedOff) {
-            // Turned Off State Container
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(14.dp),
-                modifier = Modifier
-                    .statusBarsPadding()
-                    .padding(top = 100.dp, start = 24.dp, end = 24.dp)
-            ) {
-                Icon(Icons.Default.TvOff, contentDescription = null, tint = Color(0xFFF87171), modifier = Modifier.size(52.dp))
-                Text("Watch Party Turned Off", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                Text("The host turned off synchronized video playback.", color = Color.LightGray, fontSize = 13.sp)
-
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Button(
-                        onClick = { showPlaylistSheet = true },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1F2937))
-                    ) {
-                        Icon(Icons.Default.QueueMusic, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("View Playlist", fontSize = 13.sp)
-                    }
-
-                    if (isHost) {
-                        Button(
-                            onClick = { viewModel.addVideoToPlaylist(room.id, room.youtubeVideoUrl ?: "https://www.youtube.com/watch?v=dQw4w9WgXcQ") },
-                            colors = ButtonDefaults.buttonColors(containerColor = LivePrimaryEmerald)
-                        ) {
-                            Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Re-enable Watch Party", fontSize = 13.sp)
-                        }
-                    }
-                }
-            }
-        } else if (isHidden) {
-            // Hidden Compact Floating Pill
-            Surface(
-                onClick = { isHidden = false },
-                shape = RoundedCornerShape(20.dp),
-                color = Color(0xFFDC2626),
-                shadowElevation = 6.dp,
-                modifier = Modifier
-                    .statusBarsPadding()
-                    .padding(top = 70.dp, end = 16.dp)
-                    .align(Alignment.TopEnd)
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Icon(Icons.Default.OndemandVideo, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
-                    Text("Reopen Watch Party 📺", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                }
-            }
-        } else if (videoId == null && playlistId == null) {
-            // Missing Video or Playlist Selection State
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier
-                    .statusBarsPadding()
-                    .padding(top = 100.dp, start = 24.dp, end = 24.dp)
-            ) {
-                Icon(Icons.Default.ErrorOutline, contentDescription = null, tint = Color(0xFFF87171), modifier = Modifier.size(48.dp))
-                Text("No YouTube Video Selected", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                Button(
-                    onClick = { showPlaylistSheet = true },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFDC2626))
-                ) {
-                    Icon(Icons.Default.PlaylistAdd, contentDescription = null)
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Open Playlist to Add Video")
-                }
-            }
-        } else {
-            // Real Draggable Rounded Floating Player Container
-            Surface(
-                shape = RoundedCornerShape(16.dp),
-                color = Color(0xFF111827),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFEF4444).copy(alpha = 0.5f)),
-                shadowElevation = 8.dp,
-                modifier = Modifier
-                    .statusBarsPadding()
-                    .padding(top = 58.dp)
-                    .offset(x = offsetX.dp, y = offsetY.dp)
-                    .fillMaxWidth(0.92f)
-                    .height(230.dp)
-            ) {
-                Column(modifier = Modifier.fillMaxSize()) {
-                    // Header Bar with Drag Handle and Action Controls
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(Color(0xFF1F2937))
-                            .pointerInput(Unit) {
-                                detectTransformGestures { _, pan, _, _ ->
-                                    offsetX = (offsetX + pan.x / 2.5f).coerceIn(-120f, 120f)
-                                    offsetY = (offsetY + pan.y / 2.5f).coerceIn(-10f, 280f)
-                                }
-                            }
-                            .padding(horizontal = 10.dp, vertical = 6.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Icon(Icons.Default.DragHandle, contentDescription = "Drag Player", tint = Color.LightGray, modifier = Modifier.size(16.dp))
-                            Icon(Icons.Default.OndemandVideo, contentDescription = null, tint = Color(0xFFEF4444), modifier = Modifier.size(16.dp))
-                            Text("YouTube Watch Party", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                        }
-
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                            // Playlist Action Button
-                            IconButton(onClick = { showPlaylistSheet = true }, modifier = Modifier.size(28.dp)) {
-                                Icon(Icons.Default.QueueMusic, contentDescription = "Playlist", tint = Color.White, modifier = Modifier.size(16.dp))
-                            }
-
-                            // Mute Action Button
-                            IconButton(
-                                onClick = { viewModel.toggleMuteWatchParty(room.id) },
-                                modifier = Modifier.size(28.dp)
-                            ) {
-                                Icon(
-                                    imageVector = if (watchPartyState?.isMuted == true) Icons.Default.VolumeOff else Icons.Default.VolumeUp,
-                                    contentDescription = "Mute Toggle",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                            }
-
-                            // Hide Action Button
-                            IconButton(onClick = { isHidden = true }, modifier = Modifier.size(28.dp)) {
-                                Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Hide Player", tint = Color.White, modifier = Modifier.size(18.dp))
-                            }
-                        }
-                    }
-
-                    // WebView Official YouTube Player Frame
-                    Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                        AndroidView(
-                            factory = { ctx ->
-                                android.webkit.WebView(ctx).apply {
-                                    layoutParams = android.view.ViewGroup.LayoutParams(
-                                        android.view.ViewGroup.LayoutParams.MATCH_PARENT,
-                                        android.view.ViewGroup.LayoutParams.MATCH_PARENT
-                                    )
-                                    settings.apply {
-                                        javaScriptEnabled = true
-                                        domStorageEnabled = true
-                                        mediaPlaybackRequiresUserGesture = false
-                                        loadWithOverviewMode = true
-                                        useWideViewPort = true
-                                    }
-                                    webViewClient = object : android.webkit.WebViewClient() {
-                                        override fun shouldOverrideUrlLoading(
-                                            view: android.webkit.WebView?,
-                                            request: android.webkit.WebResourceRequest?
-                                        ): Boolean {
-                                            val uri = request?.url ?: return false
-                                            val host = uri.host?.lowercase() ?: ""
-                                            return !host.contains("youtube") && !host.contains("googlevideo")
-                                        }
-                                    }
-
-                                    val mainHandler = android.os.Handler(android.os.Looper.getMainLooper())
-
-                                    class YouTubeJSInterface {
-                                        @android.webkit.JavascriptInterface
-                                        fun onPlayerReady() {
-                                            mainHandler.post {
-                                                isReady = true
-                                            }
-                                        }
-
-                                        @android.webkit.JavascriptInterface
-                                        fun onPlayerStateChange(stateCode: Int, currentTime: Float) {
-                                            mainHandler.post {
-                                                val status = when (stateCode) {
-                                                    1 -> WatchPartyPlaybackStatus.PLAYING
-                                                    2 -> WatchPartyPlaybackStatus.PAUSED
-                                                    3 -> WatchPartyPlaybackStatus.BUFFERING
-                                                    0 -> WatchPartyPlaybackStatus.ENDED
-                                                    else -> WatchPartyPlaybackStatus.UNSTARTED
-                                                }
-                                                if (isHost && !isApplyingRemoteCommand) {
-                                                    viewModel.updateWatchPartyState(room.id, status, currentTime)
-                                                }
-                                            }
-                                        }
-
-                                        @android.webkit.JavascriptInterface
-                                        fun onPlayerError(errorCode: Int) {
-                                            mainHandler.post {
-                                                errorMessage = when (errorCode) {
-                                                    2 -> "Invalid YouTube video parameter or ID."
-                                                    5 -> "HTML5 video playback error."
-                                                    100 -> "Video not found or removed."
-                                                    101, 150 -> "Video embedding restricted by owner."
-                                                    else -> "Playback error occurred (Code $errorCode)."
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                    addJavascriptInterface(YouTubeJSInterface(), "AndroidBridge")
-
-                                    val listParam = if (!playlistId.isNullOrBlank()) "'listType': 'playlist', 'list': '$playlistId'," else ""
-                                    val videoParam = videoId ?: ""
-
-                                    val htmlContent = """
-                                        <!DOCTYPE html>
-                                        <html>
-                                        <head>
-                                            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-                                            <style>
-                                                body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: #000; overflow: hidden; }
-                                                #player { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
-                                            </style>
-                                        </head>
-                                        <body>
-                                            <div id="player"></div>
-                                            <script>
-                                                var tag = document.createElement('script');
-                                                tag.src = "https://www.youtube.com/iframe_api";
-                                                var firstScriptTag = document.getElementsByTagName('script')[0];
-                                                firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-
-                                                var player;
-                                                function onYouTubeIframeAPIReady() {
-                                                    player = new YT.Player('player', {
-                                                        height: '100%',
-                                                        width: '100%',
-                                                        videoId: '$videoParam',
-                                                        playerVars: {
-                                                            'playsinline': 1,
-                                                            'autoplay': 1,
-                                                            'controls': 1,
-                                                            'rel': 0,
-                                                            'enablejsapi': 1,
-                                                            'origin': 'https://www.youtube.com',
-                                                            $listParam
-                                                        },
-                                                        events: {
-                                                            'onReady': function(e) { if (window.AndroidBridge) window.AndroidBridge.onPlayerReady(); },
-                                                            'onStateChange': function(e) { if (window.AndroidBridge) window.AndroidBridge.onPlayerStateChange(e.data, player ? player.getCurrentTime() : 0); },
-                                                            'onError': function(e) { if (window.AndroidBridge) window.AndroidBridge.onPlayerError(e.data); }
-                                                        }
-                                                    });
-                                                }
-
-                                                function playVideo() { if (player && player.playVideo) player.playVideo(); }
-                                                function pauseVideo() { if (player && player.pauseVideo) player.pauseVideo(); }
-                                                function muteVideo() { if (player && player.mute) player.mute(); }
-                                                function unMuteVideo() { if (player && player.unMute) player.unMute(); }
-                                                function seekTo(seconds) { if (player && player.seekTo) player.seekTo(seconds, true); }
-                                                function loadVideoById(vId, startSec) { if (player && player.loadVideoById) player.loadVideoById({'videoId': vId, 'startSeconds': startSec || 0}); }
-                                            </script>
-                                        </body>
-                                        </html>
-                                    """.trimIndent()
-
-                                    loadDataWithBaseURL("https://www.youtube.com", htmlContent, "text/html", "UTF-8", null)
-                                    webViewRef = this
-                                }
-                            },
-                            modifier = Modifier.fillMaxSize()
-                        )
-
-                        // Error Overlay
-                        errorMessage?.let { err ->
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .background(Color.Black.copy(alpha = 0.85f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                                    modifier = Modifier.padding(16.dp)
-                                ) {
-                                    Icon(Icons.Default.Warning, contentDescription = null, tint = Color(0xFFF87171), modifier = Modifier.size(36.dp))
-                                    Text("Playback Error", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                                    Text(err, color = Color.LightGray, fontSize = 11.sp)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // Playlist Bottom Sheet
-        if (showPlaylistSheet) {
-            WatchPartyPlaylistBottomSheet(
-                roomId = room.id,
-                watchPartyState = watchPartyState,
-                isHost = isHost,
-                viewModel = viewModel,
-                onDismiss = { showPlaylistSheet = false }
-            )
         }
     }
 }

@@ -38,8 +38,18 @@ data class WatchPartyState(
     val playlist: List<WatchPartyPlaylistItem> = emptyList(),
     val activePlaylistItemId: String? = null,
     val isMuted: Boolean = false,
-    val isTurnedOff: Boolean = false
-)
+    val isTurnedOff: Boolean = false,
+    /** UID of the authenticated host that produced this revision. */
+    val updatedByUserId: String = "",
+    /** Monotonic command identifier used to suppress echo/feedback loops on the host device. */
+    val commandId: String = "",
+    /** Firestore server timestamp (millis) when available. Falls back to [updatedAtMillis]. */
+    val serverUpdatedAtMillis: Long = 0L
+) {
+    /** Time base used for playback projection, preferring the server timestamp. */
+    val effectiveUpdatedAtMillis: Long
+        get() = if (serverUpdatedAtMillis > 0L) serverUpdatedAtMillis else updatedAtMillis
+}
 
 enum class GuestRequestStatus {
     PENDING,
@@ -182,7 +192,17 @@ data class LiveRoom(
     val youtubeVideoUrl: String? = null,
     val youtubeVideoId: String? = null,
     val youtubePlaylistId: String? = null,
-    val watchPartyState: WatchPartyState? = null
+    val watchPartyState: WatchPartyState? = null,
+    /** Public handle of the host, loaded from `public_profiles/{uid}`. */
+    val hostUsername: String = "",
+    val hostIsVerified: Boolean = false,
+    /** Set when the room was ended by its host; ended rooms reject playback commands. */
+    val endedAtMillis: Long? = null,
+    /**
+     * True only for the bundled discovery sample rooms that never had a backend room document.
+     * Session-backed rooms always render real persisted data instead.
+     */
+    val isDemoRoom: Boolean = false
 )
 
 data class LiveCreator(
@@ -257,7 +277,15 @@ data class ChatMessage(
     val isSystemMessage: Boolean = false,
     val isPinned: Boolean = false,
     val timestamp: Long = System.currentTimeMillis(),
-    val eventType: String? = null
+    val eventType: String? = null,
+    /** Public handle of the sender, resolved from the authenticated profile. */
+    val senderUsername: String = "",
+    /** Client generated dedupe key persisted with the message. */
+    val clientMessageId: String? = null,
+    /** Optimistic local state: message queued but not yet acknowledged by the backend. */
+    val isPending: Boolean = false,
+    /** Optimistic local state: send failed and can be retried by the user. */
+    val isFailed: Boolean = false
 )
 
 data class GuestRequest(

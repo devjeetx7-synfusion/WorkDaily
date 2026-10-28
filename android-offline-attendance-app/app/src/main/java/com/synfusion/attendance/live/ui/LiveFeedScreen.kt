@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.sp
 import com.synfusion.attendance.live.model.LiveRoom
+import com.synfusion.attendance.live.model.LiveRoomSessionState
 import com.synfusion.attendance.live.ui.components.LiveDarkBg
 import com.synfusion.attendance.live.viewmodel.LiveViewModel
 
@@ -28,9 +29,23 @@ fun LiveFeedScreen(
     onNavigateFullProfile: (String) -> Unit = {}
 ) {
     val liveRooms by viewModel.liveRooms.collectAsState()
-    val availableRooms = remember(liveRooms) {
-        val active = liveRooms.filter { it.isLive }
-        if (active.isNotEmpty()) active else liveRooms
+    val availableRooms = remember(liveRooms, initialRoomId) {
+        val active = liveRooms.filter { it.isLive }.ifEmpty { liveRooms }
+        if (active.any { it.id == initialRoomId }) {
+            active
+        } else {
+            // The requested room (e.g. opened from a share link) is not in the discovery cache yet.
+            // Render it as its own page so LiveRoomScreen can resolve it from the backend session.
+            listOf(
+                LiveRoom(
+                    id = initialRoomId,
+                    title = "WorkDaily Live",
+                    creatorId = "",
+                    creatorName = "WorkDaily Host",
+                    isLive = true
+                )
+            ) + active
+        }
     }
 
     if (availableRooms.isEmpty()) {
@@ -57,18 +72,35 @@ fun LiveFeedScreen(
 
     var isChildPagingLocked by remember { mutableStateOf(false) }
 
+    val liveIdentity by viewModel.liveIdentity.collectAsState()
+    val sessionState by viewModel.roomSessionState.collectAsState()
     val currentRoom = availableRooms.getOrNull(pagerState.currentPage)
     val isHost = currentRoom?.let { room ->
-        room.isHost || room.creatorId == "creator_me" || room.creatorId == "user_me"
+        val activeRoom = (sessionState as? LiveRoomSessionState.Active)?.room
+        when {
+            activeRoom != null && activeRoom.id == room.id ->
+                (sessionState as LiveRoomSessionState.Active).isHost
+            liveIdentity?.uid != null -> room.creatorId == liveIdentity?.uid
+            room.isDemoRoom -> room.isHost
+            else -> false
+        }
     } ?: false
 
     // Disable vertical paging if the current stream is hosted by user or locked by child controls
     val isPagingEnabled = !isHost && !isChildPagingLocked
 
     LaunchedEffect(pagerState.currentPage, availableRooms) {
-        val room = availableRooms.getOrNull(pagerState.currentPage)
-        if (room != null) {
-            viewModel.setActiveRoom(room.id)
+        val room = availableRooms.getOrNull(pagerState.currentPage) ?: return@LaunchedEffect
+        viewModel.setActiveRoom(room.id)
+        // Join membership + start presence/chat/playback listeners for the visible room only.
+        // Bundled sample rooms have no backend document, so they keep their local-only behavior.
+        if (room.isDemoRoom) viewModel.closeLiveRoom() else viewModel.openLiveRoom(room.id)
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            // Leaves the presence document so the viewer count updates immediately.
+            viewModel.closeLiveRoom()
         }
     }
 

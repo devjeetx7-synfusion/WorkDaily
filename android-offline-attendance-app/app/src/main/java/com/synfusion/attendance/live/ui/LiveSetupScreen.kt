@@ -22,39 +22,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import com.synfusion.attendance.live.model.LiveRoomType
 import com.synfusion.attendance.live.ui.components.*
 import com.synfusion.attendance.live.viewmodel.LiveViewModel
-
-fun extractYouTubeVideoId(input: String): String? {
-    if (input.isBlank()) return null
-    val trimmed = input.trim()
-    if (trimmed.matches(Regex("^[a-zA-Z0-9_-]{11}$"))) {
-        return trimmed
-    }
-    val pattern = "(?:youtube\\.com\\/(?:[^\\/]+\\/.+\\/|(?:v|e(?:mbed)?)\\/" +
-            "|.*[?&]v=)|youtu\\.be\\/|youtube\\.com\\/shorts\\/)([a-zA-Z0-9_-]{11})"
-    val regex = Regex(pattern, RegexOption.IGNORE_CASE)
-    val match = regex.find(trimmed)
-    if (match != null && match.groupValues.size >= 2) {
-        return match.groupValues[1]
-    }
-    return null
-}
-
-fun extractYouTubePlaylistId(input: String): String? {
-    if (input.isBlank()) return null
-    val trimmed = input.trim()
-    if (trimmed.matches(Regex("^(PL|LL|EC|UU|FL|RD|UL)[a-zA-Z0-9_-]+$"))) {
-        return trimmed
-    }
-    val regex = Regex("[?&]list=([a-zA-Z0-9_-]+)", RegexOption.IGNORE_CASE)
-    val match = regex.find(trimmed)
-    if (match != null && match.groupValues.size >= 2) {
-        return match.groupValues[1]
-    }
-    return null
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -71,6 +43,9 @@ fun LiveSetupScreen(
     var youtubeUrl by remember { mutableStateOf("") }
     var showYouTubeBrowser by remember { mutableStateOf(false) }
     var isSubmitting by remember { mutableStateOf(false) }
+    var submitError by remember { mutableStateOf<String?>(null) }
+    val liveIdentity by viewModel.liveIdentity.collectAsState()
+    val coroutineScope = rememberCoroutineScope()
 
     var showAdvancedSettings by remember { mutableStateOf(false) }
     var isPublic by remember { mutableStateOf(true) }
@@ -214,7 +189,7 @@ fun LiveSetupScreen(
                     }
                 }
 
-                LiveBadge(text = "PREVIEW MODE", bgColor = LivePrimaryEmerald)
+                LiveBadge(text = "SETUP", bgColor = LivePrimaryEmerald)
             }
         }
 
@@ -347,20 +322,33 @@ fun LiveSetupScreen(
                 }
             }
 
+            submitError?.let { message ->
+                Text(
+                    text = message,
+                    color = Color(0xFFF87171),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.padding(bottom = 4.dp)
+                )
+            }
+
             // Start Live CTA Button
             Button(
                 onClick = {
                     if (isSubmitting) return@Button
+                    submitError = null
 
-                    val videoId = if (selectedType == LiveRoomType.YOUTUBE_WATCH_PARTY) extractYouTubeVideoId(youtubeUrl) else null
-                    val playlistId = if (selectedType == LiveRoomType.YOUTUBE_WATCH_PARTY) extractYouTubePlaylistId(youtubeUrl) else null
-
-                    if (selectedType == LiveRoomType.YOUTUBE_WATCH_PARTY && videoId == null && playlistId == null) {
-                        Toast.makeText(context, "Please select or enter a valid YouTube video or playlist", Toast.LENGTH_SHORT).show()
-                        return@Button
+                    val selection = if (selectedType == LiveRoomType.YOUTUBE_WATCH_PARTY) {
+                        when (val parsed = com.synfusion.attendance.live.watchparty.YouTubeLinkParser.parse(youtubeUrl)) {
+                            is com.synfusion.attendance.live.watchparty.YouTubeParseResult.Success -> parsed.selection
+                            is com.synfusion.attendance.live.watchparty.YouTubeParseResult.Failure -> {
+                                submitError = parsed.message
+                                return@Button
+                            }
+                        }
+                    } else {
+                        null
                     }
-
-                    isSubmitting = true
 
                     val autoTitle = when (selectedType) {
                         LiveRoomType.VIDEO -> "Live Site Workday Broadcast"
@@ -369,22 +357,46 @@ fun LiveSetupScreen(
                         LiveRoomType.YOUTUBE_WATCH_PARTY -> "Site Safety YouTube Watch Party"
                     }
 
-                    val createdRoom = viewModel.startLiveStream(
-                        title = autoTitle,
-                        category = "Site Safety",
-                        type = selectedType,
-                        tags = listOf("LiveWork", "SiteSafety"),
-                        description = "",
-                        isPublic = isPublic,
-                        allowGuestRequests = allowGuestRequests,
-                        showGifts = showGifts,
-                        youtubeVideoUrl = if (youtubeUrl.isNotBlank()) youtubeUrl.trim() else null,
-                        youtubeVideoId = videoId,
-                        youtubePlaylistId = playlistId
-                    )
+                    isSubmitting = true
+                    coroutineScope.launch {
+                        try {
+                            if (viewModel.liveIdentity.value == null) {
+                                viewModel.refreshLiveIdentity()
+                                delay(250)
+                            }
+                            val identity = viewModel.liveIdentity.value
+                            if (identity == null) {
+                                submitError = "Sign in to WorkDaily to start a live room. Your account is the host."
+                                return@launch
+                            }
+                            val result = viewModel.createLiveRoom(
+                                com.synfusion.attendance.live.data.LiveRoomCreateRequest(
+                                    title = autoTitle,
+                                    category = "Site Safety",
+                                    type = selectedType,
+                                    tags = listOf("LiveWork", "SiteSafety"),
+                                    description = "",
+                                    isPublic = isPublic,
+                                    allowGuestRequests = allowGuestRequests,
+                                    showGifts = showGifts,
+                                    isChatEnabled = isChatEnabled,
+                                    selection = selection
+                                )
+                            )
+                            when (result) {
+                                is com.synfusion.attendance.live.model.LiveOperationResult.Success -> {
+                                    Toast.makeText(context, "You are LIVE! 🔴", Toast.LENGTH_SHORT).show()
+                                    onNavigateLiveRoom(result.data.id)
+                                }
 
-                    Toast.makeText(context, "You are LIVE! 🔴", Toast.LENGTH_SHORT).show()
-                    onNavigateLiveRoom(createdRoom.id)
+                                is com.synfusion.attendance.live.model.LiveOperationResult.Error -> {
+                                    submitError = result.message
+                                }
+                            }
+                        } finally {
+                            isSubmitting = false
+                        }
+                    }
                 },
                 modifier = Modifier
                     .fillMaxWidth()

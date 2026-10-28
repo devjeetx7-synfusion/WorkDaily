@@ -103,6 +103,8 @@ fun DashboardScreen(
     settingsViewModel: OfflineSettingsViewModel,
     externalPdfUri: Uri? = null,
     onClearExternalPdfUri: () -> Unit = {},
+    sharedLiveRoomId: String? = null,
+    onClearSharedLiveRoom: () -> Unit = {},
     onLogout: () -> Unit
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
@@ -163,6 +165,14 @@ fun DashboardScreen(
             }
             onClearExternalPdfUri()
         }
+    }
+
+    // Resolve a shared Live/Watch Party deep link to the room screen.
+    LaunchedEffect(sharedLiveRoomId) {
+        val roomId = sharedLiveRoomId ?: return@LaunchedEffect
+        selectedTab = 3
+        bottomNavController.navigate("live_room/$roomId") { launchSingleTop = true }
+        onClearSharedLiveRoom()
     }
 
     LaunchedEffect(settingsState.isLoaded) {
