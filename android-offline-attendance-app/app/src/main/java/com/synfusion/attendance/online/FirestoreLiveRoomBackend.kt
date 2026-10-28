@@ -192,6 +192,45 @@ class FirestoreLiveRoomBackend(
                 batch.commit().awaitTask()
             }
 
+            // Write initial system messages for room creation
+            val startMsgId = "sys_start_$roomId"
+            val startMsgData = mapOf(
+                "roomId" to roomId,
+                "senderId" to host.uid,
+                "senderName" to host.displayName,
+                "senderUsername" to host.username,
+                "senderAvatar" to host.photoUrl,
+                "message" to "${host.displayName} started the live broadcast",
+                "clientMessageId" to startMsgId,
+                "timestamp" to FieldValue.serverTimestamp(),
+                "timestampMillis" to now,
+                "isGiftAnnouncement" to false,
+                "isSystemMessage" to true,
+                "isPinned" to false,
+                "eventType" to "LIVE_STARTED"
+            )
+            messagesRef(roomId).document(startMsgId).set(startMsgData).awaitTask()
+
+            if (request.type == LiveRoomType.YOUTUBE_WATCH_PARTY) {
+                val wpMsgId = "sys_wp_$roomId"
+                val wpMsgData = mapOf(
+                    "roomId" to roomId,
+                    "senderId" to host.uid,
+                    "senderName" to "WorkDaily System",
+                    "senderUsername" to "workdaily",
+                    "senderAvatar" to "",
+                    "message" to "${host.displayName} started a Watch Party",
+                    "clientMessageId" to wpMsgId,
+                    "timestamp" to FieldValue.serverTimestamp(),
+                    "timestampMillis" to now + 1,
+                    "isGiftAnnouncement" to false,
+                    "isSystemMessage" to true,
+                    "isPinned" to false,
+                    "eventType" to "WATCH_PARTY_STARTED"
+                )
+                messagesRef(roomId).document(wpMsgId).set(wpMsgData).awaitTask()
+            }
+
             // Host membership is written once the room exists so presence exists from creation time.
             membersRef(roomId).document(host.uid)
                 .set(memberToMap(host.toMember(isHost = true, nowMillis = now)))
@@ -328,6 +367,25 @@ class FirestoreLiveRoomBackend(
                         )
                     )
                 }
+
+                // Write system message for room end
+                val endMsgId = "sys_end_$roomId"
+                val endMsgData = mapOf(
+                    "roomId" to roomId,
+                    "senderId" to uid,
+                    "senderName" to "WorkDaily System",
+                    "senderUsername" to "workdaily",
+                    "senderAvatar" to "",
+                    "message" to "Live broadcast ended by host",
+                    "clientMessageId" to endMsgId,
+                    "timestamp" to FieldValue.serverTimestamp(),
+                    "timestampMillis" to clock(),
+                    "isGiftAnnouncement" to false,
+                    "isSystemMessage" to true,
+                    "isPinned" to false,
+                    "eventType" to "LIVE_ENDED"
+                )
+                transaction.set(messagesRef(roomId).document(endMsgId), endMsgData)
             }.awaitTask()
             LiveOperationResult.Success(Unit)
         } catch (e: Exception) {
@@ -365,6 +423,29 @@ class FirestoreLiveRoomBackend(
                     lastSeenAtMillis = now
                 )
                 transaction.set(membershipRef, memberToMap(member), SetOptions.merge())
+
+                // Write system join event idempotently
+                val joinMsgId = "sys_join_${roomId}_${uid}"
+                val joinMsgRef = messagesRef(roomId).document(joinMsgId)
+                val existingMsg = transaction.get(joinMsgRef)
+                if (!existingMsg.exists()) {
+                    val joinMsgData = mapOf(
+                        "roomId" to roomId,
+                        "senderId" to uid,
+                        "senderName" to identity.displayName,
+                        "senderUsername" to identity.username,
+                        "senderAvatar" to identity.photoUrl,
+                        "message" to "${identity.displayName} joined the live",
+                        "clientMessageId" to joinMsgId,
+                        "timestamp" to FieldValue.serverTimestamp(),
+                        "timestampMillis" to now,
+                        "isGiftAnnouncement" to false,
+                        "isSystemMessage" to false,
+                        "isPinned" to false,
+                        "eventType" to "USER_JOINED"
+                    )
+                    transaction.set(joinMsgRef, joinMsgData)
+                }
             }.awaitTask()
             LiveOperationResult.Success(Unit)
         } catch (e: Exception) {
@@ -826,6 +907,39 @@ class FirestoreLiveRoomBackend(
             LiveOperationResult.Success(items)
         } catch (e: Exception) {
             mapException(e, "Failed to load older messages")
+        }
+    }
+
+    override suspend fun sendSystemEvent(
+        roomId: String,
+        message: ChatMessage
+    ): LiveOperationResult<ChatMessage> {
+        val clientMsgId = message.clientMessageId ?: message.id
+        return try {
+            val messageRef = messagesRef(roomId).document(clientMsgId)
+            val existing = messageRef.get().awaitTask()
+            if (existing.exists()) {
+                return LiveOperationResult.Success(documentToChatMessage(roomId, clientMsgId, existing.data.orEmpty()))
+            }
+            val data = mapOf(
+                "roomId" to roomId,
+                "senderId" to message.senderId,
+                "senderName" to message.senderName,
+                "senderUsername" to message.senderUsername,
+                "senderAvatar" to message.senderAvatar,
+                "message" to message.message,
+                "clientMessageId" to clientMsgId,
+                "timestamp" to FieldValue.serverTimestamp(),
+                "timestampMillis" to message.timestamp,
+                "isGiftAnnouncement" to message.isGiftAnnouncement,
+                "isSystemMessage" to message.isSystemMessage,
+                "isPinned" to message.isPinned,
+                "eventType" to message.eventType
+            )
+            messageRef.set(data).awaitTask()
+            LiveOperationResult.Success(message)
+        } catch (e: Exception) {
+            mapException(e, "Failed to send system event")
         }
     }
 

@@ -92,21 +92,13 @@ class LiveViewModel(application: Application) : AndroidViewModel(application) {
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     /**
-     * Combined room list for discovery and feeds:
-     * Real backend rooms take precedence, with demo/sample rooms appended (marked with isDemoRoom = true)
-     * so demo fixtures remain available without polluting real active room sessions.
+     * Production active Live rooms stream from Firestore backend.
+     * Demo rooms are isolated and not mixed into production discovery.
      */
-    val liveRooms: StateFlow<List<LiveRoom>> = kotlinx.coroutines.flow.combine(
-        backendActiveRooms,
-        repository.liveRooms
-    ) { realRooms, repoRooms ->
-        val realIds = realRooms.map { it.id }.toSet()
-        val realHostUids = realRooms.map { it.hostUserId }.toSet()
-        val demoRooms = repoRooms.filter { room ->
-            room.isDemoRoom && !realIds.contains(room.id) && !realHostUids.contains(room.creatorId)
-        }
-        realRooms + demoRooms
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, repository.liveRooms.value)
+    val liveRooms: StateFlow<List<LiveRoom>> = backendActiveRooms
+
+    /** Demo room fixtures preserved strictly for designated offline/preview test paths. */
+    val demoRooms: StateFlow<List<LiveRoom>> = repository.liveRooms
 
     /**
      * Creators list with real-time active room state updated from real backend streams.
@@ -120,7 +112,7 @@ class LiveViewModel(application: Application) : AndroidViewModel(application) {
             if (realRoom != null) {
                 creator.copy(isLiveNow = true, activeRoomId = realRoom.id)
             } else {
-                creator
+                creator.copy(isLiveNow = false, activeRoomId = null)
             }
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), repository.creators.value)
@@ -484,7 +476,30 @@ class LiveViewModel(application: Application) : AndroidViewModel(application) {
             val result = SocialSessionCache.manager.setFollowState(actorUid, targetUid, wantFollow)
             when (result) {
                 null -> Unit // duplicate tap while a mutation is in flight
-                is ProfileOperationResult.Success -> Unit
+                is ProfileOperationResult.Success -> {
+                    if (wantFollow) {
+                        val session = _activeSession.value
+                        val identity = _liveIdentity.value
+                        if (session != null && identity != null) {
+                            val targetProfile = loadPublicProfile(targetUid)
+                            val targetName = targetProfile?.displayName ?: "host"
+                            val clientMessageId = "sys_follow_${session.roomId}_${actorUid}_${targetUid}"
+                            val followMsg = ChatMessage(
+                                id = clientMessageId,
+                                roomId = session.roomId,
+                                senderId = actorUid,
+                                senderName = identity.displayName,
+                                senderAvatar = identity.photoUrl,
+                                senderUsername = identity.username,
+                                message = "${identity.displayName} started following $targetName",
+                                timestamp = System.currentTimeMillis(),
+                                eventType = "USER_FOLLOWED",
+                                clientMessageId = clientMessageId
+                            )
+                            session.sendSystemEvent(followMsg)
+                        }
+                    }
+                }
                 is ProfileOperationResult.Error -> {
                     _liveHints.value = LiveSessionNotice(message = result.message, isError = true)
                 }
@@ -493,10 +508,14 @@ class LiveViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /** Room host ends the whole Live room (not just Watch Party playback). */
-    fun endActiveLiveRoom() {
-        val session = _activeSession.value ?: return
-        session.endRoom()
-        repository.endLiveStream(session.roomId)
+    suspend fun endActiveLiveRoom(): LiveOperationResult<Unit> {
+        val session = _activeSession.value
+            ?: return LiveOperationResult.Error("No active live room session.")
+        val result = session.endRoom()
+        if (result is LiveOperationResult.Success) {
+            repository.endLiveStream(session.roomId)
+        }
+        return result
     }
 
     fun sendFriendRequest(targetUserId: String): Boolean {

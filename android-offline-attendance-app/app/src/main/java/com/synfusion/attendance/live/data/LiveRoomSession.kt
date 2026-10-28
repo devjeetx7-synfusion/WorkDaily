@@ -330,6 +330,12 @@ class LiveRoomSession(
         historyCursor = LiveChatPolicy.olderHistoryCursor(persistedMessages.value)
     }
 
+    fun sendSystemEvent(message: ChatMessage) {
+        scope.launch {
+            backend.sendSystemEvent(roomId, message)
+        }
+    }
+
     fun sendMessage(rawText: String) {
         val currentIdentity = identity
         if (currentIdentity == null) {
@@ -639,25 +645,32 @@ class LiveRoomSession(
     }
 
     /** Host ends the Live room entirely (not just the Watch Party playback). */
-    fun endRoom() {
-        val currentIdentity = identity ?: return
+    suspend fun endRoom(): LiveOperationResult<Unit> {
+        val currentIdentity = identity ?: return LiveOperationResult.Error("Sign in to end this live room.", isAuthError = true)
         if (!isHost()) {
-            emitNotice("Only the host can end this live room.", isError = true)
-            return
+            val err = "Only the host can end this live room."
+            emitNotice(err, isError = true)
+            return LiveOperationResult.Error(err, isAuthError = true)
         }
-        scope.launch {
-            when (val result = backend.endRoom(roomId, currentIdentity.uid)) {
-                is LiveOperationResult.Success -> {
-                    val endedRoom = room?.copy(isLive = false, endedAtMillis = clock())
-                    if (endedRoom != null) {
-                        room = endedRoom
-                        _state.value = LiveRoomSessionState.Ended(endedRoom)
-                    }
-                }
-
-                is LiveOperationResult.Error -> emitNotice(result.message, isError = true)
+        val result = backend.endRoom(roomId, currentIdentity.uid)
+        when (result) {
+            is LiveOperationResult.Success -> {
+                val endedRoom = room?.copy(isLive = false, endedAtMillis = clock()) ?: LiveRoom(
+                    id = roomId,
+                    title = room?.title.orEmpty(),
+                    creatorId = currentIdentity.uid,
+                    creatorName = currentIdentity.displayName,
+                    isLive = false,
+                    endedAtMillis = clock()
+                )
+                room = endedRoom
+                _state.value = LiveRoomSessionState.Ended(endedRoom)
+                heartbeatJob?.cancel()
+                heartbeatJob = null
             }
+            is LiveOperationResult.Error -> emitNotice(result.message, isError = true)
         }
+        return result
     }
 
     /** Removes another participant; only the host is authorized (mirrored by backend rules). */

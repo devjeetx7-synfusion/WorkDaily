@@ -20,12 +20,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.SubcomposeAsyncImage
+import coil.request.ImageRequest
 import com.synfusion.attendance.R
 import com.synfusion.attendance.live.model.LiveRoom
 import com.synfusion.attendance.live.ui.components.ViewerCountChip
@@ -511,6 +514,21 @@ private fun LiveNowCard(
     room: LiveRoom,
     onClick: () -> Unit
 ) {
+    val context = LocalContext.current
+
+    val previewImageUrl = remember(room.thumbnailUrl, room.creatorAvatar, room.youtubeVideoId, room.watchPartyState, room.type) {
+        val ytThumb = room.youtubeVideoId?.takeIf { it.isNotBlank() }?.let { "https://img.youtube.com/vi/$it/hqdefault.jpg" }
+            ?: room.watchPartyState?.playlist?.firstOrNull()?.thumbnailUrl?.takeIf { it.isNotBlank() }
+
+        when {
+            room.type == com.synfusion.attendance.live.model.LiveRoomType.YOUTUBE_WATCH_PARTY && !ytThumb.isNullOrBlank() -> ytThumb
+            !room.thumbnailUrl.isNullOrEmpty() -> room.thumbnailUrl
+            !ytThumb.isNullOrBlank() -> ytThumb
+            !room.creatorAvatar.isNullOrEmpty() -> room.creatorAvatar
+            else -> null
+        }
+    }
+
     Card(
         modifier = Modifier
             .width(150.dp)
@@ -522,20 +540,29 @@ private fun LiveNowCard(
         border = androidx.compose.foundation.BorderStroke(1.dp, RewardsTheme.softBorder)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            // Simulated Video Thumbnail / Dark Gradient Background
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                Color(0xFF1E293B),
-                                Color(0xFF0F172A),
-                                Color(0xFF020617)
-                            )
-                        )
-                    )
-            )
+            // Full-Card Image Preview (Host Avatar / YouTube Thumbnail / Custom Thumbnail)
+            if (!previewImageUrl.isNullOrBlank()) {
+                val request = remember(previewImageUrl) {
+                    ImageRequest.Builder(context)
+                        .data(previewImageUrl)
+                        .crossfade(true)
+                        .build()
+                }
+                SubcomposeAsyncImage(
+                    model = request,
+                    contentDescription = room.title,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                    error = {
+                        DefaultCardGradient()
+                    },
+                    loading = {
+                        DefaultCardGradient()
+                    }
+                )
+            } else {
+                DefaultCardGradient()
+            }
 
             // Top Header: Viewer Count
             Row(
@@ -598,6 +625,23 @@ private fun LiveNowCard(
             }
         }
     }
+}
+
+@Composable
+private fun DefaultCardGradient() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0xFF1E293B),
+                        Color(0xFF0F172A),
+                        Color(0xFF020617)
+                    )
+                )
+            )
+    )
 }
 
 @Composable
