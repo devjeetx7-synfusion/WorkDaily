@@ -141,6 +141,10 @@ object JsonImporter {
                 dailyWage = u.dailyWage,
                 countryCode = u.countryCode,
                 currencyCode = u.currencyCode,
+                gender = u.gender,
+                profession = u.profession,
+                bio = u.bio,
+                dateOfBirth = u.dateOfBirth,
                 createdAt = u.createdAt
             )
         }

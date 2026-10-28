@@ -32,6 +32,10 @@ object JsonExporter {
                     dailyWage = userEntity.dailyWage,
                     countryCode = userEntity.countryCode,
                     currencyCode = userEntity.currencyCode,
+                    gender = userEntity.gender,
+                    profession = userEntity.profession,
+                    bio = userEntity.bio,
+                    dateOfBirth = userEntity.dateOfBirth,
                     createdAt = userEntity.createdAt
                 )
             )
