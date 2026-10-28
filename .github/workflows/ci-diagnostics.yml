@@ -2,7 +2,7 @@ name: CI Diagnostics
 
 # Temporary: reproduces the release build and republishes the failure detail as check
 # annotations / a check run, because Actions logs require sign-in to read.
-# Verification pass 2 (after the LocalContext import fix).
+# Verification pass 3 (after the LocalContext import fix): also reports the BUILD verdict and APK.
 on:
   workflow_dispatch:
   push:
@@ -54,7 +54,7 @@ jobs:
             | while IFS= read -r line; do
                 escaped=$(printf '%s' "$line" | sed -e 's/%/%25/g' -e 's/\r//g')
                 echo "::error title=Gradle::$escaped"
-              done
+              done || true
 
       - name: Publish failure detail as a check run
         if: always()
@@ -65,7 +65,9 @@ jobs:
           SHA: ${{ github.sha }}
         run: |
           python3 - <<'PY' > payload.json
+          import glob
           import json
+          import os
 
           try:
               with open("build-output.log", errors="replace") as handle:
@@ -76,15 +78,23 @@ jobs:
           keys = ("e: ", "error:", "FAILURE:", "What went wrong", "FAILED",
                   "Caused by:", "Unresolved reference", "Compilation error", "Lint found")
           interesting = [line for line in lines if any(key in line for key in keys)]
-          text = "\n".join(interesting[-80:]) if interesting else "\n".join(lines[-80:])
+          detail = "\n".join(interesting[-80:]) if interesting else "\n".join(lines[-80:])
+          verdict = next((line for line in reversed(lines) if line.startswith("BUILD ")), "(no BUILD line)")
+          apks = glob.glob(
+              "android-offline-attendance-app/app/build/outputs/apk/release/**/*.apk",
+              recursive=True,
+          )
+          apk_info = "\n".join(f"{path}  {os.path.getsize(path)} bytes" for path in apks) or "no APK produced"
+          header = f"verdict: {verdict}\nAPK: {apk_info}\n\n"
+          text = header + detail + "\n\n--- tail ---\n" + "\n".join(lines[-15:])
 
           print(json.dumps({
               "name": "Build diagnostics",
-              "head_sha": __import__("os").environ["SHA"],
+              "head_sha": os.environ["SHA"],
               "status": "completed",
               "conclusion": "neutral",
               "output": {
-                  "title": "Gradle failure detail",
+                  "title": "Gradle build verdict",
                   "summary": text[:60000],
               },
           }))
