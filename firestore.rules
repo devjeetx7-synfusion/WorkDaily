@@ -174,7 +174,7 @@ service cloud.firestore {
     // live_rooms/{roomId}                               room document (host owned)
     // live_rooms/{roomId}/members/{uid}                 presence/membership (uid-keyed)
     // live_rooms/{roomId}/watch_party/state             shared playback state (host only)
-    // live_rooms/{roomId}/watch_party/playlist/{itemId} playlist items (host only)
+    // live_rooms/{roomId}/watch_party_playlist/{itemId} playlist items (host only)
     // live_rooms/{roomId}/messages/{clientMessageId}    persistent chat (members only)
     // ---------------------------------------------------------------------------------------
 
@@ -251,7 +251,9 @@ service cloud.firestore {
       }
 
       // Playlist queue: host only writes, members read.
-      match /watch_party/playlist/{itemId} {
+      // (Its own collection: a Firestore path alternates collection/document, so the queue cannot
+      // be a sibling subcollection of the `state` document under `watch_party`.)
+      match /watch_party_playlist/{itemId} {
         allow get, list: if isRoomMember(roomId) || isLiveRoomHost(roomId);
 
         allow create: if isAuthenticated()

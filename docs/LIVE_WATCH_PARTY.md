@@ -65,7 +65,7 @@ concurrent writers with different schemas.
 live_rooms/{roomId}                                  room + host profile snapshot + isLive flag
 live_rooms/{roomId}/members/{uid}                    presence & membership (document id == uid)
 live_rooms/{roomId}/watch_party/state                shared playback state (single document)
-live_rooms/{roomId}/watch_party/playlist/{videoId}   playlist rows (one document per video)
+live_rooms/{roomId}/watch_party_playlist/{videoId}   playlist rows (one document per video)
 live_rooms/{roomId}/messages/{clientMessageId}       persistent chat (idempotent document id)
 ```
 
@@ -87,7 +87,7 @@ live_rooms/{roomId}/messages/{clientMessageId}       persistent chat (idempotent
 | `live_rooms/{id}` | any authenticated user | create: only with `hostUserId == creatorId == auth.uid` and `isLive == true`; update/delete: persisted host only, `hostUserId`/`creatorId` immutable |
 | `.../members/{uid}` | room members + host | create/update: `uid == auth.uid` only, `role` must be `VIEWER` unless the writer is the persisted host, room must be live; delete: self or host |
 | `.../watch_party/state` | members + host | host only, live room only, `hostUserId == auth.uid`, `revision` int > 0 |
-| `.../watch_party/playlist/{videoId}` | members + host | create/delete host only, `addedByUserId == auth.uid`, 11-char `videoId`; updates denied |
+| `.../watch_party_playlist/{videoId}` | members + host | create/delete host only, `addedByUserId == auth.uid`, 11-char `videoId`; updates denied |
 | `.../messages/{clientMessageId}` | members only | create: member only, `senderId == auth.uid`, `roomId` matches, `clientMessageId == messageId`, 1..500 chars, `timestamp == request.time`; update/delete denied |
 
 The previous rules allowed a room update when **either** the old or new document claimed
