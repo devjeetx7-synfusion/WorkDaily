@@ -377,8 +377,16 @@ fun PrivateChatScreen(
             msg.senderUid != viewerUid && msg.status != MessageStatus.READ
         }
         if (latestUnreadIncoming != null && latestUnreadIncoming.id != lastMarkedUnreadId) {
-            lastMarkedUnreadId = latestUnreadIncoming.id
-            chatRepo.markMessagesAsRead(conversationId, viewerUid)
+            // Retry on a later emission if the Firestore write fails; don't mark it locally
+            // before the repository confirms success.
+            when (chatRepo.markMessagesAsRead(conversationId, viewerUid)) {
+                is ProfileOperationResult.Success -> {
+                    lastMarkedUnreadId = latestUnreadIncoming.id
+                }
+                is ProfileOperationResult.Error -> {
+                    // Keep the ID unmarked so a subsequent message/status emission can retry.
+                }
+            }
         }
     }
 
