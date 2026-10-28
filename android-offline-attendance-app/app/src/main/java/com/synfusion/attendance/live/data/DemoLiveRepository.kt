@@ -693,6 +693,169 @@ class DemoLiveRepository(context: Context? = null) {
         }
     }
 
+    fun addVideoToPlaylist(roomId: String, videoUrl: String, title: String = ""): Boolean {
+        val currentRooms = _liveRooms.value
+        val room = currentRooms.find { it.id == roomId } ?: return false
+        val videoId = com.synfusion.attendance.live.ui.extractYouTubeVideoId(videoUrl) ?: return false
+        val playlistId = com.synfusion.attendance.live.ui.extractYouTubePlaylistId(videoUrl)
+
+        val currentState = room.watchPartyState ?: WatchPartyState(roomId = roomId, hostUserId = room.hostUserId)
+        val existingPlaylist = currentState.playlist.toMutableList()
+
+        // Avoid duplicate exact video IDs if already in playlist
+        if (existingPlaylist.any { it.videoId == videoId }) {
+            return false
+        }
+
+        val newItem = WatchPartyPlaylistItem(
+            id = "item_" + UUID.randomUUID().toString().take(8),
+            videoId = videoId,
+            videoUrl = videoUrl,
+            title = title.ifBlank { "YouTube Video ($videoId)" },
+            thumbnailUrl = "https://img.youtube.com/vi/$videoId/hqdefault.jpg",
+            addedByUserId = "creator_me",
+            addedByUserName = "Host"
+        )
+        existingPlaylist.add(newItem)
+
+        val isActiveEmpty = currentState.activePlaylistItemId == null || currentState.videoId.isBlank()
+        val updatedState = currentState.copy(
+            playlist = existingPlaylist,
+            videoId = if (isActiveEmpty) videoId else currentState.videoId,
+            activePlaylistItemId = if (isActiveEmpty) newItem.id else currentState.activePlaylistItemId,
+            status = if (isActiveEmpty) WatchPartyPlaybackStatus.UNSTARTED else currentState.status,
+            revision = currentState.revision + 1L,
+            updatedAtMillis = System.currentTimeMillis()
+        )
+
+        val updatedRoom = room.copy(
+            youtubeVideoId = updatedState.videoId,
+            youtubeVideoUrl = videoUrl,
+            youtubePlaylistId = playlistId ?: room.youtubePlaylistId,
+            watchPartyState = updatedState
+        )
+        _liveRooms.value = currentRooms.map { if (it.id == roomId) updatedRoom else it }
+        if (_activeRoom.value?.id == roomId) {
+            _activeRoom.value = updatedRoom
+        }
+
+        repositoryScope.launch {
+            firestoreLiveRepository.publishWatchPartyState(roomId, updatedState)
+        }
+        return true
+    }
+
+    fun removeVideoFromPlaylist(roomId: String, playlistItemId: String): Boolean {
+        val currentRooms = _liveRooms.value
+        val room = currentRooms.find { it.id == roomId } ?: return false
+        val currentState = room.watchPartyState ?: return false
+
+        val updatedList = currentState.playlist.filterNot { it.id == playlistItemId }
+        val wasActive = currentState.activePlaylistItemId == playlistItemId
+        val nextActive = if (wasActive) updatedList.firstOrNull() else updatedList.find { it.id == currentState.activePlaylistItemId }
+
+        val updatedState = currentState.copy(
+            playlist = updatedList,
+            activePlaylistItemId = nextActive?.id,
+            videoId = nextActive?.videoId ?: if (wasActive) "" else currentState.videoId,
+            status = if (wasActive && nextActive != null) WatchPartyPlaybackStatus.UNSTARTED else if (wasActive) WatchPartyPlaybackStatus.ENDED else currentState.status,
+            revision = currentState.revision + 1L,
+            updatedAtMillis = System.currentTimeMillis()
+        )
+
+        val updatedRoom = room.copy(
+            youtubeVideoId = updatedState.videoId,
+            watchPartyState = updatedState
+        )
+        _liveRooms.value = currentRooms.map { if (it.id == roomId) updatedRoom else it }
+        if (_activeRoom.value?.id == roomId) {
+            _activeRoom.value = updatedRoom
+        }
+
+        repositoryScope.launch {
+            firestoreLiveRepository.publishWatchPartyState(roomId, updatedState)
+        }
+        return true
+    }
+
+    fun selectPlaylistItem(roomId: String, playlistItemId: String): Boolean {
+        val currentRooms = _liveRooms.value
+        val room = currentRooms.find { it.id == roomId } ?: return false
+        val currentState = room.watchPartyState ?: return false
+        val targetItem = currentState.playlist.find { it.id == playlistItemId } ?: return false
+
+        val updatedState = currentState.copy(
+            activePlaylistItemId = targetItem.id,
+            videoId = targetItem.videoId,
+            status = WatchPartyPlaybackStatus.PLAYING,
+            positionSeconds = 0f,
+            revision = currentState.revision + 1L,
+            updatedAtMillis = System.currentTimeMillis()
+        )
+
+        val updatedRoom = room.copy(
+            youtubeVideoId = targetItem.videoId,
+            youtubeVideoUrl = targetItem.videoUrl,
+            watchPartyState = updatedState
+        )
+        _liveRooms.value = currentRooms.map { if (it.id == roomId) updatedRoom else it }
+        if (_activeRoom.value?.id == roomId) {
+            _activeRoom.value = updatedRoom
+        }
+
+        repositoryScope.launch {
+            firestoreLiveRepository.publishWatchPartyState(roomId, updatedState)
+        }
+        return true
+    }
+
+    fun turnOffWatchParty(roomId: String): Boolean {
+        val currentRooms = _liveRooms.value
+        val room = currentRooms.find { it.id == roomId } ?: return false
+        val currentState = room.watchPartyState ?: WatchPartyState(roomId = roomId, hostUserId = room.hostUserId)
+
+        val updatedState = currentState.copy(
+            isTurnedOff = true,
+            status = WatchPartyPlaybackStatus.ENDED,
+            revision = currentState.revision + 1L,
+            updatedAtMillis = System.currentTimeMillis()
+        )
+
+        val updatedRoom = room.copy(watchPartyState = updatedState)
+        _liveRooms.value = currentRooms.map { if (it.id == roomId) updatedRoom else it }
+        if (_activeRoom.value?.id == roomId) {
+            _activeRoom.value = updatedRoom
+        }
+
+        repositoryScope.launch {
+            firestoreLiveRepository.publishWatchPartyState(roomId, updatedState)
+        }
+        return true
+    }
+
+    fun toggleMuteWatchParty(roomId: String): Boolean {
+        val currentRooms = _liveRooms.value
+        val room = currentRooms.find { it.id == roomId } ?: return false
+        val currentState = room.watchPartyState ?: WatchPartyState(roomId = roomId, hostUserId = room.hostUserId)
+
+        val updatedState = currentState.copy(
+            isMuted = !currentState.isMuted,
+            revision = currentState.revision + 1L,
+            updatedAtMillis = System.currentTimeMillis()
+        )
+
+        val updatedRoom = room.copy(watchPartyState = updatedState)
+        _liveRooms.value = currentRooms.map { if (it.id == roomId) updatedRoom else it }
+        if (_activeRoom.value?.id == roomId) {
+            _activeRoom.value = updatedRoom
+        }
+
+        repositoryScope.launch {
+            firestoreLiveRepository.publishWatchPartyState(roomId, updatedState)
+        }
+        return true
+    }
+
     fun startLiveStream(
         title: String,
         category: String,
@@ -707,6 +870,18 @@ class DemoLiveRepository(context: Context? = null) {
         youtubePlaylistId: String? = null
     ): LiveRoom {
         val roomId = "room_" + UUID.randomUUID().toString().take(8)
+        val initialPlaylistItem = if (!youtubeVideoId.isNullOrBlank()) {
+            WatchPartyPlaylistItem(
+                id = "item_1",
+                videoId = youtubeVideoId,
+                videoUrl = youtubeVideoUrl ?: "https://www.youtube.com/watch?v=$youtubeVideoId",
+                title = "YouTube Video ($youtubeVideoId)",
+                thumbnailUrl = "https://img.youtube.com/vi/$youtubeVideoId/hqdefault.jpg",
+                addedByUserId = "creator_me",
+                addedByUserName = "Host"
+            )
+        } else null
+
         val initialWatchPartyState = if (type == LiveRoomType.YOUTUBE_WATCH_PARTY && (!youtubeVideoId.isNullOrBlank() || !youtubePlaylistId.isNullOrBlank())) {
             WatchPartyState(
                 roomId = roomId,
@@ -716,7 +891,9 @@ class DemoLiveRepository(context: Context? = null) {
                 positionSeconds = 0f,
                 updatedAtMillis = System.currentTimeMillis(),
                 hostUserId = "creator_me",
-                revision = 1L
+                revision = 1L,
+                playlist = if (initialPlaylistItem != null) listOf(initialPlaylistItem) else emptyList(),
+                activePlaylistItemId = initialPlaylistItem?.id
             )
         } else null
 

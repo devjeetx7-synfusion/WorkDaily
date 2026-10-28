@@ -6,6 +6,7 @@ import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.SetOptions
 import com.synfusion.attendance.live.model.ChatMessage
 import com.synfusion.attendance.live.model.WatchPartyPlaybackStatus
+import com.synfusion.attendance.live.model.WatchPartyPlaylistItem
 import com.synfusion.attendance.live.model.WatchPartyState
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -44,6 +45,22 @@ class FirestoreLiveRepository(
             if (wpMap != null) {
                 val statusStr = wpMap["status"] as? String ?: WatchPartyPlaybackStatus.UNSTARTED.name
                 val status = try { WatchPartyPlaybackStatus.valueOf(statusStr) } catch (_: Exception) { WatchPartyPlaybackStatus.UNSTARTED }
+
+                val playlistRaw = wpMap["playlist"] as? List<*>
+                val playlistItems = playlistRaw?.mapNotNull { itemRaw ->
+                    val itemMap = itemRaw as? Map<*, *> ?: return@mapNotNull null
+                    WatchPartyPlaylistItem(
+                        id = itemMap["id"] as? String ?: "",
+                        videoId = itemMap["videoId"] as? String ?: "",
+                        videoUrl = itemMap["videoUrl"] as? String ?: "",
+                        title = itemMap["title"] as? String ?: "",
+                        thumbnailUrl = itemMap["thumbnailUrl"] as? String ?: "",
+                        addedByUserId = itemMap["addedByUserId"] as? String ?: "",
+                        addedByUserName = itemMap["addedByUserName"] as? String ?: "Host",
+                        addedAtMillis = (itemMap["addedAtMillis"] as? Number)?.toLong() ?: System.currentTimeMillis()
+                    )
+                } ?: emptyList()
+
                 val state = WatchPartyState(
                     roomId = wpMap["roomId"] as? String ?: roomId,
                     videoId = wpMap["videoId"] as? String ?: "",
@@ -52,7 +69,11 @@ class FirestoreLiveRepository(
                     positionSeconds = (wpMap["positionSeconds"] as? Number)?.toFloat() ?: 0f,
                     updatedAtMillis = (wpMap["updatedAtMillis"] as? Number)?.toLong() ?: System.currentTimeMillis(),
                     hostUserId = wpMap["hostUserId"] as? String ?: "",
-                    revision = (wpMap["revision"] as? Number)?.toLong() ?: 0L
+                    revision = (wpMap["revision"] as? Number)?.toLong() ?: 0L,
+                    playlist = playlistItems,
+                    activePlaylistItemId = wpMap["activePlaylistItemId"] as? String,
+                    isMuted = (wpMap["isMuted"] as? Boolean) ?: false,
+                    isTurnedOff = (wpMap["isTurnedOff"] as? Boolean) ?: false
                 )
                 trySend(state)
             } else {
@@ -72,6 +93,19 @@ class FirestoreLiveRepository(
             val firestore = firestoreSupplier()
             val docRef = firestore.collection("live_rooms").document(roomId)
 
+            val playlistMaps = state.playlist.map { item ->
+                mapOf(
+                    "id" to item.id,
+                    "videoId" to item.videoId,
+                    "videoUrl" to item.videoUrl,
+                    "title" to item.title,
+                    "thumbnailUrl" to item.thumbnailUrl,
+                    "addedByUserId" to item.addedByUserId,
+                    "addedByUserName" to item.addedByUserName,
+                    "addedAtMillis" to item.addedAtMillis
+                )
+            }
+
             val stateMap = mapOf(
                 "roomId" to state.roomId,
                 "videoId" to state.videoId,
@@ -80,7 +114,11 @@ class FirestoreLiveRepository(
                 "positionSeconds" to state.positionSeconds,
                 "updatedAtMillis" to state.updatedAtMillis,
                 "hostUserId" to currentUser.uid,
-                "revision" to state.revision
+                "revision" to state.revision,
+                "playlist" to playlistMaps,
+                "activePlaylistItemId" to state.activePlaylistItemId,
+                "isMuted" to state.isMuted,
+                "isTurnedOff" to state.isTurnedOff
             )
 
             docRef.set(

@@ -145,6 +145,26 @@ class LiveViewModel(application: Application) : AndroidViewModel(application) {
         repository.updateWatchPartyState(roomId, status, positionSeconds)
     }
 
+    fun addVideoToPlaylist(roomId: String, videoUrl: String, title: String = ""): Boolean {
+        return repository.addVideoToPlaylist(roomId, videoUrl, title)
+    }
+
+    fun removeVideoFromPlaylist(roomId: String, playlistItemId: String): Boolean {
+        return repository.removeVideoFromPlaylist(roomId, playlistItemId)
+    }
+
+    fun selectPlaylistItem(roomId: String, playlistItemId: String): Boolean {
+        return repository.selectPlaylistItem(roomId, playlistItemId)
+    }
+
+    fun turnOffWatchParty(roomId: String): Boolean {
+        return repository.turnOffWatchParty(roomId)
+    }
+
+    fun toggleMuteWatchParty(roomId: String): Boolean {
+        return repository.toggleMuteWatchParty(roomId)
+    }
+
     fun startLiveStream(
         title: String,
         category: String,

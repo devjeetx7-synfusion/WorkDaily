@@ -308,4 +308,81 @@ class WorkDailyLiveTest {
         assertEquals(com.synfusion.attendance.live.model.WatchPartyPlaybackStatus.PLAYING, updatedState?.status)
         assertEquals(12.5f, updatedState?.positionSeconds ?: 0f, 0.01f)
     }
+
+    @Test
+    fun testAddVideoToPlaylistAndSelectPlaylistItem() {
+        val room = repository.startLiveStream(
+            title = "Playlist Test Room",
+            category = "Site Safety",
+            type = LiveRoomType.YOUTUBE_WATCH_PARTY,
+            tags = listOf("Playlist"),
+            youtubeVideoId = "dQw4w9WgXcQ"
+        )
+
+        val newVideoUrl = "https://www.youtube.com/watch?v=L_LUpnjgPso"
+        val added = repository.addVideoToPlaylist(room.id, newVideoUrl, "Secondary Safety Demo")
+
+        assertTrue("Adding new valid video to playlist should succeed", added)
+
+        val updatedRoom = repository.liveRooms.value.find { it.id == room.id }
+        val playlist = updatedRoom?.watchPartyState?.playlist ?: emptyList()
+
+        assertEquals("Playlist should contain 2 items", 2, playlist.size)
+        val addedItem = playlist.find { it.videoId == "L_LUpnjgPso" }
+        assertNotNull("Added item should be in playlist", addedItem)
+
+        // Select the new playlist item
+        val selected = repository.selectPlaylistItem(room.id, addedItem!!.id)
+        assertTrue("Selecting playlist item should succeed", selected)
+
+        val roomAfterSelection = repository.liveRooms.value.find { it.id == room.id }
+        assertEquals("L_LUpnjgPso", roomAfterSelection?.watchPartyState?.videoId)
+        assertEquals(addedItem.id, roomAfterSelection?.watchPartyState?.activePlaylistItemId)
+    }
+
+    @Test
+    fun testRemoveActivePlaylistItem() {
+        val room = repository.startLiveStream(
+            title = "Remove Item Room",
+            category = "Site Safety",
+            type = LiveRoomType.YOUTUBE_WATCH_PARTY,
+            tags = listOf("Playlist"),
+            youtubeVideoId = "dQw4w9WgXcQ"
+        )
+
+        repository.addVideoToPlaylist(room.id, "https://www.youtube.com/watch?v=L_LUpnjgPso", "Item 2")
+
+        val stateBefore = repository.liveRooms.value.find { it.id == room.id }?.watchPartyState
+        val initialActiveId = stateBefore?.activePlaylistItemId ?: "item_1"
+
+        // Remove the active item
+        val removed = repository.removeVideoFromPlaylist(room.id, initialActiveId)
+        assertTrue("Removing active playlist item should succeed", removed)
+
+        val stateAfter = repository.liveRooms.value.find { it.id == room.id }?.watchPartyState
+        assertEquals("Playlist should now contain 1 item", 1, stateAfter?.playlist?.size)
+        assertEquals("L_LUpnjgPso", stateAfter?.videoId)
+    }
+
+    @Test
+    fun testTurnOffAndMuteWatchParty() {
+        val room = repository.startLiveStream(
+            title = "Control Test Room",
+            category = "Site Safety",
+            type = LiveRoomType.YOUTUBE_WATCH_PARTY,
+            tags = listOf("Controls"),
+            youtubeVideoId = "dQw4w9WgXcQ"
+        )
+
+        // Test Mute
+        repository.toggleMuteWatchParty(room.id)
+        val stateAfterMute = repository.liveRooms.value.find { it.id == room.id }?.watchPartyState
+        assertTrue("Watch Party should be muted", stateAfterMute?.isMuted == true)
+
+        // Test Turn Off
+        repository.turnOffWatchParty(room.id)
+        val stateAfterTurnOff = repository.liveRooms.value.find { it.id == room.id }?.watchPartyState
+        assertTrue("Watch Party should be turned off", stateAfterTurnOff?.isTurnedOff == true)
+        assertEquals(com.synfusion.attendance.live.model.WatchPartyPlaybackStatus.ENDED, stateAfterTurnOff?.status)
+    }
 }
