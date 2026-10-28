@@ -131,6 +131,10 @@ class InMemoryLiveRoomBackend(
 
     override fun observeRoom(roomId: String): Flow<LiveRoom?> = rooms.map { it[roomId] }
 
+    override fun observeActiveRooms(): Flow<List<LiveRoom>> = rooms.map { map ->
+        map.values.filter { it.isLive && it.endedAtMillis == null && it.isPublic }
+    }
+
     override suspend fun loadRoom(roomId: String): LiveOperationResult<LiveRoom?> =
         LiveOperationResult.Success(rooms.value[roomId])
 

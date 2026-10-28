@@ -87,8 +87,43 @@ class LiveViewModel(application: Application) : AndroidViewModel(application) {
         super.onCleared()
     }
 
-    val liveRooms: StateFlow<List<LiveRoom>> = repository.liveRooms
-    val creators: StateFlow<List<LiveCreator>> = repository.creators
+    /** Realtime active rooms stream from Firestore backend. */
+    val backendActiveRooms: StateFlow<List<LiveRoom>> = backend.observeActiveRooms()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /**
+     * Combined room list for discovery and feeds:
+     * Real backend rooms take precedence, with demo/sample rooms appended (marked with isDemoRoom = true)
+     * so demo fixtures remain available without polluting real active room sessions.
+     */
+    val liveRooms: StateFlow<List<LiveRoom>> = kotlinx.coroutines.flow.combine(
+        backendActiveRooms,
+        repository.liveRooms
+    ) { realRooms, repoRooms ->
+        val realIds = realRooms.map { it.id }.toSet()
+        val realHostUids = realRooms.map { it.hostUserId }.toSet()
+        val demoRooms = repoRooms.filter { room ->
+            room.isDemoRoom && !realIds.contains(room.id) && !realHostUids.contains(room.creatorId)
+        }
+        realRooms + demoRooms
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, repository.liveRooms.value)
+
+    /**
+     * Creators list with real-time active room state updated from real backend streams.
+     */
+    val creators: StateFlow<List<LiveCreator>> = kotlinx.coroutines.flow.combine(
+        repository.creators,
+        backendActiveRooms
+    ) { currentCreators, realRooms ->
+        currentCreators.map { creator ->
+            val realRoom = realRooms.find { it.creatorId == creator.id || it.hostUserId == creator.id }
+            if (realRoom != null) {
+                creator.copy(isLiveNow = true, activeRoomId = realRoom.id)
+            } else {
+                creator
+            }
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), repository.creators.value)
     val gifts: StateFlow<List<LiveGift>> = repository.gifts
     val wallet: StateFlow<DemoWallet> = repository.wallet
     val creatorEarning: StateFlow<DemoCreatorEarning> = repository.creatorEarning
@@ -267,7 +302,7 @@ class LiveViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun ensureLiveRoomExists(roomId: String): LiveRoom? =
-        repository.liveRooms.value.firstOrNull { it.id == roomId }
+        liveRooms.value.firstOrNull { it.id == roomId }
 
     // ---------------------------------------------------------------------------------------
     // Session lifecycle
@@ -386,7 +421,7 @@ class LiveViewModel(application: Application) : AndroidViewModel(application) {
             session.hostTurnOn()
         } else {
             // Demo rooms have no persisted state; re-select the current item locally.
-            val room = repository.liveRooms.value.find { it.id == activeRoomId() }
+            val room = liveRooms.value.find { it.id == activeRoomId() }
             val item = room?.watchPartyState?.playlist?.firstOrNull()
             if (item != null) repository.selectPlaylistItem(room.id, item.id)
         }
