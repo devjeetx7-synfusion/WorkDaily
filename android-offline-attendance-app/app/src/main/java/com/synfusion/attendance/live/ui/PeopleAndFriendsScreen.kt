@@ -43,7 +43,6 @@ import com.synfusion.attendance.live.ui.components.FollowButton
 import com.synfusion.attendance.live.ui.components.LivePrimaryEmerald
 import com.synfusion.attendance.live.ui.components.WorkDailyLiveAvatar
 import com.synfusion.attendance.live.viewmodel.LiveViewModel
-import com.synfusion.attendance.online.FollowCounts
 import com.synfusion.attendance.online.ProfileOperationResult
 import com.synfusion.attendance.online.PublicProfile
 import com.synfusion.attendance.online.SocialSessionCache
@@ -60,6 +59,16 @@ import kotlinx.coroutines.launch
 
 private const val PEOPLE_PAGE_STEP = 40
 
+/**
+ * People / Discover screen.
+ *
+ * The Discover (search) experience is shown directly -- there are no Followers / Following tabs.
+ * Follower and Following records, repository methods and profile-level follow functionality are
+ * untouched; only the tab-based navigation on this screen is removed.
+ *
+ * Blocked users are filtered out of search results and recent-search entries are never used to
+ * surface a blocked account.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PeopleAndFriendsScreen(
@@ -95,57 +104,13 @@ fun PeopleAndFriendsScreen(
             .take(8)
     }
 
-    var selectedTabKey by rememberSaveable { mutableStateOf("Discover") }
     var searchQuery by rememberSaveable { mutableStateOf("") }
     var isSearchFocused by remember { mutableStateOf(false) }
 
     val activeViewerUid: String? = currentUserId?.takeIf { it.isNotBlank() }
 
-    val cachedFollowers: List<PublicProfile>? = remember(socialSnapshot, activeViewerUid) {
-        if (activeViewerUid != null && socialSnapshot.ownerUid == activeViewerUid) {
-            socialSnapshot.followersLists[activeViewerUid]?.value?.users
-        } else {
-            null
-        }
-    }
-    val cachedFollowing: List<PublicProfile>? = remember(socialSnapshot, activeViewerUid) {
-        if (activeViewerUid != null && socialSnapshot.ownerUid == activeViewerUid) {
-            socialSnapshot.followingLists[activeViewerUid]?.value?.users
-        } else {
-            null
-        }
-    }
-    val cachedCounts: FollowCounts? = remember(socialSnapshot, activeViewerUid) {
-        if (activeViewerUid != null && socialSnapshot.ownerUid == activeViewerUid) {
-            socialSnapshot.followCounts[activeViewerUid]?.value
-        } else {
-            null
-        }
-    }
-
-    var followersLimit by rememberSaveable(currentUserId) { mutableIntStateOf(PEOPLE_PAGE_STEP) }
-    var followingLimit by rememberSaveable(currentUserId) { mutableIntStateOf(PEOPLE_PAGE_STEP) }
-
-    var followersList by remember(currentUserId) { mutableStateOf<List<PublicProfile>>(cachedFollowers ?: emptyList()) }
-    var followingList by remember(currentUserId) { mutableStateOf<List<PublicProfile>>(cachedFollowing ?: emptyList()) }
-    var followedUids by remember(currentUserId) {
-        mutableStateOf<Set<String>>(
-            if (activeViewerUid != null && socialSnapshot.ownerUid == activeViewerUid) {
-                socialSnapshot.myFollowedUids?.value ?: emptySet()
-            } else {
-                emptySet()
-            }
-        )
-    }
-    var followerUids by remember(currentUserId) {
-        mutableStateOf<Set<String>>(
-            if (activeViewerUid != null && socialSnapshot.ownerUid == activeViewerUid) {
-                socialSnapshot.myFollowerUids?.value ?: emptySet()
-            } else {
-                emptySet()
-            }
-        )
-    }
+    // Blocked users for the current account. Kept in sync with SocialSessionCache so blocked
+    // accounts never surface in search results, recent searches or follow/message rows.
     var blockedUids by remember(currentUserId) {
         mutableStateOf<Set<String>>(
             if (activeViewerUid != null && socialSnapshot.ownerUid == activeViewerUid) {
@@ -155,14 +120,28 @@ fun PeopleAndFriendsScreen(
             }
         )
     }
-    var mutatingRowIds by remember(currentUserId) { mutableStateOf<Set<String>>(emptySet()) }
-
-    var isRelationshipsInitialLoading by remember(currentUserId) {
-        mutableStateOf(activeViewerUid != null && (cachedFollowers == null || cachedFollowing == null))
+    // Users the current account follows -- used only to render the Follow button's correct state.
+    var followedUids by remember(currentUserId) {
+        mutableStateOf<Set<String>>(
+            if (activeViewerUid != null && socialSnapshot.ownerUid == activeViewerUid) {
+                socialSnapshot.myFollowedUids?.value ?: emptySet()
+            } else {
+                emptySet()
+            }
+        )
     }
-    var isRelationshipsRefreshing by remember(currentUserId) { mutableStateOf(false) }
-    var isLoadingMoreRelationships by remember(currentUserId) { mutableStateOf(false) }
-    var relationshipsError by remember(currentUserId) { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(
+        socialSnapshot.myBlockedUids,
+        socialSnapshot.myFollowedUids,
+        socialSnapshot.ownerUid,
+        activeViewerUid
+    ) {
+        if (activeViewerUid != null && socialSnapshot.ownerUid == activeViewerUid) {
+            socialSnapshot.myBlockedUids?.value?.let { blockedUids = it }
+            socialSnapshot.myFollowedUids?.value?.let { followedUids = it }
+        }
+    }
 
     var isSearching by remember { mutableStateOf(false) }
     var searchResults by remember { mutableStateOf<List<PublicProfile>>(emptyList()) }
@@ -173,27 +152,6 @@ fun PeopleAndFriendsScreen(
         mutableStateOf(loadRecentForKey(recentQueriesKey))
     }
     var showAllRecent by rememberSaveable { mutableStateOf(false) }
-
-    // Sync local state immediately whenever SocialSessionCache updates (e.g. optimistic Follow/Unfollow/Block)
-    LaunchedEffect(cachedFollowers) {
-        if (cachedFollowers != null) followersList = cachedFollowers
-    }
-    LaunchedEffect(cachedFollowing) {
-        if (cachedFollowing != null) followingList = cachedFollowing
-    }
-    LaunchedEffect(
-        socialSnapshot.myFollowedUids,
-        socialSnapshot.myFollowerUids,
-        socialSnapshot.myBlockedUids,
-        socialSnapshot.ownerUid,
-        activeViewerUid
-    ) {
-        if (activeViewerUid != null && socialSnapshot.ownerUid == activeViewerUid) {
-            socialSnapshot.myFollowedUids?.value?.let { followedUids = it }
-            socialSnapshot.myFollowerUids?.value?.let { followerUids = it }
-            socialSnapshot.myBlockedUids?.value?.let { blockedUids = it }
-        }
-    }
 
     fun persistRecent(query: String) {
         val clean = query.trim().removePrefix("@").trim()
@@ -214,125 +172,35 @@ fun PeopleAndFriendsScreen(
         preferences.edit().remove(recentQueriesKey).apply()
     }
 
-    suspend fun loadRelationships(
-        targetUid: String? = currentUserId,
-        forceRefresh: Boolean = false,
-        loadingMore: Boolean = false
-    ) {
-        if (targetUid.isNullOrBlank()) {
-            followersList = emptyList()
-            followingList = emptyList()
-            followedUids = emptySet()
-            followerUids = emptySet()
-            blockedUids = emptySet()
-            isRelationshipsInitialLoading = false
-            isRelationshipsRefreshing = false
-            isLoadingMoreRelationships = false
-            relationshipsError = null
-            return
+    /**
+     * Removes every recent-search entry whose text matches a blocked user's display name or
+     * username, so a blocked account cannot be re-opened via recent searches.
+     */
+    fun purgeBlockedFromRecents() {
+        if (blockedUids.isEmpty()) return
+        val snapshot = SocialSessionCache.manager.snapshot.value
+        val blockedLabels = blockedUids.flatMap { uid ->
+            snapshot.profiles[uid]?.value?.let { profile ->
+                listOf(profile.username, profile.displayName).filter { it.isNotBlank() }
+            } ?: emptyList()
         }
-
-        val hasWarmLists = cachedFollowers != null && cachedFollowing != null
-        when {
-            loadingMore -> isLoadingMoreRelationships = true
-            hasWarmLists -> isRelationshipsRefreshing = true
-            else -> isRelationshipsInitialLoading = true
+        if (blockedLabels.isEmpty()) return
+        val updated = recentQueries.filter { recent ->
+            blockedLabels.none { label -> recent.equals(label, ignoreCase = true) }
         }
-        relationshipsError = null
-
-        try {
-            coroutineScope {
-                val blockedDeferred = async<ProfileOperationResult<Set<String>>> {
-                    SocialSessionCache.manager.getBlockedUserIds(targetUid, forceRefresh = forceRefresh)
-                }
-                val followersDeferred = async<ProfileOperationResult<List<PublicProfile>>> {
-                    SocialSessionCache.manager.getFollowersList(
-                        ownerUid = targetUid,
-                        targetUid = targetUid,
-                        limit = followersLimit,
-                        forceRefresh = forceRefresh
-                    )
-                }
-                val followingDeferred = async<ProfileOperationResult<List<PublicProfile>>> {
-                    SocialSessionCache.manager.getFollowingList(
-                        ownerUid = targetUid,
-                        targetUid = targetUid,
-                        limit = followingLimit,
-                        forceRefresh = forceRefresh
-                    )
-                }
-                val countsDeferred = async<ProfileOperationResult<FollowCounts>> {
-                    SocialSessionCache.manager.getFollowCounts(
-                        ownerUid = targetUid,
-                        targetUid = targetUid,
-                        forceRefresh = forceRefresh
-                    )
-                }
-
-                val blockedRes = blockedDeferred.await()
-                if (blockedRes is ProfileOperationResult.Success) {
-                    blockedUids = blockedRes.data
-                }
-
-                val followersRes = followersDeferred.await()
-                val followingRes = followingDeferred.await()
-                countsDeferred.await()
-
-                var firstError: String? = null
-                when (followersRes) {
-                    is ProfileOperationResult.Success -> followersList = followersRes.data
-                    is ProfileOperationResult.Error -> firstError = followersRes.message
-                }
-                when (followingRes) {
-                    is ProfileOperationResult.Success -> {
-                        followingList = followingRes.data
-                        followedUids = followingRes.data.map { it.uid }.toSet()
-                    }
-                    is ProfileOperationResult.Error -> {
-                        if (firstError == null) firstError = followingRes.message
-                    }
-                }
-
-                if (firstError != null && followersList.isEmpty() && followingList.isEmpty()) {
-                    relationshipsError = firstError
-                }
-            }
-        } finally {
-            isRelationshipsInitialLoading = false
-            isRelationshipsRefreshing = false
-            isLoadingMoreRelationships = false
+        if (updated.size != recentQueries.size) {
+            recentQueries = updated
+            preferences.edit().putString(recentQueriesKey, updated.joinToString("\n")).apply()
         }
     }
 
-    LaunchedEffect(currentUserId) {
-        loadRelationships(currentUserId, forceRefresh = false)
-    }
-
-    DisposableEffect(lifecycleOwner, currentUserId) {
-        var handledInitialResume = false
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                if (!handledInitialResume) {
-                    handledInitialResume = true
-                } else if (!currentUserId.isNullOrBlank()) {
-                    scope.launch {
-                        loadRelationships(currentUserId, forceRefresh = false)
-                    }
-                }
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-        }
+    // Purge blocked users from recent searches whenever the blocked set changes.
+    LaunchedEffect(blockedUids) {
+        purgeBlockedFromRecents()
     }
 
     // Debounced, cancellable search using SocialSessionCache (immediate hit on cached queries)
-    LaunchedEffect(searchQuery, selectedTabKey, currentUserId, searchRetryNonce) {
-        if (selectedTabKey != "Discover") {
-            isSearching = false
-            return@LaunchedEffect
-        }
+    LaunchedEffect(searchQuery, currentUserId, searchRetryNonce) {
         val normalized = searchQuery.trim().removePrefix("@").trim()
         if (normalized.isBlank()) {
             searchResults = emptyList()
@@ -379,66 +247,14 @@ fun PeopleAndFriendsScreen(
         }
     }
 
-    val followersCountDisplay: Int? = cachedCounts?.followerCount
-    val followingCountDisplay: Int? = cachedCounts?.followingCount
-
-    val followersTabTitle = if (followersCountDisplay != null) {
-        "Followers ($followersCountDisplay)"
-    } else if (currentUserId.isNullOrBlank()) {
-        "Followers (0)"
-    } else {
-        "Followers"
-    }
-
-    val followingTabTitle = if (followingCountDisplay != null) {
-        "Following ($followingCountDisplay)"
-    } else if (currentUserId.isNullOrBlank()) {
-        "Following (0)"
-    } else {
-        "Following"
-    }
-
-    val tabEntries = listOf(
-        "Discover" to "Discover",
-        "Followers" to followersTabTitle,
-        "Following" to followingTabTitle
-    )
-
     val cleanFilterQuery = remember(searchQuery) { searchQuery.trim().removePrefix("@").trim() }
 
-    val displayedUsers = remember(
-        selectedTabKey,
-        searchResults,
-        followersList,
-        followingList,
-        cleanFilterQuery,
-        blockedUids
-    ) {
-        val rawList = when (selectedTabKey) {
-            "Followers" -> if (cleanFilterQuery.isBlank()) followersList else followersList.filter {
-                it.displayName.contains(cleanFilterQuery, ignoreCase = true) ||
-                    it.username.contains(cleanFilterQuery, ignoreCase = true)
-            }
-            "Following" -> if (cleanFilterQuery.isBlank()) followingList else followingList.filter {
-                it.displayName.contains(cleanFilterQuery, ignoreCase = true) ||
-                    it.username.contains(cleanFilterQuery, ignoreCase = true)
-            }
-            else -> searchResults
-        }
-        rawList.filterNot { blockedUids.contains(it.uid) }
+    // Search results filtered client-side: blocklisted accounts are never shown.
+    val displayedUsers = remember(searchResults, cleanFilterQuery, blockedUids) {
+        searchResults
+            .filter { it.displayName.contains(cleanFilterQuery, ignoreCase = true) || it.username.contains(cleanFilterQuery, ignoreCase = true) }
+            .filterNot { blockedUids.contains(it.uid) }
     }
-
-    val canLoadMoreFollowers = selectedTabKey == "Followers" &&
-        cleanFilterQuery.isBlank() &&
-        followersCountDisplay != null &&
-        followersList.size >= followersLimit &&
-        followersCountDisplay > followersList.size
-
-    val canLoadMoreFollowing = selectedTabKey == "Following" &&
-        cleanFilterQuery.isBlank() &&
-        followingCountDisplay != null &&
-        followingList.size >= followingLimit &&
-        followingCountDisplay > followingList.size
 
     val screenBackground = MaterialTheme.colorScheme.background
 
@@ -484,46 +300,7 @@ fun PeopleAndFriendsScreen(
                 )
             }
 
-            // 2. Compact Segmented Tabs (Discover / Followers / Following)
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .clip(RoundedCornerShape(13.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
-                    .padding(3.dp),
-                horizontalArrangement = Arrangement.spacedBy(3.dp)
-            ) {
-                tabEntries.forEach { (key, label) ->
-                    val selected = selectedTabKey == key
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(if (selected) LivePrimaryEmerald else Color.Transparent)
-                            .clickable { selectedTabKey = key }
-                            .padding(horizontal = 6.dp, vertical = 8.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = label,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            fontSize = 12.sp,
-                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-                            color = if (selected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
-                            style = TextStyle(platformStyle = PlatformTextStyle(includeFontPadding = false))
-                        )
-                    }
-                }
-            }
-
-            // 3. Compact Rounded Search Bar
-            val searchPlaceholder = when (selectedTabKey) {
-                "Followers" -> "Filter followers…"
-                "Following" -> "Filter following…"
-                else -> "Search name or @username"
-            }
+            // 2. Compact Rounded Search Bar
             val searchBorderColor = when {
                 isSearchFocused -> LivePrimaryEmerald.copy(alpha = 0.7f)
                 searchQuery.isNotEmpty() -> LivePrimaryEmerald.copy(alpha = 0.42f)
@@ -561,7 +338,7 @@ fun PeopleAndFriendsScreen(
                     )
                     if (searchQuery.isEmpty()) {
                         Text(
-                            text = searchPlaceholder,
+                            text = "Search name or @username",
                             style = fieldTextStyle.copy(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f)
                             ),
@@ -582,9 +359,7 @@ fun PeopleAndFriendsScreen(
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                         keyboardActions = KeyboardActions(
                             onSearch = {
-                                if (selectedTabKey == "Discover") {
-                                    persistRecent(searchQuery)
-                                }
+                                persistRecent(searchQuery)
                                 keyboardController?.hide()
                             }
                         )
@@ -592,7 +367,7 @@ fun PeopleAndFriendsScreen(
                 }
 
                 when {
-                    selectedTabKey == "Discover" && isSearching -> {
+                    isSearching -> {
                         WorkDailyPulseDots(
                             color = LivePrimaryEmerald,
                             dotSize = 4.5.dp,
@@ -620,23 +395,9 @@ fun PeopleAndFriendsScreen(
             }
 
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.32f))
-            WorkDailySubtleRefreshBar(
-                visible = isRelationshipsRefreshing || (selectedTabKey != "Discover" && isLoadingMoreRelationships)
-            )
         }
 
-        // 4. Main Content Area (Initial Skeleton / Recent Searches / Empty / Retry / User Rows)
-        val isActiveRelationshipTabInitialLoad =
-            selectedTabKey != "Discover" && isRelationshipsInitialLoading && displayedUsers.isEmpty()
-
-        val isDiscoverColdSearching =
-            selectedTabKey == "Discover" && cleanFilterQuery.isNotEmpty() && isSearching && searchResults.isEmpty()
-
-        val activeError: String? = when (selectedTabKey) {
-            "Discover" -> if (cleanFilterQuery.isNotEmpty() && searchResults.isEmpty()) searchError else null
-            else -> if (displayedUsers.isEmpty()) relationshipsError else null
-        }
-
+        // 3. Main Content Area (Recent Searches / Empty / Retry / User Rows)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -644,8 +405,8 @@ fun PeopleAndFriendsScreen(
                 .imePadding()
         ) {
             when {
-                // Discover idle state: Recent Searches (scrollable) or clean prompt
-                selectedTabKey == "Discover" && cleanFilterQuery.isEmpty() -> {
+                // Idle state: Recent Searches (scrollable) or clean prompt
+                cleanFilterQuery.isEmpty() -> {
                     if (recentQueries.isEmpty()) {
                         Column(
                             modifier = Modifier
@@ -791,7 +552,7 @@ fun PeopleAndFriendsScreen(
                 }
 
                 // Cold initial skeleton (only when data is not yet available)
-                isDiscoverColdSearching || isActiveRelationshipTabInitialLoad -> {
+                isSearching && searchResults.isEmpty() -> {
                     UserRowSkeletonList(
                         rowCount = 6,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
@@ -799,18 +560,12 @@ fun PeopleAndFriendsScreen(
                 }
 
                 // Clean retry state on failure
-                activeError != null -> {
+                searchError != null && searchResults.isEmpty() -> {
                     WorkDailyErrorRetryState(
                         title = "Couldn't load people",
-                        message = activeError,
+                        message = searchError,
                         onRetry = {
-                            if (selectedTabKey == "Discover") {
-                                searchRetryNonce += 1
-                            } else {
-                                scope.launch {
-                                    loadRelationships(currentUserId, forceRefresh = true)
-                                }
-                            }
+                            searchRetryNonce += 1
                         }
                     )
                 }
@@ -831,27 +586,15 @@ fun PeopleAndFriendsScreen(
                             modifier = Modifier.size(44.dp)
                         )
                         Spacer(modifier = Modifier.height(10.dp))
-                        val emptyTitle = when {
-                            selectedTabKey == "Discover" -> "No matching accounts"
-                            cleanFilterQuery.isNotEmpty() -> "No matches in $selectedTabKey"
-                            selectedTabKey == "Followers" -> "No followers yet"
-                            else -> "Not following anyone yet"
-                        }
-                        val emptySubtitle = when {
-                            selectedTabKey == "Discover" -> "Check the spelling or search by @username."
-                            cleanFilterQuery.isNotEmpty() -> "Try clearing the filter above."
-                            selectedTabKey == "Followers" -> "Members who follow you will appear here."
-                            else -> "Use Discover to find and follow people on WorkDaily."
-                        }
                         Text(
-                            text = emptyTitle,
+                            text = "No matching accounts",
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = emptySubtitle,
+                            text = "Check the spelling or search by @username.",
                             fontSize = 13.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -869,13 +612,6 @@ fun PeopleAndFriendsScreen(
                             val activeUid = currentUserId?.takeIf { it.isNotBlank() }
                             val isSelfRow = activeUid != null && activeUid == user.uid
                             val isFollowingUser = followedUids.contains(user.uid)
-                            val followsMe = followerUids.contains(user.uid)
-                            val isMutual = isFollowingUser && followsMe
-                            val isRowBusy = mutatingRowIds.contains(user.uid) || (
-                                activeUid != null &&
-                                    socialSnapshot.ownerUid == activeUid &&
-                                    socialSnapshot.activeMutations.contains("follow:$activeUid:${user.uid}")
-                                )
 
                             val displayName = user.displayName.ifBlank { "WorkDaily Member" }
                             val handle = if (user.username.isNotBlank()) "@${user.username}" else "@member"
@@ -885,9 +621,7 @@ fun PeopleAndFriendsScreen(
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(12.dp))
                                     .clickable {
-                                        if (selectedTabKey == "Discover") {
-                                            persistRecent(user.username.ifBlank { user.displayName })
-                                        }
+                                        persistRecent(user.username.ifBlank { user.displayName })
                                         onNavigateProfile(user.uid)
                                     }
                                     .padding(vertical = 9.dp, horizontal = 2.dp),
@@ -900,9 +634,7 @@ fun PeopleAndFriendsScreen(
                                     isLive = false,
                                     showBadge = false,
                                     onClick = {
-                                        if (selectedTabKey == "Discover") {
-                                            persistRecent(user.username.ifBlank { user.displayName })
-                                        }
+                                        persistRecent(user.username.ifBlank { user.displayName })
                                         onNavigateProfile(user.uid)
                                     }
                                 )
@@ -950,76 +682,33 @@ fun PeopleAndFriendsScreen(
                                             modifier = Modifier.weight(1f, fill = false),
                                             style = TextStyle(platformStyle = PlatformTextStyle(includeFontPadding = false))
                                         )
-
-                                        val relationHint = when {
-                                            isSelfRow -> null
-                                            isMutual -> "• Friends"
-                                            followsMe -> "• Follows you"
-                                            user.profession.isNotBlank() -> "• ${user.profession}"
-                                            else -> null
-                                        }
-                                        if (relationHint != null) {
-                                            Text(
-                                                text = relationHint,
-                                                fontSize = 11.sp,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis,
-                                                style = TextStyle(platformStyle = PlatformTextStyle(includeFontPadding = false))
-                                            )
-                                        }
                                     }
                                 }
 
-                                if (activeUid != null && !isSelfRow) {
+                                if (activeUid != null && !isSelfRow && !blockedUids.contains(user.uid)) {
                                     Spacer(modifier = Modifier.width(8.dp))
 
                                     FollowButton(
                                         isFollowing = isFollowingUser,
-                                        isLoading = isRowBusy,
                                         height = 34.dp,
                                         minWidth = 86.dp,
                                         onToggle = {
-                                            if (isRowBusy || user.uid.isBlank()) return@FollowButton
-                                            val wasFollowing = isFollowingUser
-                                            val wantFollow = !wasFollowing
-
-                                            // Row-scoped optimistic update (synced via SocialSessionCache)
-                                            mutatingRowIds = mutatingRowIds + user.uid
-                                            followedUids = if (wantFollow) {
-                                                followedUids + user.uid
-                                            } else {
-                                                followedUids - user.uid
-                                            }
-
+                                            if (user.uid.isBlank()) return@FollowButton
+                                            val wantFollow = !isFollowingUser
                                             scope.launch {
-                                                try {
-                                                    val result: ProfileOperationResult<Boolean>? = SocialSessionCache.manager.setFollowState(
+                                                val result: ProfileOperationResult<Boolean>? =
+                                                    SocialSessionCache.manager.setFollowState(
                                                         actorUid = activeUid,
                                                         targetUid = user.uid,
                                                         wantFollow = wantFollow,
                                                         targetProfileHint = user
                                                     )
-                                                    when (result) {
-                                                        is ProfileOperationResult.Success -> Unit
-                                                        is ProfileOperationResult.Error -> {
-                                                            followedUids = if (wasFollowing) {
-                                                                followedUids + user.uid
-                                                            } else {
-                                                                followedUids - user.uid
-                                                            }
-                                                            Toast.makeText(context, result.message, Toast.LENGTH_SHORT).show()
-                                                        }
-                                                        null -> {
-                                                            followedUids = if (wasFollowing) {
-                                                                followedUids + user.uid
-                                                            } else {
-                                                                followedUids - user.uid
-                                                            }
-                                                        }
+                                                when (result) {
+                                                    is ProfileOperationResult.Success -> Unit
+                                                    is ProfileOperationResult.Error -> {
+                                                        Toast.makeText(context, result.message, Toast.LENGTH_SHORT).show()
                                                     }
-                                                } finally {
-                                                    mutatingRowIds = mutatingRowIds - user.uid
+                                                    null -> Unit
                                                 }
                                             }
                                         }
@@ -1029,9 +718,7 @@ fun PeopleAndFriendsScreen(
 
                                     IconButton(
                                         onClick = {
-                                            if (selectedTabKey == "Discover") {
-                                                persistRecent(user.username.ifBlank { user.displayName })
-                                            }
+                                            persistRecent(user.username.ifBlank { user.displayName })
                                             onNavigatePrivateChat(user.uid)
                                         },
                                         modifier = Modifier.size(34.dp)
@@ -1039,7 +726,7 @@ fun PeopleAndFriendsScreen(
                                         Icon(
                                             imageVector = Icons.AutoMirrored.Filled.Chat,
                                             contentDescription = "Message",
-                                            tint = if (isMutual) {
+                                            tint = if (isFollowingUser) {
                                                 LivePrimaryEmerald
                                             } else {
                                                 MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
@@ -1048,50 +735,10 @@ fun PeopleAndFriendsScreen(
                                         )
                                     }
                                 }
-                            }
 
-                            HorizontalDivider(
-                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)
-                            )
-                        }
-
-                        if (canLoadMoreFollowers || canLoadMoreFollowing) {
-                            item(key = "load_more_people") {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 12.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    OutlinedButton(
-                                        onClick = {
-                                            if (!isLoadingMoreRelationships) {
-                                                if (selectedTabKey == "Followers") {
-                                                    followersLimit += PEOPLE_PAGE_STEP
-                                                } else if (selectedTabKey == "Following") {
-                                                    followingLimit += PEOPLE_PAGE_STEP
-                                                }
-                                                scope.launch {
-                                                    loadRelationships(
-                                                        targetUid = currentUserId,
-                                                        forceRefresh = true,
-                                                        loadingMore = true
-                                                    )
-                                                }
-                                            }
-                                        },
-                                        enabled = !isLoadingMoreRelationships,
-                                        shape = RoundedCornerShape(18.dp),
-                                        border = BorderStroke(1.dp, LivePrimaryEmerald.copy(alpha = 0.5f))
-                                    ) {
-                                        Text(
-                                            text = if (isLoadingMoreRelationships) "Loading…" else "Load more",
-                                            color = LivePrimaryEmerald,
-                                            fontSize = 13.sp,
-                                            fontWeight = FontWeight.SemiBold
-                                        )
-                                    }
-                                }
+                                HorizontalDivider(
+                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)
+                                )
                             }
                         }
                     }

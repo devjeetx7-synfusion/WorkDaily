@@ -616,8 +616,8 @@ fun LiveProfileScreen(
         )
     }
 
-    // Photo preview dialog
-    if (showPhotoPreview && avatarUrl.isNotBlank()) {
+    // Photo preview dialog -- never shown for a blocked profile
+    if (showPhotoPreview && avatarUrl.isNotBlank() && !isBlocked) {
         AlertDialog(
             onDismissRequest = { showPhotoPreview = false },
             containerColor = MaterialTheme.colorScheme.surface,
@@ -684,11 +684,11 @@ fun LiveProfileScreen(
     }
 
     Scaffold(
-        topBar = {
+                topBar = {
             TopAppBar(
                 title = {
                     Text(
-                        text = displayName,
+                        text = if (isBlocked) "Blocked User" else displayName,
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp,
                         maxLines = 1,
@@ -792,198 +792,234 @@ fun LiveProfileScreen(
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
             item {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier.clickable {
-                            showPhotoPreview = true
-                        }
-                    ) {
-                        WorkDailyLiveAvatar(
-                            name = displayName,
-                            avatarUrl = avatarUrl,
-                            size = 88.dp,
-                            isLive = false,
-                            showBadge = false
-                        )
-                    }
-
+                if (isBlocked) {
+                    // Restricted view: current user has blocked this profile. Only a small,
+                    // cropped avatar preview is shown; name, username, bio, counts, country,
+                    // age, gender and all other public details are hidden.
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier.size(60.dp)
                         ) {
-                            Text(
-                                text = displayName,
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.weight(1f, fill = false)
+                            WorkDailyLiveAvatar(
+                                name = "Blocked User",
+                                avatarUrl = avatarUrl,
+                                size = 44.dp,
+                                isLive = false,
+                                showBadge = false
                             )
-                            if (targetUser.isVerified) {
-                                Icon(
-                                    imageVector = Icons.Default.Verified,
-                                    contentDescription = "Verified Member",
-                                    tint = LivePrimaryEmerald,
-                                    modifier = Modifier.size(18.dp)
+                        }
+                        Text(
+                            text = "Blocked User",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "Unblock to view this profile.",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        )
+                    }
+                } else {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier.clickable {
+                                showPhotoPreview = true
+                            }
+                        ) {
+                            WorkDailyLiveAvatar(
+                                name = displayName,
+                                avatarUrl = avatarUrl,
+                                size = 88.dp,
+                                isLive = false,
+                                showBadge = false
+                            )
+                        }
+
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Text(
+                                    text = displayName,
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.weight(1f, fill = false)
+                                )
+                                if (targetUser.isVerified) {
+                                    Icon(
+                                        imageVector = Icons.Default.Verified,
+                                        contentDescription = "Verified Member",
+                                        tint = LivePrimaryEmerald,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
+
+                            Text(
+                                text = username,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = LivePrimaryEmerald
+                            )
+
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = LivePrimaryEmerald.copy(alpha = 0.12f)
+                            ) {
+                                Text(
+                                    text = profession,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = LivePrimaryEmerald,
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
                                 )
                             }
-                        }
 
-                        Text(
-                            text = username,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = LivePrimaryEmerald
-                        )
+                            // Gender icon (icon-only), Age, Country flag + name
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.padding(top = 6.dp)
+                            ) {
+                                // Gender symbol, drawn as a vector path.
+                                //
+                                // The previous `when` ended in `else -> Icons.Default.Man`, which
+                                // silently presented every unset, unrecognised and transgender profile
+                                // as male -- PublicProfile.gender defaults to "", so that was the common
+                                // case rather than an edge case. GenderSymbol renders nothing when the
+                                // value is blank or unknown, and carries a distinct symbol for
+                                // Transgender, so no gender is ever assigned by default.
+                                GenderSymbol(gender = targetUser.gender, size = 16.dp)
 
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = LivePrimaryEmerald.copy(alpha = 0.12f)
-                        ) {
-                            Text(
-                                text = profession,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = LivePrimaryEmerald,
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
-                            )
-                        }
+                                // Age, derived on demand from the stored date rather than shown as the
+                                // raw date of birth, which is more personal than a public profile needs
+                                // to expose.
+                                val ageLabel = DateOfBirthUtils.ageLabel(targetUser.dateOfBirth)
+                                if (ageLabel != null) {
+                                    Text(
+                                        text = ageLabel,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Text(
+                                        text = " • ",
+                                        fontSize = 12.sp,
+                                        color = MaterialTheme.colorScheme.outlineVariant
+                                    )
+                                }
 
-                        // Gender icon (icon-only), Age, Country flag + name
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.padding(top = 6.dp)
-                        ) {
-                            // Gender symbol, drawn as a vector path.
-                            //
-                            // The previous `when` ended in `else -> Icons.Default.Man`, which
-                            // silently presented every unset, unrecognised and transgender profile
-                            // as male -- PublicProfile.gender defaults to "", so that was the common
-                            // case rather than an edge case. GenderSymbol renders nothing when the
-                            // value is blank or unknown, and carries a distinct symbol for
-                            // Transgender, so no gender is ever assigned by default.
-                            GenderSymbol(gender = targetUser.gender, size = 16.dp)
-
-                            // Age, derived on demand from the stored date rather than shown as the
-                            // raw date of birth, which is more personal than a public profile needs
-                            // to expose.
-                            val ageLabel = DateOfBirthUtils.ageLabel(targetUser.dateOfBirth)
-                            if (ageLabel != null) {
+                                // Country flag + name
+                                val activeCountry = CountryRepository.getCountry(targetUser.countryCode.ifEmpty { "IN" })
                                 Text(
-                                    text = ageLabel,
+                                    text = "${activeCountry.flagEmoji} ${activeCountry.displayName}",
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Medium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
-                                Text(
-                                    text = " • ",
-                                    fontSize = 12.sp,
-                                    color = MaterialTheme.colorScheme.outlineVariant
-                                )
                             }
 
-                            // Country flag + name
-                            val activeCountry = CountryRepository.getCountry(targetUser.countryCode.ifEmpty { "IN" })
-                            Text(
-                                text = "${activeCountry.flagEmoji} ${activeCountry.displayName}",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-
-                        if (bio.isNotBlank()) {
-                            Text(
-                                text = bio,
-                                fontSize = 13.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                lineHeight = 18.sp,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier
-                                    .padding(horizontal = 16.dp)
-                                    .padding(top = 4.dp)
-                            )
+                            if (bio.isNotBlank()) {
+                                Text(
+                                    text = bio,
+                                    fontSize = 13.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    lineHeight = 18.sp,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier
+                                        .padding(horizontal = 16.dp)
+                                        .padding(top = 4.dp)
+                                )
+                            }
                         }
                     }
                 }
             }
 
             // Statistics Card: Followers and Following side-by-side (opens expandable bottom sheet)
-            item {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    color = MaterialTheme.colorScheme.surface,
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 14.dp),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
-                        verticalAlignment = Alignment.CenterVertically
+            if (!isBlocked) {
+                item {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        color = MaterialTheme.colorScheme.surface,
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
                     ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
+                        Row(
                             modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(8.dp))
-                                .clickable { activeUserListType = UserListType.FOLLOWERS }
-                                .padding(vertical = 4.dp)
+                                .fillMaxWidth()
+                                .padding(vertical = 14.dp),
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                text = "$followerCount",
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = "Followers",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable { activeUserListType = UserListType.FOLLOWERS }
+                                    .padding(vertical = 4.dp)
+                            ) {
+                                Text(
+                                    text = "$followerCount",
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = "Followers",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
 
-                        Box(
-                            modifier = Modifier
-                                .height(28.dp)
-                                .width(1.dp)
-                                .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-                        )
+                            Box(
+                                modifier = Modifier
+                                    .height(28.dp)
+                                    .width(1.dp)
+                                    .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                            )
 
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(8.dp))
-                                .clickable { activeUserListType = UserListType.FOLLOWING }
-                                .padding(vertical = 4.dp)
-                        ) {
-                            Text(
-                                text = "$followingCount",
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = "Following",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable { activeUserListType = UserListType.FOLLOWING }
+                                    .padding(vertical = 4.dp)
+                            ) {
+                                Text(
+                                    text = "$followingCount",
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = "Following",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
                     }
                 }

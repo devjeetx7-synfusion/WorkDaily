@@ -564,15 +564,18 @@ class SocialSessionManager(
             return coalesce(scopeUid, "search:$normalized:$limit") { epoch ->
                 when (val res = publicProfileRepository.searchPublicProfiles(normalized, scopeUid, limit)) {
                     is ProfileOperationResult.Success -> {
+                        // Never surface blocked accounts in search results, even if the query matches.
+                        val blocked = (_snapshot.value.myBlockedUids?.value ?: emptySet())
+                        val filtered = res.data.filterNot { blocked.contains(it.uid) }
                         val stamp = clockMs()
                         updateForOwner(scopeUid, epoch) { snap ->
-                            val profMap = res.data.associate { it.uid to TimedEntry(it, stamp) }
+                            val profMap = filtered.associate { it.uid to TimedEntry(it, stamp) }
                             snap.copy(
                                 profiles = snap.profiles + profMap,
-                                searchResults = snap.searchResults + (normalized to TimedEntry(res.data, stamp))
+                                searchResults = snap.searchResults + (normalized to TimedEntry(filtered, stamp))
                             )
                         }
-                        res
+                        ProfileOperationResult.Success(filtered)
                     }
                     is ProfileOperationResult.Error -> res
                 }

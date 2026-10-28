@@ -18,6 +18,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.synfusion.attendance.live.ui.components.LivePrimaryEmerald
 import com.synfusion.attendance.live.ui.components.WorkDailyLiveAvatar
 import com.synfusion.attendance.live.viewmodel.LiveViewModel
 import com.synfusion.attendance.online.ChatListState
@@ -127,7 +128,11 @@ fun ChatListScreen(
     // peer's unread messages.
     val unreadTotal = conversations.unreadTotalFor(currentUserId)
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .windowInsetsPadding(WindowInsets.navigationBars)
+    ) {
         TopAppBar(
             title = { Text("Messages", fontWeight = FontWeight.Bold, fontSize = 18.sp) },
             navigationIcon = {
@@ -378,25 +383,42 @@ fun ChatListScreen(
                 }
 
                 // Routes to the existing people directory, which already starts real conversations
-                // via getOrCreateConversation. This button previously had an empty onClick, so it
-                // rendered as a live control that did nothing. It is shown for the empty state too,
-                // where it is most useful.
-                Spacer(modifier = Modifier.height(8.dp))
+                // via getOrCreateConversation. Conversation IDs are deterministic
+                // (min(uid)_max(uid)), so re-opening a thread never creates a duplicate.
+                Spacer(modifier = Modifier.height(12.dp))
                 Button(
                     onClick = onNavigatePeople,
-                    modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp)
+                        .fillMaxWidth()
+                        .height(52.dp),
+                    shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
+                        containerColor = LivePrimaryEmerald,
+                        contentColor = Color.White
                     )
                 ) {
-                    Text(
-                        "Start New Conversation",
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.PersonAdd,
+                            contentDescription = "New message",
+                            tint = Color.White,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "New Message",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp
+                        )
+                    }
                 }
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(20.dp))
             }
         }
     }
