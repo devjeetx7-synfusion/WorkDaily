@@ -370,8 +370,10 @@ fun OfflineDailyWorkApp(
                         onlineProfileViewModel.clearSessionState()
                         val onlineJob = onlineAuthViewModel.signOut()
                         val localJob = authViewModel.logout()
-                        onlineJob.join()
-                        localJob.join()
+                        // A remote sign-out failure must not keep the offline workspace stuck
+                        // on the dashboard after local logout has completed.
+                        runCatching { onlineJob.join() }
+                        runCatching { localJob.join() }
                         navController.navigate("login") {
                             popUpTo(0) { inclusive = true }
                         }
