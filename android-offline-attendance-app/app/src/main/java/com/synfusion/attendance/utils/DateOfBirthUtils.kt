@@ -129,7 +129,7 @@ object DateOfBirthUtils {
     fun selectableYears(now: LocalDate = LocalDate.now()): List<Int> {
         val latest = now.year
         val earliest = latest - MAX_AGE_YEARS.toInt()
-        return (earliest..latest).reversed()
+        return (earliest..latest).reversed().toList()
     }
 
     /**
