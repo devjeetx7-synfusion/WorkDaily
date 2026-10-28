@@ -559,11 +559,13 @@ fun PeopleAndFriendsScreen(
                     )
                 }
 
-                // Clean retry state on failure
+                // Clean retry state on failure. Capture the delegated state once so Kotlin
+                // can smart-cast the stable local value for the message parameter.
                 searchError != null && searchResults.isEmpty() -> {
+                    val errorMessage = searchError
                     WorkDailyErrorRetryState(
                         title = "Couldn't load people",
-                        message = searchError,
+                        message = errorMessage,
                         onRetry = {
                             searchRetryNonce += 1
                         }
