@@ -1,0 +1,92 @@
+name: CI Diagnostics
+
+# Temporary: reproduces the release build and republishes the failure detail as check
+# annotations / a check run, because Actions logs require sign-in to read.
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "arena/9d204063-workdaily" ]
+    paths: [ ".github/workflows/ci-diagnostics.yml" ]
+
+permissions:
+  contents: read
+  checks: write
+
+jobs:
+  diagnostics:
+    name: Reproduce release build and publish failure detail
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: temurin
+          cache: gradle
+
+      - name: Build release (capture full output)
+        id: build
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          cd android-offline-attendance-app
+          chmod +x gradlew
+          ./gradlew clean assembleRelease --no-daemon --stacktrace > "$GITHUB_WORKSPACE/build-output.log" 2>&1
+          echo "gradle_exit=$?"
+
+      - name: Surface failures as annotations
+        if: always()
+        shell: bash
+        run: |
+          LOG="$GITHUB_WORKSPACE/build-output.log"
+          if [ ! -f "$LOG" ]; then
+            echo "::error title=Diagnostics::no build log was produced"
+            exit 0
+          fi
+          grep -nE "^(e: |w: )|error:|FAILURE:|What went wrong|FAILED|Caused by:|Unresolved reference|Compilation error|Lint found" "$LOG" \
+            | head -40 \
+            | while IFS= read -r line; do
+                escaped=$(printf '%s' "$line" | sed -e 's/%/%25/g' -e 's/\r//g')
+                echo "::error title=Gradle::$escaped"
+              done
+
+      - name: Publish failure detail as a check run
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          python3 - <<'PY' > payload.json
+          import json
+
+          try:
+              with open("build-output.log", errors="replace") as handle:
+                  lines = handle.read().splitlines()
+          except FileNotFoundError:
+              lines = ["no build log was produced"]
+
+          keys = ("e: ", "error:", "FAILURE:", "What went wrong", "FAILED",
+                  "Caused by:", "Unresolved reference", "Compilation error", "Lint found")
+          interesting = [line for line in lines if any(key in line for key in keys)]
+          text = "\n".join(interesting[-80:]) if interesting else "\n".join(lines[-80:])
+
+          print(json.dumps({
+              "name": "Build diagnostics",
+              "head_sha": __import__("os").environ["SHA"],
+              "status": "completed",
+              "conclusion": "neutral",
+              "output": {
+                  "title": "Gradle failure detail",
+                  "summary": text[:60000],
+              },
+          }))
+          PY
+          gh api "repos/${REPO}/check-runs" --input payload.json > /dev/null
+          echo "published diagnostics check run"
