@@ -86,6 +86,7 @@ abstract class AttendanceDatabase : RoomDatabase() {
                 db.execSQL("ALTER TABLE users ADD COLUMN gender TEXT NOT NULL DEFAULT 'Male'")
                 db.execSQL("ALTER TABLE users ADD COLUMN profession TEXT NOT NULL DEFAULT 'Site Worker'")
                 db.execSQL("ALTER TABLE users ADD COLUMN bio TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE users ADD COLUMN dateOfBirth INTEGER DEFAULT NULL")
             }
         }
 
@@ -101,7 +102,7 @@ abstract class AttendanceDatabase : RoomDatabase() {
                         "synfusion_offline_attendance_db"
                     )
                     .setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING)
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_4_5)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                     .fallbackToDestructiveMigration()
                     .build()
                     INSTANCE = instance
