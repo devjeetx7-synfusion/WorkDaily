@@ -104,6 +104,22 @@ For detailed technical documentation, calculation engine rules, database schemas
 
 ---
 
+## 🔴 Live & Watch Party (online module)
+
+The Live module (creator rooms, gifting, chat, and the YouTube Watch Party) is the one part of
+WorkDaily that uses a backend: Firebase Authentication + Cloud Firestore. The offline
+attendance/passbook core remains fully local as described above.
+
+- Live rooms, membership/presence, shared YouTube playback state, playlists and persistent room
+  chat are stored in `live_rooms/{roomId}` and its sub-collections.
+- Security rules for these paths live in `firestore.rules` and must be deployed
+  (`firebase deploy --only firestore:rules`).
+- A Firebase project (`app/google-services.json`) is required to build and run the online features.
+- Full design, schema, YouTube compliance notes and the verification report:
+  [`docs/LIVE_WATCH_PARTY.md`](docs/LIVE_WATCH_PARTY.md).
+
+---
+
 ## 📌 Project Status
 
 Active production app. Built and maintained by **SynFusion**.

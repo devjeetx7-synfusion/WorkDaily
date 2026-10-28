@@ -26,6 +26,27 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+            <!-- WorkDaily Live / Watch Party share links: https://workdaily.app/live/{roomId} -->
+            <intent-filter android:autoVerify="false">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="workdaily.app"
+                    android:pathPrefix="/live/" />
+            </intent-filter>
+
+            <!-- App-scheme fallback used when no https link handler is available -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="workdaily"
+                    android:host="live" />
+            </intent-filter>
         </activity>
 
         <!-- Dedicated PDF Intent Alias with WorkDaily Logo + PDF Badge -->

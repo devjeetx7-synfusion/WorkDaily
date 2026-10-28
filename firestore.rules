@@ -168,26 +168,118 @@ service cloud.firestore {
       }
     }
 
-    // WorkDaily Live Rooms and YouTube Watch Party Realtime State
+    // ---------------------------------------------------------------------------------------
+    // WorkDaily Live Rooms + Watch Party
+    //
+    // live_rooms/{roomId}                               room document (host owned)
+    // live_rooms/{roomId}/members/{uid}                 presence/membership (uid-keyed)
+    // live_rooms/{roomId}/watch_party/state             shared playback state (host only)
+    // live_rooms/{roomId}/watch_party/playlist/{itemId} playlist items (host only)
+    // live_rooms/{roomId}/messages/{clientMessageId}    persistent chat (members only)
+    // ---------------------------------------------------------------------------------------
+
+    function liveRoom(roomId) {
+      return get(/databases/$(database)/documents/live_rooms/$(roomId)).data;
+    }
+
+    function isLiveRoomHost(roomId) {
+      return isAuthenticated() && liveRoom(roomId).hostUserId == request.auth.uid;
+    }
+
+    function isRoomLive(roomId) {
+      return liveRoom(roomId).isLive == true && liveRoom(roomId).endedAtMillis == null;
+    }
+
+    // Membership cannot be forged: the document id must be the authenticated uid.
+    function roomMember(roomId, uid) {
+      return exists(/databases/$(database)/documents/live_rooms/$(roomId)/members/$(uid));
+    }
+
+    function isRoomMember(roomId) {
+      return isAuthenticated() && roomMember(roomId, request.auth.uid);
+    }
+
     match /live_rooms/{roomId} {
       allow get, list: if isAuthenticated();
 
+      // A room can only be created by the authenticated account that claims to host it.
       allow create: if isAuthenticated()
-                    && request.resource.data.hostUserId == request.auth.uid;
+                    && request.resource.data.hostUserId == request.auth.uid
+                    && request.resource.data.creatorId == request.auth.uid
+                    && request.resource.data.isLive == true;
 
-      // Only room host can update room or watch party state
+      // Only the persisted host can update the room document (settings, end the room).
+      // hostUserId/creatorId are immutable so a room cannot be hijacked.
       allow update: if isAuthenticated()
-                    && (resource.data.hostUserId == request.auth.uid
-                        || request.resource.data.hostUserId == request.auth.uid);
+                    && resource.data.hostUserId == request.auth.uid
+                    && request.resource.data.hostUserId == resource.data.hostUserId
+                    && request.resource.data.creatorId == resource.data.creatorId;
 
       allow delete: if isAuthenticated()
                     && resource.data.hostUserId == request.auth.uid;
 
-      match /messages/{messageId} {
-        allow get, list: if isAuthenticated();
+      // Presence / membership. Document id == authenticated uid, so it cannot be forged and
+      // reconnecting can never create a duplicate row.
+      match /members/{memberUid} {
+        allow get, list: if isRoomMember(roomId) || isLiveRoomHost(roomId);
+
+        // Role is pinned: only the persisted host may hold the HOST role, so a member cannot
+        // promote themselves (which would hide them from the viewer count or show a host badge).
+        allow create, update: if isAuthenticated()
+                              && memberUid == request.auth.uid
+                              && request.resource.data.uid == request.auth.uid
+                              && (request.resource.data.role == "VIEWER" || isLiveRoomHost(roomId))
+                              && isRoomLive(roomId);
+
+        // A member leaves on their own; the host may remove a participant.
+        allow delete: if isAuthenticated()
+                      && (memberUid == request.auth.uid || isLiveRoomHost(roomId));
+      }
+
+      // Shared playback state: read by every member, written only by the host of a live room.
+      match /watch_party/state {
+        allow get, list: if isRoomMember(roomId) || isLiveRoomHost(roomId);
+
+        allow create, update: if isAuthenticated()
+                              && isLiveRoomHost(roomId)
+                              && isRoomLive(roomId)
+                              && request.resource.data.hostUserId == request.auth.uid
+                              && request.resource.data.revision is int
+                              && request.resource.data.revision > 0;
+
+        allow delete: if false;
+      }
+
+      // Playlist queue: host only writes, members read.
+      match /watch_party/playlist/{itemId} {
+        allow get, list: if isRoomMember(roomId) || isLiveRoomHost(roomId);
 
         allow create: if isAuthenticated()
-                      && request.resource.data.senderId == request.auth.uid;
+                      && isLiveRoomHost(roomId)
+                      && isRoomLive(roomId)
+                      && request.resource.data.addedByUserId == request.auth.uid
+                      && request.resource.data.videoId is string
+                      && request.resource.data.videoId.size() == 11;
+
+        allow update: if false;
+
+        allow delete: if isAuthenticated() && isLiveRoomHost(roomId);
+      }
+
+      // Persistent room chat: members only, sender identity pinned to the auth uid, and the
+      // message document id is the client message id (idempotent retries, no duplicates).
+      match /messages/{messageId} {
+        allow get, list: if isRoomMember(roomId);
+
+        allow create: if isAuthenticated()
+                      && isRoomMember(roomId)
+                      && request.resource.data.senderId == request.auth.uid
+                      && request.resource.data.roomId == roomId
+                      && request.resource.data.clientMessageId == messageId
+                      && request.resource.data.message is string
+                      && request.resource.data.message.size() > 0
+                      && request.resource.data.message.size() <= 500
+                      && request.resource.data.timestamp == request.time;
 
         allow update, delete: if false;
       }
