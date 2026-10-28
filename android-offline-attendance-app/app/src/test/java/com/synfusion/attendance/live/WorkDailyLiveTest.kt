@@ -232,4 +232,80 @@ class WorkDailyLiveTest {
         val chats = repository.chatMessagesMap.value[room.id] ?: emptyList()
         assertTrue("Following creator in room context should post USER_FOLLOWED system chat event", chats.any { it.eventType == "USER_FOLLOWED" })
     }
+
+    @Test
+    fun testYouTubeUrlAndIdParsing() {
+        val stdUrl = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+        val shortUrl = "https://youtu.be/dQw4w9WgXcQ"
+        val shortsUrl = "https://www.youtube.com/shorts/dQw4w9WgXcQ"
+        val directId = "dQw4w9WgXcQ"
+        val invalidUrl = "https://example.com/video"
+
+        val playlistUrl = "https://www.youtube.com/watch?v=dQw4w9WgXcQ&list=PL1234567890ABCDEF"
+        val directPlaylistId = "PL1234567890ABCDEF"
+
+        assertEquals("dQw4w9WgXcQ", com.synfusion.attendance.live.ui.extractYouTubeVideoId(stdUrl))
+        assertEquals("dQw4w9WgXcQ", com.synfusion.attendance.live.ui.extractYouTubeVideoId(shortUrl))
+        assertEquals("dQw4w9WgXcQ", com.synfusion.attendance.live.ui.extractYouTubeVideoId(shortsUrl))
+        assertEquals("dQw4w9WgXcQ", com.synfusion.attendance.live.ui.extractYouTubeVideoId(directId))
+        assertNull(com.synfusion.attendance.live.ui.extractYouTubeVideoId(invalidUrl))
+
+        assertEquals("PL1234567890ABCDEF", com.synfusion.attendance.live.ui.extractYouTubePlaylistId(playlistUrl))
+        assertEquals("PL1234567890ABCDEF", com.synfusion.attendance.live.ui.extractYouTubePlaylistId(directPlaylistId))
+        assertNull(com.synfusion.attendance.live.ui.extractYouTubePlaylistId(invalidUrl))
+    }
+
+    @Test
+    fun testStartYouTubeWatchPartyRoomCreation() {
+        val videoUrl = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+        val videoId = "dQw4w9WgXcQ"
+
+        val room = repository.startLiveStream(
+            title = "Site Safety YouTube Session",
+            category = "Site Safety",
+            type = LiveRoomType.YOUTUBE_WATCH_PARTY,
+            tags = listOf("YouTube", "Safety"),
+            youtubeVideoUrl = videoUrl,
+            youtubeVideoId = videoId
+        )
+
+        assertNotNull("YouTube Watch Party room should be created", room)
+        assertEquals(LiveRoomType.YOUTUBE_WATCH_PARTY, room.type)
+        assertEquals(videoId, room.youtubeVideoId)
+        assertEquals(videoUrl, room.youtubeVideoUrl)
+
+        val wpState = room.watchPartyState
+        assertNotNull("Initial WatchPartyState should be initialized", wpState)
+        assertEquals(videoId, wpState?.videoId)
+        assertEquals(1L, wpState?.revision)
+        assertEquals(com.synfusion.attendance.live.model.WatchPartyPlaybackStatus.UNSTARTED, wpState?.status)
+    }
+
+    @Test
+    fun testUpdateWatchPartyStateRevisionHandling() {
+        val room = repository.startLiveStream(
+            title = "Sync Test Room",
+            category = "Site Safety",
+            type = LiveRoomType.YOUTUBE_WATCH_PARTY,
+            tags = listOf("Sync"),
+            youtubeVideoId = "dQw4w9WgXcQ"
+        )
+
+        val initialRevision = room.watchPartyState?.revision ?: 0L
+
+        // Host updates playback state to PLAYING at position 12.5 seconds
+        repository.updateWatchPartyState(
+            roomId = room.id,
+            status = com.synfusion.attendance.live.model.WatchPartyPlaybackStatus.PLAYING,
+            positionSeconds = 12.5f
+        )
+
+        val updatedRoom = repository.liveRooms.value.find { it.id == room.id }
+        val updatedState = updatedRoom?.watchPartyState
+
+        assertNotNull(updatedState)
+        assertEquals(initialRevision + 1L, updatedState?.revision)
+        assertEquals(com.synfusion.attendance.live.model.WatchPartyPlaybackStatus.PLAYING, updatedState?.status)
+        assertEquals(12.5f, updatedState?.positionSeconds ?: 0f, 0.01f)
+    }
 }

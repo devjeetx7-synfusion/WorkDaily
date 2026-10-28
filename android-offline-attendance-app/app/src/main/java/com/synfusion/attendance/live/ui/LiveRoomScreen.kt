@@ -38,6 +38,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 import com.synfusion.attendance.live.model.*
 import com.synfusion.attendance.live.ui.components.*
 import com.synfusion.attendance.live.viewmodel.LiveViewModel
@@ -208,7 +209,20 @@ fun LiveRoomScreen(
                         }
                     )
                     LiveRoomType.TEXT -> TextStageCanvas(room = room)
-                    LiveRoomType.YOUTUBE_WATCH_PARTY -> YouTubeWatchPartyStageCanvas(room = room)
+                    LiveRoomType.YOUTUBE_WATCH_PARTY -> YouTubeWatchPartyStageCanvas(
+                        room = room,
+                        watchPartyState = room.watchPartyState,
+                        isHost = isHost,
+                        onPlayerStateChanged = { status, position ->
+                            if (isHost) {
+                                viewModel.updateWatchPartyState(
+                                    roomId = room.id,
+                                    status = status,
+                                    positionSeconds = position
+                                )
+                            }
+                        }
+                    )
                 }
             }
 
@@ -789,9 +803,68 @@ fun TextStageCanvas(room: LiveRoom) {
 }
 
 @Composable
-fun YouTubeWatchPartyStageCanvas(room: LiveRoom) {
+fun YouTubeWatchPartyStageCanvas(
+    room: LiveRoom,
+    watchPartyState: WatchPartyState?,
+    isHost: Boolean,
+    onPlayerStateChanged: (status: WatchPartyPlaybackStatus, positionSeconds: Float) -> Unit = { _, _ -> }
+) {
+    val context = LocalContext.current
     val videoId = remember(room.youtubeVideoId, room.youtubeVideoUrl) {
-        room.youtubeVideoId ?: (room.youtubeVideoUrl?.let { extractYouTubeVideoId(it) } ?: "dQw4w9WgXcQ")
+        room.youtubeVideoId ?: (room.youtubeVideoUrl?.let { extractYouTubeVideoId(it) })
+    }
+    val playlistId = room.youtubePlaylistId
+
+    var webViewRef by remember { mutableStateOf<android.webkit.WebView?>(null) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var isReady by remember { mutableStateOf(false) }
+    var isApplyingRemoteCommand by remember { mutableStateOf(false) }
+    var lastAppliedRevision by remember { mutableLongStateOf(0L) }
+
+    // On dispose, clean up WebView to avoid memory leaks
+    DisposableEffect(Unit) {
+        onDispose {
+            webViewRef?.apply {
+                stopLoading()
+                loadUrl("about:blank")
+                destroy()
+            }
+            webViewRef = null
+        }
+    }
+
+    // Synchronize remote WatchPartyState to local player without feedback loops
+    LaunchedEffect(watchPartyState, isReady) {
+        val state = watchPartyState ?: return@LaunchedEffect
+        val webView = webViewRef ?: return@LaunchedEffect
+        if (!isReady) return@LaunchedEffect
+
+        if (state.revision > lastAppliedRevision) {
+            lastAppliedRevision = state.revision
+            isApplyingRemoteCommand = true
+
+            val now = System.currentTimeMillis()
+            val elapsedSeconds = if (state.status == WatchPartyPlaybackStatus.PLAYING) {
+                ((now - state.updatedAtMillis).coerceAtLeast(0L)) / 1000f
+            } else 0f
+
+            val expectedPosition = state.positionSeconds + elapsedSeconds
+
+            when (state.status) {
+                WatchPartyPlaybackStatus.PLAYING -> {
+                    webView.evaluateJavascript("seekTo($expectedPosition); playVideo();", null)
+                }
+                WatchPartyPlaybackStatus.PAUSED -> {
+                    webView.evaluateJavascript("seekTo(${state.positionSeconds}); pauseVideo();", null)
+                }
+                WatchPartyPlaybackStatus.ENDED -> {
+                    webView.evaluateJavascript("pauseVideo();", null)
+                }
+                else -> {}
+            }
+
+            isApplyingRemoteCommand = false
+        }
     }
 
     Box(
@@ -800,38 +873,177 @@ fun YouTubeWatchPartyStageCanvas(room: LiveRoom) {
             .background(Color.Black),
         contentAlignment = Alignment.Center
     ) {
-        Column(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+        if (videoId == null && playlistId == null) {
+            // Missing Video or Playlist Selection Error State
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.padding(24.dp)
             ) {
-                Icon(Icons.Default.OndemandVideo, contentDescription = null, tint = Color(0xFFEF4444), modifier = Modifier.size(24.dp))
-                Text("YouTube Watch Party", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Icon(
+                    imageVector = Icons.Default.ErrorOutline,
+                    contentDescription = null,
+                    tint = Color(0xFFF87171),
+                    modifier = Modifier.size(48.dp)
+                )
+                Text(
+                    text = "No YouTube Video Selected",
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "The host did not provide a valid YouTube video or playlist URL.",
+                    color = Color.LightGray,
+                    fontSize = 12.sp
+                )
             }
+        } else {
+            // Real Embedded YouTube IFrame Player
+            AndroidView(
+                factory = { ctx ->
+                    android.webkit.WebView(ctx).apply {
+                        layoutParams = android.view.ViewGroup.LayoutParams(
+                            android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                            android.view.ViewGroup.LayoutParams.MATCH_PARENT
+                        )
+                        settings.apply {
+                            javaScriptEnabled = true
+                            domStorageEnabled = true
+                            mediaPlaybackRequiresUserGesture = false
+                            loadWithOverviewMode = true
+                            useWideViewPort = true
+                        }
+                        webViewClient = object : android.webkit.WebViewClient() {
+                            override fun shouldOverrideUrlLoading(
+                                view: android.webkit.WebView?,
+                                request: android.webkit.WebResourceRequest?
+                            ): Boolean {
+                                val uri = request?.url ?: return false
+                                val host = uri.host?.lowercase() ?: ""
+                                return !host.contains("youtube") && !host.contains("googlevideo")
+                            }
+                        }
 
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(210.dp),
-                shape = RoundedCornerShape(16.dp),
-                color = Color(0xFF1F2937),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFEF4444).copy(alpha = 0.5f))
-            ) {
+                        val mainHandler = android.os.Handler(android.os.Looper.getMainLooper())
+
+                        class YouTubeJSInterface {
+                            @android.webkit.JavascriptInterface
+                            fun onPlayerReady() {
+                                mainHandler.post {
+                                    isReady = true
+                                }
+                            }
+
+                            @android.webkit.JavascriptInterface
+                            fun onPlayerStateChange(stateCode: Int, currentTime: Float) {
+                                mainHandler.post {
+                                    val status = when (stateCode) {
+                                        1 -> WatchPartyPlaybackStatus.PLAYING
+                                        2 -> WatchPartyPlaybackStatus.PAUSED
+                                        3 -> WatchPartyPlaybackStatus.BUFFERING
+                                        0 -> WatchPartyPlaybackStatus.ENDED
+                                        else -> WatchPartyPlaybackStatus.UNSTARTED
+                                    }
+                                    // Feedback loop prevention: Only emit host action if not applying remote command
+                                    if (isHost && !isApplyingRemoteCommand) {
+                                        onPlayerStateChanged(status, currentTime)
+                                    }
+                                }
+                            }
+
+                            @android.webkit.JavascriptInterface
+                            fun onPlayerError(errorCode: Int) {
+                                mainHandler.post {
+                                    errorMessage = when (errorCode) {
+                                        2 -> "Invalid YouTube video parameter or ID."
+                                        5 -> "HTML5 video playback error."
+                                        100 -> "Video not found or removed."
+                                        101, 150 -> "Video embedding restricted by owner."
+                                        else -> "Playback error occurred (Code $errorCode)."
+                                    }
+                                }
+                            }
+                        }
+
+                        addJavascriptInterface(YouTubeJSInterface(), "AndroidBridge")
+
+                        val listParam = if (!playlistId.isNullOrBlank()) "'listType': 'playlist', 'list': '$playlistId'," else ""
+                        val videoParam = videoId ?: ""
+
+                        val htmlContent = """
+                            <!DOCTYPE html>
+                            <html>
+                            <head>
+                                <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+                                <style>
+                                    body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: #000; overflow: hidden; }
+                                    #player { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
+                                </style>
+                            </head>
+                            <body>
+                                <div id="player"></div>
+                                <script>
+                                    var tag = document.createElement('script');
+                                    tag.src = "https://www.youtube.com/iframe_api";
+                                    var firstScriptTag = document.getElementsByTagName('script')[0];
+                                    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+                                    var player;
+                                    function onYouTubeIframeAPIReady() {
+                                        player = new YT.Player('player', {
+                                            height: '100%',
+                                            width: '100%',
+                                            videoId: '$videoParam',
+                                            playerVars: {
+                                                'playsinline': 1,
+                                                'autoplay': 1,
+                                                'controls': 1,
+                                                'rel': 0,
+                                                'enablejsapi': 1,
+                                                'origin': 'https://www.youtube.com',
+                                                $listParam
+                                            },
+                                            events: {
+                                                'onReady': function(e) { if (window.AndroidBridge) window.AndroidBridge.onPlayerReady(); },
+                                                'onStateChange': function(e) { if (window.AndroidBridge) window.AndroidBridge.onPlayerStateChange(e.data, player ? player.getCurrentTime() : 0); },
+                                                'onError': function(e) { if (window.AndroidBridge) window.AndroidBridge.onPlayerError(e.data); }
+                                            }
+                                        });
+                                    }
+
+                                    function playVideo() { if (player && player.playVideo) player.playVideo(); }
+                                    function pauseVideo() { if (player && player.pauseVideo) player.pauseVideo(); }
+                                    function seekTo(seconds) { if (player && player.seekTo) player.seekTo(seconds, true); }
+                                    function loadVideoById(vId, startSec) { if (player && player.loadVideoById) player.loadVideoById({'videoId': vId, 'startSeconds': startSec || 0}); }
+                                </script>
+                            </body>
+                            </html>
+                        """.trimIndent()
+
+                        loadDataWithBaseURL("https://www.youtube.com", htmlContent, "text/html", "UTF-8", null)
+                        webViewRef = this
+                    }
+                },
+                modifier = Modifier.fillMaxSize()
+            )
+
+            // Error Overlay if player reports error
+            errorMessage?.let { err ->
                 Box(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.85f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                        modifier = Modifier.padding(24.dp)
                     ) {
-                        Icon(Icons.Default.PlayCircle, contentDescription = "Play Video", tint = Color(0xFFEF4444), modifier = Modifier.size(56.dp))
-                        Text("Synchronized Playback: Video ID ($videoId)", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Medium)
-                        Text("Host Synchronized Stream Control Active", color = Color.Gray, fontSize = 11.sp)
+                        Icon(Icons.Default.Warning, contentDescription = null, tint = Color(0xFFF87171), modifier = Modifier.size(44.dp))
+                        Text("Playback Error", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        Text(err, color = Color.LightGray, fontSize = 12.sp)
                     }
                 }
             }
