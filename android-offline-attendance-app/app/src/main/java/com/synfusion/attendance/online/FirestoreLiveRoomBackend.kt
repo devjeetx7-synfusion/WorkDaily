@@ -251,6 +251,28 @@ class FirestoreLiveRoomBackend(
         awaitClose { registration.remove() }
     }
 
+    override fun observeActiveRooms(): Flow<List<LiveRoom>> = callbackFlow {
+        val registration = try {
+            // Single equality filter keeps query on the automatic index.
+            rooms()
+                .whereEqualTo("isLive", true)
+                .addSnapshotListener { snapshot, error ->
+                    if (error != null) return@addSnapshotListener
+                    val activeRooms = snapshot?.documents?.mapNotNull { doc ->
+                        doc.takeIf { it.exists() }?.let { documentToRoom(it.id, it.data.orEmpty()) }
+                    }?.filter { room ->
+                        room.isLive && room.endedAtMillis == null && room.isPublic
+                    }.orEmpty()
+                    trySend(activeRooms)
+                }
+        } catch (_: Exception) {
+            trySend(emptyList())
+            close()
+            return@callbackFlow
+        }
+        awaitClose { registration.remove() }
+    }
+
     override suspend fun loadRoom(roomId: String): LiveOperationResult<LiveRoom?> {
         if (roomId.isBlank()) return LiveOperationResult.Error("Invalid room id.")
         if (currentUid() == null) {

@@ -49,6 +49,8 @@ interface LiveRoomBackend {
 
     fun observeRoom(roomId: String): Flow<LiveRoom?>
 
+    fun observeActiveRooms(): Flow<List<LiveRoom>>
+
     suspend fun loadRoom(roomId: String): LiveOperationResult<LiveRoom?>
 
     suspend fun endRoom(roomId: String, hostUid: String): LiveOperationResult<Unit>
