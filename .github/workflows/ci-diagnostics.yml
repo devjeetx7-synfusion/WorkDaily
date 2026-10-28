@@ -2,6 +2,7 @@ name: CI Diagnostics
 
 # Temporary: reproduces the release build and republishes the failure detail as check
 # annotations / a check run, because Actions logs require sign-in to read.
+# Verification pass 2 (after the LocalContext import fix).
 on:
   workflow_dispatch:
   push:
