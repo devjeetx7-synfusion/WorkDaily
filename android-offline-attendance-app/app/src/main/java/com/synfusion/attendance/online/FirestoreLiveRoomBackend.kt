@@ -6,6 +6,8 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.SetOptions
+import com.google.firebase.functions.FirebaseFunctions
+import kotlinx.coroutines.CancellationException
 import com.synfusion.attendance.live.data.LiveRoomBackend
 import com.synfusion.attendance.live.data.LiveRoomCreateRequest
 import com.synfusion.attendance.live.model.ChatMessage
@@ -341,6 +343,18 @@ class FirestoreLiveRoomBackend(
         }
         return try {
             val firestore = firestoreSupplier()
+            // Server-managed media rooms cannot be mutated by clients. The callable checks the
+            // authenticated owner and removes the LiveKit room after marking Firestore ended.
+            val currentRoom = roomRef(roomId).get().awaitTask()
+            if (!currentRoom.exists()) return LiveOperationResult.Error("This live room no longer exists.")
+            if (currentRoom.getString("hostUserId") != uid) {
+                return LiveOperationResult.Error("Only the host can end this live room.", isAuthError = true)
+            }
+            if (currentRoom.getBoolean("mediaManaged") == true) {
+                FirebaseFunctions.getInstance().getHttpsCallable("endLiveMediaRoom")
+                    .call(mapOf("roomId" to roomId)).awaitTask()
+                return LiveOperationResult.Success(Unit)
+            }
             firestore.runTransaction { transaction ->
                 val roomSnapshot = transaction.get(roomRef(roomId))
                 if (!roomSnapshot.exists()) throw LiveRoomFailure("This live room no longer exists.")
@@ -396,8 +410,12 @@ class FirestoreLiveRoomBackend(
                 transaction.set(messagesRef(roomId).document(endMsgId), endMsgData)
             }.awaitTask()
             LiveOperationResult.Success(Unit)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            mapException(e, "Failed to end the live room")
+            // The server may already have marked the room ended even if media cleanup failed.
+            // Retrying the callable is safe; do not expose transport details to users.
+            LiveOperationResult.Error("Could not finish ending this room. Check your connection and try again.")
         }
     }
 
