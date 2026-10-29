@@ -46,6 +46,34 @@ class InMemoryLiveRoomBackend(
     /** Rooms currently live per host, used to reject duplicate room creation. */
     private val activeRoomByHost = MutableStateFlow<Map<String, String>>(emptyMap())
 
+    override suspend fun reserveMediaRoom(
+        request: LiveRoomCreateRequest
+    ): LiveOperationResult<String> {
+        val roomId = "room_" + idGenerator()
+        val room = LiveRoom(
+            id = roomId,
+            title = request.title.ifBlank { "WorkDaily Live" },
+            creatorId = "test_host",
+            creatorName = "WorkDaily Host",
+            type = request.type,
+            isLive = false,
+            isHost = true,
+            hostUserId = "test_host",
+            statusText = "PREPARING"
+        )
+        rooms.update { it + (roomId to room) }
+        return LiveOperationResult.Success(roomId)
+    }
+
+    override suspend fun activateMediaRoom(
+        roomId: String
+    ): LiveOperationResult<Unit> {
+        val room = rooms.value[roomId]
+            ?: return LiveOperationResult.Error("Room not found")
+        rooms.update { it + (roomId to room.copy(isLive = true, statusText = "LIVE")) }
+        return LiveOperationResult.Success(Unit)
+    }
+
     override suspend fun createRoom(
         host: LiveUserIdentity,
         request: LiveRoomCreateRequest

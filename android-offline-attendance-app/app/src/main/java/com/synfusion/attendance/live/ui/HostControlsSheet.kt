@@ -38,12 +38,15 @@ fun HostControlsSheet(
     val pendingRequests = guestRequests.filter { it.status == GuestRequestStatus.PENDING }
 
     var selectedTab by remember { mutableStateOf("Controls") }
-    var micEnabled by remember { mutableStateOf(true) }
-    var cameraEnabled by remember { mutableStateOf(true) }
     var showEndConfirmDialog by remember { mutableStateOf(false) }
+
+    val mediaState by viewModel.mediaManager.state.collectAsState()
+    val micEnabled = mediaState.microphoneEnabled
+    val cameraEnabled = mediaState.cameraEnabled
 
     val tabs = listOf("Controls", "Guests (${pendingRequests.size})", "Moderation")
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -115,7 +118,12 @@ fun HostControlsSheet(
                                 modifier = Modifier
                                     .weight(1f)
                                     .clip(RoundedCornerShape(14.dp))
-                                    .clickable { micEnabled = !micEnabled },
+                                    .clickable {
+                                        coroutineScope.launch {
+                                            runCatching { viewModel.mediaManager.setMicrophoneEnabled(!micEnabled) }
+                                                .onFailure { Toast.makeText(context, "Microphone toggle failed: ${it.message}", Toast.LENGTH_SHORT).show() }
+                                        }
+                                    },
                                 color = if (micEnabled) LivePrimaryEmerald.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant,
                                 border = androidx.compose.foundation.BorderStroke(1.dp, if (micEnabled) LivePrimaryEmerald else Color.Gray)
                             ) {
@@ -134,7 +142,12 @@ fun HostControlsSheet(
                                     modifier = Modifier
                                         .weight(1f)
                                         .clip(RoundedCornerShape(14.dp))
-                                        .clickable { cameraEnabled = !cameraEnabled },
+                                        .clickable {
+                                            coroutineScope.launch {
+                                                runCatching { viewModel.mediaManager.setCameraEnabled(!cameraEnabled) }
+                                                    .onFailure { Toast.makeText(context, "Camera toggle failed: ${it.message}", Toast.LENGTH_SHORT).show() }
+                                            }
+                                        },
                                     color = if (cameraEnabled) LivePrimaryEmerald.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant,
                                     border = androidx.compose.foundation.BorderStroke(1.dp, if (cameraEnabled) LivePrimaryEmerald else Color.Gray)
                                 ) {
@@ -147,6 +160,23 @@ fun HostControlsSheet(
                                         Text(if (cameraEnabled) "Cam On" else "Cam Off", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
                                     }
                                 }
+                            }
+                        }
+
+                        if (room.type == LiveRoomType.VIDEO && cameraEnabled) {
+                            OutlinedButton(
+                                onClick = {
+                                    coroutineScope.launch {
+                                        runCatching { viewModel.mediaManager.switchCamera() }
+                                            .onFailure { Toast.makeText(context, "Camera switch failed: ${it.message}", Toast.LENGTH_SHORT).show() }
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Icon(Icons.Default.Cameraswitch, contentDescription = null)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Switch Camera")
                             }
                         }
                     }

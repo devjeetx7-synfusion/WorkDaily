@@ -47,6 +47,21 @@ interface LiveRoomBackend {
         request: LiveRoomCreateRequest
     ): LiveOperationResult<LiveRoom>
 
+    /**
+     * Reserves a server-managed media room (VIDEO/AUDIO).
+     * Returns the server-issued roomId in PREPARING state.
+     */
+    suspend fun reserveMediaRoom(
+        request: LiveRoomCreateRequest
+    ): LiveOperationResult<String>
+
+    /**
+     * Activates a server-managed media room after LiveKit track publication is verified.
+     */
+    suspend fun activateMediaRoom(
+        roomId: String
+    ): LiveOperationResult<Unit>
+
     fun observeRoom(roomId: String): Flow<LiveRoom?>
 
     fun observeActiveRooms(): Flow<List<LiveRoom>>

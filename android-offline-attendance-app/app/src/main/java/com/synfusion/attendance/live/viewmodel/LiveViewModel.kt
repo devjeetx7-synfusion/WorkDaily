@@ -12,6 +12,7 @@ import com.synfusion.attendance.live.data.LiveRoomBackend
 import com.synfusion.attendance.live.data.LiveRoomCreateRequest
 import com.synfusion.attendance.live.data.LiveRoomSession
 import com.synfusion.attendance.live.data.LiveSessionNotice
+import com.synfusion.attendance.live.media.MediaConnection
 import com.synfusion.attendance.live.model.*
 import com.synfusion.attendance.online.FirestoreLiveRoomBackend
 import com.synfusion.attendance.online.ProfileOperationResult
@@ -32,6 +33,25 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
+
+enum class HostStartupStep {
+    IDLE,
+    REQUESTING_PERMISSIONS,
+    RESERVING,
+    CONNECTING,
+    PUBLISHING,
+    ACTIVATING,
+    LIVE,
+    ENDING,
+    ENDED,
+    FAILED
+}
+
+data class HostStartupStatus(
+    val step: HostStartupStep = HostStartupStep.IDLE,
+    val roomId: String? = null,
+    val errorMessage: String? = null
+)
 
 class LiveViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -56,6 +76,11 @@ class LiveViewModel(application: Application) : AndroidViewModel(application) {
 
     private var sessionOpenJob: Job? = null
     private val endLiveMutex = Mutex()
+
+    private val _hostStartupStatus = MutableStateFlow(HostStartupStatus())
+    val hostStartupStatus: StateFlow<HostStartupStatus> = _hostStartupStatus.asStateFlow()
+
+    private var hostStartupGeneration: Long = 0L
 
     private val _activeSession = MutableStateFlow<LiveRoomSession?>(null)
     val activeSession: StateFlow<LiveRoomSession?> = _activeSession.asStateFlow()
@@ -291,11 +316,6 @@ class LiveViewModel(application: Application) : AndroidViewModel(application) {
 
     /** Creates and persists a Live room for the authenticated user. */
     suspend fun createLiveRoom(request: LiveRoomCreateRequest): LiveOperationResult<LiveRoom> {
-        // Firestore currently creates rooms as live before a media connection exists. Until
-        // reservation and host publishing are integrated, refuse to create false broadcasts.
-        if (!com.synfusion.attendance.live.media.LiveRoomCreationPolicy.allowsCreation(request.type)) {
-            return LiveOperationResult.Error("Camera and microphone broadcasting is not available yet. Please choose Text or Watch Party.")
-        }
         val identity = _liveIdentity.value ?: resolveLiveIdentity()
             ?: return LiveOperationResult.Error(
                 "Sign in to start a live room. Your WorkDaily identity is required.",
@@ -307,6 +327,106 @@ class LiveViewModel(application: Application) : AndroidViewModel(application) {
             preloadSocialGraph()
         }
         return result
+    }
+
+    /**
+     * Executes the lifecycle-aware host broadcast startup flow.
+     */
+    suspend fun startHostBroadcast(request: LiveRoomCreateRequest): LiveOperationResult<String> {
+        val gen = ++hostStartupGeneration
+        val identity = _liveIdentity.value ?: resolveLiveIdentity()
+            ?: return LiveOperationResult.Error(
+                "Sign in to start a live room. Your WorkDaily identity is required.",
+                isAuthError = true
+            )
+
+        if (request.type == LiveRoomType.TEXT || request.type == LiveRoomType.YOUTUBE_WATCH_PARTY) {
+            _hostStartupStatus.value = HostStartupStatus(HostStartupStep.RESERVING)
+            val res = createLiveRoom(request)
+            if (res is LiveOperationResult.Success) {
+                if (gen != hostStartupGeneration) return LiveOperationResult.Error("Startup superseded.")
+                openLiveRoom(res.data.id)
+                _hostStartupStatus.value = HostStartupStatus(HostStartupStep.LIVE, roomId = res.data.id)
+                return LiveOperationResult.Success(res.data.id)
+            } else {
+                val errMsg = (res as? LiveOperationResult.Error)?.message ?: "Failed to create room."
+                _hostStartupStatus.value = HostStartupStatus(HostStartupStep.FAILED, errorMessage = errMsg)
+                return LiveOperationResult.Error(errMsg)
+            }
+        }
+
+        _hostStartupStatus.value = HostStartupStatus(HostStartupStep.RESERVING)
+        var reservedRoomId: String? = null
+        try {
+            if (gen != hostStartupGeneration) return LiveOperationResult.Error("Startup superseded.")
+            val reserveRes = backend.reserveMediaRoom(request)
+            if (reserveRes is LiveOperationResult.Error) {
+                _hostStartupStatus.value = HostStartupStatus(HostStartupStep.FAILED, errorMessage = reserveRes.message)
+                return reserveRes
+            }
+            val roomId = (reserveRes as LiveOperationResult.Success).data
+            reservedRoomId = roomId
+
+            if (gen != hostStartupGeneration) {
+                runCatching { backend.endRoom(roomId, identity.uid) }
+                return LiveOperationResult.Error("Startup superseded.")
+            }
+
+            _hostStartupStatus.value = HostStartupStatus(HostStartupStep.CONNECTING, roomId = roomId)
+            val publishVideo = (request.type == LiveRoomType.VIDEO)
+            val publishAudio = (request.type == LiveRoomType.VIDEO || request.type == LiveRoomType.AUDIO)
+
+            _hostStartupStatus.value = HostStartupStatus(HostStartupStep.PUBLISHING, roomId = roomId)
+            mediaManager.connect(
+                roomId = roomId,
+                persistedHostUid = identity.uid,
+                publishVideo = publishVideo,
+                publishAudio = publishAudio
+            )
+
+            val mediaState = mediaManager.state.value
+            check(mediaState.connection == MediaConnection.CONNECTED) { "LiveKit media connection lost." }
+            if (publishVideo) check(mediaState.cameraEnabled) { "Camera publishing failed." }
+            if (publishAudio) check(mediaState.microphoneEnabled) { "Microphone publishing failed." }
+
+            if (gen != hostStartupGeneration) {
+                runCatching { mediaManager.disconnect() }
+                runCatching { backend.endRoom(roomId, identity.uid) }
+                return LiveOperationResult.Error("Startup superseded.")
+            }
+
+            _hostStartupStatus.value = HostStartupStatus(HostStartupStep.ACTIVATING, roomId = roomId)
+            val activateRes = backend.activateMediaRoom(roomId)
+            if (activateRes is LiveOperationResult.Error) {
+                runCatching { mediaManager.disconnect() }
+                runCatching { backend.endRoom(roomId, identity.uid) }
+                _hostStartupStatus.value = HostStartupStatus(HostStartupStep.FAILED, roomId = roomId, errorMessage = activateRes.message)
+                return activateRes
+            }
+
+            if (gen != hostStartupGeneration) {
+                runCatching { mediaManager.disconnect() }
+                runCatching { backend.endRoom(roomId, identity.uid) }
+                return LiveOperationResult.Error("Startup superseded.")
+            }
+
+            _hostStartupStatus.value = HostStartupStatus(HostStartupStep.LIVE, roomId = roomId)
+            openLiveRoom(roomId)
+            return LiveOperationResult.Success(roomId)
+        } catch (e: Exception) {
+            if (reservedRoomId != null) {
+                runCatching { mediaManager.disconnect() }
+                runCatching { backend.endRoom(reservedRoomId, identity.uid) }
+            }
+            val errMsg = e.message ?: "Failed to start live stream."
+            _hostStartupStatus.value = HostStartupStatus(HostStartupStep.FAILED, roomId = reservedRoomId, errorMessage = errMsg)
+            if (e is kotlinx.coroutines.CancellationException) throw e
+            return LiveOperationResult.Error(errMsg)
+        }
+    }
+
+    fun resetHostStartupStatus() {
+        _hostStartupStatus.value = HostStartupStatus(HostStartupStep.IDLE)
     }
 
     fun ensureLiveRoomExists(roomId: String): LiveRoom? =

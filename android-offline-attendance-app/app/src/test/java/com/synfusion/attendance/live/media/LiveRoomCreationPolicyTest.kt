@@ -6,12 +6,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class LiveRoomCreationPolicyTest {
-    @Test fun mediaRoomsAreNotAdvertisedWithoutPublishing() {
-        assertFalse(LiveRoomCreationPolicy.allowsCreation(LiveRoomType.VIDEO))
-        assertFalse(LiveRoomCreationPolicy.allowsCreation(LiveRoomType.AUDIO))
-    }
-
-    @Test fun existingNonMediaModesRemainAvailable() {
+    @Test fun allRoomTypesAreAllowedNowThatManagedStartupIsIntegrated() {
+        assertTrue(LiveRoomCreationPolicy.allowsCreation(LiveRoomType.VIDEO))
+        assertTrue(LiveRoomCreationPolicy.allowsCreation(LiveRoomType.AUDIO))
         assertTrue(LiveRoomCreationPolicy.allowsCreation(LiveRoomType.TEXT))
         assertTrue(LiveRoomCreationPolicy.allowsCreation(LiveRoomType.YOUTUBE_WATCH_PARTY))
     }
