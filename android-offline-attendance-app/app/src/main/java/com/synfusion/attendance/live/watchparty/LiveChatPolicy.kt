@@ -29,7 +29,8 @@ object LiveChatPolicy {
         isRoomLive: Boolean,
         isChatEnabled: Boolean,
         isMember: Boolean,
-        isBlocked: Boolean
+        isBlocked: Boolean,
+        isMuted: Boolean = false
     ): ChatValidation {
         if (!isRoomLive) {
             return ChatValidation.Invalid(ChatSendBlock.ROOM_ENDED, "This live room has ended.")
@@ -39,6 +40,9 @@ object LiveChatPolicy {
         }
         if (!isMember) {
             return ChatValidation.Invalid(ChatSendBlock.NOT_A_MEMBER, "Join the room before sending messages.")
+        }
+        if (isMuted) {
+            return ChatValidation.Invalid(ChatSendBlock.BLOCKED, "You have been muted by the host in this room.")
         }
         if (isBlocked) {
             return ChatValidation.Invalid(ChatSendBlock.BLOCKED, "You cannot message this room.")

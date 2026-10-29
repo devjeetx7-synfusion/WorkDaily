@@ -336,7 +336,7 @@ class LiveRoomSession(
         }
     }
 
-    fun sendMessage(rawText: String) {
+    fun sendMessage(rawText: String, isMuted: Boolean = false) {
         val currentIdentity = identity
         if (currentIdentity == null) {
             emitNotice("Sign in to send messages.", isError = true)
@@ -352,7 +352,8 @@ class LiveRoomSession(
             isRoomLive = currentRoom.isLive,
             isChatEnabled = currentRoom.isChatEnabled,
             isMember = _isMember.value,
-            isBlocked = false
+            isBlocked = false,
+            isMuted = isMuted
         )
         val text = when (validation) {
             is ChatValidation.Valid -> validation.text
