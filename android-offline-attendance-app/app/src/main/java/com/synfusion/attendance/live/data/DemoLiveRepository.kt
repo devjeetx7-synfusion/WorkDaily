@@ -548,7 +548,7 @@ class DemoLiveRepository(context: Context? = null) {
         updateGoalProgress(typeText = "HEARTS", amount = count)
     }
 
-    fun sendChatMessage(roomId: String, messageText: String, senderName: String = "You") {
+    fun sendChatMessage(roomId: String, messageText: String, senderName: String = "You", senderAvatar: String = "") {
         if (messageText.isBlank()) return
         val room = _liveRooms.value.find { it.id == roomId }
         if (room != null && !room.isChatEnabled) return
@@ -557,6 +557,7 @@ class DemoLiveRepository(context: Context? = null) {
             id = UUID.randomUUID().toString(),
             roomId = roomId,
             senderName = senderName,
+            senderAvatar = senderAvatar,
             message = messageText.trim()
         )
         addChatMessageInternal(roomId, msg)

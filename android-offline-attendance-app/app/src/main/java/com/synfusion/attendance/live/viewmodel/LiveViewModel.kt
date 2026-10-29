@@ -595,7 +595,10 @@ class LiveViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun sendChatMessage(roomId: String, text: String, senderName: String = "You") {
-        repository.sendChatMessage(roomId, text, senderName)
+        val identity = liveIdentity.value
+        val name = identity?.displayName ?: senderName
+        val avatar = identity?.photoUrl.orEmpty()
+        repository.sendChatMessage(roomId, text, name, avatar)
     }
 
     fun pinChatMessage(roomId: String, messageId: String) {

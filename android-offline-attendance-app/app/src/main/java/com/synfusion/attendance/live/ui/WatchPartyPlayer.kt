@@ -327,6 +327,8 @@ fun WatchPartyStage(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.TopCenter
     ) {
+        WatchPartyThemeBackground()
+
         when {
             isTurnedOff -> TurnedOffStage(
                 isHost = isHost,
@@ -603,6 +605,37 @@ private fun resolveSelection(
         source = if (videoId == null) YouTubeSource.PLAYLIST else YouTubeSource.VIDEO,
         canonicalUrl = canonical
     )
+}
+
+@Composable
+private fun WatchPartyThemeBackground() {
+    Box(modifier = Modifier.fillMaxSize()) {
+        val context = LocalContext.current
+        val drawableId = remember(context) {
+            context.resources.getIdentifier("livewall", "drawable", context.packageName)
+        }
+        if (drawableId != 0) {
+            androidx.compose.foundation.Image(
+                painter = androidx.compose.ui.res.painterResource(id = drawableId),
+                contentDescription = null,
+                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    androidx.compose.ui.graphics.Brush.verticalGradient(
+                        colors = listOf(
+                            Color(0xFF0F172A).copy(alpha = 0.85f),
+                            Color(0xFF064E3B).copy(alpha = 0.70f),
+                            Color(0xFF022C22).copy(alpha = 0.90f)
+                        )
+                    )
+                )
+        )
+    }
 }
 
 private fun playerErrorMessage(code: Int): String = when (code) {
