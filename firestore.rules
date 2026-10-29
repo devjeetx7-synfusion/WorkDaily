@@ -195,8 +195,19 @@ service cloud.firestore {
       return exists(/databases/$(database)/documents/live_rooms/$(roomId)/members/$(uid));
     }
 
+    // Private rooms have no trusted invitation mechanism yet. Only their host may join.
+    // A prior membership must not grant continued access after a block or visibility change.
+    function canAccessLiveRoom(roomId) {
+      return isAuthenticated() && (isLiveRoomHost(roomId) ||
+          (liveRoom(roomId).isPublic == true && isNotBlocked(request.auth.uid, liveRoom(roomId).hostUserId)));
+    }
+
     function isRoomMember(roomId) {
-      return isAuthenticated() && roomMember(roomId, request.auth.uid);
+      return canAccessLiveRoom(roomId) && roomMember(roomId, request.auth.uid);
+    }
+
+    function isRoomMemberAfter(roomId) {
+      return canAccessLiveRoom(roomId) && existsAfter(/databases/$(database)/documents/live_rooms/$(roomId)/members/$(request.auth.uid));
     }
 
     match /live_rooms/{roomId} {
@@ -207,6 +218,8 @@ service cloud.firestore {
                     && request.resource.data.hostUserId == request.auth.uid
                     && request.resource.data.creatorId == request.auth.uid
                     && request.resource.data.get('mediaManaged', false) == false
+                    && request.resource.data.type in ["TEXT", "YOUTUBE_WATCH_PARTY"]
+                    && request.resource.data.get('endedAtMillis', null) == null
                     && request.resource.data.isLive == true;
 
       // Only the persisted host can update the room document (settings, end the room).
@@ -216,7 +229,10 @@ service cloud.firestore {
                     && resource.data.get('mediaManaged', false) == false
                     && request.resource.data.get('mediaManaged', false) == false
                     && request.resource.data.hostUserId == resource.data.hostUserId
-                    && request.resource.data.creatorId == resource.data.creatorId;
+                    && request.resource.data.creatorId == resource.data.creatorId
+                    && request.resource.data.type == resource.data.type
+                    && (resource.data.get('endedAtMillis', null) == null ||
+                        (request.resource.data.get('endedAtMillis', null) != null && request.resource.data.isLive == false));
 
       allow delete: if isAuthenticated()
                     && resource.data.hostUserId == request.auth.uid
@@ -225,7 +241,10 @@ service cloud.firestore {
       // Presence / membership. Document id == authenticated uid, so it cannot be forged and
       // reconnecting can never create a duplicate row.
       match /members/{memberUid} {
-        allow get, list: if isRoomMember(roomId) || isLiveRoomHost(roomId);
+        // The join transaction reads its own (possibly nonexistent) membership before writing it.
+        allow get: if isRoomMember(roomId) || isLiveRoomHost(roomId) ||
+                      (isAuthenticated() && memberUid == request.auth.uid && canAccessLiveRoom(roomId) && isRoomLive(roomId));
+        allow list: if isRoomMember(roomId) || isLiveRoomHost(roomId);
 
         // Role is pinned: only the persisted host may hold the HOST role, so a member cannot
         // promote themselves (which would hide them from the viewer count or show a host badge).
@@ -233,6 +252,7 @@ service cloud.firestore {
                               && memberUid == request.auth.uid
                               && request.resource.data.uid == request.auth.uid
                               && (request.resource.data.role == "VIEWER" || isLiveRoomHost(roomId))
+                              && canAccessLiveRoom(roomId)
                               && isRoomLive(roomId);
 
         // A member leaves on their own; the host may remove a participant.
@@ -275,10 +295,14 @@ service cloud.firestore {
       // Persistent room chat: members only, sender identity pinned to the auth uid, and the
       // message document id is the client message id (idempotent retries, no duplicates).
       match /messages/{messageId} {
-        allow get, list: if isRoomMember(roomId);
+        // The join transaction checks only the caller's deterministic join event.
+        allow get: if isRoomMember(roomId) || (canAccessLiveRoom(roomId) && isRoomLive(roomId) &&
+                      messageId == "sys_join_" + roomId + "_" + request.auth.uid);
+        allow list: if isRoomMember(roomId);
 
         allow create: if isAuthenticated()
-                      && isRoomMember(roomId)
+                      && isRoomLive(roomId)
+                      && isRoomMemberAfter(roomId)
                       && request.resource.data.senderId == request.auth.uid
                       && request.resource.data.roomId == roomId
                       && request.resource.data.clientMessageId == messageId
