@@ -11,6 +11,7 @@ function service(room = active, blocked = false, overrides = {}) {
   return createTokenService({
     loadRoom: async () => room,
     isBlocked: async () => blocked,
+    isReservationOwned: async () => true,
     config: () => ({ url: 'wss://live.example.com', apiKey, apiSecret }),
     ...overrides,
   });
@@ -73,4 +74,23 @@ test('missing authentication and missing or insecure configuration fail closed',
 test('database failures never mint a token', async () => {
   await assert.rejects(service(active, false, { loadRoom: async () => { throw Error('unavailable'); } })('host-uid', request));
   await assert.rejects(service(active, false, { isBlocked: async () => { throw Error('unavailable'); } })('viewer', request));
+});
+
+test('only the persisted host receives a token for an unexpired server reservation', async () => {
+  const now = Date.now();
+  const room = { ...active, isLive: false, mediaManaged: true, statusText: 'PREPARING', reservationExpiresAtMillis: now + 60_000 };
+  const prepared = service(room, false, { clock: () => now });
+  assert.equal((await claims(await prepared('host-uid', request))).video.canPublish, true);
+  await rejectsCode(prepared('viewer', request), 'failed-precondition');
+  for (const modified of [
+    { ...room, mediaManaged: false }, { ...room, statusText: 'ENDED' },
+    { ...room, reservationExpiresAtMillis: now }, { ...room, endedAtMillis: now },
+  ]) await rejectsCode(service(modified, false, { clock: () => now })('host-uid', request), 'failed-precondition');
+});
+
+test('preparing token requires a trusted host reservation lock', async () => {
+  const now = Date.now();
+  const room = { ...active, isLive: false, mediaManaged: true, statusText: 'PREPARING', reservationExpiresAtMillis: now + 60_000 };
+  await rejectsCode(service(room, false, { clock: () => now, isReservationOwned: async () => false })('host-uid', request), 'failed-precondition');
+  await assert.rejects(service(room, false, { isReservationOwned: async () => { throw Error('unavailable'); } })('host-uid', request));
 });

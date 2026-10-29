@@ -33,6 +33,15 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import com.synfusion.attendance.live.media.MediaConnection
+import com.synfusion.attendance.live.media.LiveKitMediaManager
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.TimeoutCancellationException
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -171,6 +180,48 @@ private fun LiveRoomScreenContent(
         (sessionState as? LiveRoomSessionState.Active)?.viewerCount ?: 0
     } else {
         room.viewerCount
+    }
+    // A viewer owns media only while this persisted room is the active visible session.
+    // Watch Party and demo rooms never open a LiveKit connection.
+    val lifecycleOwner = LocalLifecycleOwner.current
+    var foreground by remember(lifecycleOwner) {
+        mutableStateOf(lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED))
+    }
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, _ ->
+            foreground = lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+    val viewerMedia = isSessionRoom && !isHost && room.isLive &&
+        (room.type == LiveRoomType.VIDEO || room.type == LiveRoomType.AUDIO)
+    val mediaContext = LocalContext.current
+    val mediaScope = rememberCoroutineScope()
+    val mediaManager = if (viewerMedia) remember(room.id, foreground) {
+        LiveKitMediaManager(mediaContext, mediaScope)
+    } else null
+    var viewerConnectionFailed by remember(room.id) { mutableStateOf(false) }
+    val mediaState = mediaManager?.state?.collectAsState()?.value
+    LaunchedEffect(mediaManager, room.id, room.hostUserId, foreground) {
+        val manager = mediaManager ?: return@LaunchedEffect
+        if (!foreground || room.hostUserId.isBlank()) return@LaunchedEffect
+        try {
+            viewerConnectionFailed = false
+            manager.connect(room.id, room.hostUserId, publishVideo = false, publishAudio = false)
+            kotlinx.coroutines.awaitCancellation()
+        } catch (_: TimeoutCancellationException) {
+            viewerConnectionFailed = true
+            kotlinx.coroutines.awaitCancellation()
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            // Keep the failure visible until the session is disposed.
+            viewerConnectionFailed = true
+            kotlinx.coroutines.awaitCancellation()
+        } finally {
+            withContext(NonCancellable) { manager.disconnect() }
+        }
     }
     val audioSeats = audioSeatsMap[room.id] ?: emptyList()
     var locallyMuted by remember(room.id) { mutableStateOf(false) }
@@ -315,7 +366,26 @@ private fun LiveRoomScreenContent(
                     }
             ) {
                 when (room.type) {
-                    LiveRoomType.VIDEO -> VideoStageCanvas(room = room)
+                    LiveRoomType.VIDEO -> if (viewerMedia) {
+                        val track = mediaState?.video
+                        val mediaRoom = track?.let { mediaManager?.roomForVideo(it) }
+                        if (track != null && mediaRoom != null && mediaState?.connection == MediaConnection.CONNECTED) {
+                            LiveKitVideoSurface(mediaRoom, track, Modifier.fillMaxSize())
+                        } else {
+                            Box(Modifier.fillMaxSize().background(Color.Black), contentAlignment = Alignment.Center) {
+                                Text(
+                                    text = when {
+                                        viewerConnectionFailed -> "Unable to connect to live media."
+                                        mediaState?.connection == MediaConnection.FAILED -> mediaState?.message ?: "Unable to connect to live media."
+                                        mediaState?.connection == MediaConnection.RECONNECTING -> "Reconnecting to live media…"
+                                        mediaState?.connection == MediaConnection.CONNECTED -> "Host camera is unavailable or off."
+                                        else -> "Connecting to live media…"
+                                    },
+                                    color = Color.White
+                                )
+                            }
+                        }
+                    } else VideoStageCanvas(room = room)
                     LiveRoomType.AUDIO -> AudioStageCanvas(
                         room = room,
                         seats = audioSeats,
