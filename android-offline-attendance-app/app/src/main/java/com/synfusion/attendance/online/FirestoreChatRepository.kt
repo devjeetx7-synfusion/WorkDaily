@@ -554,19 +554,18 @@ class FirestoreChatRepository(
                 }.await()
             }
 
-            // Clear this recipient's denormalised unread counter.
-            //
-            // Deliberately NOT part of the batch above. firestore.rules gates conversation-document
-            // updates on isMutualFollower() and isNotBlocked(), while message updates are gated only
-            // on participation. Batching them would let a later unfollow or block permanently
-            // prevent messages from being marked read -- losing read receipts to fix a cosmetic
-            // badge is the wrong trade. Best-effort, and unconditional so a counter that drifted
-            // away from the real unread set is corrected on the next open even when no message
-            // matched the query.
+            // Unconditionally clear this recipient's denormalised unread counter.
             try {
                 convRef.update(mapOf("unreadCounts.$recipientUid" to 0)).await()
-            } catch (_: Exception) {
-                // Messages are already marked read; a stale badge is recoverable on the next open.
+            } catch (e: Exception) {
+                try {
+                    convRef.set(
+                        mapOf("unreadCounts" to mapOf(recipientUid to 0)),
+                        com.google.firebase.firestore.SetOptions.merge()
+                    ).await()
+                } catch (_: Exception) {
+                    // Log or ignore if set merge fails
+                }
             }
 
             ProfileOperationResult.Success(true)
