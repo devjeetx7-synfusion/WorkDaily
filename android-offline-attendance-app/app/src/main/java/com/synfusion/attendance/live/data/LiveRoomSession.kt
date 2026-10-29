@@ -104,6 +104,7 @@ class LiveRoomSession(
      * could both read the same revision and the second write would be rejected as a conflict.
      */
     private val hostCommandMutex = Mutex()
+    private val endRoomMutex = Mutex()
     /**
      * Set as soon as [stop] runs. Guards the heartbeat coroutine so an in-flight heartbeat that
      * finishes after the leave write cannot re-create the presence document.
@@ -232,6 +233,8 @@ class LiveRoomSession(
     }
 
     private fun onRoomSnapshot(snapshot: LiveRoom?) {
+        // An ended session is terminal until explicitly reopened; ignore stale live snapshots.
+        if (closed || _state.value is LiveRoomSessionState.Ended) return
         if (snapshot == null) {
             if (_state.value is LiveRoomSessionState.Active) {
                 _state.value = LiveRoomSessionState.Unavailable(
@@ -251,6 +254,7 @@ class LiveRoomSession(
     }
 
     private fun publishActiveState() {
+        if (closed || _state.value is LiveRoomSessionState.Ended) return
         val currentRoom = room ?: return
         if (!currentRoom.isLive || currentRoom.endedAtMillis != null) {
             _state.value = LiveRoomSessionState.Ended(currentRoom)
@@ -653,25 +657,30 @@ class LiveRoomSession(
             emitNotice(err, isError = true)
             return LiveOperationResult.Error(err, isAuthError = true)
         }
-        val result = backend.endRoom(roomId, currentIdentity.uid)
-        when (result) {
-            is LiveOperationResult.Success -> {
-                val endedRoom = room?.copy(isLive = false, endedAtMillis = clock()) ?: LiveRoom(
-                    id = roomId,
-                    title = room?.title.orEmpty(),
-                    creatorId = currentIdentity.uid,
-                    creatorName = currentIdentity.displayName,
-                    isLive = false,
-                    endedAtMillis = clock()
-                )
-                room = endedRoom
-                _state.value = LiveRoomSessionState.Ended(endedRoom)
-                heartbeatJob?.cancel()
-                heartbeatJob = null
+        if (!endRoomMutex.tryLock()) return LiveOperationResult.Error("Ending this room is already in progress.")
+        try {
+            val result = backend.endRoom(roomId, currentIdentity.uid)
+            when (result) {
+                is LiveOperationResult.Success -> {
+                    val endedRoom = room?.copy(isLive = false, endedAtMillis = clock()) ?: LiveRoom(
+                        id = roomId,
+                        title = room?.title.orEmpty(),
+                        creatorId = currentIdentity.uid,
+                        creatorName = currentIdentity.displayName,
+                        isLive = false,
+                        endedAtMillis = clock()
+                    )
+                    room = endedRoom
+                    _state.value = LiveRoomSessionState.Ended(endedRoom)
+                    heartbeatJob?.cancel()
+                    heartbeatJob = null
+                }
+                is LiveOperationResult.Error -> emitNotice(result.message, isError = true)
             }
-            is LiveOperationResult.Error -> emitNotice(result.message, isError = true)
+            return result
+        } finally {
+            endRoomMutex.unlock()
         }
-        return result
     }
 
     /** Removes another participant; only the host is authorized (mirrored by backend rules). */

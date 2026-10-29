@@ -31,6 +31,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
 
 class LiveViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -54,6 +55,7 @@ class LiveViewModel(application: Application) : AndroidViewModel(application) {
     private val metadataProvider = com.synfusion.attendance.online.YouTubeOEmbedMetadataProvider()
 
     private var sessionOpenJob: Job? = null
+    private val endLiveMutex = Mutex()
 
     private val _activeSession = MutableStateFlow<LiveRoomSession?>(null)
     val activeSession: StateFlow<LiveRoomSession?> = _activeSession.asStateFlow()
@@ -523,13 +525,24 @@ class LiveViewModel(application: Application) : AndroidViewModel(application) {
 
     /** Room host ends the whole Live room (not just Watch Party playback). */
     suspend fun endActiveLiveRoom(): LiveOperationResult<Unit> {
-        val session = _activeSession.value
-            ?: return LiveOperationResult.Error("No active live room session.")
-        val result = session.endRoom()
-        if (result is LiveOperationResult.Success) {
-            repository.endLiveStream(session.roomId)
+        if (!endLiveMutex.tryLock()) return LiveOperationResult.Error("Ending this room is already in progress.")
+        try {
+            val session = _activeSession.value
+                ?: return LiveOperationResult.Error("No active live room session.")
+            if (!session.isHost()) return LiveOperationResult.Error("Only the host can end this live room.", isAuthError = true)
+            // If a host media connection has been established, stop capture before ending.
+            // Do not instantiate a media manager for text/watch-party rooms.
+            if (mediaManagerDelegate.isInitialized() && mediaManager.state.value.isHost) {
+                mediaManager.disconnect()
+            }
+            val result = session.endRoom()
+            if (result is LiveOperationResult.Success) {
+                repository.endLiveStream(session.roomId)
+            }
+            return result
+        } finally {
+            endLiveMutex.unlock()
         }
-        return result
     }
 
     fun sendFriendRequest(targetUserId: String): Boolean {

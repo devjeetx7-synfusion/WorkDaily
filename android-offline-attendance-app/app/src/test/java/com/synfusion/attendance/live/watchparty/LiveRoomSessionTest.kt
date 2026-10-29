@@ -2,6 +2,7 @@ package com.synfusion.attendance.live.watchparty
 
 import com.synfusion.attendance.live.data.InMemoryLiveRoomBackend
 import com.synfusion.attendance.live.data.LiveRoomCreateRequest
+import com.synfusion.attendance.live.data.LiveRoomBackend
 import com.synfusion.attendance.live.data.LiveRoomSession
 import com.synfusion.attendance.live.data.VideoMetadata
 import com.synfusion.attendance.live.data.VideoMetadataProvider
@@ -11,12 +12,15 @@ import com.synfusion.attendance.live.model.LiveRoomSessionState
 import com.synfusion.attendance.live.model.LiveRoomType
 import com.synfusion.attendance.live.model.LiveUserIdentity
 import com.synfusion.attendance.live.model.WatchPartyPlaybackStatus
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.junit.Assert.assertEquals
@@ -200,6 +204,51 @@ class LiveRoomSessionTest {
         session.endRoom()
         awaitUntil { session.state.value is LiveRoomSessionState.Ended }
 
+        session.stop()
+    }
+
+    @Test
+    fun `stale live snapshot cannot revive an ended session`() = runBlocking {
+        val roomId = createTextRoom()
+        val live = (backend.loadRoom(roomId) as LiveOperationResult.Success).data!!
+        val snapshots = MutableStateFlow<com.synfusion.attendance.live.model.LiveRoom?>(live)
+        val snapshotBackend = object : LiveRoomBackend by backend {
+            override fun observeRoom(roomId: String) = snapshots
+        }
+        val session = LiveRoomSession(roomId, snapshotBackend, host, sessionScope, cleanupScope)
+        session.start()
+        awaitUntil { session.state.value is LiveRoomSessionState.Active }
+        snapshots.value = live.copy(isLive = false, endedAtMillis = clock.get())
+        awaitUntil { session.state.value is LiveRoomSessionState.Ended }
+        snapshots.value = live
+        delay(150)
+        assertTrue(session.state.value is LiveRoomSessionState.Ended)
+        session.stop()
+    }
+
+    @Test
+    fun `duplicate end requests do not call the backend twice`() = runBlocking {
+        val roomId = createTextRoom()
+        val entered = CompletableDeferred<Unit>()
+        val release = CompletableDeferred<Unit>()
+        var calls = 0
+        val slowBackend = object : LiveRoomBackend by backend {
+            override suspend fun endRoom(roomId: String, hostUid: String): LiveOperationResult<Unit> {
+                calls++
+                entered.complete(Unit)
+                release.await()
+                return backend.endRoom(roomId, hostUid)
+            }
+        }
+        val session = LiveRoomSession(roomId, slowBackend, host, sessionScope, cleanupScope)
+        session.start()
+        awaitUntil { session.state.value is LiveRoomSessionState.Active }
+        val first = async { session.endRoom() }
+        entered.await()
+        assertTrue(session.endRoom() is LiveOperationResult.Error)
+        assertEquals(1, calls)
+        release.complete(Unit)
+        assertTrue(first.await() is LiveOperationResult.Success)
         session.stop()
     }
 

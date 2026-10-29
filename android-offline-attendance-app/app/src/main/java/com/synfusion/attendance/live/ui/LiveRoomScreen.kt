@@ -74,6 +74,18 @@ fun LiveRoomScreen(
     val liveRooms by viewModel.liveRooms.collectAsState()
     val demoRooms by viewModel.demoRooms.collectAsState()
 
+    // The session listener is authoritative over an older discovery snapshot. In particular,
+    // never retain a renderer merely because the cached feed still contains an ended room.
+    val ended = sessionState as? LiveRoomSessionState.Ended
+    if (ended?.room?.id == roomId) {
+        LiveRoomStateScreen(
+            title = "Live ended",
+            message = "This live room has ended. The recording is not available.",
+            onBack = onNavigateBack
+        )
+        return
+    }
+
     val activeState = sessionState as? LiveRoomSessionState.Active
     val activeRoom = activeState?.room?.takeIf { it.id == roomId }
     val realRoom = liveRooms.firstOrNull { it.id == roomId }
@@ -198,7 +210,8 @@ private fun LiveRoomScreenContent(
         (room.type == LiveRoomType.VIDEO || room.type == LiveRoomType.AUDIO)
     val mediaContext = LocalContext.current
     val mediaScope = rememberCoroutineScope()
-    val mediaManager = if (viewerMedia) remember(room.id, foreground) {
+    var viewerRetry by remember(room.id) { mutableIntStateOf(0) }
+    val mediaManager = if (viewerMedia) remember(room.id, foreground, viewerRetry) {
         LiveKitMediaManager(mediaContext, mediaScope)
     } else null
     var viewerConnectionFailed by remember(room.id) { mutableStateOf(false) }
@@ -373,31 +386,52 @@ private fun LiveRoomScreenContent(
                             LiveKitVideoSurface(mediaRoom, track, Modifier.fillMaxSize())
                         } else {
                             Box(Modifier.fillMaxSize().background(Color.Black), contentAlignment = Alignment.Center) {
-                                Text(
-                                    text = when {
-                                        viewerConnectionFailed -> "Unable to connect to live media."
-                                        mediaState?.connection == MediaConnection.FAILED -> mediaState?.message ?: "Unable to connect to live media."
-                                        mediaState?.connection == MediaConnection.RECONNECTING -> "Reconnecting to live media…"
-                                        mediaState?.connection == MediaConnection.CONNECTED -> "Host camera is unavailable or off."
-                                        else -> "Connecting to live media…"
-                                    },
-                                    color = Color.White
-                                )
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(
+                                        text = when {
+                                            viewerConnectionFailed -> "Unable to connect to live media."
+                                            mediaState?.connection == MediaConnection.FAILED -> mediaState?.message ?: "Unable to connect to live media."
+                                            mediaState?.connection == MediaConnection.RECONNECTING -> "Reconnecting to live media…"
+                                            mediaState?.connection == MediaConnection.CONNECTED -> "Host camera is unavailable or off."
+                                            else -> "Connecting to live media…"
+                                        },
+                                        color = Color.White
+                                    )
+                                    if (viewerConnectionFailed || mediaState?.connection == MediaConnection.FAILED) {
+                                        TextButton(onClick = { viewerRetry++ }) { Text("Retry") }
+                                    }
+                                }
                             }
                         }
                     } else VideoStageCanvas(room = room)
-                    LiveRoomType.AUDIO -> AudioStageCanvas(
-                        room = room,
-                        seats = audioSeats,
-                        onSeatClick = { seatIndex ->
-                            if (isHost) {
-                                viewModel.toggleAudioSeatMute(room.id, seatIndex)
-                            } else {
-                                viewModel.occupyAudioSeat(room.id, seatIndex, "user_me", "You")
-                                Toast.makeText(context, "Joined Audio Seat #${seatIndex + 1}!", Toast.LENGTH_SHORT).show()
+                    LiveRoomType.AUDIO -> Box(Modifier.fillMaxSize()) {
+                        AudioStageCanvas(
+                            room = room,
+                            seats = audioSeats,
+                            onSeatClick = { seatIndex ->
+                                if (isHost) {
+                                    viewModel.toggleAudioSeatMute(room.id, seatIndex)
+                                } else {
+                                    viewModel.occupyAudioSeat(room.id, seatIndex, "user_me", "You")
+                                    Toast.makeText(context, "Joined Audio Seat #${seatIndex + 1}!", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        )
+                        if (viewerMedia && (viewerConnectionFailed || mediaState?.connection != MediaConnection.CONNECTED)) {
+                            Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    when {
+                                        viewerConnectionFailed || mediaState?.connection == MediaConnection.FAILED -> "Unable to connect to live audio."
+                                        mediaState?.connection == MediaConnection.RECONNECTING -> "Reconnecting to live audio…"
+                                        else -> "Connecting to live audio…"
+                                    }, color = Color.White
+                                )
+                                if (viewerConnectionFailed || mediaState?.connection == MediaConnection.FAILED) {
+                                    TextButton(onClick = { viewerRetry++ }) { Text("Retry") }
+                                }
                             }
                         }
-                    )
+                    }
                     LiveRoomType.TEXT -> TextStageCanvas(room = room)
                     LiveRoomType.YOUTUBE_WATCH_PARTY -> WatchPartyStage(
                         roomId = room.id,

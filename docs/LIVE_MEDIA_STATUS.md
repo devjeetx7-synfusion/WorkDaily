@@ -47,10 +47,18 @@ With a deployed staging backend, configured LiveKit and a completed Android inte
 
 ## Validation for viewer integration
 
-The token-service and lifecycle-policy Node tests passed locally (15 tests) and npm audit found no vulnerabilities. Android compilation, the new policy tests and lint could not run because Java and the Android SDK were unavailable. No Firebase/LiveKit integration or device test was performed. Subscriber lifecycle, rendering and reconnection therefore remain unverified. There is no in-room retry action or audio-only connection indicator yet.
+The token-service and lifecycle-policy Node tests passed locally (15 tests) and npm audit found no vulnerabilities. Android compilation, the new policy tests and lint could not run because Java and the Android SDK were unavailable. No Firebase/LiveKit integration or device test was performed. Subscriber lifecycle, rendering and reconnection therefore remain unverified. Viewer video and audio screens now offer a user-initiated retry after media connection failure, and audio shows a connection indicator.
 
 ## Server-owned lifecycle foundation (not deployed or wired to Android)
 
 `reserveLiveMediaRoom` creates an initially non-public, not-live document and uses a per-host Firestore lock and returns an existing active reservation on retry. Expired PREPARING reservations are marked FAILED when that host reserves again. `activateLiveMediaRoom` checks the authenticated host and LiveKit participant identity, ACTIVE state, and unmuted microphone (plus camera for VIDEO), then rechecks the reservation in a Firestore transaction. `endLiveMediaRoom` marks the room ENDED and removes the lock before requesting LiveKit room deletion; a failed deletion is returned for retry, and an already-absent LiveKit room is accepted. Firestore rules disallow client creation or modification of mediaManaged rooms.
 
 These endpoints have unit tests with sequential fakes, not Firestore emulator/concurrency tests or a deployed LiveKit test. They do **not** yet provide scheduled stale-room cleanup, reliable retry after process death, protection against legacy client-created live rooms, private-room invitations, or continuous enforcement after token issuance. The activation check and Firestore transition are separated by a network call and are not an atomic proof that a track remains available afterward. The host creation guard remains enabled. Local camera preview does not publish and stops on background/exit.
+
+## Android End Live integration (not yet build-verified)
+
+For an existing server-managed room, the Android Firestore backend now routes End Live to `endLiveMediaRoom` instead of attempting a Firestore write forbidden by the rules. The session and ViewModel reject overlapping end calls. An initialized host media manager is disconnected before the request. The session treats ENDED as terminal until explicitly reopened, and the screen prioritizes the ended session over a stale discovery snapshot. Legacy rooms continue to use their existing Firestore end path.
+
+The callable may mark Firestore ended before LiveKit deletion fails. Its error is retryable at the backend, but Android may transition to the ended screen before the user can retry; there is no durable retry or server-side stale-room reconciler. This does not constitute reliable host cleanup. Host reservation, microphone permission, publishing, activation, and host controls are still not wired to Android, and the media-creation guard remains in place.
+
+Validation in this environment: `npm ci --ignore-scripts`, `npm test` (15/15), `npm audit --omit=dev` and Node syntax checks passed. Gradle dependency resolution, `:app:assembleDebug`, `:app:testDebugUnitTest` and `:app:lintDebug` could not start because Java/JAVA_HOME was unavailable; ANDROID_HOME was not configured. The new Android session tests were not run. No deployment or end-to-end media test was performed.
