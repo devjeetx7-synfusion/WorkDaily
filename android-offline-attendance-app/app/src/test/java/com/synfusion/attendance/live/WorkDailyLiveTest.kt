@@ -234,6 +234,25 @@ class WorkDailyLiveTest {
     }
 
     @Test
+    fun testSendChatMessagePreservesSenderAvatar() {
+        val room = repository.liveRooms.value.first()
+        val customAvatar = "https://workdaily.app/avatars/test_user.jpg"
+
+        repository.sendChatMessage(
+            roomId = room.id,
+            messageText = "Checking site progress",
+            senderName = "Dev Engineer",
+            senderAvatar = customAvatar
+        )
+
+        val chats = repository.chatMessagesMap.value[room.id] ?: emptyList()
+        val sentMsg = chats.firstOrNull { it.message == "Checking site progress" }
+        assertNotNull("Chat message should be posted", sentMsg)
+        assertEquals("Dev Engineer", sentMsg?.senderName)
+        assertEquals(customAvatar, sentMsg?.senderAvatar)
+    }
+
+    @Test
     fun testYouTubeUrlAndIdParsing() {
         val stdUrl = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
         val shortUrl = "https://youtu.be/dQw4w9WgXcQ"

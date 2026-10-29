@@ -171,6 +171,10 @@ class FirestoreLiveRoomBackend(
             // parent room exists and is live, so it cannot be created in the same atomic batch.
             roomRef.set(roomData).awaitTask()
 
+            // Ensure host room membership is immediately written and persisted
+            val hostMember = host.toMember(isHost = true, nowMillis = now)
+            membersRef(roomId).document(host.uid).set(memberToMap(hostMember)).awaitTask()
+
             initialWatchParty?.let { state ->
                 val batch = firestore.batch()
                 batch.set(stateRef(roomId), stateToMap(state))
@@ -821,7 +825,13 @@ class FirestoreLiveRoomBackend(
         }
         return try {
             // Membership is a hard requirement; the security rules enforce it server side too.
-            val membership = membersRef(roomId).document(uid).get().awaitTask()
+            var membership = membersRef(roomId).document(uid).get().awaitTask()
+            if (!membership.exists()) {
+                val joinResult = joinRoom(roomId, identity)
+                if (joinResult is LiveOperationResult.Success) {
+                    membership = membersRef(roomId).document(uid).get().awaitTask()
+                }
+            }
             if (!membership.exists()) {
                 return LiveOperationResult.Error("Join the room before chatting.", isAuthError = true)
             }

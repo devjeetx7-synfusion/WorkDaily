@@ -736,18 +736,45 @@ fun LiveCommentItem(
 
         Box(
             modifier = Modifier
-                .size(20.dp)
+                .size(22.dp)
                 .clip(CircleShape)
-                .background(Color.White.copy(alpha = 0.25f))
+                .background(LivePrimaryEmerald.copy(alpha = 0.25f))
                 .then(if (onUserClick != null) Modifier.clickable { onUserClick(message.senderId) } else Modifier),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = initials,
-                fontSize = 9.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White
-            )
+            var imageLoaded by remember(message.senderAvatar) { mutableStateOf(false) }
+
+            if (!imageLoaded) {
+                Text(
+                    text = initials,
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+            }
+
+            if (!message.senderAvatar.isNullOrBlank()) {
+                val cleanUrl = message.senderAvatar.trim()
+                val context = LocalContext.current
+                val request = remember(cleanUrl) {
+                    ImageRequest.Builder(context)
+                        .data(cleanUrl)
+                        .memoryCacheKey(cleanUrl)
+                        .diskCacheKey(cleanUrl)
+                        .crossfade(100)
+                        .build()
+                }
+                AsyncImage(
+                    model = request,
+                    contentDescription = "${message.senderName} Avatar",
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(CircleShape),
+                    contentScale = ContentScale.Crop,
+                    onSuccess = { imageLoaded = true },
+                    onError = { imageLoaded = false }
+                )
+            }
         }
 
         Text(

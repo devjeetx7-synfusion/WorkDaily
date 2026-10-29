@@ -78,30 +78,49 @@ class FirestoreBlockRepository(
                     )
                 }
 
-                // If blocker was following blocked user, remove follow relationship and update counters
+                var blockerFollowingDelta = 0L
+                var blockerFollowersDelta = 0L
+                var blockedFollowingDelta = 0L
+                var blockedFollowersDelta = 0L
+
                 if (followSnap1.exists()) {
                     transaction.delete(followRef1)
-                    if (blockerProfileSnap.exists()) {
-                        val following = (blockerProfileSnap.getLong("followingCount") ?: 0L)
-                        transaction.update(blockerProfileRef, "followingCount", (following - 1).coerceAtLeast(0L))
-                    }
-                    if (blockedProfileSnap.exists()) {
-                        val followers = (blockedProfileSnap.getLong("followerCount") ?: 0L)
-                        transaction.update(blockedProfileRef, "followerCount", (followers - 1).coerceAtLeast(0L))
-                    }
+                    blockerFollowingDelta -= 1
+                    blockedFollowersDelta -= 1
                 }
 
-                // If blocked user was following blocker, remove follow relationship and update counters
                 if (followSnap2.exists()) {
                     transaction.delete(followRef2)
-                    if (blockedProfileSnap.exists()) {
-                        val following = (blockedProfileSnap.getLong("followingCount") ?: 0L)
-                        transaction.update(blockedProfileRef, "followingCount", (following - 1).coerceAtLeast(0L))
-                    }
-                    if (blockerProfileSnap.exists()) {
-                        val followers = (blockerProfileSnap.getLong("followerCount") ?: 0L)
-                        transaction.update(blockerProfileRef, "followerCount", (followers - 1).coerceAtLeast(0L))
-                    }
+                    blockedFollowingDelta -= 1
+                    blockerFollowersDelta -= 1
+                }
+
+                if (blockerProfileSnap.exists() && (blockerFollowingDelta != 0L || blockerFollowersDelta != 0L)) {
+                    val currentFollowing = blockerProfileSnap.getLong("followingCount") ?: 0L
+                    val currentFollowers = blockerProfileSnap.getLong("followerCount") ?: 0L
+                    val newFollowing = (currentFollowing + blockerFollowingDelta).coerceAtLeast(0L)
+                    val newFollowers = (currentFollowers + blockerFollowersDelta).coerceAtLeast(0L)
+                    transaction.update(
+                        blockerProfileRef,
+                        mapOf(
+                            "followingCount" to newFollowing,
+                            "followerCount" to newFollowers
+                        )
+                    )
+                }
+
+                if (blockedProfileSnap.exists() && (blockedFollowingDelta != 0L || blockedFollowersDelta != 0L)) {
+                    val currentFollowing = blockedProfileSnap.getLong("followingCount") ?: 0L
+                    val currentFollowers = blockedProfileSnap.getLong("followerCount") ?: 0L
+                    val newFollowing = (currentFollowing + blockedFollowingDelta).coerceAtLeast(0L)
+                    val newFollowers = (currentFollowers + blockedFollowersDelta).coerceAtLeast(0L)
+                    transaction.update(
+                        blockedProfileRef,
+                        mapOf(
+                            "followingCount" to newFollowing,
+                            "followerCount" to newFollowers
+                        )
+                    )
                 }
             }.await()
 

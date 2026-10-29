@@ -165,4 +165,74 @@ class WorkDailyLiveFixesTest {
         val followMsgs = messages.filter { it.clientMessageId == clientMsgId }
         assertEquals("Follow event must be idempotent and appear once", 1, followMsgs.size)
     }
+
+    @Test
+    fun `test message send requires membership and host is auto joined`() = runTest {
+        val request = LiveRoomCreateRequest(
+            title = "Membership Test Stream",
+            category = "Safety",
+            type = LiveRoomType.VIDEO
+        )
+        val room = (backend.createRoom(testHost, request) as LiveOperationResult.Success).data
+
+        // Host is auto-joined on room creation and can send messages immediately
+        val hostSend = backend.sendMessage(room.id, testHost, "Welcome everyone!", "client_host_msg")
+        assertTrue("Host should be auto-joined on room creation and able to chat", hostSend is LiveOperationResult.Success)
+
+        // Non-member viewer message send is rejected until joined
+        val viewerSend1 = backend.sendMessage(room.id, testUser, "Hello?", "client_viewer_msg")
+        assertTrue("Non-member message send must require joining first", viewerSend1 is LiveOperationResult.Error)
+
+        // After joining, viewer message succeeds
+        backend.joinRoom(room.id, testUser)
+        val viewerSend2 = backend.sendMessage(room.id, testUser, "Hello now!", "client_viewer_msg2")
+        assertTrue("Message send succeeds after joining", viewerSend2 is LiveOperationResult.Success)
+    }
+
+    @Test
+    fun `test message send to invalid room fails`() = runTest {
+        val sendResult = backend.sendMessage("non_existent_room_999", testUser, "Hello?", "client_invalid")
+        assertTrue("Sending message to invalid room must fail", sendResult is LiveOperationResult.Error)
+    }
+
+    @Test
+    fun `test chat message idempotency and retry behavior`() = runTest {
+        val request = LiveRoomCreateRequest(
+            title = "Retry Test Stream",
+            category = "Safety",
+            type = LiveRoomType.VIDEO
+        )
+        val room = (backend.createRoom(testHost, request) as LiveOperationResult.Success).data
+        backend.joinRoom(room.id, testUser)
+
+        val clientMsgId = "msg_retry_100"
+        val send1 = backend.sendMessage(room.id, testUser, "First Attempt", clientMsgId)
+        assertTrue(send1 is LiveOperationResult.Success)
+
+        // Retry same clientMessageId
+        val send2 = backend.sendMessage(room.id, testUser, "First Attempt", clientMsgId)
+        assertTrue("Retry with same clientMessageId should succeed idempotently", send2 is LiveOperationResult.Success)
+
+        val messages = backend.observeMessages(room.id, 50).first()
+        val matchingMsgs = messages.filter { it.clientMessageId == clientMsgId }
+        assertEquals("Retried message must not be duplicated in room", 1, matchingMsgs.size)
+    }
+
+    @Test
+    fun `test host can end room without viewer membership restriction`() = runTest {
+        val request = LiveRoomCreateRequest(
+            title = "Host Exclusive Stream",
+            category = "Engineering",
+            type = LiveRoomType.VIDEO
+        )
+        val room = (backend.createRoom(testHost, request) as LiveOperationResult.Success).data
+
+        // Host ends the room
+        val endResult = backend.endRoom(room.id, testHost.uid)
+        assertTrue("Host should be authorized to end live room", endResult is LiveOperationResult.Success)
+
+        val loadedRoom = (backend.loadRoom(room.id) as LiveOperationResult.Success).data
+        assertNotNull(loadedRoom)
+        assertFalse("Room should be marked ended", loadedRoom!!.isLive)
+    }
 }

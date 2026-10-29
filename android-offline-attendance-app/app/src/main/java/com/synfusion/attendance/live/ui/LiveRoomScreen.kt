@@ -223,14 +223,17 @@ private fun LiveRoomScreenContent(
         }
     }
 
-    // Report lock state to parent VerticalPager container whenever overlays/sheets/inputs are active
+    val chatListState = rememberLazyListState()
+
+    // Report lock state to parent VerticalPager container whenever overlays/sheets/inputs/chat-scroll are active
     val isInteractionActive = isKeyboardVisible ||
             showInlineGiftTray ||
             showGiftSheet ||
             showHostControlsSheet ||
             showViewerListSheet ||
             selectedProfileUserId != null ||
-            showEndLiveConfirmationDialog
+            showEndLiveConfirmationDialog ||
+            chatListState.isScrollInProgress
 
     LaunchedEffect(isInteractionActive) {
         onPagingLockChange(isInteractionActive)
@@ -247,8 +250,6 @@ private fun LiveRoomScreenContent(
             onNavigateBack()
         }
     }
-
-    val chatListState = rememberLazyListState()
 
     val isAtBottom by remember {
         derivedStateOf {
@@ -431,21 +432,6 @@ private fun LiveRoomScreenContent(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    // Live duration badge (real elapsed time since the room started).
-                    Surface(
-                        shape = RoundedCornerShape(20.dp),
-                        color = Color.Black.copy(alpha = 0.45f),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.15f))
-                    ) {
-                        Text(
-                            text = formatLiveDuration(liveDurationSeconds),
-                            color = Color.White,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 4.dp)
-                        )
-                    }
-
                     ViewerCountChip(
                         count = viewerCount,
                         onClick = { showViewerListSheet = true }

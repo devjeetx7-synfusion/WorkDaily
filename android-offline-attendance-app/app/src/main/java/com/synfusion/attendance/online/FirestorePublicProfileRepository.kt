@@ -187,6 +187,7 @@ class FirestorePublicProfileRepository(
 
             firestore.runTransaction { transaction ->
                 val now = System.currentTimeMillis()
+                // READ PHASE: Perform ALL document reads before starting any writes!
                 val txProfileSnap = transaction.get(profileRef)
                 val txOldUsernameLower = txProfileSnap.getString("usernameLower") ?: oldUsernameLower
                 val existingFollowerCount = (txProfileSnap.getLong("followerCount") ?: currentSnap.getLong("followerCount") ?: 0L).toInt()
@@ -194,24 +195,21 @@ class FirestorePublicProfileRepository(
                 val existingIsVerified = txProfileSnap.getBoolean("isVerified") ?: currentSnap.getBoolean("isVerified") ?: false
                 val existingCreatedAt = txProfileSnap.getLong("createdAt") ?: createdAt
 
-                // Preserve the optional profile attributes that a caller may not manage.
-                // Callers such as the Google sign-up flow invoke updatePublicProfile() without
-                // gender/dateOfBirth/countryCode and therefore rely on the contract defaults
-                // ("", null, ""). Writing those defaults verbatim would silently erase data the
-                // user saved from Settings, so fall back to the stored values instead.
-                // Mirrors the existing merge convention used for OnlineProfile.countryCode.
                 val existingGender = txProfileSnap.getString("gender") ?: currentSnap.getString("gender") ?: ""
                 val existingDateOfBirth = txProfileSnap.getString("dateOfBirth") ?: currentSnap.getString("dateOfBirth")
                 val existingCountryCode = txProfileSnap.getString("countryCode") ?: currentSnap.getString("countryCode") ?: ""
 
+                val isUsernameChanging = txOldUsernameLower != newNormalized
                 val newUsernameRef = firestore.collection("usernames").document(newNormalized)
-                val newUsernameSnap = if (txOldUsernameLower != newNormalized) {
-                    transaction.get(newUsernameRef)
-                } else {
-                    null
-                }
+                val oldUsernameRef = if (isUsernameChanging && txOldUsernameLower.isNotBlank()) {
+                    firestore.collection("usernames").document(txOldUsernameLower)
+                } else null
 
-                if (txOldUsernameLower != newNormalized) {
+                val newUsernameSnap = if (isUsernameChanging) transaction.get(newUsernameRef) else null
+                val oldUsernameSnap = oldUsernameRef?.let { transaction.get(it) }
+
+                // READ PHASE COMPLETE: Perform writes after reads!
+                if (isUsernameChanging) {
                     if (newUsernameSnap != null && newUsernameSnap.exists()) {
                         val ownerUid = newUsernameSnap.getString("uid")
                         if (ownerUid != firebaseUid) {
@@ -223,8 +221,7 @@ class FirestorePublicProfileRepository(
                     transaction.set(newUsernameRef, mapOf("uid" to firebaseUid, "createdAt" to now))
 
                     // Delete old reservation if it existed
-                    if (txOldUsernameLower.isNotBlank()) {
-                        val oldUsernameRef = firestore.collection("usernames").document(txOldUsernameLower)
+                    if (oldUsernameRef != null && oldUsernameSnap != null && oldUsernameSnap.exists()) {
                         transaction.delete(oldUsernameRef)
                     }
                 }
