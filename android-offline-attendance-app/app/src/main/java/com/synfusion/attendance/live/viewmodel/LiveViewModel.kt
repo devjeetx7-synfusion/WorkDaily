@@ -44,6 +44,12 @@ class LiveViewModel(application: Application) : AndroidViewModel(application) {
     /** Outlives the ViewModel so "leave room" cleanup still runs after the screen is destroyed. */
     private val cleanupScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+    // Created only when the future media flow explicitly requests it; no capture begins here.
+    private val mediaManagerDelegate = lazy {
+        com.synfusion.attendance.live.media.LiveKitMediaManager(application, viewModelScope)
+    }
+    val mediaManager get() = mediaManagerDelegate.value
+
     /** Resolves real playlist titles/thumbnails from YouTube's public oEmbed endpoint. */
     private val metadataProvider = com.synfusion.attendance.online.YouTubeOEmbedMetadataProvider()
 
@@ -84,6 +90,9 @@ class LiveViewModel(application: Application) : AndroidViewModel(application) {
         }
         authListener = null
         closeLiveRoom(leaveMembership = true)
+        if (mediaManagerDelegate.isInitialized()) {
+            cleanupScope.launch(Dispatchers.Main.immediate) { mediaManagerDelegate.value.disconnect() }
+        }
         super.onCleared()
     }
 

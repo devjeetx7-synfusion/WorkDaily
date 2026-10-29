@@ -131,10 +131,14 @@ dependencies {
     // WorkManager
     implementation("androidx.work:work-runtime-ktx:2.8.1")
 
+    // LiveKit 2.5.0 is built with Kotlin 1.8.20 and supports minSdk 21.
+    implementation("io.livekit:livekit-android:2.5.0")
+
     // Firebase BoM & Firebase Authentication
     implementation(platform("com.google.firebase:firebase-bom:32.8.0"))
     implementation("com.google.firebase:firebase-auth-ktx")
     implementation("com.google.firebase:firebase-firestore-ktx")
+    implementation("com.google.firebase:firebase-functions-ktx")
     implementation("com.google.firebase:firebase-messaging-ktx")
 
     // Google Credential Manager & Google ID
