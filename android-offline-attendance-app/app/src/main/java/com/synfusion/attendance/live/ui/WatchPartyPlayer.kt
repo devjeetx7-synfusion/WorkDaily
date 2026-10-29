@@ -12,6 +12,7 @@ import android.webkit.WebViewClient
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -53,9 +54,11 @@ import kotlin.math.roundToInt
 
 /** Player events reported by the official YouTube IFrame bridge. */
 private sealed class WatchPartyPlayerEvent {
-    object Ready : WatchPartyPlayerEvent()
-    data class StateChanged(val status: WatchPartyPlaybackStatus, val positionSeconds: Float) : WatchPartyPlayerEvent()
-    data class Position(val positionSeconds: Float, val playing: Boolean) : WatchPartyPlayerEvent()
+    data class Ready(val durationSeconds: Float, val volume: Int, val muted: Boolean) : WatchPartyPlayerEvent()
+    data class StateChanged(val status: WatchPartyPlaybackStatus, val positionSeconds: Float, val durationSeconds: Float) : WatchPartyPlayerEvent()
+    data class Position(val positionSeconds: Float, val durationSeconds: Float, val playing: Boolean) : WatchPartyPlayerEvent()
+    data class Duration(val durationSeconds: Float) : WatchPartyPlayerEvent()
+    data class Volume(val volume: Int, val muted: Boolean) : WatchPartyPlayerEvent()
     data class Failed(val code: Int) : WatchPartyPlayerEvent()
 }
 
@@ -86,7 +89,6 @@ fun WatchPartyStage(
     onToggleLocalMute: () -> Unit,
     viewModel: LiveViewModel
 ) {
-    val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val density = LocalDensity.current
 
@@ -104,12 +106,22 @@ fun WatchPartyStage(
     var playerReady by remember { mutableStateOf(false) }
     var playerStatus by remember { mutableStateOf(WatchPartyPlaybackStatus.UNSTARTED) }
     var lastKnownPosition by remember { mutableFloatStateOf(0f) }
+    var totalDuration by remember { mutableFloatStateOf(0f) }
+    var playerVolume by remember { mutableIntStateOf(100) }
+    var playerMuted by remember { mutableStateOf(false) }
     var appliedRevision by remember(roomId) { mutableLongStateOf(-1L) }
     var loadedVideoId by remember(roomId) { mutableStateOf<String?>(null) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var isHidden by rememberSaveable(roomId) { mutableStateOf(false) }
     var showPlaylistSheet by remember { mutableStateOf(false) }
     var lastPublishedPositionAt by remember { mutableLongStateOf(0L) }
+
+    // Custom Overlay Control State
+    var showControlsOverlay by remember { mutableStateOf(true) }
+    var lastUserInteractionTime by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    var isDraggingSlider by remember { mutableStateOf(false) }
+    var sliderDragPosition by remember { mutableFloatStateOf(0f) }
+    var isFullscreenExpanded by remember { mutableStateOf(false) }
 
     var offsetX by remember(roomId) { mutableFloatStateOf(0f) }
     var offsetY by remember(roomId) { mutableFloatStateOf(0f) }
@@ -135,12 +147,16 @@ fun WatchPartyStage(
                 playerReady = true
                 errorMessage = null
                 loadedVideoId = selection?.videoId ?: loadedVideoId
+                if (event.durationSeconds > 0f) totalDuration = event.durationSeconds
+                playerVolume = event.volume
+                playerMuted = event.muted
             }
 
             is WatchPartyPlayerEvent.StateChanged -> {
                 val previousStatus = playerStatus
                 playerStatus = event.status
                 lastKnownPosition = event.positionSeconds
+                if (event.durationSeconds > 0f) totalDuration = event.durationSeconds
                 val causedByRemoteState = System.currentTimeMillis() < remoteApplyUntilMillis
                 // Only publish real transitions: YouTube re-emits PLAYING after buffering/seeks and
                 // every write is a revision bump, so duplicates must not reach Firestore.
@@ -163,7 +179,17 @@ fun WatchPartyStage(
 
             is WatchPartyPlayerEvent.Position -> {
                 lastKnownPosition = event.positionSeconds
+                if (event.durationSeconds > 0f) totalDuration = event.durationSeconds
                 if (event.playing) playerStatus = WatchPartyPlaybackStatus.PLAYING
+            }
+
+            is WatchPartyPlayerEvent.Duration -> {
+                if (event.durationSeconds > 0f) totalDuration = event.durationSeconds
+            }
+
+            is WatchPartyPlayerEvent.Volume -> {
+                playerVolume = event.volume
+                playerMuted = event.muted
             }
 
             is WatchPartyPlayerEvent.Failed -> {
@@ -373,30 +399,50 @@ fun WatchPartyStage(
                         offsetY = offsetY.coerceIn(0f, maxOffsetY)
                     }
 
+                    val effectiveWidthDp = if (isFullscreenExpanded) maxWidth else playerWidthDp
+                    val effectiveHeightDp = if (isFullscreenExpanded) (maxWidth * 9f / 16f).coerceAtMost(maxHeight) else playerHeightDp
+
+                    // Auto-hide controls when playing after inactivity
+                    LaunchedEffect(showControlsOverlay, playerStatus, lastUserInteractionTime, isDraggingSlider) {
+                        if (showControlsOverlay && playerStatus == WatchPartyPlaybackStatus.PLAYING && !isDraggingSlider) {
+                            delay(3_500L)
+                            if (System.currentTimeMillis() - lastUserInteractionTime >= 3_000L) {
+                                showControlsOverlay = false
+                            }
+                        }
+                    }
+
                     Surface(
-                        shape = RoundedCornerShape(18.dp),
+                        shape = RoundedCornerShape(if (isFullscreenExpanded) 0.dp else 18.dp),
                         color = LiveSurfaceDark,
-                        border = BorderStroke(1.dp, LivePrimaryMint.copy(alpha = 0.35f)),
-                        shadowElevation = 10.dp,
+                        border = if (isFullscreenExpanded) null else BorderStroke(1.dp, LivePrimaryMint.copy(alpha = 0.35f)),
+                        shadowElevation = if (isFullscreenExpanded) 0.dp else 10.dp,
                         modifier = Modifier
-                            .width(playerWidthDp)
-                            .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }
+                            .width(effectiveWidthDp)
+                            .then(
+                                if (!isFullscreenExpanded) {
+                                    Modifier.offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }
+                                } else Modifier
+                            )
                     ) {
                         Column {
-                            // Drag handle header. Dragging is limited to this bar so YouTube's own
-                            // controls keep receiving taps and slider gestures inside the player.
+                            // Drag handle header bar.
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(34.dp)
                                     .background(Color(0xFF131A24))
-                                    .pointerInput(maxOffsetX, maxOffsetY) {
-                                        detectDragGestures { change, dragAmount ->
-                                            change.consume()
-                                            offsetX = (offsetX + dragAmount.x).coerceIn(0f, maxOffsetX)
-                                            offsetY = (offsetY + dragAmount.y).coerceIn(0f, maxOffsetY)
-                                        }
-                                    }
+                                    .then(
+                                        if (!isFullscreenExpanded) {
+                                            Modifier.pointerInput(maxOffsetX, maxOffsetY) {
+                                                detectDragGestures { change, dragAmount ->
+                                                    change.consume()
+                                                    offsetX = (offsetX + dragAmount.x).coerceIn(0f, maxOffsetX)
+                                                    offsetY = (offsetY + dragAmount.y).coerceIn(0f, maxOffsetY)
+                                                }
+                                            }
+                                        } else Modifier
+                                    )
                                     .padding(horizontal = 8.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween
@@ -406,12 +452,14 @@ fun WatchPartyStage(
                                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                                     modifier = Modifier.weight(1f)
                                 ) {
-                                    Icon(
-                                        Icons.Default.DragIndicator,
-                                        contentDescription = "Drag video",
-                                        tint = Color.White.copy(alpha = 0.7f),
-                                        modifier = Modifier.size(16.dp)
-                                    )
+                                    if (!isFullscreenExpanded) {
+                                        Icon(
+                                            Icons.Default.DragIndicator,
+                                            contentDescription = "Drag video",
+                                            tint = Color.White.copy(alpha = 0.7f),
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
                                     Icon(
                                         Icons.Default.PlayCircle,
                                         contentDescription = null,
@@ -430,8 +478,7 @@ fun WatchPartyStage(
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     IconButton(
                                         onClick = {
-                                            // The host publishes the shared mute state; participants
-                                            // only change their own audio preference.
+                                            lastUserInteractionTime = System.currentTimeMillis()
                                             if (isHost && isSessionBacked && isLive) {
                                                 viewModel.hostSetMuted(!sharedMuted)
                                             } else {
@@ -445,6 +492,20 @@ fun WatchPartyStage(
                                             contentDescription = if (sharedMuted || locallyMuted) "Unmute" else "Mute",
                                             tint = Color.White,
                                             modifier = Modifier.size(15.dp)
+                                        )
+                                    }
+                                    IconButton(
+                                        onClick = {
+                                            lastUserInteractionTime = System.currentTimeMillis()
+                                            isFullscreenExpanded = !isFullscreenExpanded
+                                        },
+                                        modifier = Modifier.size(28.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = if (isFullscreenExpanded) Icons.Default.FullscreenExit else Icons.Default.Fullscreen,
+                                            contentDescription = if (isFullscreenExpanded) "Exit Fullscreen" else "Fullscreen",
+                                            tint = Color.White,
+                                            modifier = Modifier.size(16.dp)
                                         )
                                     }
                                     IconButton(
@@ -475,8 +536,8 @@ fun WatchPartyStage(
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(playerHeightDp)
-                                    .clip(RoundedCornerShape(bottomStart = 18.dp, bottomEnd = 18.dp))
+                                    .height(effectiveHeightDp)
+                                    .clip(RoundedCornerShape(bottomStart = if (isFullscreenExpanded) 0.dp else 18.dp, bottomEnd = if (isFullscreenExpanded) 0.dp else 18.dp))
                                     .background(Color.Black)
                             ) {
                                 if (selection != null) {
@@ -484,6 +545,56 @@ fun WatchPartyStage(
                                         selection = selection,
                                         onCreated = { webView -> webViewRef = webView },
                                         onEvent = { event -> currentEventSink.value(event) }
+                                    )
+                                }
+
+                                // Interactive Custom Controls Overlay
+                                if (selection != null && errorMessage == null) {
+                                    CustomPlayerControlsOverlay(
+                                        showControls = showControlsOverlay,
+                                        isHost = isHost,
+                                        playerReady = playerReady,
+                                        playerStatus = playerStatus,
+                                        currentPosition = if (isDraggingSlider) sliderDragPosition else lastKnownPosition,
+                                        duration = totalDuration,
+                                        isDraggingSlider = isDraggingSlider,
+                                        onToggleControls = {
+                                            showControlsOverlay = !showControlsOverlay
+                                            lastUserInteractionTime = System.currentTimeMillis()
+                                        },
+                                        onPlayPause = {
+                                            lastUserInteractionTime = System.currentTimeMillis()
+                                            if (playerStatus == WatchPartyPlaybackStatus.PLAYING) {
+                                                if (isHost && isSessionBacked) viewModel.hostPause(lastKnownPosition)
+                                                else evaluate("wpPause();")
+                                            } else {
+                                                if (isHost && isSessionBacked) viewModel.hostPlay(lastKnownPosition)
+                                                else evaluate("wpPlay();")
+                                            }
+                                        },
+                                        onSeekDelta = { deltaSeconds ->
+                                            lastUserInteractionTime = System.currentTimeMillis()
+                                            val target = (lastKnownPosition + deltaSeconds).coerceIn(0f, totalDuration.coerceAtLeast(1f))
+                                            if (isHost && isSessionBacked) {
+                                                viewModel.hostSeek(target, resumePlaying = playerStatus == WatchPartyPlaybackStatus.PLAYING)
+                                            } else {
+                                                evaluate("wpSeek($target);")
+                                            }
+                                        },
+                                        onSliderChange = { newPos ->
+                                            isDraggingSlider = true
+                                            sliderDragPosition = newPos
+                                            lastUserInteractionTime = System.currentTimeMillis()
+                                        },
+                                        onSliderChangeFinished = {
+                                            isDraggingSlider = false
+                                            val target = sliderDragPosition
+                                            if (isHost && isSessionBacked) {
+                                                viewModel.hostSeek(target, resumePlaying = playerStatus == WatchPartyPlaybackStatus.PLAYING)
+                                            } else {
+                                                evaluate("wpSeek($target);")
+                                            }
+                                        }
                                     )
                                 }
 
@@ -576,6 +687,156 @@ fun WatchPartyStage(
             )
         }
     }
+}
+
+/** Custom player controls overlay rendered over the embedded YouTube WebView surface. */
+@Composable
+private fun CustomPlayerControlsOverlay(
+    showControls: Boolean,
+    isHost: Boolean,
+    playerReady: Boolean,
+    playerStatus: WatchPartyPlaybackStatus,
+    currentPosition: Float,
+    duration: Float,
+    isDraggingSlider: Boolean,
+    onToggleControls: () -> Unit,
+    onPlayPause: () -> Unit,
+    onSeekDelta: (Float) -> Unit,
+    onSliderChange: (Float) -> Unit,
+    onSliderChangeFinished: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(if (showControls) Color.Black.copy(alpha = 0.45f) else Color.Transparent)
+    ) {
+        // Tap surface to show/hide controls
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .pointerInput(Unit) {
+                    detectTapGestures(onTap = { onToggleControls() })
+                }
+                .background(Color.Transparent)
+        )
+
+        if (!playerReady || playerStatus == WatchPartyPlaybackStatus.BUFFERING) {
+            CircularProgressIndicator(
+                color = LivePrimaryMint,
+                strokeWidth = 3.dp,
+                modifier = Modifier
+                    .size(36.dp)
+                    .align(Alignment.Center)
+            )
+        } else if (showControls) {
+            // Center Play/Pause & Quick Seek Buttons
+            Row(
+                modifier = Modifier.align(Alignment.Center),
+                horizontalArrangement = Arrangement.spacedBy(20.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(
+                    onClick = { onSeekDelta(-10f) },
+                    modifier = Modifier
+                        .size(38.dp)
+                        .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(19.dp))
+                ) {
+                    Icon(
+                        Icons.Default.Replay10,
+                        contentDescription = "Rewind 10s",
+                        tint = Color.White,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+
+                IconButton(
+                    onClick = onPlayPause,
+                    modifier = Modifier
+                        .size(48.dp)
+                        .background(LivePrimaryEmerald, RoundedCornerShape(24.dp))
+                ) {
+                    Icon(
+                        imageVector = if (playerStatus == WatchPartyPlaybackStatus.PLAYING) Icons.Default.Pause else Icons.Default.PlayArrow,
+                        contentDescription = if (playerStatus == WatchPartyPlaybackStatus.PLAYING) "Pause" else "Play",
+                        tint = Color.White,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+
+                IconButton(
+                    onClick = { onSeekDelta(10f) },
+                    modifier = Modifier
+                        .size(38.dp)
+                        .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(19.dp))
+                ) {
+                    Icon(
+                        Icons.Default.Forward10,
+                        contentDescription = "Forward 10s",
+                        tint = Color.White,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+            }
+
+            // Bottom Progress Bar and Timers
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.BottomCenter)
+                    .background(Color.Black.copy(alpha = 0.7f))
+                    .padding(horizontal = 8.dp, vertical = 2.dp)
+            ) {
+                val maxRange = duration.coerceAtLeast(1f)
+                val safePosition = currentPosition.coerceIn(0f, maxRange)
+
+                Slider(
+                    value = safePosition,
+                    onValueChange = onSliderChange,
+                    onValueChangeFinished = onSliderChangeFinished,
+                    valueRange = 0f..maxRange,
+                    colors = SliderDefaults.colors(
+                        thumbColor = LivePrimaryMint,
+                        activeTrackColor = LivePrimaryEmerald,
+                        inactiveTrackColor = Color.White.copy(alpha = 0.3f)
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(24.dp)
+                )
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 4.dp, vertical = 2.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "${formatTimeString(safePosition)} / ${formatTimeString(duration)}",
+                        color = Color.White.copy(alpha = 0.9f),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+
+                    if (!isHost) {
+                        Text(
+                            text = "Sync with Host",
+                            color = LivePrimaryMint,
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun formatTimeString(seconds: Float): String {
+    val totalSecs = seconds.coerceAtLeast(0f).toInt()
+    val mins = totalSecs / 60
+    val secs = totalSecs % 60
+    return String.format("%02d:%02d", mins, secs)
 }
 
 private fun resolveSelection(
@@ -730,12 +991,12 @@ private fun YouTubeIframePlayer(
                 addJavascriptInterface(
                     object {
                         @JavascriptInterface
-                        fun onPlayerReady() {
-                            post { onEvent(WatchPartyPlayerEvent.Ready) }
+                        fun onPlayerReady(durationSeconds: Float, volume: Int, isMuted: Boolean) {
+                            post { onEvent(WatchPartyPlayerEvent.Ready(durationSeconds, volume, isMuted)) }
                         }
 
                         @JavascriptInterface
-                        fun onPlayerStateChange(stateCode: Int, positionSeconds: Float) {
+                        fun onPlayerStateChange(stateCode: Int, positionSeconds: Float, durationSeconds: Float) {
                             val status = when (stateCode) {
                                 0 -> WatchPartyPlaybackStatus.ENDED
                                 1 -> WatchPartyPlaybackStatus.PLAYING
@@ -744,12 +1005,22 @@ private fun YouTubeIframePlayer(
                                 -1 -> WatchPartyPlaybackStatus.UNSTARTED
                                 else -> WatchPartyPlaybackStatus.UNSTARTED
                             }
-                            post { onEvent(WatchPartyPlayerEvent.StateChanged(status, positionSeconds)) }
+                            post { onEvent(WatchPartyPlayerEvent.StateChanged(status, positionSeconds, durationSeconds)) }
                         }
 
                         @JavascriptInterface
-                        fun onPlayerPosition(positionSeconds: Float, playing: Boolean) {
-                            post { onEvent(WatchPartyPlayerEvent.Position(positionSeconds, playing)) }
+                        fun onPlayerPosition(positionSeconds: Float, durationSeconds: Float, playing: Boolean) {
+                            post { onEvent(WatchPartyPlayerEvent.Position(positionSeconds, durationSeconds, playing)) }
+                        }
+
+                        @JavascriptInterface
+                        fun onPlayerDuration(durationSeconds: Float) {
+                            post { onEvent(WatchPartyPlayerEvent.Duration(durationSeconds)) }
+                        }
+
+                        @JavascriptInterface
+                        fun onPlayerVolume(volume: Int, isMuted: Boolean) {
+                            post { onEvent(WatchPartyPlayerEvent.Volume(volume, isMuted)) }
                         }
 
                         @JavascriptInterface
@@ -822,13 +1093,18 @@ $playerVars
         },
         events: {
           'onReady': function (event) {
-            if (bridgeReady()) { window.AndroidBridge.onPlayerReady(); }
+            var dur = 0, vol = 100, muted = false;
+            try { dur = player.getDuration() || 0; } catch(e){}
+            try { vol = player.getVolume() || 100; } catch(e){}
+            try { muted = player.isMuted() || false; } catch(e){}
+            if (bridgeReady()) { window.AndroidBridge.onPlayerReady(dur, vol, muted); }
             startPositionTicker();
           },
           'onStateChange': function (event) {
-            var position = 0;
+            var position = 0, duration = 0;
             try { position = player.getCurrentTime() || 0; } catch (e) { position = 0; }
-            if (window.AndroidBridge) { window.AndroidBridge.onPlayerStateChange(event.data, position); }
+            try { duration = player.getDuration() || 0; } catch (e) { duration = 0; }
+            if (window.AndroidBridge) { window.AndroidBridge.onPlayerStateChange(event.data, position, duration); }
           },
           'onError': function (event) {
             if (window.AndroidBridge) { window.AndroidBridge.onPlayerError(event.data); }
@@ -843,16 +1119,18 @@ $playerVars
         try {
           var playing = player && player.getPlayerState && player.getPlayerState() === 1;
           var position = player && player.getCurrentTime ? (player.getCurrentTime() || 0) : 0;
+          var duration = player && player.getDuration ? (player.getDuration() || 0) : 0;
           if (window.AndroidBridge && window.AndroidBridge.onPlayerPosition) {
-            window.AndroidBridge.onPlayerPosition(position, playing);
+            window.AndroidBridge.onPlayerPosition(position, duration, playing);
           }
         } catch (e) { }
-      }, 1000);
+      }, 500);
     }
 
     function wpPlay() { try { if (player && player.playVideo) player.playVideo(); } catch (e) { } }
     function wpPause() { try { if (player && player.pauseVideo) player.pauseVideo(); } catch (e) { } }
     function wpSeek(seconds) { try { if (player && player.seekTo) player.seekTo(seconds, true); } catch (e) { } }
+    function wpSetVolume(volume) { try { if (player && player.setVolume) player.setVolume(volume); } catch (e) { } }
     function wpMute() { try { if (player && player.mute) player.mute(); } catch (e) { } }
     function wpUnmute() { try { if (player && player.unMute) player.unMute(); } catch (e) { } }
     function wpLoad(videoId, startSeconds, autoPlay) {
