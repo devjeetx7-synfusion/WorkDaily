@@ -7,7 +7,9 @@ import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.credentials.exceptions.GetCredentialException
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import com.synfusion.attendance.online.SocialSessionCache
 import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
@@ -105,8 +107,20 @@ class FirebaseAuthRepository(
                 .addCredentialOption(googleIdOption)
                 .build()
 
-            val result = credentialManager.getCredential(context = context, request = request)
-            val credential = result.credential
+            val credential = try {
+                val result = credentialManager.getCredential(context = context, request = request)
+                result.credential
+            } catch (e: GetCredentialException) {
+                if (e is GetCredentialCancellationException) throw e
+                // Fallback to GetSignInWithGoogleOption to trigger explicit account chooser
+                val signInWithGoogleOption = GetSignInWithGoogleOption.Builder(serverClientId = clientId)
+                    .build()
+                val fallbackRequest = GetCredentialRequest.Builder()
+                    .addCredentialOption(signInWithGoogleOption)
+                    .build()
+                val fallbackResult = credentialManager.getCredential(context = context, request = fallbackRequest)
+                fallbackResult.credential
+            }
 
             val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
             val idToken = googleIdTokenCredential.idToken
@@ -163,6 +177,9 @@ class FirebaseAuthRepository(
                 credentialManager.clearCredentialState(ClearCredentialStateRequest())
             } catch (_: Exception) {
                 // Credential Manager may be unavailable on non-GMS devices or in unit tests
+            }
+            runCatching {
+                SocialSessionCache.clear()
             }
             // AuthStateListener will fire and set Unauthenticated after Firebase sign-out completes.
             // Set it explicitly here as well for immediate UI feedback.
