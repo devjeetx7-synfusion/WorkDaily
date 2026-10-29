@@ -500,7 +500,6 @@ fun YouTubeBrowserBottomSheet(
     onDismiss: () -> Unit,
     onSelectContent: (url: String, videoId: String?, playlistId: String?, title: String?, thumbnailUrl: String?) -> Unit
 ) {
-    var searchQuery by remember { mutableStateOf("") }
     var currentUrl by remember { mutableStateOf("https://m.youtube.com") }
     var detectedVideoId by remember { mutableStateOf<String?>(null) }
     var detectedPlaylistId by remember { mutableStateOf<String?>(null) }
@@ -524,7 +523,8 @@ fun YouTubeBrowserBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         windowInsets = WindowInsets(0.dp),
-        containerColor = Color(0xFF111827),
+        containerColor = MaterialTheme.colorScheme.surface,
+        contentColor = MaterialTheme.colorScheme.onSurface,
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
     ) {
         Column(
@@ -553,52 +553,15 @@ fun YouTubeBrowserBottomSheet(
                     )
                     Text(
                         text = "Browse & Search YouTube",
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onSurface,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold
                     )
                 }
                 IconButton(onClick = onDismiss, modifier = Modifier.size(32.dp)) {
-                    Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
+                    Icon(Icons.Default.Close, contentDescription = "Close", tint = MaterialTheme.colorScheme.onSurface)
                 }
             }
-
-            // Interactive Search & Navigation Bar
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                placeholder = { Text("Search YouTube or paste link/ID...", fontSize = 12.sp, color = Color.Gray) },
-                singleLine = true,
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search", tint = Color(0xFFEF4444)) },
-                trailingIcon = {
-                    if (searchQuery.isNotBlank()) {
-                        IconButton(onClick = {
-                            val parsedVideoId = extractYouTubeVideoId(searchQuery)
-                            val parsedPlaylistId = extractYouTubePlaylistId(searchQuery)
-                            if (parsedVideoId != null || parsedPlaylistId != null) {
-                                val targetUrl = if (parsedVideoId != null) "https://m.youtube.com/watch?v=$parsedVideoId"
-                                                else "https://m.youtube.com/playlist?list=$parsedPlaylistId"
-                                webViewRef?.loadUrl(targetUrl)
-                            } else {
-                                val encoded = java.net.URLEncoder.encode(searchQuery.trim(), "UTF-8")
-                                webViewRef?.loadUrl("https://m.youtube.com/results?search_query=$encoded")
-                            }
-                        }) {
-                            Icon(Icons.Default.ArrowForward, contentDescription = "Go", tint = LivePrimaryMint)
-                        }
-                    }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 2.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White,
-                    focusedBorderColor = Color(0xFFEF4444),
-                    unfocusedBorderColor = Color.Gray
-                )
-            )
 
             // WebView Container
             Box(
