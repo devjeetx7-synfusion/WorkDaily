@@ -344,6 +344,11 @@ class FirestoreLiveRoomBackend(
                 if (persistedHost != uid) {
                     throw LiveRoomFailure("Only the host can end this live room.", isAuthError = true)
                 }
+
+                // READ PHASE: All document reads must execute before any writes!
+                val stateSnapshot = transaction.get(stateRef(roomId))
+
+                // WRITE PHASE
                 transaction.update(
                     roomRef(roomId),
                     mapOf(
@@ -355,7 +360,6 @@ class FirestoreLiveRoomBackend(
                     )
                 )
                 // Close the Watch Party playback for late joiners.
-                val stateSnapshot = transaction.get(stateRef(roomId))
                 if (stateSnapshot.exists()) {
                     transaction.update(
                         stateRef(roomId),
@@ -417,6 +421,12 @@ class FirestoreLiveRoomBackend(
                 val hostUid = roomSnapshot.getString("hostUserId").orEmpty()
                 val membershipRef = membersRef(roomId).document(uid)
                 val existing = transaction.get(membershipRef)
+
+                val joinMsgId = "sys_join_${roomId}_${uid}"
+                val joinMsgRef = messagesRef(roomId).document(joinMsgId)
+                val existingMsg = transaction.get(joinMsgRef)
+
+                // READ PHASE COMPLETE: Perform all writes after reads!
                 val now = clock()
                 val member = identity.toMember(isHost = uid == hostUid, nowMillis = now).copy(
                     joinedAtMillis = (existing.getLong("joinedAtMillis") ?: now),
@@ -425,9 +435,6 @@ class FirestoreLiveRoomBackend(
                 transaction.set(membershipRef, memberToMap(member), SetOptions.merge())
 
                 // Write system join event idempotently
-                val joinMsgId = "sys_join_${roomId}_${uid}"
-                val joinMsgRef = messagesRef(roomId).document(joinMsgId)
-                val existingMsg = transaction.get(joinMsgRef)
                 if (!existingMsg.exists()) {
                     val joinMsgData = mapOf(
                         "roomId" to roomId,
