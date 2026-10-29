@@ -112,8 +112,8 @@ fun LiveSetupScreen(
 
                 Text(
                     text = when (selectedType) {
-                        LiveRoomType.VIDEO -> "Camera broadcasting is not available yet"
-                        LiveRoomType.AUDIO -> "Audio broadcasting is not available yet"
+                        LiveRoomType.VIDEO -> "Camera Live Broadcast Stage"
+                        LiveRoomType.AUDIO -> "Voice Discussion Stage"
                         LiveRoomType.TEXT -> "Group Text Live Chat Stage"
                         LiveRoomType.YOUTUBE_WATCH_PARTY -> "YouTube Watch Party Stage"
                     },
@@ -122,7 +122,7 @@ fun LiveSetupScreen(
                     fontWeight = FontWeight.Bold
                 )
 
-                if (selectedType == LiveRoomType.VIDEO) {
+                if (selectedType == LiveRoomType.VIDEO && !isSubmitting) {
                     HostCameraPreview()
                 }
 
@@ -294,6 +294,75 @@ fun LiveSetupScreen(
                 )
             }
 
+            val startupStatus by viewModel.hostStartupStatus.collectAsState()
+
+            if (isSubmitting) {
+                val statusMessage = when (startupStatus.step) {
+                    com.synfusion.attendance.live.viewmodel.HostStartupStep.RESERVING -> "Reserving stream on backend…"
+                    com.synfusion.attendance.live.viewmodel.HostStartupStep.CONNECTING -> "Connecting to streaming server…"
+                    com.synfusion.attendance.live.viewmodel.HostStartupStep.PUBLISHING -> "Publishing camera & microphone tracks…"
+                    com.synfusion.attendance.live.viewmodel.HostStartupStep.ACTIVATING -> "Activating broadcast…"
+                    com.synfusion.attendance.live.viewmodel.HostStartupStep.LIVE -> "Going live! 🔴"
+                    else -> "Preparing stream…"
+                }
+                Text(
+                    text = statusMessage,
+                    color = LivePrimaryMint,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
+            val permissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+                androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions()
+            ) { permissions ->
+                val cameraOk = permissions[android.Manifest.permission.CAMERA] ?: false
+                val micOk = permissions[android.Manifest.permission.RECORD_AUDIO] ?: false
+                val reqType = selectedType
+                val hasReq = if (reqType == LiveRoomType.VIDEO) (cameraOk && micOk) else micOk
+                if (hasReq) {
+                    // Re-trigger Start Live
+                    isSubmitting = true
+                    coroutineScope.launch {
+                        try {
+                            val autoTitle = when (selectedType) {
+                                LiveRoomType.VIDEO -> "Live Site Workday Broadcast"
+                                LiveRoomType.AUDIO -> "Live Site Voice Discussion"
+                                LiveRoomType.TEXT -> "Live Site Group Text Chat"
+                                LiveRoomType.YOUTUBE_WATCH_PARTY -> "Site Safety YouTube Watch Party"
+                            }
+                            val result = viewModel.startHostBroadcast(
+                                com.synfusion.attendance.live.data.LiveRoomCreateRequest(
+                                    title = autoTitle,
+                                    category = "Site Safety",
+                                    type = selectedType,
+                                    tags = listOf("LiveWork", "SiteSafety"),
+                                    description = "",
+                                    isPublic = isPublic,
+                                    allowGuestRequests = allowGuestRequests,
+                                    showGifts = showGifts,
+                                    isChatEnabled = isChatEnabled,
+                                    selection = null
+                                )
+                            )
+                            when (result) {
+                                is com.synfusion.attendance.live.model.LiveOperationResult.Success -> {
+                                    Toast.makeText(context, "You are LIVE! 🔴", Toast.LENGTH_SHORT).show()
+                                    onNavigateLiveRoom(result.data)
+                                }
+                                is com.synfusion.attendance.live.model.LiveOperationResult.Error -> {
+                                    submitError = result.message
+                                }
+                            }
+                        } finally {
+                            isSubmitting = false
+                        }
+                    }
+                } else {
+                    submitError = "Camera and microphone permissions are required to broadcast."
+                }
+            }
+
             // Start Live CTA Button
             Button(
                 onClick = {
@@ -310,6 +379,27 @@ fun LiveSetupScreen(
                         }
                     } else {
                         null
+                    }
+
+                    // Check permissions for VIDEO / AUDIO
+                    val hasCam = androidx.core.content.ContextCompat.checkSelfPermission(
+                        context, android.Manifest.permission.CAMERA
+                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                    val hasMic = androidx.core.content.ContextCompat.checkSelfPermission(
+                        context, android.Manifest.permission.RECORD_AUDIO
+                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+
+                    if (selectedType == LiveRoomType.VIDEO && (!hasCam || !hasMic)) {
+                        permissionLauncher.launch(
+                            arrayOf(android.Manifest.permission.CAMERA, android.Manifest.permission.RECORD_AUDIO)
+                        )
+                        return@Button
+                    }
+                    if (selectedType == LiveRoomType.AUDIO && !hasMic) {
+                        permissionLauncher.launch(
+                            arrayOf(android.Manifest.permission.RECORD_AUDIO)
+                        )
+                        return@Button
                     }
 
                     val autoTitle = when (selectedType) {
@@ -331,7 +421,7 @@ fun LiveSetupScreen(
                                 submitError = "Sign in to WorkDaily to start a live room. Your account is the host."
                                 return@launch
                             }
-                            val result = viewModel.createLiveRoom(
+                            val result = viewModel.startHostBroadcast(
                                 com.synfusion.attendance.live.data.LiveRoomCreateRequest(
                                     title = autoTitle,
                                     category = "Site Safety",
@@ -348,7 +438,7 @@ fun LiveSetupScreen(
                             when (result) {
                                 is com.synfusion.attendance.live.model.LiveOperationResult.Success -> {
                                     Toast.makeText(context, "You are LIVE! 🔴", Toast.LENGTH_SHORT).show()
-                                    onNavigateLiveRoom(result.data.id)
+                                    onNavigateLiveRoom(result.data)
                                 }
 
                                 is com.synfusion.attendance.live.model.LiveOperationResult.Error -> {

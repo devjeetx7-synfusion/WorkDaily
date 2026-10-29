@@ -378,6 +378,7 @@ private fun LiveRoomScreenContent(
                         )
                     }
             ) {
+                val hostMediaState by viewModel.mediaManager.state.collectAsState()
                 when (room.type) {
                     LiveRoomType.VIDEO -> if (viewerMedia) {
                         val track = mediaState?.video
@@ -403,7 +404,17 @@ private fun LiveRoomScreenContent(
                                 }
                             }
                         }
-                    } else VideoStageCanvas(room = room)
+                    } else if (isHost) {
+                        val hostTrack = hostMediaState.video
+                        val hostRoom = hostTrack?.let { viewModel.mediaManager.roomForVideo(it) }
+                        if (hostTrack != null && hostRoom != null && hostMediaState.connection == MediaConnection.CONNECTED) {
+                            LiveKitVideoSurface(hostRoom, hostTrack, Modifier.fillMaxSize())
+                        } else {
+                            VideoStageCanvas(room = room)
+                        }
+                    } else {
+                        VideoStageCanvas(room = room)
+                    }
                     LiveRoomType.AUDIO -> Box(Modifier.fillMaxSize()) {
                         AudioStageCanvas(
                             room = room,

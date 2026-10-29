@@ -54,6 +54,7 @@ import java.util.UUID
 class FirestoreLiveRoomBackend(
     private val firestoreSupplier: () -> FirebaseFirestore = { FirebaseFirestore.getInstance() },
     private val authSupplier: () -> FirebaseAuth = { FirebaseAuth.getInstance() },
+    private val functionsSupplier: () -> FirebaseFunctions = { FirebaseFunctions.getInstance() },
     private val clock: () -> Long = { System.currentTimeMillis() },
     private val idGenerator: () -> String = { UUID.randomUUID().toString().replace("-", "").take(20) }
 ) : LiveRoomBackend {
@@ -93,6 +94,50 @@ class FirestoreLiveRoomBackend(
     // ---------------------------------------------------------------------------------------
     // Room lifecycle
     // ---------------------------------------------------------------------------------------
+
+    override suspend fun reserveMediaRoom(
+        request: LiveRoomCreateRequest
+    ): LiveOperationResult<String> {
+        if (currentUid() == null) {
+            return LiveOperationResult.Error("Sign in to start a live room.", isAuthError = true)
+        }
+        return try {
+            val payload = mapOf(
+                "title" to request.title.ifBlank { "WorkDaily Live" },
+                "type" to request.type.name,
+                "isPublic" to request.isPublic,
+                "isChatEnabled" to request.isChatEnabled,
+                "showGifts" to request.showGifts
+            )
+            val result = functionsSupplier().getHttpsCallable("reserveLiveMediaRoom")
+                .call(payload).awaitTask()
+            val data = result.data as? Map<*, *>
+            val roomId = data?.get("roomId") as? String
+            if (!roomId.isNullOrBlank()) {
+                LiveOperationResult.Success(roomId)
+            } else {
+                LiveOperationResult.Error("Room reservation failed.")
+            }
+        } catch (e: Exception) {
+            mapException(e, "Failed to reserve live media room")
+        }
+    }
+
+    override suspend fun activateMediaRoom(
+        roomId: String
+    ): LiveOperationResult<Unit> {
+        if (currentUid() == null) {
+            return LiveOperationResult.Error("Sign in to activate live room.", isAuthError = true)
+        }
+        if (roomId.isBlank()) return LiveOperationResult.Error("Invalid room ID.")
+        return try {
+            functionsSupplier().getHttpsCallable("activateLiveMediaRoom")
+                .call(mapOf("roomId" to roomId)).awaitTask()
+            LiveOperationResult.Success(Unit)
+        } catch (e: Exception) {
+            mapException(e, "Failed to activate live media room")
+        }
+    }
 
     override suspend fun createRoom(
         host: LiveUserIdentity,
@@ -351,7 +396,7 @@ class FirestoreLiveRoomBackend(
                 return LiveOperationResult.Error("Only the host can end this live room.", isAuthError = true)
             }
             if (currentRoom.getBoolean("mediaManaged") == true) {
-                FirebaseFunctions.getInstance().getHttpsCallable("endLiveMediaRoom")
+                functionsSupplier().getHttpsCallable("endLiveMediaRoom")
                     .call(mapOf("roomId" to roomId)).awaitTask()
                 return LiveOperationResult.Success(Unit)
             }
