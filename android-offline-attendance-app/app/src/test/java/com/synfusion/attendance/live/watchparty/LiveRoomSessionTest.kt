@@ -315,4 +315,69 @@ class LiveRoomSessionTest {
         assertEquals(1, merged.size)
         assertFalse(merged.first().isPending)
     }
+
+    @Test
+    fun `user whose join operation has not completed cannot send message`() = runBlocking {
+        val roomId = createTextRoom()
+        val session = LiveRoomSession(
+            roomId = roomId,
+            backend = backend,
+            identity = viewer,
+            scope = sessionScope,
+            cleanupScope = cleanupScope,
+            clock = { clock.get() }
+        )
+        // Session created but start() NOT called yet -> membership not completed
+        assertFalse(session.isMember.value)
+
+        session.sendMessage("Message before join completed")
+        delay(100)
+        assertTrue("Message must not be persisted before join completion", session.messages.value.none { it.message == "Message before join completed" })
+    }
+
+    @Test
+    fun `unauthorized user cannot end another hosts room`() = runBlocking {
+        val roomId = createTextRoom()
+        val viewerSession = newSession(roomId, viewer)
+        awaitUntil { viewerSession.state.value is LiveRoomSessionState.Active }
+
+        val endResult = viewerSession.endRoom()
+        assertTrue(endResult is LiveOperationResult.Error)
+        assertTrue((endResult as LiveOperationResult.Error).isAuthError)
+        assertEquals("Only the host can end this live room.", endResult.message)
+
+        val roomData = (backend.loadRoom(roomId) as LiveOperationResult.Success).data
+        assertNotNull(roomData)
+        assertTrue("Room must remain live when unauthorized user tries to end it", roomData!!.isLive)
+
+        viewerSession.stop()
+    }
+
+    @Test
+    fun `system events are created and deduplicated`() = runBlocking {
+        val roomId = createTextRoom()
+        val hostSession = newSession(roomId, host)
+        awaitUntil { hostSession.state.value is LiveRoomSessionState.Active }
+
+        val sysMsg = ChatMessage(
+            id = "sys_test_1",
+            roomId = roomId,
+            senderId = host.uid,
+            senderName = "System",
+            message = "System Announcement",
+            timestamp = clock.get(),
+            clientMessageId = "sys_test_1",
+            isSystemMessage = true,
+            eventType = "ANNOUNCEMENT"
+        )
+
+        hostSession.sendSystemEvent(sysMsg)
+        hostSession.sendSystemEvent(sysMsg) // duplicate send
+        delay(150)
+
+        val messages = backend.observeMessages(roomId, 50).first()
+        assertEquals(1, messages.count { it.clientMessageId == "sys_test_1" })
+
+        hostSession.stop()
+    }
 }
