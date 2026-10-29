@@ -38,8 +38,6 @@ fun LiveSetupScreen(
     val context = LocalContext.current
 
     var selectedType by remember { mutableStateOf(LiveRoomType.VIDEO) }
-    var micEnabled by remember { mutableStateOf(true) }
-    var isFrontCamera by remember { mutableStateOf(true) }
     var youtubeUrl by remember { mutableStateOf("") }
     var showYouTubeBrowser by remember { mutableStateOf(false) }
     var isSubmitting by remember { mutableStateOf(false) }
@@ -114,8 +112,8 @@ fun LiveSetupScreen(
 
                 Text(
                     text = when (selectedType) {
-                        LiveRoomType.VIDEO -> "Camera Preview Stage"
-                        LiveRoomType.AUDIO -> "Voice Room Stage"
+                        LiveRoomType.VIDEO -> "Camera broadcasting is not available yet"
+                        LiveRoomType.AUDIO -> "Audio broadcasting is not available yet"
                         LiveRoomType.TEXT -> "Group Text Live Chat Stage"
                         LiveRoomType.YOUTUBE_WATCH_PARTY -> "YouTube Watch Party Stage"
                     },
@@ -123,6 +121,10 @@ fun LiveSetupScreen(
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
                 )
+
+                if (selectedType == LiveRoomType.VIDEO) {
+                    HostCameraPreview()
+                }
 
                 if (selectedType == LiveRoomType.YOUTUBE_WATCH_PARTY) {
                     Column(
@@ -278,46 +280,6 @@ fun LiveSetupScreen(
                             fontSize = 12.sp,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
                         )
-                    }
-                }
-            }
-
-            // Quick Actions based on Mode
-            if (selectedType == LiveRoomType.VIDEO || selectedType == LiveRoomType.AUDIO) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(
-                        onClick = { micEnabled = !micEnabled },
-                        modifier = Modifier
-                            .size(44.dp)
-                            .clip(CircleShape)
-                            .background(if (micEnabled) Color.White.copy(alpha = 0.25f) else LiveRed)
-                    ) {
-                        Icon(
-                            imageVector = if (micEnabled) Icons.Default.Mic else Icons.Default.MicOff,
-                            contentDescription = "Microphone Toggle",
-                            tint = Color.White,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-
-                    if (selectedType == LiveRoomType.VIDEO) {
-                        IconButton(
-                            onClick = { isFrontCamera = !isFrontCamera },
-                            modifier = Modifier
-                                .size(44.dp)
-                                .clip(CircleShape)
-                                .background(Color.White.copy(alpha = 0.25f))
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Cameraswitch,
-                                contentDescription = "Flip Camera",
-                                tint = Color.White,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
                     }
                 }
             }

@@ -206,17 +206,21 @@ service cloud.firestore {
       allow create: if isAuthenticated()
                     && request.resource.data.hostUserId == request.auth.uid
                     && request.resource.data.creatorId == request.auth.uid
+                    && request.resource.data.get('mediaManaged', false) == false
                     && request.resource.data.isLive == true;
 
       // Only the persisted host can update the room document (settings, end the room).
       // hostUserId/creatorId are immutable so a room cannot be hijacked.
       allow update: if isAuthenticated()
                     && resource.data.hostUserId == request.auth.uid
+                    && resource.data.get('mediaManaged', false) == false
+                    && request.resource.data.get('mediaManaged', false) == false
                     && request.resource.data.hostUserId == resource.data.hostUserId
                     && request.resource.data.creatorId == resource.data.creatorId;
 
       allow delete: if isAuthenticated()
-                    && resource.data.hostUserId == request.auth.uid;
+                    && resource.data.hostUserId == request.auth.uid
+                    && resource.data.get('mediaManaged', false) == false;
 
       // Presence / membership. Document id == authenticated uid, so it cannot be forged and
       // reconnecting can never create a duplicate row.

@@ -289,6 +289,11 @@ class LiveViewModel(application: Application) : AndroidViewModel(application) {
 
     /** Creates and persists a Live room for the authenticated user. */
     suspend fun createLiveRoom(request: LiveRoomCreateRequest): LiveOperationResult<LiveRoom> {
+        // Firestore currently creates rooms as live before a media connection exists. Until
+        // reservation and host publishing are integrated, refuse to create false broadcasts.
+        if (!com.synfusion.attendance.live.media.LiveRoomCreationPolicy.allowsCreation(request.type)) {
+            return LiveOperationResult.Error("Camera and microphone broadcasting is not available yet. Please choose Text or Watch Party.")
+        }
         val identity = _liveIdentity.value ?: resolveLiveIdentity()
             ?: return LiveOperationResult.Error(
                 "Sign in to start a live room. Your WorkDaily identity is required.",

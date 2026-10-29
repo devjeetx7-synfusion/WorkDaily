@@ -52,6 +52,9 @@ class LiveKitMediaManager(
     private val mutableState = MutableStateFlow(LiveMediaState())
     val state = mutableState.asStateFlow()
 
+    /** Renderer must only be used while the associated session remains connected. */
+    fun roomForVideo(track: VideoTrack): Room? = room?.takeIf { mutableState.value.video === track }
+
     suspend fun connect(roomId: String, persistedHostUid: String, publishVideo: Boolean, publishAudio: Boolean) {
         mutex.withLock {
             check(room == null) { "A media session is already active" }
