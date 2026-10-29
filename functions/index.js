@@ -3,6 +3,8 @@
 const { initializeApp } = require('firebase-admin/app');
 const { getFirestore } = require('firebase-admin/firestore');
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
+const { onSchedule } = require('firebase-functions/v2/scheduler');
+const { FieldPath } = require('firebase-admin/firestore');
 const { defineSecret, defineString } = require('firebase-functions/params');
 const { createTokenService, TokenError } = require('./token-service');
 const { createLiveMediaService } = require('./live-media-service');
@@ -64,3 +66,27 @@ function mediaCallable(handler, secrets = []) {
 exports.reserveLiveMediaRoom = mediaCallable(request => media.reserve(request.auth?.uid, request.data, request.auth?.token?.name));
 exports.activateLiveMediaRoom = mediaCallable(request => media.activate(request.auth?.uid, request.data?.roomId), [apiKey, apiSecret]);
 exports.endLiveMediaRoom = mediaCallable(request => media.end(request.auth?.uid, request.data?.roomId), [apiKey, apiSecret]);
+
+// Bounded server-owned maintenance with a persisted cursor to avoid starving later rooms.
+// Every room remains eligible for a later cycle; no room identifiers or secrets are logged.
+exports.reconcileLiveMediaRooms = onSchedule({
+  schedule: 'every 5 minutes', secrets: [apiKey, apiSecret], timeoutSeconds: 540,
+  maxInstances: 1,
+}, async () => {
+  const db = getFirestore();
+  const cursorRef = db.collection('live_media_maintenance').doc('cursor');
+  const cursorSnapshot = await cursorRef.get();
+  const cursorId = cursorSnapshot.exists ? cursorSnapshot.data().lastRoomId : null;
+  let query = db.collection('live_rooms').where('mediaManaged', '==', true)
+    .orderBy(FieldPath.documentId()).limit(25);
+  if (typeof cursorId === 'string' && cursorId) query = query.startAfter(cursorId);
+  const page = await query.get();
+  let failures = 0;
+  for (const doc of page.docs) {
+    try { await media.reconcile(doc.id); }
+    catch (_) { failures++; /* this room remains eligible in the next sweep */ }
+    await cursorRef.set({ lastRoomId: doc.id });
+  }
+  if (page.size < 25) await cursorRef.set({ lastRoomId: null });
+  if (failures) throw new Error(`Live media reconciliation failed for ${failures} room(s)`);
+});

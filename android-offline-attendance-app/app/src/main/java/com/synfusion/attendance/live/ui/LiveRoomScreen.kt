@@ -409,7 +409,11 @@ private fun LiveRoomScreenContent(
                             room = room,
                             seats = audioSeats,
                             onSeatClick = { seatIndex ->
-                                if (isHost) {
+                                if (isSessionRoom) {
+                                    // The media backend only permits the host to publish. The demo
+                                    // seat state is not a real audio track and must not imply otherwise.
+                                    Toast.makeText(context, "Audio seats are not available in this broadcast.", Toast.LENGTH_SHORT).show()
+                                } else if (isHost) {
                                     viewModel.toggleAudioSeatMute(room.id, seatIndex)
                                 } else {
                                     viewModel.occupyAudioSeat(room.id, seatIndex, "user_me", "You")

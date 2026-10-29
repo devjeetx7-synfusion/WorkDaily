@@ -1,6 +1,10 @@
 'use strict';
 
 const { TokenError } = require('./token-service');
+const { ParticipantInfo_State } = require('livekit-server-sdk');
+const HOST_ABSENCE_GRACE_MS = 3 * 60 * 1000;
+// Do not treat a long monitoring outage as evidence of continuous absence.
+const MAX_OBSERVATION_GAP_MS = 24 * 60 * 60 * 1000;
 const { RESERVATION_MS, validateRoomId, validateReservation, validatePublished } = require('./live-media-policy');
 
 /** Server-side room transitions. Caller identity must come from the callable's verified auth. */
@@ -35,7 +39,7 @@ function createLiveMediaService({ db, liveKit, clock = Date.now }) {
         if (old.isLive === true || (old.statusText === 'PREPARING' && old.reservationExpiresAtMillis > now)) {
           return { roomId: oldId, status: old.statusText };
         }
-        if (old.statusText === 'PREPARING') tx.update(oldRef, { statusText: 'FAILED', isLive: false, endedAtMillis: now });
+        if (old.statusText === 'PREPARING') tx.update(oldRef, { statusText: 'FAILED', isLive: false, endedAtMillis: now, cleanupPending: true });
       }
       tx.set(freshRef, {
         id: freshRef.id, hostUserId: uid, creatorId: uid, creatorName: name, hostName: name,
@@ -80,7 +84,8 @@ function createLiveMediaService({ db, liveKit, clock = Date.now }) {
       const lock = await tx.get(lockRef);
       const room = snapshot.exists ? snapshot.data() : null;
       if (!room || room.mediaManaged !== true || room.hostUserId !== uid) throw new TokenError('permission-denied', 'You cannot manage this room.');
-      if (room.endedAtMillis == null) tx.update(ref, { isLive: false, statusText: 'ENDED', endedAtMillis: clock() });
+      if (room.endedAtMillis == null) tx.update(ref, { isLive: false, statusText: 'ENDED', endedAtMillis: clock(), cleanupPending: true });
+      else if (room.cleanupPending !== true) tx.update(ref, { cleanupPending: true });
       if (lock.exists && lock.data().roomId === id) tx.delete(lockRef);
     });
     // Retryable: a failure to close media is reported, while Firestore is already not live.
@@ -89,9 +94,98 @@ function createLiveMediaService({ db, liveKit, clock = Date.now }) {
       // A room that is already absent is already cleaned up. Other errors remain retryable.
       if (error?.status !== 404 && error?.code !== 'not_found') throw error;
     }
+    await db.runTransaction(async tx => {
+      const fresh = await tx.get(ref);
+      if (fresh.exists && fresh.data().mediaManaged === true && fresh.data().endedAtMillis != null && fresh.data().cleanupPending === true) {
+        tx.update(ref, { cleanupPending: false });
+      }
+    });
     return { roomId: id, status: 'ENDED' };
   }
-  return { reserve, activate, end };
+
+  // Reconciliation never changes a room based on a LiveKit transport/5xx error. A missing
+  // host must be observed twice, at least HOST_ABSENCE_GRACE_MS apart, before ending a live.
+  async function reconcile(id) {
+    validateRoomId(id);
+    const ref = rooms.doc(id);
+    const snapshot = await ref.get();
+    if (!snapshot.exists) return 'missing';
+    const room = snapshot.data();
+    if (room.mediaManaged !== true || typeof room.hostUserId !== 'string' || !room.hostUserId || room.hostUserId.includes('/')) return 'ignored';
+    const now = clock();
+    if (room.statusText === 'PREPARING' && room.isLive === false && room.endedAtMillis == null &&
+        Number.isSafeInteger(room.reservationExpiresAtMillis) && room.reservationExpiresAtMillis <= now) {
+      await db.runTransaction(async tx => {
+        const fresh = await tx.get(ref);
+        const lock = await tx.get(locks.doc(room.hostUserId));
+        const current = fresh.exists ? fresh.data() : null;
+        if (!current || current.mediaManaged !== true || current.hostUserId !== room.hostUserId ||
+            current.statusText !== 'PREPARING' || current.isLive !== false || current.endedAtMillis != null ||
+            !Number.isSafeInteger(current.reservationExpiresAtMillis) || current.reservationExpiresAtMillis > clock()) return;
+        tx.update(ref, { statusText: 'FAILED', endedAtMillis: clock(), cleanupPending: true });
+        if (lock.exists && lock.data().roomId === id) tx.delete(locks.doc(room.hostUserId));
+      });
+      return 'expired';
+    }
+    // Rooms ended before the cleanup marker was introduced must also be retried.
+    if (room.endedAtMillis != null && room.cleanupPending == null) {
+      await db.runTransaction(async tx => {
+        const fresh = await tx.get(ref);
+        if (fresh.exists && fresh.data().mediaManaged === true && fresh.data().endedAtMillis != null && fresh.data().cleanupPending == null) {
+          tx.update(ref, { cleanupPending: true });
+        }
+      });
+      return 'marked';
+    }
+    if (room.endedAtMillis != null && room.cleanupPending === true) {
+      try { await liveKit().deleteRoom(`workdaily-${id}`); }
+      catch (error) { if (error?.status !== 404 && error?.code !== 'not_found') throw error; }
+      await db.runTransaction(async tx => {
+        const fresh = await tx.get(ref);
+        if (fresh.exists && fresh.data().mediaManaged === true && fresh.data().endedAtMillis != null && fresh.data().cleanupPending === true) {
+          tx.update(ref, { cleanupPending: false });
+        }
+      });
+      return 'cleaned';
+    }
+    if (room.isLive !== true || room.statusText !== 'LIVE' || room.endedAtMillis != null) return 'ignored';
+    let present;
+    try {
+      const participant = await liveKit().getParticipant(`workdaily-${id}`, room.hostUserId);
+      present = !!participant && participant.identity === room.hostUserId && participant.state !== ParticipantInfo_State.DISCONNECTED;
+    } catch (error) {
+      if (error?.status !== 404 && error?.code !== 'not_found') throw error;
+      present = false;
+    }
+    return db.runTransaction(async tx => {
+      const fresh = await tx.get(ref);
+      const lock = await tx.get(locks.doc(room.hostUserId));
+      const current = fresh.exists ? fresh.data() : null;
+      if (!current || current.mediaManaged !== true || current.hostUserId !== room.hostUserId ||
+          current.isLive !== true || current.statusText !== 'LIVE' || current.endedAtMillis != null ||
+          current.startTimeMillis !== room.startTimeMillis) return 'changed';
+      if (present) {
+        if (current.hostMissingSinceMillis != null || current.hostMissingLastCheckedMillis != null) {
+          tx.update(ref, { hostMissingSinceMillis: null, hostMissingLastCheckedMillis: null });
+        }
+        return 'healthy';
+      }
+      if (!Number.isSafeInteger(current.hostMissingSinceMillis) || current.hostMissingSinceMillis > now ||
+          !Number.isSafeInteger(current.hostMissingLastCheckedMillis) || current.hostMissingLastCheckedMillis > now ||
+          now - current.hostMissingLastCheckedMillis > MAX_OBSERVATION_GAP_MS) {
+        tx.update(ref, { hostMissingSinceMillis: now, hostMissingLastCheckedMillis: now });
+        return 'grace';
+      }
+      if (now - current.hostMissingSinceMillis < HOST_ABSENCE_GRACE_MS) {
+        tx.update(ref, { hostMissingLastCheckedMillis: now });
+        return 'grace';
+      }
+      tx.update(ref, { isLive: false, statusText: 'ENDED', endedAtMillis: now, cleanupPending: true });
+      if (lock.exists && lock.data().roomId === id) tx.delete(locks.doc(room.hostUserId));
+      return 'ended';
+    });
+  }
+  return { reserve, activate, end, reconcile };
 }
 function ROOM_ID_SAFE(value) { return /^[A-Za-z0-9_-]{1,128}$/.test(value); }
-module.exports = { createLiveMediaService };
+module.exports = { createLiveMediaService, HOST_ABSENCE_GRACE_MS, MAX_OBSERVATION_GAP_MS };
