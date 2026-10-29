@@ -11,7 +11,7 @@ class TokenError extends Error {
 }
 
 /** Dependencies are injected so policy and token claims can be tested without Firebase. */
-function createTokenService({ loadRoom, isBlocked, config, isReservationOwned = async () => false, clock = Date.now }) {
+function createTokenService({ loadRoom, isBlocked, config, isMember = async () => false, isReservationOwned = async () => false, clock = Date.now }) {
   return async function issueToken(uid, data) {
     if (typeof uid !== 'string' || !uid) throw new TokenError('unauthenticated', 'Sign in to join a live room.');
     const roomId = data && data.roomId;
@@ -19,8 +19,8 @@ function createTokenService({ loadRoom, isBlocked, config, isReservationOwned = 
       throw new TokenError('invalid-argument', 'Invalid room ID.');
     }
     const room = await loadRoom(roomId);
-    if (!room || room.endedAtMillis != null ||
-        typeof room.hostUserId !== 'string' || !room.hostUserId) {
+    if (!room || room.mediaManaged !== true || !['VIDEO', 'AUDIO'].includes(room.type) ||
+        room.endedAtMillis != null || typeof room.hostUserId !== 'string' || !room.hostUserId) {
       throw new TokenError('failed-precondition', 'This live room is unavailable or has ended.');
     }
     const host = room.hostUserId === uid;
@@ -28,11 +28,11 @@ function createTokenService({ loadRoom, isBlocked, config, isReservationOwned = 
     const preparing = host && room.mediaManaged === true && room.isLive === false &&
       room.statusText === 'PREPARING' && Number.isSafeInteger(room.reservationExpiresAtMillis) &&
       room.reservationExpiresAtMillis > clock() && await isReservationOwned(uid, roomId);
-    if (room.isLive !== true && !preparing) {
+    if (!(room.isLive === true && room.statusText === 'LIVE') && !preparing) {
       throw new TokenError('failed-precondition', 'This live room is unavailable or has ended.');
     }
     // Existing membership can be self-created and is NOT a private-room authorization grant.
-    if (!host && (room.isPublic !== true || await isBlocked(uid, room.hostUserId))) {
+    if (!host && (room.isPublic !== true || await isBlocked(uid, room.hostUserId) || !(await isMember(uid, roomId)))) {
       throw new TokenError('permission-denied', 'You cannot join this live room.');
     }
     const { url, apiKey, apiSecret } = config();
@@ -46,7 +46,7 @@ function createTokenService({ loadRoom, isBlocked, config, isReservationOwned = 
     const token = new AccessToken(apiKey, apiSecret, { identity: uid, ttl: TOKEN_TTL_SECONDS });
     token.addGrant({ roomJoin: true, room: roomName, canPublish: host,
       canSubscribe: true, canPublishData: false, canUpdateOwnMetadata: false,
-      ...(host ? { canPublishSources: [TrackSource.CAMERA, TrackSource.MICROPHONE] } : {}) });
+      ...(host ? { canPublishSources: room.type === 'VIDEO' ? [TrackSource.CAMERA, TrackSource.MICROPHONE] : [TrackSource.MICROPHONE] } : {}) });
     return { url, token: await token.toJwt(), roomName, expiresInSeconds: TOKEN_TTL_SECONDS };
   };
 }

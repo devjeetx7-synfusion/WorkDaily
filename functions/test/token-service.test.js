@@ -6,11 +6,12 @@ const { createTokenService, TOKEN_TTL_SECONDS } = require('../token-service');
 
 const apiKey = 'test-key';
 const apiSecret = 'test-secret-not-for-production-12345';
-const active = { hostUserId: 'host-uid', isLive: true, endedAtMillis: null, isPublic: true };
+const active = { hostUserId: 'host-uid', isLive: true, statusText: 'LIVE', mediaManaged: true, type: 'VIDEO', endedAtMillis: null, isPublic: true };
 function service(room = active, blocked = false, overrides = {}) {
   return createTokenService({
     loadRoom: async () => room,
     isBlocked: async () => blocked,
+    isMember: async () => true,
     isReservationOwned: async () => true,
     config: () => ({ url: 'wss://live.example.com', apiKey, apiSecret }),
     ...overrides,
@@ -93,4 +94,29 @@ test('preparing token requires a trusted host reservation lock', async () => {
   const room = { ...active, isLive: false, mediaManaged: true, statusText: 'PREPARING', reservationExpiresAtMillis: now + 60_000 };
   await rejectsCode(service(room, false, { clock: () => now, isReservationOwned: async () => false })('host-uid', request), 'failed-precondition');
   await assert.rejects(service(room, false, { isReservationOwned: async () => { throw Error('unavailable'); } })('host-uid', request));
+});
+
+test('unmanaged, wrong-type and inconsistent live rooms never receive media tokens', async () => {
+  for (const room of [
+    { ...active, mediaManaged: false },
+    { ...active, type: 'TEXT' },
+    { ...active, type: 'YOUTUBE_WATCH_PARTY' },
+    { ...active, type: undefined },
+    { ...active, statusText: 'ENDED' },
+    { ...active, statusText: 'PREPARING' },
+  ]) {
+    await rejectsCode(service(room)('host-uid', request), 'failed-precondition');
+    await rejectsCode(service(room)('viewer', request), 'failed-precondition');
+  }
+});
+
+test('viewer token requires an existing server-read membership', async () => {
+  await rejectsCode(service(active, false, { isMember: async () => false })('viewer', request), 'permission-denied');
+  await assert.rejects(service(active, false, { isMember: async () => { throw Error('unavailable'); } })('viewer', request));
+  assert.equal((await claims(await service(active, false, { isMember: async () => false })('host-uid', request))).video.canPublish, true);
+});
+
+test('an AUDIO host cannot publish camera tracks', async () => {
+  const jwt = await claims(await service({ ...active, type: 'AUDIO' })('host-uid', request));
+  assert.deepEqual(jwt.video.canPublishSources, ['microphone']);
 });

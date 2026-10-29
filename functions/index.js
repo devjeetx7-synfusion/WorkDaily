@@ -24,6 +24,10 @@ const issueToken = createTokenService({
     const lock = await getFirestore().collection('live_media_host_locks').doc(uid).get();
     return lock.exists && lock.data().roomId === roomId;
   },
+  isMember: async (uid, roomId) => {
+    const member = await getFirestore().collection('live_rooms').doc(roomId).collection('members').doc(uid).get();
+    return member.exists && member.data().uid === uid;
+  },
   isBlocked: async (uid, host) => {
     const blocks = getFirestore().collection('blocks');
     const docs = await getFirestore().getAll(blocks.doc(`${uid}_${host}`), blocks.doc(`${host}_${uid}`));
