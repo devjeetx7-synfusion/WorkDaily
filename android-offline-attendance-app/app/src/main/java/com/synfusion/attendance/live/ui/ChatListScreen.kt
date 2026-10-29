@@ -319,26 +319,20 @@ fun ChatListScreen(
                                     ) {
                                         Text(
                                             text = otherName,
-                                            fontSize = 16.sp,
-                                            fontWeight = FontWeight.Medium,
+                                            fontSize = 15.sp,
+                                            fontWeight = if (isUnread) FontWeight.Bold else FontWeight.SemiBold,
                                             color = MaterialTheme.colorScheme.onSurface,
                                             maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis
+                                            overflow = TextOverflow.Ellipsis,
+                                            modifier = Modifier.weight(1f, fill = false)
                                         )
-                                        if (isUnread) {
-                                            Text(
-                                                text = kotlin.math.min(unreadCount, 99).toString(),
-                                                fontSize = 10.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = Color.White,
-                                                modifier = Modifier
-                                                    .background(
-                                                        MaterialTheme.colorScheme.error,
-                                                        RoundedCornerShape(8.dp)
-                                                    )
-                                                    .padding(horizontal = 6.dp, vertical = 2.dp)
-                                            )
-                                        }
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = formatTimestamp(conv.lastTimestamp),
+                                            fontSize = 12.sp,
+                                            color = if (isUnread) LivePrimaryEmerald else MaterialTheme.colorScheme.onSurfaceVariant,
+                                            fontWeight = if (isUnread) FontWeight.SemiBold else FontWeight.Normal
+                                        )
                                     }
 
                                     Spacer(modifier = Modifier.height(4.dp))
@@ -350,29 +344,18 @@ fun ChatListScreen(
                                     ) {
                                         Text(
                                             text = conv.lastMessage.ifEmpty { "Say hello!" },
-                                            fontSize = 14.sp,
-                                            fontWeight = if (isUnread) FontWeight.Bold else FontWeight.Normal,
+                                            fontSize = 13.5.sp,
+                                            fontWeight = if (isUnread) FontWeight.SemiBold else FontWeight.Normal,
                                             color = if (isUnread) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
                                             maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis
+                                            overflow = TextOverflow.Ellipsis,
+                                            modifier = Modifier.weight(1f)
                                         )
-                                        Text(
-                                            text = formatTimestamp(conv.lastTimestamp),
-                                            fontSize = 12.sp,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
+                                        if (isUnread) {
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            UnreadBadge(count = unreadCount)
+                                        }
                                     }
-                                }
-
-                                Spacer(modifier = Modifier.width(8.dp))
-
-                                if (isUnread) {
-                                    Icon(
-                                        imageVector = Icons.Default.Circle,
-                                        contentDescription = "$unreadCount unread",
-                                        tint = MaterialTheme.colorScheme.error,
-                                        modifier = Modifier.size(8.dp)
-                                    )
                                 }
                             }
 
@@ -421,6 +404,44 @@ fun ChatListScreen(
                 }
                 Spacer(modifier = Modifier.height(20.dp))
             }
+        }
+    }
+}
+
+/**
+ * Reusable compact unread count badge.
+ * Uses a circle shape for single-digit counts (1-9) and a rounded pill for multi-digit counts (10+).
+ */
+@Composable
+fun UnreadBadge(
+    count: Int,
+    modifier: Modifier = Modifier
+) {
+    if (count <= 0) return
+
+    val text = if (count > 99) "99+" else count.toString()
+    val isSingleDigit = count in 1..9
+    val badgeShape = if (isSingleDigit) androidx.compose.foundation.shape.CircleShape else RoundedCornerShape(10.dp)
+
+    Surface(
+        modifier = modifier,
+        shape = badgeShape,
+        color = MaterialTheme.colorScheme.error,
+        contentColor = Color.White
+    ) {
+        Box(
+            modifier = Modifier
+                .defaultMinSize(minWidth = if (isSingleDigit) 20.dp else 24.dp, minHeight = 20.dp)
+                .padding(horizontal = if (isSingleDigit) 4.dp else 6.dp, vertical = 2.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = text,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                textAlign = TextAlign.Center
+            )
         }
     }
 }

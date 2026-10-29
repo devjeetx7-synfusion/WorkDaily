@@ -87,6 +87,11 @@ import com.synfusion.attendance.ui.responsive.ResponsiveContainer
 import com.synfusion.attendance.ui.pdf.PdfViewerScreen
 import com.synfusion.attendance.notifications.ui.*
 import com.synfusion.attendance.notifications.studio.*
+import com.synfusion.attendance.online.FirestoreConversation
+import com.synfusion.attendance.online.SocialSessionCache
+import com.synfusion.attendance.online.rememberCurrentFirebaseUid
+import com.synfusion.attendance.online.unreadTotalFor
+import kotlinx.coroutines.flow.flowOf
 import android.net.Uri
 import java.net.URLDecoder
 import java.net.URLEncoder
@@ -1113,6 +1118,20 @@ fun HeaderSection(
         SimpleDateFormat("EEEE, dd MMMM yyyy", Locale.getDefault()).format(todayCal.time)
     }
 
+    val currentUserId = rememberCurrentFirebaseUid().value
+    val chatRepository = SocialSessionCache.chatRepository
+
+    val conversationsFlow = remember(currentUserId, chatRepository) {
+        val uid = currentUserId
+        if (uid.isNullOrBlank()) {
+            flowOf(emptyList<FirestoreConversation>())
+        } else {
+            chatRepository.observeConversations(uid)
+        }
+    }
+    val conversations by conversationsFlow.collectAsStateWithLifecycle(initialValue = emptyList())
+    val unreadTotal = conversations.unreadTotalFor(currentUserId)
+
     val displayName = state.name.trim()
     val firstName = if (displayName.isNotEmpty()) displayName.split(" ")[0] else "User"
     val avatarLetters = if (displayName.length >= 2) displayName.take(2).uppercase() else if (displayName.isNotEmpty()) displayName.take(1).uppercase() else "U"
@@ -1291,14 +1310,14 @@ fun HeaderSection(
                             contentDescription = "Messages",
                             tint = MaterialTheme.colorScheme.onBackground
                         )
-                        if (state.unreadMessageCount > 0) {
-                            Badge(
+                        if (unreadTotal > 0) {
+                            Box(
                                 modifier = Modifier
                                     .align(Alignment.TopEnd)
-                                    .size(18.dp),
-                                containerColor = MaterialTheme.colorScheme.error,
-                                contentColor = Color.White,
-                                content = { Text(text = kotlin.math.min(state.unreadMessageCount, 99).toString(), color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold) }
+                                    .offset(x = 1.dp, y = (-1).dp)
+                                    .size(9.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.error)
                             )
                         }
                     }

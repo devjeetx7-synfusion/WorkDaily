@@ -367,7 +367,8 @@ fun PrivateChatScreen(
         }
     }
 
-    // Guarded markMessagesAsRead: only runs when there is at least one unread incoming message
+    // Mark messages as read whenever entering an active conversation or when new unread messages arrive
+    var hasMarkedInitialRead by remember(conversationId) { mutableStateOf(false) }
     var lastMarkedUnreadId by remember(conversationId) { mutableStateOf<String?>(null) }
     LaunchedEffect(remoteMessages, currentUserId, conversationId, isMutualFriend, isBlocked) {
         val viewerUid = currentUserId?.takeIf { it.isNotBlank() } ?: return@LaunchedEffect
@@ -376,15 +377,18 @@ fun PrivateChatScreen(
         val latestUnreadIncoming = remoteMessages.lastOrNull { msg ->
             msg.senderUid != viewerUid && msg.status != MessageStatus.READ
         }
-        if (latestUnreadIncoming != null && latestUnreadIncoming.id != lastMarkedUnreadId) {
-            // Retry on a later emission if the Firestore write fails; don't mark it locally
-            // before the repository confirms success.
+
+        val shouldMarkRead = !hasMarkedInitialRead || (latestUnreadIncoming != null && latestUnreadIncoming.id != lastMarkedUnreadId)
+        if (shouldMarkRead) {
             when (chatRepo.markMessagesAsRead(conversationId, viewerUid)) {
                 is ProfileOperationResult.Success -> {
-                    lastMarkedUnreadId = latestUnreadIncoming.id
+                    hasMarkedInitialRead = true
+                    if (latestUnreadIncoming != null) {
+                        lastMarkedUnreadId = latestUnreadIncoming.id
+                    }
                 }
                 is ProfileOperationResult.Error -> {
-                    // Keep the ID unmarked so a subsequent message/status emission can retry.
+                    // Keep unconfirmed so a subsequent emission or retry can clear the badge.
                 }
             }
         }
@@ -764,12 +768,31 @@ fun PrivateChatScreen(
             WorkDailySubtleRefreshBar(visible = isRefreshingHeader || isLoadingOlder)
         }
 
+        // Resolves drawable-nodpi/chatwall wallpaper dynamically if present
+        val wallpaperResId = remember(context) {
+            context.resources.getIdentifier("chatwall", "drawable", context.packageName)
+        }
+
         // 2. Main Conversation Body
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
         ) {
+            if (wallpaperResId != 0) {
+                androidx.compose.foundation.Image(
+                    painter = androidx.compose.ui.res.painterResource(id = wallpaperResId),
+                    contentDescription = null,
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(screenBackground.copy(alpha = 0.45f))
+                )
+            }
+
             when {
                 isCheckingMutual && mergedTimeline.isEmpty() -> {
                     ChatMessagesSkeleton(modifier = Modifier.fillMaxSize())
