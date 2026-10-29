@@ -540,11 +540,8 @@ private fun LiveRoomScreenContent(
                                 brush = Brush.verticalGradient(
                                     colorStops = arrayOf(
                                         0.00f to Color.Transparent,
-                                        0.12f to Color.Black.copy(alpha = 0.10f),
-                                        0.28f to Color.Black.copy(alpha = 0.30f),
-                                        0.45f to Color.Black.copy(alpha = 0.65f),
-                                        0.65f to Color.Black.copy(alpha = 0.90f),
-                                        0.78f to Color.Black,
+                                        0.06f to Color.Black.copy(alpha = 0.50f),
+                                        0.12f to Color.Black,
                                         1.00f to Color.Black
                                     )
                                 ),

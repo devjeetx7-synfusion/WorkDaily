@@ -34,24 +34,70 @@ fun LiveEndSummaryScreen(
     onNavigateProfile: (String) -> Unit = {}
 ) {
     val lastEndSummary by viewModel.lastEndSummary.collectAsState()
+    val liveIdentity by viewModel.liveIdentity.collectAsState()
     val followedCreatorIds by viewModel.followedCreatorIds.collectAsState()
+    val followingUids by viewModel.followingUids.collectAsState()
 
-    val summary = lastEndSummary ?: LiveEndSummary(
-        roomId = "room_demo",
-        title = "Civil Site Inspection & Safety Briefing",
-        creatorName = "You (Host)",
-        durationSeconds = 1840,
-        peakViewers = 420,
-        totalViewers = 1250,
-        heartsReceived = 3400,
-        newFollowersCount = 48,
-        giftsReceivedCount = 18,
-        diamondsEarned = 1850,
-        rupeesEarned = 925.0
-    )
+    val summary = lastEndSummary
 
-    val isBroadcaster = summary.creatorName.contains("You", ignoreCase = true) || summary.creatorName.contains("Host", ignoreCase = true)
-    val isFollowingHost = followedCreatorIds.contains("creator_1")
+    if (summary == null) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("Live Session Summary", fontWeight = FontWeight.Bold) },
+                    navigationIcon = {
+                        IconButton(onClick = onNavigateBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        titleContentColor = MaterialTheme.colorScheme.onSurface
+                    )
+                )
+            },
+            containerColor = MaterialTheme.colorScheme.background
+        ) { paddingValues ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(24.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Icon(
+                        Icons.Default.VideocamOff,
+                        contentDescription = null,
+                        modifier = Modifier.size(48.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        "No summary data available for this stream.",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Button(
+                        onClick = onNavigateBack,
+                        colors = ButtonDefaults.buttonColors(containerColor = LivePrimaryEmerald)
+                    ) {
+                        Text("Back to Discover Streams")
+                    }
+                }
+            }
+        }
+        return
+    }
+
+    val currentUid = liveIdentity?.uid
+    val hostUid = summary.hostUserId.ifBlank { summary.creatorId }
+    val isBroadcaster = currentUid != null && hostUid.isNotBlank() && currentUid == hostUid
+    val isFollowingHost = if (currentUid != null) followingUids.contains(hostUid) else followedCreatorIds.contains(hostUid)
 
     val formattedDuration = remember(summary.durationSeconds) {
         val mins = summary.durationSeconds / 60
@@ -295,11 +341,17 @@ fun LiveEndSummaryScreen(
                         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                             FollowButton(
                                 isFollowing = isFollowingHost,
-                                onToggle = { viewModel.toggleFollowCreator("creator_1") }
+                                onToggle = {
+                                    if (liveIdentity != null) {
+                                        viewModel.toggleFollowUser(hostUid)
+                                    } else {
+                                        viewModel.toggleFollowCreator(hostUid)
+                                    }
+                                }
                             )
 
                             OutlinedButton(
-                                onClick = { onNavigateProfile("creator_1") },
+                                onClick = { onNavigateProfile(hostUid) },
                                 shape = RoundedCornerShape(15.dp),
                                 modifier = Modifier.height(30.dp),
                                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)

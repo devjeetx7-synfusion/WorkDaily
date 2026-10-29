@@ -311,7 +311,9 @@ data class LiveEndSummary(
     val giftsReceivedCount: Int,
     val diamondsEarned: Int,
     val rupeesEarned: Double,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
+    val hostUserId: String = "",
+    val creatorId: String = ""
 )
 
 data class DemoNotification(

@@ -106,44 +106,46 @@ fun HostControlsSheet(
             if (selectedTab.startsWith("Controls")) {
                 // Media & Stream Toggles
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Surface(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(14.dp))
-                                .clickable { micEnabled = !micEnabled },
-                            color = if (micEnabled) LivePrimaryEmerald.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant,
-                            border = androidx.compose.foundation.BorderStroke(1.dp, if (micEnabled) LivePrimaryEmerald else Color.Gray)
+                    if (room.type == LiveRoomType.VIDEO || room.type == LiveRoomType.AUDIO) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            Row(
-                                modifier = Modifier.padding(14.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Icon(if (micEnabled) Icons.Default.Mic else Icons.Default.MicOff, contentDescription = null, tint = LivePrimaryEmerald)
-                                Text(if (micEnabled) "Mic On" else "Mic Muted", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
-                            }
-                        }
-
-                        if (room.type == LiveRoomType.VIDEO) {
                             Surface(
                                 modifier = Modifier
                                     .weight(1f)
                                     .clip(RoundedCornerShape(14.dp))
-                                    .clickable { cameraEnabled = !cameraEnabled },
-                                color = if (cameraEnabled) LivePrimaryEmerald.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant,
-                                border = androidx.compose.foundation.BorderStroke(1.dp, if (cameraEnabled) LivePrimaryEmerald else Color.Gray)
+                                    .clickable { micEnabled = !micEnabled },
+                                color = if (micEnabled) LivePrimaryEmerald.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant,
+                                border = androidx.compose.foundation.BorderStroke(1.dp, if (micEnabled) LivePrimaryEmerald else Color.Gray)
                             ) {
                                 Row(
                                     modifier = Modifier.padding(14.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
-                                    Icon(if (cameraEnabled) Icons.Default.Videocam else Icons.Default.VideocamOff, contentDescription = null, tint = LivePrimaryEmerald)
-                                    Text(if (cameraEnabled) "Cam On" else "Cam Off", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
+                                    Icon(if (micEnabled) Icons.Default.Mic else Icons.Default.MicOff, contentDescription = null, tint = LivePrimaryEmerald)
+                                    Text(if (micEnabled) "Mic On" else "Mic Muted", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
+                                }
+                            }
+
+                            if (room.type == LiveRoomType.VIDEO) {
+                                Surface(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(14.dp))
+                                        .clickable { cameraEnabled = !cameraEnabled },
+                                    color = if (cameraEnabled) LivePrimaryEmerald.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant,
+                                    border = androidx.compose.foundation.BorderStroke(1.dp, if (cameraEnabled) LivePrimaryEmerald else Color.Gray)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(14.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Icon(if (cameraEnabled) Icons.Default.Videocam else Icons.Default.VideocamOff, contentDescription = null, tint = LivePrimaryEmerald)
+                                        Text(if (cameraEnabled) "Cam On" else "Cam Off", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
+                                    }
                                 }
                             }
                         }
