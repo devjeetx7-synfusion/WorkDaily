@@ -3,17 +3,15 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
-// The Firebase config is stored at the Admin app module root:
-// android-admin-app/google-services.json (not app/google-services.json).
-// Always apply the plugin so a missing config fails clearly at build time
-// instead of silently producing an APK without Firebase resources.
+// The Google Services Gradle plugin reads configuration from the Android app
+// module directory: android-admin-app/app/google-services.json.
 apply(plugin = "com.google.gms.google-services")
 
-val adminFirebaseConfig = rootProject.file("google-services.json")
+val adminFirebaseConfig = file("google-services.json")
 if (!adminFirebaseConfig.isFile) {
     throw GradleException(
         "Missing Firebase config: ${adminFirebaseConfig.absolutePath}. " +
-            "Place the WorkDaily Firebase google-services.json in android-admin-app/."
+            "Place the WorkDaily Admin google-services.json in android-admin-app/app/."
     )
 }
 
@@ -101,7 +99,6 @@ dependencies {
 
     implementation("androidx.appcompat:appcompat:1.6.1")
 
-    // Fix kotlin stdlib duplicates
     constraints {
         implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.0") {
             because("kotlin-stdlib-jdk7 is now a part of kotlin-stdlib")
@@ -111,16 +108,10 @@ dependencies {
         }
     }
 
-    // Icons
     implementation("androidx.compose.material:material-icons-extended:1.5.4")
-
-    // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
-
-    // Coil for image loading
     implementation("io.coil-kt:coil-compose:2.5.0")
 
-    // Firebase BoM & Firebase Authentication
     implementation(platform("com.google.firebase:firebase-bom:32.8.0"))
     implementation("com.google.firebase:firebase-auth-ktx")
     implementation("com.google.firebase:firebase-firestore-ktx")
