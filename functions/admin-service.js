@@ -2,6 +2,7 @@
 
 const { HttpsError } = require('firebase-functions/v2/https');
 const { getAuth } = require('firebase-admin/auth');
+const { getMessaging } = require('firebase-admin/messaging');
 
 const ROLES = {
   SUPER_ADMIN: 'SUPER_ADMIN',
@@ -257,6 +258,11 @@ function createAdminService({ db }) {
       if (!reason || !reason.trim()) throw new HttpsError('invalid-argument', 'Reason is mandatory.');
 
       const userRef = db.collection('users').doc(targetUid);
+      const userDoc = await userRef.get();
+      if (!userDoc.exists) {
+        throw new HttpsError('not-found', 'Target user does not exist.');
+      }
+
       const pubRef = db.collection('public_profiles').doc(targetUid);
 
       const updates = { updatedAt: Date.now() };
@@ -397,7 +403,7 @@ function createAdminService({ db }) {
         throw new HttpsError('invalid-argument', 'targetUid, numeric amount, and reason are required.');
       }
 
-      return await db.runTransaction(async (transaction) => {
+      const txResult = await db.runTransaction(async (transaction) => {
         const walletRef = db.collection('rewards_wallets').doc(targetUid);
         const walletDoc = await transaction.get(walletRef);
 
@@ -405,7 +411,8 @@ function createAdminService({ db }) {
         const currentLifetime = walletDoc.exists ? (walletDoc.data().lifetimeEarned || 0) : 0;
 
         const newCoins = Math.max(0, currentCoins + amount);
-        const newLifetime = amount > 0 ? currentLifetime + amount : currentLifetime;
+        const actualAppliedAdjustment = newCoins - currentCoins;
+        const newLifetime = actualAppliedAdjustment > 0 ? currentLifetime + actualAppliedAdjustment : currentLifetime;
 
         transaction.set(walletRef, {
           availableCoins: newCoins,
@@ -420,9 +427,9 @@ function createAdminService({ db }) {
           title: 'Admin Balance Adjustment',
           description: reason,
           timestamp: new Date().toLocaleString(),
-          amount,
+          amount: actualAppliedAdjustment,
           status: 'CONFIRMED',
-          type: amount >= 0 ? 'EARNED' : 'SPENT',
+          type: actualAppliedAdjustment >= 0 ? 'EARNED' : 'SPENT',
           referenceCode: refCode,
           source: 'Admin Action',
           adminUid: admin.uid,
@@ -430,21 +437,24 @@ function createAdminService({ db }) {
         };
         transaction.set(txRef, txData);
 
-        await logAuditEvent(db, admin, 'ADJUST_USER_COINS', 'REWARDS_WALLET', targetUid, reason, {
-          beforeCoins: currentCoins,
-          afterCoins: newCoins,
-          amountAdjusted: amount,
-          refCode
-        });
-
         return {
           success: true,
           targetUid,
           beforeCoins: currentCoins,
           afterCoins: newCoins,
+          actualAppliedAdjustment,
           refCode
         };
       });
+
+      await logAuditEvent(db, admin, 'ADJUST_USER_COINS', 'REWARDS_WALLET', targetUid, reason, {
+        beforeCoins: txResult.beforeCoins,
+        afterCoins: txResult.afterCoins,
+        amountAdjusted: txResult.actualAppliedAdjustment,
+        refCode: txResult.refCode
+      });
+
+      return txResult;
     },
 
     async processRedemption(request, data) {
@@ -478,6 +488,76 @@ function createAdminService({ db }) {
       if (!title || !body) throw new HttpsError('invalid-argument', 'Title and Body are required.');
 
       const campaignRef = db.collection('notification_campaigns').doc();
+
+      // Collect eligible registration tokens
+      let tokens = [];
+      let tokenDocMap = []; // { token, uid }
+
+      if (targetAudience === 'SPECIFIC_USERS' && Array.isArray(targetUserUids) && targetUserUids.length > 0) {
+        // Query specified users' tokens
+        const userChunks = [];
+        for (let i = 0; i < targetUserUids.length; i += 10) {
+          userChunks.push(targetUserUids.slice(i, i + 10));
+        }
+
+        for (const chunk of userChunks) {
+          const snap = await db.collection('users').where('uid', 'in', chunk).get();
+          snap.docs.forEach(doc => {
+            const uData = doc.data();
+            if (uData.fcmToken && typeof uData.fcmToken === 'string' && uData.fcmToken.trim()) {
+              tokens.push(uData.fcmToken.trim());
+              tokenDocMap.push({ token: uData.fcmToken.trim(), uid: doc.id });
+            }
+          });
+        }
+      } else {
+        // Target audience ALL or segment filter
+        let query = db.collection('users');
+        if (segmentFilter && segmentFilter.accountStatus) {
+          query = query.where('accountStatus', '==', segmentFilter.accountStatus);
+        }
+        const snap = await query.limit(1000).get();
+        snap.docs.forEach(doc => {
+          const uData = doc.data();
+          if (uData.fcmToken && typeof uData.fcmToken === 'string' && uData.fcmToken.trim()) {
+            tokens.push(uData.fcmToken.trim());
+            tokenDocMap.push({ token: uData.fcmToken.trim(), uid: doc.id });
+          }
+        });
+      }
+
+      let totalSuccess = 0;
+      let totalFailure = 0;
+
+      if (tokens.length > 0) {
+        try {
+          const messaging = getMessaging();
+          const batchSize = 500;
+          for (let i = 0; i < tokens.length; i += batchSize) {
+            const batchTokens = tokens.slice(i, i + batchSize);
+            const message = {
+              notification: { title, body },
+              tokens: batchTokens
+            };
+            const response = await messaging.sendEachForMulticast(message);
+            totalSuccess += response.successCount;
+            totalFailure += response.failureCount;
+          }
+        } catch (err) {
+          console.error('FCM batch messaging send failed:', err);
+          totalFailure += tokens.length;
+        }
+      }
+
+      let status = 'COMPLETED';
+      if (tokens.length === 0) {
+        status = 'COMPLETED'; // No target tokens registered
+      } else if (totalSuccess === 0) {
+        status = 'FAILED';
+      } else if (totalFailure > 0) {
+        status = 'PARTIALLY_FAILED';
+      }
+
       const campaignData = {
         id: campaignRef.id,
         title,
@@ -485,7 +565,10 @@ function createAdminService({ db }) {
         targetAudience,
         targetUserUids,
         segmentFilter,
-        status: 'COMPLETED',
+        targetTokenCount: tokens.length,
+        successCount: totalSuccess,
+        failureCount: totalFailure,
+        status,
         sentAt: Date.now(),
         createdByAdminUid: admin.uid,
         createdAt: Date.now()
@@ -494,10 +577,10 @@ function createAdminService({ db }) {
       await campaignRef.set(campaignData);
 
       await logAuditEvent(db, admin, 'SEND_NOTIFICATION_CAMPAIGN', 'NOTIFICATION', campaignRef.id, `Campaign: ${title}`, {
-        targetAudience, title
+        targetAudience, title, status, successCount: totalSuccess, failureCount: totalFailure
       });
 
-      return { success: true, campaignId: campaignRef.id };
+      return { success: true, campaignId: campaignRef.id, status, successCount: totalSuccess, failureCount: totalFailure };
     },
 
     async getNotificationCampaigns(request) {
@@ -558,7 +641,11 @@ function createAdminService({ db }) {
         throw new HttpsError('invalid-argument', 'targetUid, email, and valid role are required.');
       }
 
-      await getAuth().setCustomUserClaims(targetUid, { admin: true, role });
+      const userRecord = await getAuth().getUser(targetUid);
+      const existingClaims = userRecord.customClaims || {};
+      const newClaims = { ...existingClaims, admin: true, role };
+
+      await getAuth().setCustomUserClaims(targetUid, newClaims);
 
       const adminRoleRef = db.collection('admin_roles').doc(targetUid);
       await adminRoleRef.set({
