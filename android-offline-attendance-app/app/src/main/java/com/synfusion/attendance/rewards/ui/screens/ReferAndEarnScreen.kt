@@ -360,9 +360,15 @@ fun ReferAndEarnScreen(
                                 } else {
                                     isSubmittingCode = true
                                     viewModel.playSound(RewardsSoundEvent.BUTTON_TAP)
-                                    // Simulated secure validation
-                                    showCodeSuccessSheet = true
-                                    isSubmittingCode = false
+                                    viewModel.submitReferralCode(trimmed) { result ->
+                                        if (result.isSuccess) {
+                                            showCodeSuccessSheet = true
+                                            codeError = null
+                                        } else {
+                                            codeError = result.exceptionOrNull()?.message ?: "Failed to apply referral code."
+                                        }
+                                        isSubmittingCode = false
+                                    }
                                 }
                             },
                             modifier = Modifier.fillMaxWidth().height(48.dp),

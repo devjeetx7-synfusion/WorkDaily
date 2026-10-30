@@ -224,8 +224,11 @@ fun RedeemRewardsScreen(
                             text = "Confirm Redeem",
                             onClick = {
                                 showConfirmationBottomSheet = false
-                                val record = viewModel.submitRedemption(option)
-                                showSuccessDialog = record
+                                viewModel.submitRedemption(option) { record ->
+                                    if (record != null) {
+                                        showSuccessDialog = record
+                                    }
+                                }
                             },
                             containerColor = RoyalPurple,
                             contentColor = Color.White,

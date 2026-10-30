@@ -234,8 +234,10 @@ fun DailyCheckInScreen(
                             RewardPrimaryButton(
                                 text = "Claim Reward",
                                 onClick = {
-                                    if (viewModel.claimDailyCheckIn()) {
-                                        showSuccessDialog = true
+                                    viewModel.claimDailyCheckIn { success ->
+                                        if (success) {
+                                            showSuccessDialog = true
+                                        }
                                     }
                                 },
                                 modifier = Modifier

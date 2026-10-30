@@ -169,6 +169,34 @@ service cloud.firestore {
     }
 
     // ---------------------------------------------------------------------------------------
+    // WorkDaily Rewards System & Leaderboard Collections
+    // ---------------------------------------------------------------------------------------
+    match /rewards_wallets/{userId} {
+      allow read: if isOwner(userId);
+      allow write: if false;
+
+      match /{allSubcollections=**} {
+        allow read: if isOwner(userId);
+        allow write: if false;
+      }
+    }
+
+    match /referral_codes/{code} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    match /leaderboards/{timeframe} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+
+      match /rankings/{rankId} {
+        allow read: if isAuthenticated();
+        allow write: if false;
+      }
+    }
+
+    // ---------------------------------------------------------------------------------------
     // WorkDaily Live Rooms + Watch Party
     //
     // live_rooms/{roomId}                               room document (host owned)

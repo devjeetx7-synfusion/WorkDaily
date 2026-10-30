@@ -65,21 +65,22 @@ fun ConstructionSpinScreen(
         isSpinning = true
         viewModel.playSound(RewardsSoundEvent.SPIN_START)
 
-        val winningSegment = viewModel.spinWheel() ?: run {
-            isSpinning = false
-            return
-        }
-        selectedWinningSegment = winningSegment
+        viewModel.spinWheel { winningSegment ->
+            if (winningSegment == null) {
+                isSpinning = false
+                return@spinWheel
+            }
+            selectedWinningSegment = winningSegment
 
-        val segmentCount = segments.size
-        val degreesPerSegment = 360f / segmentCount
-        val targetSegmentIndex = segments.indexOfFirst { it.id == winningSegment.id }
+            val segmentCount = segments.size
+            val degreesPerSegment = 360f / segmentCount
+            val targetSegmentIndex = segments.indexOfFirst { it.id == winningSegment.id }
 
-        val segmentCenterAngle = targetSegmentIndex * degreesPerSegment + (degreesPerSegment / 2f)
-        val pointerAngleOffset = 270f
-        val finalTargetAngle = 360f * 5f + (pointerAngleOffset - segmentCenterAngle)
+            val segmentCenterAngle = targetSegmentIndex * degreesPerSegment + (degreesPerSegment / 2f)
+            val pointerAngleOffset = 270f
+            val finalTargetAngle = 360f * 5f + (pointerAngleOffset - segmentCenterAngle)
 
-        coroutineScope.launch {
+            coroutineScope.launch {
             val startAngle = rotationAnim.value % 360f
             rotationAnim.snapTo(startAngle)
 
@@ -110,6 +111,7 @@ fun ConstructionSpinScreen(
             }
         }
     }
+}
 
     Scaffold(
         topBar = {
