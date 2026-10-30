@@ -15,7 +15,9 @@ const { RoomServiceClient } = require('livekit-server-sdk');
 initializeApp();
 const apiKey = defineSecret('LIVEKIT_API_KEY');
 const apiSecret = defineSecret('LIVEKIT_API_SECRET');
-const serverUrl = defineString('LIVEKIT_URL');
+// Public endpoint; default targets the WorkDaily LiveKit Cloud project. A project-specific
+// .env.<firebase-project-id> value may override this during deployment.
+const serverUrl = defineString('LIVEKIT_URL', { default: 'wss://workdaily-tsxm3pgy.livekit.cloud' });
 
 const issueToken = createTokenService({
   loadRoom: async (id) => {
