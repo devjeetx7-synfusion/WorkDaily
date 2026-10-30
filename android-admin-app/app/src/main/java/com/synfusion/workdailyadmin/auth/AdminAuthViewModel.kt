@@ -14,27 +14,21 @@ import kotlinx.coroutines.tasks.await
 sealed class AdminAuthState {
     object Idle : AdminAuthState()
     object Loading : AdminAuthState()
-    data class Authenticated(
-        val uid: String,
-        val email: String,
-        val role: AdminRole
-    ) : AdminAuthState()
+    data class Authenticated(val uid: String, val email: String, val role: AdminRole) : AdminAuthState()
     data class Unauthorized(val reason: String) : AdminAuthState()
     data class Error(val message: String) : AdminAuthState()
 }
 
 class AdminAuthViewModel @JvmOverloads constructor(
     private val authSupplier: () -> FirebaseAuth? = {
-        try { FirebaseAuth.getInstance() } catch (e: Exception) { null }
+        try { FirebaseAuth.getInstance() } catch (_: Exception) { null }
     },
     private val firestoreSupplier: () -> FirebaseFirestore? = {
-        try { FirebaseFirestore.getInstance() } catch (e: Exception) { null }
+        try { FirebaseFirestore.getInstance() } catch (_: Exception) { null }
     }
 ) : ViewModel() {
-
     private val auth get() = authSupplier()
     private val firestore get() = firestoreSupplier()
-
     private val _authState = MutableStateFlow<AdminAuthState>(AdminAuthState.Idle)
     val authState: StateFlow<AdminAuthState> = _authState.asStateFlow()
 
@@ -46,7 +40,7 @@ class AdminAuthViewModel @JvmOverloads constructor(
         val currentAuth = auth
         if (currentAuth == null) {
             _authState.value = AdminAuthState.Error(
-                "Firebase Authentication is not available. Please verify configuration."
+                "Firebase Authentication could not initialize. Check the Admin app Firebase configuration and rebuild the APK."
             )
             return
         }
@@ -60,46 +54,56 @@ class AdminAuthViewModel @JvmOverloads constructor(
         viewModelScope.launch {
             _authState.value = AdminAuthState.Loading
             try {
-                // Refresh token to get updated custom claims
                 val tokenResult = user.getIdToken(true).await()
                 val isAdminClaim = tokenResult.claims["admin"] as? Boolean ?: false
-
                 if (isAdminClaim) {
-                    val roleStr = tokenResult.claims["role"] as? String ?: "ANALYST"
-                    val role = AdminRole.fromString(roleStr)
+                    val roleStr = tokenResult.claims["role"] as? String
+                    if (roleStr.isNullOrBlank()) {
+                        currentAuth.signOut()
+                        _authState.value = AdminAuthState.Unauthorized(
+                            "Administrator role is missing. Ask a super administrator to reassign your role."
+                        )
+                        return@launch
+                    }
                     _authState.value = AdminAuthState.Authenticated(
                         uid = user.uid,
                         email = user.email ?: "",
-                        role = role
+                        role = AdminRole.fromString(roleStr)
                     )
                 } else {
-                    // Fallback to checking admin_roles document if Firestore is available
                     val db = firestore
-                    if (db != null) {
-                        val adminDoc = db.collection("admin_roles").document(user.uid).get().await()
-                        if (adminDoc.exists()) {
-                            val roleStr = adminDoc.getString("role") ?: "ANALYST"
-                            val role = AdminRole.fromString(roleStr)
-                            _authState.value = AdminAuthState.Authenticated(
-                                uid = user.uid,
-                                email = user.email ?: "",
-                                role = role
-                            )
-                        } else {
-                            currentAuth.signOut()
-                            _authState.value = AdminAuthState.Unauthorized(
-                                "Access Denied: Account is not authorized as WorkDaily Administrator."
-                            )
-                        }
-                    } else {
+                    if (db == null) {
+                        _authState.value = AdminAuthState.Error(
+                            "Firebase Firestore is unavailable. Check Firebase configuration and network connection."
+                        )
+                        return@launch
+                    }
+                    val adminDoc = db.collection("admin_roles").document(user.uid).get().await()
+                    if (!adminDoc.exists()) {
                         currentAuth.signOut()
                         _authState.value = AdminAuthState.Unauthorized(
-                            "Access Denied: Admin authorization record required."
+                            "Access denied: this account is not registered as a WorkDaily administrator."
                         )
+                        return@launch
                     }
+                    val roleStr = adminDoc.getString("role")
+                    if (roleStr.isNullOrBlank()) {
+                        currentAuth.signOut()
+                        _authState.value = AdminAuthState.Unauthorized(
+                            "Administrator role is missing from the admin record."
+                        )
+                        return@launch
+                    }
+                    _authState.value = AdminAuthState.Authenticated(
+                        uid = user.uid,
+                        email = user.email ?: "",
+                        role = AdminRole.fromString(roleStr)
+                    )
                 }
             } catch (e: Exception) {
-                _authState.value = AdminAuthState.Error(e.localizedMessage ?: "Authentication session check failed.")
+                _authState.value = AdminAuthState.Error(
+                    e.localizedMessage ?: "Could not verify the administrator session. Check network access and try again."
+                )
             }
         }
     }
@@ -107,10 +111,11 @@ class AdminAuthViewModel @JvmOverloads constructor(
     fun login(email: String, password: String) {
         val currentAuth = auth
         if (currentAuth == null) {
-            _authState.value = AdminAuthState.Error("Firebase is unavailable. Cannot process login.")
+            _authState.value = AdminAuthState.Error(
+                "Firebase Authentication could not initialize. Check the Admin app Firebase configuration and rebuild the APK."
+            )
             return
         }
-
         if (email.isBlank() || password.isBlank()) {
             _authState.value = AdminAuthState.Error("Email and password are required.")
             return
@@ -119,15 +124,17 @@ class AdminAuthViewModel @JvmOverloads constructor(
         viewModelScope.launch {
             _authState.value = AdminAuthState.Loading
             try {
-                val result = currentAuth.signInWithEmailAndPassword(email.trim(), password.trim()).await()
-                val user = result.user
-                if (user != null) {
+                // Normalize email only. Passwords must be passed exactly as entered.
+                val result = currentAuth.signInWithEmailAndPassword(email.trim(), password).await()
+                if (result.user != null) {
                     checkCurrentSession()
                 } else {
-                    _authState.value = AdminAuthState.Error("Invalid login credentials.")
+                    _authState.value = AdminAuthState.Error("Firebase sign-in returned no user.")
                 }
             } catch (e: Exception) {
-                _authState.value = AdminAuthState.Error(e.localizedMessage ?: "Failed to sign in.")
+                _authState.value = AdminAuthState.Error(
+                    e.localizedMessage ?: "Sign-in failed. Verify credentials and Firebase Authentication settings."
+                )
             }
         }
     }
@@ -135,8 +142,8 @@ class AdminAuthViewModel @JvmOverloads constructor(
     fun logout() {
         try {
             auth?.signOut()
-        } catch (e: Exception) {
-            // Ignore signout cleanup exceptions
+        } catch (_: Exception) {
+            // Clear local UI state even if SDK cleanup fails.
         }
         _authState.value = AdminAuthState.Idle
     }
