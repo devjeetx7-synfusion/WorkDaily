@@ -473,18 +473,21 @@ class AdminRepository(
     suspend fun getSystemHealth(): Result<SystemHealthData> = withContext(Dispatchers.IO) {
         try {
             val res = functions.getHttpsCallable("adminGetSystemHealth").call().await()
-            val data = res.getData() as? Map<String, Any> ?: emptyMap()
+            val data = res.getData() as? Map<String, Any>
+                ?: throw IllegalStateException("System health response was empty or malformed.")
 
+            // Never fabricate service health or delivery metrics. Missing backend fields
+            // are displayed as UNKNOWN / N/A rather than a false healthy result.
             val health = SystemHealthData(
-                firebaseFunctionsStatus = (data["firebaseFunctionsStatus"] as? String) ?: "HEALTHY",
-                fcmDeliveryRate = (data["fcmDeliveryRate"] as? String) ?: "99.8%",
-                firestoreStatus = (data["firestoreStatus"] as? String) ?: "HEALTHY",
-                liveKitStatus = (data["liveKitStatus"] as? String) ?: "HEALTHY",
-                timestamp = (data["timestamp"] as? Number)?.toLong() ?: System.currentTimeMillis()
+                firebaseFunctionsStatus = (data["firebaseFunctionsStatus"] as? String) ?: "UNKNOWN",
+                fcmDeliveryRate = (data["fcmDeliveryRate"] as? String) ?: "N/A",
+                firestoreStatus = (data["firestoreStatus"] as? String) ?: "UNKNOWN",
+                liveKitStatus = (data["liveKitStatus"] as? String) ?: "UNKNOWN",
+                timestamp = (data["timestamp"] as? Number)?.toLong() ?: 0L
             )
             Result.Success(health)
         } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to fetch system health", e)
+            Result.Error(e.localizedMessage ?: "Failed to fetch live system health", e)
         }
     }
 }
