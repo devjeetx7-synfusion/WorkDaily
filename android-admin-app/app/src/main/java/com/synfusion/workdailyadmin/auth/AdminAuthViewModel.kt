@@ -119,7 +119,7 @@ class AdminAuthViewModel @JvmOverloads constructor(
         viewModelScope.launch {
             _authState.value = AdminAuthState.Loading
             try {
-                val result = currentAuth.signInWithEmailAndPassword(email.trim(), password.trim()).await()
+                val result = currentAuth.signInWithEmailAndPassword(email.trim(), password).await()
                 val user = result.user
                 if (user != null) {
                     checkCurrentSession()
