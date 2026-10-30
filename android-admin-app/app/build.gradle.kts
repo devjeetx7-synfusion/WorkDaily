@@ -3,8 +3,18 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
-if (file("google-services.json").exists()) {
-    apply(plugin = "com.google.gms.google-services")
+// The Firebase config is stored at the Admin app module root:
+// android-admin-app/google-services.json (not app/google-services.json).
+// Always apply the plugin so a missing config fails clearly at build time
+// instead of silently producing an APK without Firebase resources.
+apply(plugin = "com.google.gms.google-services")
+
+val adminFirebaseConfig = rootProject.file("google-services.json")
+if (!adminFirebaseConfig.isFile) {
+    throw GradleException(
+        "Missing Firebase config: ${adminFirebaseConfig.absolutePath}. " +
+            "Place the WorkDaily Firebase google-services.json in android-admin-app/."
+    )
 }
 
 android {
