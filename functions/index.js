@@ -9,6 +9,7 @@ const { defineSecret, defineString } = require('firebase-functions/params');
 const { createTokenService, TokenError } = require('./token-service');
 const { createLiveMediaService } = require('./live-media-service');
 const { createRewardsService } = require('./rewards-service');
+const { createAdminService } = require('./admin-service');
 const { RoomServiceClient } = require('livekit-server-sdk');
 
 initializeApp();
@@ -48,7 +49,6 @@ exports.liveKitToken = onCall({ secrets: [apiKey, apiSecret], timeoutSeconds: 15
   }
 });
 
-
 // Reservation and lifecycle endpoints are not yet used by Android. Secrets remain server-side.
 const media = createLiveMediaService({
   db: getFirestore(),
@@ -59,6 +59,7 @@ const media = createLiveMediaService({
     return new RoomServiceClient(url.toString(), apiKey.value(), apiSecret.value());
   },
 });
+
 function mediaCallable(handler, secrets = []) {
   return onCall({ secrets, timeoutSeconds: 30 }, async request => {
     try { return await handler(request); }
@@ -120,3 +121,39 @@ exports.rewardsClaimTask = rewardsCallable((uid, data) => rewards.claimTask(uid,
 exports.rewardsSubmitReferralCode = rewardsCallable((uid, data) => rewards.submitReferralCode(uid, data.referralCode));
 exports.rewardsSubmitRedemption = rewardsCallable((uid, data) => rewards.submitRedemption(uid, data.optionId, data.requestId));
 exports.rewardsGetLeaderboard = rewardsCallable((uid, data) => rewards.getLeaderboard(uid, data.timeframe));
+
+// ---------------------------------------------------------------------------------------
+// WorkDaily Admin Management Cloud Functions
+// ---------------------------------------------------------------------------------------
+const adminService = createAdminService({
+  get db() { return getFirestore(); }
+});
+
+function adminCallable(handler) {
+  return onCall({ timeoutSeconds: 30 }, async (request) => {
+    return await handler(request);
+  });
+}
+
+exports.adminGetDashboardStats = adminCallable((req) => adminService.getDashboardStats(req));
+exports.adminGetUsers = adminCallable((req) => adminService.getUsers(req, req.data || {}));
+exports.adminGetUserDetails = adminCallable((req) => adminService.getUserDetails(req, req.data || {}));
+exports.adminUpdateUserStatus = adminCallable((req) => adminService.updateUserStatus(req, req.data || {}));
+exports.adminRevokeSessions = adminCallable((req) => adminService.revokeSessions(req, req.data || {}));
+exports.adminAddUserNote = adminCallable((req) => adminService.addUserNote(req, req.data || {}));
+exports.adminGetReports = adminCallable((req) => adminService.getReports(req, req.data || {}));
+exports.adminUpdateReportStatus = adminCallable((req) => adminService.updateReportStatus(req, req.data || {}));
+exports.adminGetLiveRooms = adminCallable((req) => adminService.getLiveRooms(req, req.data || {}));
+exports.adminEndLiveRoom = adminCallable((req) => adminService.endLiveRoom(req, req.data || {}));
+exports.adminAdjustUserCoins = adminCallable((req) => adminService.adjustUserCoins(req, req.data || {}));
+exports.adminProcessRedemption = adminCallable((req) => adminService.processRedemption(req, req.data || {}));
+exports.adminSendNotificationCampaign = adminCallable((req) => adminService.sendNotificationCampaign(req, req.data || {}));
+exports.adminGetNotificationCampaigns = adminCallable((req) => adminService.getNotificationCampaigns(req));
+exports.adminGetAppConfig = adminCallable((req) => adminService.getAppConfig(req));
+exports.adminUpdateAppConfig = adminCallable((req) => adminService.updateAppConfig(req, req.data || {}));
+exports.adminGetAdminTeam = adminCallable((req) => adminService.getAdminTeam(req));
+exports.adminAssignRole = adminCallable((req) => adminService.assignAdminRole(req, req.data || {}));
+exports.adminGetAuditLogs = adminCallable((req) => adminService.getAuditLogs(req, req.data || {}));
+exports.adminGetSupportTickets = adminCallable((req) => adminService.getSupportTickets(req, req.data || {}));
+exports.adminUpdateSupportTicket = adminCallable((req) => adminService.updateSupportTicket(req, req.data || {}));
+exports.adminGetSystemHealth = adminCallable((req) => adminService.getSystemHealth(req));

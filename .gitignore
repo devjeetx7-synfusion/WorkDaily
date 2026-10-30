@@ -1,1 +1,13 @@
+android-admin-app/.gradle/
+android-admin-app/build/
+android-admin-app/app/build/
+android-offline-attendance-app/.gradle/
+android-offline-attendance-app/build/
+android-offline-attendance-app/app/build/
+.gradle/
+**/build/
+**/.gradle/
 *.bak
+.DS_Store
+.idea/
+*.iml

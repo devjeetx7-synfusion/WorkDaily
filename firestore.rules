@@ -198,14 +198,7 @@ service cloud.firestore {
 
     // ---------------------------------------------------------------------------------------
     // WorkDaily Live Rooms + Watch Party
-    //
-    // live_rooms/{roomId}                               room document (host owned)
-    // live_rooms/{roomId}/members/{uid}                 presence/membership (uid-keyed)
-    // live_rooms/{roomId}/watch_party/state             shared playback state (host only)
-    // live_rooms/{roomId}/watch_party_playlist/{itemId} playlist items (host only)
-    // live_rooms/{roomId}/messages/{clientMessageId}    persistent chat (members only)
     // ---------------------------------------------------------------------------------------
-
     function liveRoom(roomId) {
       return get(/databases/$(database)/documents/live_rooms/$(roomId)).data;
     }
@@ -218,13 +211,10 @@ service cloud.firestore {
       return liveRoom(roomId).isLive == true && liveRoom(roomId).endedAtMillis == null;
     }
 
-    // Membership cannot be forged: the document id must be the authenticated uid.
     function roomMember(roomId, uid) {
       return exists(/databases/$(database)/documents/live_rooms/$(roomId)/members/$(uid));
     }
 
-    // Private rooms have no trusted invitation mechanism yet. Only their host may join.
-    // A prior membership must not grant continued access after a block or visibility change.
     function canAccessLiveRoom(roomId) {
       return isAuthenticated() && (isLiveRoomHost(roomId) ||
           (liveRoom(roomId).isPublic == true && isNotBlocked(request.auth.uid, liveRoom(roomId).hostUserId)));
@@ -241,7 +231,6 @@ service cloud.firestore {
     match /live_rooms/{roomId} {
       allow get, list: if isAuthenticated();
 
-      // A room can only be created by the authenticated account that claims to host it.
       allow create: if isAuthenticated()
                     && request.resource.data.hostUserId == request.auth.uid
                     && request.resource.data.creatorId == request.auth.uid
@@ -250,8 +239,6 @@ service cloud.firestore {
                     && request.resource.data.get('endedAtMillis', null) == null
                     && request.resource.data.isLive == true;
 
-      // Only the persisted host can update the room document (settings, end the room).
-      // hostUserId/creatorId are immutable so a room cannot be hijacked.
       allow update: if isAuthenticated()
                     && resource.data.hostUserId == request.auth.uid
                     && resource.data.get('mediaManaged', false) == false
@@ -266,16 +253,11 @@ service cloud.firestore {
                     && resource.data.hostUserId == request.auth.uid
                     && resource.data.get('mediaManaged', false) == false;
 
-      // Presence / membership. Document id == authenticated uid, so it cannot be forged and
-      // reconnecting can never create a duplicate row.
       match /members/{memberUid} {
-        // The join transaction reads its own (possibly nonexistent) membership before writing it.
         allow get: if isRoomMember(roomId) || isLiveRoomHost(roomId) ||
                       (isAuthenticated() && memberUid == request.auth.uid && canAccessLiveRoom(roomId) && isRoomLive(roomId));
         allow list: if isRoomMember(roomId) || isLiveRoomHost(roomId);
 
-        // Role is pinned: only the persisted host may hold the HOST role, so a member cannot
-        // promote themselves (which would hide them from the viewer count or show a host badge).
         allow create, update: if isAuthenticated()
                               && memberUid == request.auth.uid
                               && request.resource.data.uid == request.auth.uid
@@ -283,12 +265,10 @@ service cloud.firestore {
                               && canAccessLiveRoom(roomId)
                               && isRoomLive(roomId);
 
-        // A member leaves on their own; the host may remove a participant.
         allow delete: if isAuthenticated()
                       && (memberUid == request.auth.uid || isLiveRoomHost(roomId));
       }
 
-      // Shared playback state: read by every member, written only by the host of a live room.
       match /watch_party/state {
         allow get, list: if isRoomMember(roomId) || isLiveRoomHost(roomId);
 
@@ -302,9 +282,6 @@ service cloud.firestore {
         allow delete: if false;
       }
 
-      // Playlist queue: host only writes, members read.
-      // (Its own collection: a Firestore path alternates collection/document, so the queue cannot
-      // be a sibling subcollection of the `state` document under `watch_party`.)
       match /watch_party_playlist/{itemId} {
         allow get, list: if isRoomMember(roomId) || isLiveRoomHost(roomId);
 
@@ -320,10 +297,7 @@ service cloud.firestore {
         allow delete: if isAuthenticated() && isLiveRoomHost(roomId);
       }
 
-      // Persistent room chat: members only, sender identity pinned to the auth uid, and the
-      // message document id is the client message id (idempotent retries, no duplicates).
       match /messages/{messageId} {
-        // The join transaction checks only the caller's deterministic join event.
         allow get: if isRoomMember(roomId) || (canAccessLiveRoom(roomId) && isRoomLive(roomId) &&
                       messageId == "sys_join_" + roomId + "_" + request.auth.uid);
         allow list: if isRoomMember(roomId);
@@ -341,6 +315,40 @@ service cloud.firestore {
 
         allow update, delete: if false;
       }
+    }
+
+    // ---------------------------------------------------------------------------------------
+    // WorkDaily Admin Infrastructure Collections
+    // ---------------------------------------------------------------------------------------
+
+    // WorkDaily App Remote Configuration
+    match /app_config/{configId} {
+      allow read: if isAuthenticated();
+      allow write: if false; // Admin Cloud Functions Server SDK write only
+    }
+
+    // WorkDaily Admin Roles
+    match /admin_roles/{uid} {
+      allow read: if isAuthenticated() && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    // WorkDaily Admin Audit Logs
+    match /admin_audit_logs/{logId} {
+      allow read: if isAuthenticated() && request.auth.token.get('admin', false) == true;
+      allow write: if false;
+    }
+
+    // WorkDaily Support Tickets
+    match /support_tickets/{ticketId} {
+      allow read, create: if isAuthenticated() && (resource == null || resource.data.userUid == request.auth.uid);
+      allow update, delete: if false;
+    }
+
+    // WorkDaily Notification Campaigns
+    match /notification_campaigns/{campaignId} {
+      allow read: if isAuthenticated() && request.auth.token.get('admin', false) == true;
+      allow write: if false;
     }
 
     // Deny access to any other unmapped collections by default

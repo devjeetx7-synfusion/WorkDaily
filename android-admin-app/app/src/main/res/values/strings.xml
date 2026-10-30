@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">WorkDaily Admin</string>
+    <string name="admin_portal_title">WorkDaily Admin Portal</string>
+    <string name="admin_tagline">Management &amp; Moderation System</string>
+</resources>
