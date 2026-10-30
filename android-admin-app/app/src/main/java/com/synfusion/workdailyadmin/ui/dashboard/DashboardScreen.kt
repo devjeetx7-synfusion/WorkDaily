@@ -1,16 +1,13 @@
 package com.synfusion.workdailyadmin.ui.dashboard
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -33,10 +30,13 @@ fun DashboardScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Admin Dashboard", fontWeight = FontWeight.Bold) },
+                title = { Text("Admin Portal Dashboard", fontWeight = FontWeight.Bold) },
                 actions = {
-                    IconButton(onClick = { viewModel.loadDashboardStats() }) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                    IconButton(
+                        onClick = { viewModel.loadDashboardStats() },
+                        enabled = uiState !is DashboardUiState.Loading
+                    ) {
+                        Icon(Icons.Default.Refresh, contentDescription = "Refresh Data")
                     }
                 }
             )
@@ -49,17 +49,31 @@ fun DashboardScreen(
         ) {
             when (val state = uiState) {
                 is DashboardUiState.Loading -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                    Column(
+                        modifier = Modifier.align(Alignment.Center),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        CircularProgressIndicator()
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text("Syncing platform metrics...", style = MaterialTheme.typography.bodyMedium)
+                    }
                 }
                 is DashboardUiState.Error -> {
                     Column(
                         modifier = Modifier.align(Alignment.Center),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text(text = state.message, color = MaterialTheme.colorScheme.error)
+                        Icon(
+                            imageVector = Icons.Default.CloudOff,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(48.dp)
+                        )
                         Spacer(modifier = Modifier.height(8.dp))
+                        Text(text = state.message, color = MaterialTheme.colorScheme.error)
+                        Spacer(modifier = Modifier.height(16.dp))
                         Button(onClick = { viewModel.loadDashboardStats() }) {
-                            Text("Retry")
+                            Text("Retry Network Sync")
                         }
                     }
                 }
@@ -71,10 +85,11 @@ fun DashboardScreen(
                             .padding(16.dp)
                             .verticalScroll(rememberScrollState())
                     ) {
-                        // System Health Banner
+                        // Operational Status Banner
                         Card(
                             modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+                            shape = RoundedCornerShape(16.dp)
                         ) {
                             Row(
                                 modifier = Modifier
@@ -85,12 +100,12 @@ fun DashboardScreen(
                             ) {
                                 Column {
                                     Text(
-                                        text = "System Health Status",
+                                        text = "System Operational Health",
                                         style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.Bold
                                     )
                                     Text(
-                                        text = "Firebase & LiveKit operational",
+                                        text = "Firebase Services & LiveKit Managed Nodes",
                                         style = MaterialTheme.typography.bodySmall
                                     )
                                 }
@@ -101,10 +116,10 @@ fun DashboardScreen(
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(20.dp))
 
                         Text(
-                            text = "Platform Analytics",
+                            text = "Platform Core Analytics",
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(bottom = 12.dp)
@@ -115,14 +130,14 @@ fun DashboardScreen(
                             KpiCard(
                                 title = "Total Users",
                                 value = stats.totalUsers.toString(),
-                                subtitle = "${stats.verifiedUsers} Verified",
+                                subtitle = "${stats.verifiedUsers} Verified Accounts",
                                 icon = Icons.Default.People,
                                 modifier = Modifier.weight(1f)
                             )
                             KpiCard(
                                 title = "Active Live Streams",
                                 value = stats.activeLiveRooms.toString(),
-                                subtitle = "Live Now",
+                                subtitle = "Broadcasting Now",
                                 icon = Icons.Default.LiveTv,
                                 accentColor = Color(0xFFEC4899),
                                 modifier = Modifier.weight(1f)
@@ -135,7 +150,7 @@ fun DashboardScreen(
                             KpiCard(
                                 title = "Pending Reports",
                                 value = stats.pendingReports.toString(),
-                                subtitle = "Action Required",
+                                subtitle = "Moderation Queue",
                                 icon = Icons.Default.ReportProblem,
                                 accentColor = Color(0xFFEF4444),
                                 modifier = Modifier.weight(1f)
@@ -156,7 +171,7 @@ fun DashboardScreen(
                             KpiCard(
                                 title = "Coins Issued",
                                 value = stats.totalCoinsIssued.toString(),
-                                subtitle = "Lifetime Earned",
+                                subtitle = "Lifetime Minted",
                                 icon = Icons.Default.MonetizationOn,
                                 accentColor = Color(0xFF10B981),
                                 modifier = Modifier.weight(1f)
@@ -164,7 +179,7 @@ fun DashboardScreen(
                             KpiCard(
                                 title = "Banned / Suspended",
                                 value = "${stats.bannedUsers} / ${stats.suspendedUsers}",
-                                subtitle = "Moderated Accounts",
+                                subtitle = "Moderated Users",
                                 icon = Icons.Default.Block,
                                 accentColor = Color(0xFF6B7280),
                                 modifier = Modifier.weight(1f)
@@ -174,7 +189,7 @@ fun DashboardScreen(
                         Spacer(modifier = Modifier.height(24.dp))
 
                         Text(
-                            text = "Quick Management Shortcuts",
+                            text = "Admin Actions & Workflows",
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(bottom = 12.dp)
@@ -182,47 +197,59 @@ fun DashboardScreen(
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             OutlinedButton(
                                 onClick = onNavigateUsers,
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp),
+                                shape = RoundedCornerShape(12.dp)
                             ) {
-                                Icon(Icons.Default.People, contentDescription = null, modifier = Modifier.size(18.dp))
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("Users")
+                                Icon(Icons.Default.People, contentDescription = null, modifier = Modifier.size(20.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("User Directory")
                             }
                             OutlinedButton(
                                 onClick = onNavigateReports,
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp),
+                                shape = RoundedCornerShape(12.dp)
                             ) {
-                                Icon(Icons.Default.ReportProblem, contentDescription = null, modifier = Modifier.size(18.dp))
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("Reports")
+                                Icon(Icons.Default.ReportProblem, contentDescription = null, modifier = Modifier.size(20.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Moderation")
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             OutlinedButton(
                                 onClick = onNavigateLive,
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp),
+                                shape = RoundedCornerShape(12.dp)
                             ) {
-                                Icon(Icons.Default.LiveTv, contentDescription = null, modifier = Modifier.size(18.dp))
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("Live Rooms")
+                                Icon(Icons.Default.LiveTv, contentDescription = null, modifier = Modifier.size(20.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Live Streams")
                             }
                             OutlinedButton(
                                 onClick = onNavigateRewards,
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp),
+                                shape = RoundedCornerShape(12.dp)
                             ) {
-                                Icon(Icons.Default.CardGiftcard, contentDescription = null, modifier = Modifier.size(18.dp))
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("Rewards")
+                                Icon(Icons.Default.CardGiftcard, contentDescription = null, modifier = Modifier.size(20.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Economy")
                             }
                         }
                     }

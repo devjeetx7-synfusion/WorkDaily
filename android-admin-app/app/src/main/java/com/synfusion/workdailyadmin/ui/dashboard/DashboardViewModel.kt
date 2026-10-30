@@ -16,7 +16,7 @@ sealed class DashboardUiState {
     data class Error(val message: String) : DashboardUiState()
 }
 
-class DashboardViewModel(
+class DashboardViewModel @JvmOverloads constructor(
     private val repository: AdminRepository = AdminRepository()
 ) : ViewModel() {
 

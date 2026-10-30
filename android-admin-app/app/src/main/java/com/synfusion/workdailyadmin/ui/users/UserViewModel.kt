@@ -25,7 +25,7 @@ sealed class UserDetailState {
     data class Error(val message: String) : UserDetailState()
 }
 
-class UserViewModel(
+class UserViewModel @JvmOverloads constructor(
     private val repository: AdminRepository = AdminRepository()
 ) : ViewModel() {
 

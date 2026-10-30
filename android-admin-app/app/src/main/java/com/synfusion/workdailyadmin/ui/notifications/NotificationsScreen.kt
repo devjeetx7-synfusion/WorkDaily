@@ -26,13 +26,17 @@ fun NotificationsScreen(
     var titleInput by remember { mutableStateOf("") }
     var bodyInput by remember { mutableStateOf("") }
     var audienceInput by remember { mutableStateOf("ALL") }
+    var isSubmitting by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("FCM Notification Campaigns", fontWeight = FontWeight.Bold) },
                 actions = {
-                    IconButton(onClick = { viewModel.loadCampaigns() }) {
+                    IconButton(
+                        onClick = { viewModel.loadCampaigns() },
+                        enabled = uiState !is NotificationsUiState.Loading
+                    ) {
                         Icon(Icons.Default.Refresh, contentDescription = "Refresh")
                     }
                 }
@@ -52,7 +56,14 @@ fun NotificationsScreen(
         ) {
             when (val state = uiState) {
                 is NotificationsUiState.Loading -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                    Column(
+                        modifier = Modifier.align(Alignment.Center),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        CircularProgressIndicator()
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text("Fetching notification campaigns...")
+                    }
                 }
                 is NotificationsUiState.Error -> {
                     Column(
@@ -103,8 +114,8 @@ fun NotificationsScreen(
 
             if (showCreateDialog) {
                 AlertDialog(
-                    onDismissRequest = { showCreateDialog = false },
-                    title = { Text("New FCM Campaign Broadcast") },
+                    onDismissRequest = { if (!isSubmitting) showCreateDialog = false },
+                    title = { Text("New FCM Campaign Broadcast", fontWeight = FontWeight.Bold) },
                     text = {
                         Column {
                             OutlinedTextField(
@@ -126,20 +137,35 @@ fun NotificationsScreen(
                     confirmButton = {
                         Button(
                             onClick = {
-                                if (titleInput.isNotBlank() && bodyInput.isNotBlank()) {
-                                    showCreateDialog = false
-                                    viewModel.sendCampaign(titleInput.trim(), bodyInput.trim(), audienceInput) { _, _ -> }
-                                    titleInput = ""
-                                    bodyInput = ""
+                                if (titleInput.isNotBlank() && bodyInput.isNotBlank() && !isSubmitting) {
+                                    isSubmitting = true
+                                    viewModel.sendCampaign(titleInput.trim(), bodyInput.trim(), audienceInput) { success, _ ->
+                                        isSubmitting = false
+                                        if (success) {
+                                            showCreateDialog = false
+                                            titleInput = ""
+                                            bodyInput = ""
+                                        }
+                                    }
                                 }
                             },
-                            enabled = titleInput.isNotBlank() && bodyInput.isNotBlank()
+                            enabled = titleInput.isNotBlank() && bodyInput.isNotBlank() && !isSubmitting
                         ) {
-                            Text("Broadcast Campaign")
+                            if (isSubmitting) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(18.dp),
+                                    color = MaterialTheme.colorScheme.onPrimary
+                                )
+                            } else {
+                                Text("Broadcast Campaign")
+                            }
                         }
                     },
                     dismissButton = {
-                        OutlinedButton(onClick = { showCreateDialog = false }) {
+                        OutlinedButton(
+                            onClick = { showCreateDialog = false },
+                            enabled = !isSubmitting
+                        ) {
                             Text("Cancel")
                         }
                     }

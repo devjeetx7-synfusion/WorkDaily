@@ -26,13 +26,17 @@ fun AdminTeamScreen(
     var uidInput by remember { mutableStateOf("") }
     var emailInput by remember { mutableStateOf("") }
     var selectedRole by remember { mutableStateOf("MODERATOR") }
+    var isSubmitting by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Admin Team & RBAC Provisioning", fontWeight = FontWeight.Bold) },
                 actions = {
-                    IconButton(onClick = { viewModel.loadTeam() }) {
+                    IconButton(
+                        onClick = { viewModel.loadTeam() },
+                        enabled = uiState !is TeamUiState.Loading
+                    ) {
                         Icon(Icons.Default.Refresh, contentDescription = "Refresh")
                     }
                 }
@@ -52,7 +56,14 @@ fun AdminTeamScreen(
         ) {
             when (val state = uiState) {
                 is TeamUiState.Loading -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                    Column(
+                        modifier = Modifier.align(Alignment.Center),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        CircularProgressIndicator()
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text("Fetching admin team roster...")
+                    }
                 }
                 is TeamUiState.Error -> {
                     Column(
@@ -96,8 +107,8 @@ fun AdminTeamScreen(
 
             if (showAssignDialog) {
                 AlertDialog(
-                    onDismissRequest = { showAssignDialog = false },
-                    title = { Text("Provision Admin Role") },
+                    onDismissRequest = { if (!isSubmitting) showAssignDialog = false },
+                    title = { Text("Provision Admin Role", fontWeight = FontWeight.Bold) },
                     text = {
                         Column {
                             OutlinedTextField(
@@ -139,20 +150,35 @@ fun AdminTeamScreen(
                     confirmButton = {
                         Button(
                             onClick = {
-                                if (uidInput.isNotBlank() && emailInput.isNotBlank()) {
-                                    showAssignDialog = false
-                                    viewModel.assignRole(uidInput.trim(), emailInput.trim(), selectedRole) { _, _ -> }
-                                    uidInput = ""
-                                    emailInput = ""
+                                if (uidInput.isNotBlank() && emailInput.isNotBlank() && !isSubmitting) {
+                                    isSubmitting = true
+                                    viewModel.assignRole(uidInput.trim(), emailInput.trim(), selectedRole) { success, _ ->
+                                        isSubmitting = false
+                                        if (success) {
+                                            showAssignDialog = false
+                                            uidInput = ""
+                                            emailInput = ""
+                                        }
+                                    }
                                 }
                             },
-                            enabled = uidInput.isNotBlank() && emailInput.isNotBlank()
+                            enabled = uidInput.isNotBlank() && emailInput.isNotBlank() && !isSubmitting
                         ) {
-                            Text("Assign Custom Claim")
+                            if (isSubmitting) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(18.dp),
+                                    color = MaterialTheme.colorScheme.onPrimary
+                                )
+                            } else {
+                                Text("Assign Custom Claim")
+                            }
                         }
                     },
                     dismissButton = {
-                        OutlinedButton(onClick = { showAssignDialog = false }) {
+                        OutlinedButton(
+                            onClick = { showAssignDialog = false },
+                            enabled = !isSubmitting
+                        ) {
                             Text("Cancel")
                         }
                     }

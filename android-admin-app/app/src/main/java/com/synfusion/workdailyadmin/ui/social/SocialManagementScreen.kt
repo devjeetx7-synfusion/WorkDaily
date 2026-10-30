@@ -27,13 +27,17 @@ fun SocialManagementScreen(
     var showVerifyDialog by remember { mutableStateOf(false) }
     var selectedUser by remember { mutableStateOf<UserSummary?>(null) }
     var reasonInput by remember { mutableStateOf("") }
+    var isSubmitting by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Social & Profile Moderation", fontWeight = FontWeight.Bold) },
+                title = { Text("Social & Profile Governance", fontWeight = FontWeight.Bold) },
                 actions = {
-                    IconButton(onClick = { viewModel.loadSocialProfiles() }) {
+                    IconButton(
+                        onClick = { viewModel.loadSocialProfiles() },
+                        enabled = uiState !is SocialUiState.Loading
+                    ) {
                         Icon(Icons.Default.Refresh, contentDescription = "Refresh")
                     }
                 }
@@ -73,60 +77,68 @@ fun SocialManagementScreen(
                     }
                 }
                 is SocialUiState.Success -> {
-                    LazyColumn(
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        items(state.users) { user ->
-                            Card(
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(16.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween
+                    if (state.users.isEmpty()) {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text("No matching user profiles found.")
+                        }
+                    } else {
+                        LazyColumn(
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            items(state.users) { user ->
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                                    shape = RoundedCornerShape(12.dp)
                                 ) {
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Text(
-                                                text = user.displayName,
-                                                style = MaterialTheme.typography.titleMedium,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                            if (user.isVerified) {
-                                                Spacer(modifier = Modifier.width(4.dp))
-                                                Icon(
-                                                    imageVector = Icons.Default.Verified,
-                                                    contentDescription = "Verified",
-                                                    tint = Color(0xFF3B82F6),
-                                                    modifier = Modifier.size(16.dp)
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(16.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Text(
+                                                    text = user.displayName,
+                                                    style = MaterialTheme.typography.titleMedium,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                                if (user.isVerified) {
+                                                    Spacer(modifier = Modifier.width(4.dp))
+                                                    Icon(
+                                                        imageVector = Icons.Default.Verified,
+                                                        contentDescription = "Verified",
+                                                        tint = Color(0xFF3B82F6),
+                                                        modifier = Modifier.size(16.dp)
+                                                    )
+                                                }
+                                            }
+                                            if (user.username.isNotBlank()) {
+                                                Text(
+                                                    text = "@${user.username}",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.primary
                                                 )
                                             }
-                                        }
-                                        if (user.username.isNotBlank()) {
                                             Text(
-                                                text = "@${user.username}",
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.primary
+                                                text = "UID: ${user.uid}",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                                             )
                                         }
-                                        Text(
-                                            text = "UID: ${user.uid}",
-                                            style = MaterialTheme.typography.labelSmall
-                                        )
-                                    }
 
-                                    OutlinedButton(
-                                        onClick = {
-                                            selectedUser = user
-                                            showVerifyDialog = true
+                                        OutlinedButton(
+                                            onClick = {
+                                                selectedUser = user
+                                                showVerifyDialog = true
+                                            },
+                                            shape = RoundedCornerShape(8.dp)
+                                        ) {
+                                            Text(if (user.isVerified) "Unverify" else "Verify")
                                         }
-                                    ) {
-                                        Text(if (user.isVerified) "Unverify" else "Verify")
                                     }
                                 }
                             }
@@ -138,8 +150,8 @@ fun SocialManagementScreen(
             if (showVerifyDialog && selectedUser != null) {
                 val u = selectedUser!!
                 AlertDialog(
-                    onDismissRequest = { showVerifyDialog = false },
-                    title = { Text(if (u.isVerified) "Revoke Verification" else "Grant Verification") },
+                    onDismissRequest = { if (!isSubmitting) showVerifyDialog = false },
+                    title = { Text(if (u.isVerified) "Revoke Verification Badge" else "Grant Verification Badge") },
                     text = {
                         Column {
                             Text("Provide mandatory verification update reason:")
@@ -155,19 +167,24 @@ fun SocialManagementScreen(
                     confirmButton = {
                         Button(
                             onClick = {
-                                if (reasonInput.isNotBlank()) {
+                                if (reasonInput.isNotBlank() && !isSubmitting) {
+                                    isSubmitting = true
+                                    viewModel.toggleVerification(u.uid, u.isVerified, reasonInput.trim())
+                                    isSubmitting = false
                                     showVerifyDialog = false
-                                    viewModel.toggleVerification(u.uid, u.isVerified, reasonInput)
                                     reasonInput = ""
                                 }
                             },
-                            enabled = reasonInput.isNotBlank()
+                            enabled = reasonInput.isNotBlank() && !isSubmitting
                         ) {
                             Text("Confirm")
                         }
                     },
                     dismissButton = {
-                        OutlinedButton(onClick = { showVerifyDialog = false }) {
+                        OutlinedButton(
+                            onClick = { showVerifyDialog = false },
+                            enabled = !isSubmitting
+                        ) {
                             Text("Cancel")
                         }
                     }

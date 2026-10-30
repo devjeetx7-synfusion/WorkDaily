@@ -26,13 +26,17 @@ fun LiveManagementScreen(
     var showEndDialog by remember { mutableStateOf(false) }
     var selectedRoomId by remember { mutableStateOf("") }
     var endReason by remember { mutableStateOf("") }
+    var isSubmitting by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Live Streams Management", fontWeight = FontWeight.Bold) },
+                title = { Text("Live Streams Oversight", fontWeight = FontWeight.Bold) },
                 actions = {
-                    IconButton(onClick = { viewModel.loadLiveRooms() }) {
+                    IconButton(
+                        onClick = { viewModel.loadLiveRooms() },
+                        enabled = uiState !is LiveUiState.Loading
+                    ) {
                         Icon(Icons.Default.Refresh, contentDescription = "Refresh")
                     }
                 }
@@ -47,7 +51,14 @@ fun LiveManagementScreen(
         ) {
             when (val state = uiState) {
                 is LiveUiState.Loading -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                    Column(
+                        modifier = Modifier.align(Alignment.Center),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        CircularProgressIndicator()
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text("Fetching active broadcast rooms...")
+                    }
                 }
                 is LiveUiState.Error -> {
                     Column(
@@ -55,7 +66,7 @@ fun LiveManagementScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(text = state.message, color = MaterialTheme.colorScheme.error)
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
                         Button(onClick = { viewModel.loadLiveRooms() }) {
                             Text("Retry")
                         }
@@ -67,9 +78,9 @@ fun LiveManagementScreen(
                             modifier = Modifier.align(Alignment.Center),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Icon(Icons.Default.LiveTv, contentDescription = null, modifier = Modifier.size(48.dp), tint = Color.Gray)
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text("No active live streams at present.")
+                            Icon(Icons.Default.LiveTv, contentDescription = null, modifier = Modifier.size(56.dp), tint = Color.Gray)
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text("No active live streams at present.", style = MaterialTheme.typography.bodyLarge)
                         }
                     } else {
                         LazyColumn(
@@ -92,8 +103,8 @@ fun LiveManagementScreen(
 
             if (showEndDialog) {
                 AlertDialog(
-                    onDismissRequest = { showEndDialog = false },
-                    title = { Text("Terminate Live Room") },
+                    onDismissRequest = { if (!isSubmitting) showEndDialog = false },
+                    title = { Text("Terminate Live Stream", fontWeight = FontWeight.Bold) },
                     text = {
                         Column {
                             Text("Provide mandatory termination reason for audit logs:")
@@ -109,20 +120,35 @@ fun LiveManagementScreen(
                     confirmButton = {
                         Button(
                             onClick = {
-                                if (endReason.isNotBlank()) {
-                                    showEndDialog = false
-                                    viewModel.endRoom(selectedRoomId, endReason) { _, _ -> }
-                                    endReason = ""
+                                if (endReason.isNotBlank() && !isSubmitting) {
+                                    isSubmitting = true
+                                    viewModel.endRoom(selectedRoomId, endReason.trim()) { success, _ ->
+                                        isSubmitting = false
+                                        if (success) {
+                                            showEndDialog = false
+                                            endReason = ""
+                                        }
+                                    }
                                 }
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-                            enabled = endReason.isNotBlank()
+                            enabled = endReason.isNotBlank() && !isSubmitting
                         ) {
-                            Text("Terminate Room")
+                            if (isSubmitting) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(18.dp),
+                                    color = MaterialTheme.colorScheme.onError
+                                )
+                            } else {
+                                Text("Terminate Room")
+                            }
                         }
                     },
                     dismissButton = {
-                        OutlinedButton(onClick = { showEndDialog = false }) {
+                        OutlinedButton(
+                            onClick = { showEndDialog = false },
+                            enabled = !isSubmitting
+                        ) {
                             Text("Cancel")
                         }
                     }
@@ -176,7 +202,8 @@ fun LiveRoomCard(
                 )
                 Button(
                     onClick = onEndRoom,
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                    shape = RoundedCornerShape(8.dp)
                 ) {
                     Icon(Icons.Default.Stop, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(4.dp))
