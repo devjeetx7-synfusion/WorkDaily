@@ -1,0 +1,8 @@
+<resources>
+    <color name="admin_primary">#0F9F7A</color>
+    <color name="admin_primary_dark">#08634C</color>
+    <color name="admin_accent">#3B82F6</color>
+    <color name="admin_background">#111827</color>
+    <color name="admin_surface">#1F2937</color>
+    <color name="iconBackground">#FFFFFF</color>
+</resources>

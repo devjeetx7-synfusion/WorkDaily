@@ -1,0 +1,75 @@
+name: WorkDaily Admin CI/CD
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-admin-apk:
+    name: Build WorkDaily Admin Application
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: temurin
+          cache: gradle
+
+      - name: Grant execute permission for Gradle wrapper
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x android-admin-app/gradlew
+
+      - name: Run Admin Unit Tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd android-admin-app
+          ./gradlew testDebugUnitTest --no-daemon
+
+      - name: Build WorkDaily Admin Debug APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd android-admin-app
+          ./gradlew clean assembleDebug --no-daemon
+
+      - name: Locate and Validate Admin APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK_PATH=$(find android-admin-app/app/build/outputs/apk/debug/ -name "*.apk" | head -n 1)
+          if [ -z "${APK_PATH}" ] || [ ! -f "${APK_PATH}" ]; then
+            echo "::error::WorkDaily Admin APK was not found after compilation."
+            exit 1
+          fi
+
+          echo "Found Admin APK at: ${APK_PATH}"
+          TARGET_APK="WorkDaily-Admin-v1.0.0-debug.apk"
+          cp "${APK_PATH}" "${TARGET_APK}"
+
+          SHA256_SUM=$(sha256sum "${TARGET_APK}" | awk '{print $1}')
+          APK_SIZE=$(du -sh "${TARGET_APK}" | cut -f1)
+
+          echo "TARGET_APK=${TARGET_APK}" >> "${GITHUB_ENV}"
+          echo "SHA256_SUM=${SHA256_SUM}" >> "${GITHUB_ENV}"
+          echo "APK_SIZE=${APK_SIZE}" >> "${GITHUB_ENV}"
+
+      - name: Upload WorkDaily Admin APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: WorkDaily-Admin-Debug-APK
+          path: ${{ env.TARGET_APK }}
+          if-no-files-found: error
