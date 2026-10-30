@@ -8,6 +8,7 @@ const { FieldPath } = require('firebase-admin/firestore');
 const { defineSecret, defineString } = require('firebase-functions/params');
 const { createTokenService, TokenError } = require('./token-service');
 const { createLiveMediaService } = require('./live-media-service');
+const { createRewardsService } = require('./rewards-service');
 const { RoomServiceClient } = require('livekit-server-sdk');
 
 initializeApp();
@@ -94,3 +95,28 @@ exports.reconcileLiveMediaRooms = onSchedule({
   if (page.size < 25) await cursorRef.set({ lastRoomId: null });
   if (failures) throw new Error(`Live media reconciliation failed for ${failures} room(s)`);
 });
+
+// ---------------------------------------------------------------------------------------
+// WorkDaily Rewards System Cloud Functions
+// ---------------------------------------------------------------------------------------
+const rewards = createRewardsService({
+  get db() { return getFirestore(); }
+});
+
+function rewardsCallable(handler) {
+  return onCall({ timeoutSeconds: 20 }, async (request) => {
+    if (!request.auth || !request.auth.uid) {
+      throw new HttpsError('unauthenticated', 'User must be authenticated.');
+    }
+    return await handler(request.auth.uid, request.data || {});
+  });
+}
+
+exports.rewardsGetState = rewardsCallable((uid) => rewards.getState(uid));
+exports.rewardsDailyCheckIn = rewardsCallable((uid) => rewards.dailyCheckIn(uid));
+exports.rewardsClaimMilestone = rewardsCallable((uid, data) => rewards.claimMilestone(uid, data.milestoneId));
+exports.rewardsSpinWheel = rewardsCallable((uid, data) => rewards.spinWheel(uid, data.requestId));
+exports.rewardsClaimTask = rewardsCallable((uid, data) => rewards.claimTask(uid, data.taskId));
+exports.rewardsSubmitReferralCode = rewardsCallable((uid, data) => rewards.submitReferralCode(uid, data.referralCode));
+exports.rewardsSubmitRedemption = rewardsCallable((uid, data) => rewards.submitRedemption(uid, data.optionId, data.requestId));
+exports.rewardsGetLeaderboard = rewardsCallable((uid, data) => rewards.getLeaderboard(uid, data.timeframe));

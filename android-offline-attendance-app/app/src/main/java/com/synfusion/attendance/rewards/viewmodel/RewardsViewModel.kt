@@ -4,17 +4,20 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
 import com.synfusion.attendance.rewards.audio.RewardsAudioSettings
 import com.synfusion.attendance.rewards.audio.RewardsSoundEvent
 import com.synfusion.attendance.rewards.audio.RewardsSoundManager
 import com.synfusion.attendance.rewards.data.*
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
 class RewardsViewModel(
     application: Application,
-    private val repository: DemoRewardsRepository = DemoRewardsRepository(application)
+    private val repository: FirebaseRewardsRepository = FirebaseRewardsRepository()
 ) : AndroidViewModel(application) {
 
     private val soundManager = RewardsSoundManager.getInstance(application)
@@ -72,6 +75,7 @@ class RewardsViewModel(
 
     fun setLeaderboardTimeframe(timeframe: LeaderboardTimeframe) {
         _leaderboardTimeframe.value = timeframe
+        repository.fetchLeaderboard(timeframe)
     }
 
     fun getLeaderboard(): StateFlow<List<LeaderboardUser>> {
@@ -83,48 +87,88 @@ class RewardsViewModel(
     }
 
     fun claimTask(taskId: String) {
-        repository.claimTaskDemo(taskId)
-        playSound(RewardsSoundEvent.COIN_REWARD)
+        viewModelScope.launch(Dispatchers.IO) {
+            val success = repository.claimTask(taskId)
+            if (success) {
+                playSound(RewardsSoundEvent.COIN_REWARD)
+            } else {
+                playSound(RewardsSoundEvent.ACTION_ERROR)
+            }
+        }
     }
 
-    fun submitRedemption(option: RedemptionOption): RedemptionRecord {
-        val record = repository.submitDemoRedemption(option)
-        playSound(RewardsSoundEvent.CONGRATULATIONS)
+    fun submitRedemption(option: RedemptionOption, onResult: (RedemptionRecord?) -> Unit = {}): RedemptionRecord? {
+        var record: RedemptionRecord? = null
+        viewModelScope.launch(Dispatchers.IO) {
+            record = repository.submitRedemption(option)
+            if (record != null) {
+                playSound(RewardsSoundEvent.CONGRATULATIONS)
+            } else {
+                playSound(RewardsSoundEvent.ACTION_ERROR)
+            }
+            onResult(record)
+        }
         return record
     }
 
-    fun claimDailyCheckIn(): Boolean {
-        val success = repository.claimDailyCheckIn()
-        if (success) {
-            playSound(RewardsSoundEvent.DAILY_CHECKIN_SUCCESS)
-        } else {
-            playSound(RewardsSoundEvent.ACTION_ERROR)
+    fun claimDailyCheckIn(onResult: (Boolean) -> Unit = {}): Boolean {
+        var success = false
+        viewModelScope.launch(Dispatchers.IO) {
+            success = repository.claimDailyCheckIn()
+            if (success) {
+                playSound(RewardsSoundEvent.DAILY_CHECKIN_SUCCESS)
+            } else {
+                playSound(RewardsSoundEvent.ACTION_ERROR)
+            }
+            onResult(success)
         }
         return success
     }
 
-    fun claimMilestone(milestoneId: String): Boolean {
-        val success = repository.claimMilestone(milestoneId)
-        if (success) {
-            playSound(RewardsSoundEvent.MILESTONE_CLAIM)
-        } else {
-            playSound(RewardsSoundEvent.ACTION_ERROR)
+    fun claimMilestone(milestoneId: String, onResult: (Boolean) -> Unit = {}): Boolean {
+        var success = false
+        viewModelScope.launch(Dispatchers.IO) {
+            success = repository.claimMilestone(milestoneId)
+            if (success) {
+                playSound(RewardsSoundEvent.MILESTONE_CLAIM)
+            } else {
+                playSound(RewardsSoundEvent.ACTION_ERROR)
+            }
+            onResult(success)
         }
         return success
     }
 
-    fun spinWheel(): SpinWheelSegment? {
-        return repository.spinWheel()
+    fun spinWheel(onResult: (SpinWheelSegment?) -> Unit = {}): SpinWheelSegment? {
+        var segment: SpinWheelSegment? = null
+        viewModelScope.launch(Dispatchers.IO) {
+            segment = repository.spinWheel()
+            onResult(segment)
+        }
+        return segment
+    }
+
+    fun submitReferralCode(code: String, onResult: (Result<Boolean>) -> Unit = {}): Result<Boolean> {
+        var res = Result.failure<Boolean>(IllegalStateException("Processing"))
+        viewModelScope.launch(Dispatchers.IO) {
+            res = repository.submitReferralCode(code)
+            onResult(res)
+        }
+        return res
     }
 
     fun updateDateState(dateStr: String) {
         repository.updateDateState(dateStr)
     }
+
+    fun refreshState() {
+        repository.refreshState()
+    }
 }
 
 class RewardsViewModelFactory(
     private val application: Application,
-    private val repository: DemoRewardsRepository = DemoRewardsRepository(application)
+    private val repository: FirebaseRewardsRepository = FirebaseRewardsRepository()
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
