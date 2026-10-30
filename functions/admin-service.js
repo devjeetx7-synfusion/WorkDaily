@@ -637,12 +637,20 @@ function createAdminService({ db }) {
     async getSystemHealth(request) {
       await verifyAdminAuth(db, request, ROLES.ANALYST);
 
+      // These checks verify Firebase services reachable from this function.
+      // LiveKit and FCM delivery are reported as UNKNOWN unless a real metric
+      // source is configured; never return fabricated uptime or delivery rates.
+      const checks = await Promise.allSettled([
+        db.collection('admin_roles').limit(1).get()
+      ]);
+      const firestoreHealthy = checks[0].status === 'fulfilled';
+
       return {
         firebaseFunctionsStatus: 'HEALTHY',
-        fcmDeliveryRate: '99.8%',
-        firestoreStatus: 'HEALTHY',
-        liveKitStatus: 'HEALTHY',
-        errorTrends24h: { errorsCount: 0, warningsCount: 2 },
+        firestoreStatus: firestoreHealthy ? 'HEALTHY' : 'DEGRADED',
+        liveKitStatus: 'UNKNOWN',
+        fcmDeliveryRate: 'N/A',
+        errorTrends24h: { errorsCount: null, warningsCount: null },
         timestamp: Date.now()
       };
     }
