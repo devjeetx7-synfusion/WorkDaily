@@ -12,8 +12,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -68,21 +68,20 @@ fun AdminMainLayout(
 ) {
     val navController = rememberNavController()
 
-    val dashboardViewModel = remember { DashboardViewModel() }
-    val userViewModel = remember { UserViewModel() }
-    val liveViewModel = remember { LiveViewModel() }
-    val socialViewModel = remember { SocialViewModel() }
-    val rewardsViewModel = remember { RewardsViewModel() }
-    val moderationViewModel = remember { ModerationViewModel() }
-    val notificationsViewModel = remember { NotificationsViewModel() }
-    val configViewModel = remember { ConfigViewModel() }
-    val teamViewModel = remember { TeamViewModel() }
-    val auditViewModel = remember { AuditViewModel() }
-    val supportViewModel = remember { SupportViewModel() }
-    val healthViewModel = remember { HealthViewModel() }
+    val dashboardViewModel: DashboardViewModel = viewModel()
+    val userViewModel: UserViewModel = viewModel()
+    val liveViewModel: LiveViewModel = viewModel()
+    val socialViewModel: SocialViewModel = viewModel()
+    val rewardsViewModel: RewardsViewModel = viewModel()
+    val moderationViewModel: ModerationViewModel = viewModel()
+    val notificationsViewModel: NotificationsViewModel = viewModel()
+    val configViewModel: ConfigViewModel = viewModel()
+    val teamViewModel: TeamViewModel = viewModel()
+    val auditViewModel: AuditViewModel = viewModel()
+    val supportViewModel: SupportViewModel = viewModel()
+    val healthViewModel: HealthViewModel = viewModel()
 
     Row(modifier = Modifier.fillMaxSize()) {
-        // Left Management Navigation Rail with vertical scrolling for full feature access
         NavigationRail(
             modifier = Modifier.fillMaxHeight()
         ) {
@@ -115,7 +114,6 @@ fun AdminMainLayout(
             }
         }
 
-        // Main NavHost Container
         Box(modifier = Modifier.weight(1f)) {
             NavHost(
                 navController = navController,

@@ -196,7 +196,7 @@ function createAdminService({ db }) {
         db.collection('rewards_wallets').doc(targetUid).get(),
         db.collection('reports').where('targetUid', '==', targetUid).get(),
         db.collection('live_rooms').where('hostUserId', '==', targetUid).limit(10).get(),
-        db.collection('admin_audit_logs').where('targetId', '==', targetUid).orderBy('timestamp', 'desc').limit(20).get()
+        db.collection('admin_audit_logs').where('targetId', '==', targetUid).limit(20).get()
       ]);
 
       if (!userDoc.exists) throw new HttpsError('not-found', 'User not found.');
@@ -207,7 +207,11 @@ function createAdminService({ db }) {
 
       const reports = reportsSnap.docs.map(d => d.data());
       const liveHistory = liveRoomsSnap.docs.map(d => d.data());
-      const auditHistory = notesSnap.docs.map(d => d.data());
+
+      // Sort in memory to avoid requiring Firestore composite indexes
+      const auditHistory = notesSnap.docs
+        .map(d => d.data())
+        .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
       return {
         overview: {

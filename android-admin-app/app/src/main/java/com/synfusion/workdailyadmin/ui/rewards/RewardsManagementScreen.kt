@@ -28,13 +28,17 @@ fun RewardsManagementScreen(
     var targetUidInput by remember { mutableStateOf("") }
     var coinAmountInput by remember { mutableStateOf("") }
     var adjustReasonInput by remember { mutableStateOf("") }
+    var isSubmitting by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Rewards & Economy Management", fontWeight = FontWeight.Bold) },
+                title = { Text("Rewards & Economy Governance", fontWeight = FontWeight.Bold) },
                 actions = {
-                    IconButton(onClick = { viewModel.loadRewardsOverview() }) {
+                    IconButton(
+                        onClick = { viewModel.loadRewardsOverview() },
+                        enabled = uiState !is RewardsUiState.Loading
+                    ) {
                         Icon(Icons.Default.Refresh, contentDescription = "Refresh")
                     }
                 }
@@ -49,7 +53,14 @@ fun RewardsManagementScreen(
         ) {
             when (val state = uiState) {
                 is RewardsUiState.Loading -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                    Column(
+                        modifier = Modifier.align(Alignment.Center),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        CircularProgressIndicator()
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text("Fetching economy metrics...")
+                    }
                 }
                 is RewardsUiState.Error -> {
                     Column(
@@ -92,26 +103,31 @@ fun RewardsManagementScreen(
 
                         Card(
                             modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            shape = RoundedCornerShape(12.dp)
                         ) {
                             Column(modifier = Modifier.padding(16.dp)) {
                                 Text(
-                                    text = "Manual Coin Adjustment",
+                                    text = "Server-Authoritative Coin Adjustment",
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold
                                 )
+                                Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = "Direct balance adjustment requires mandatory target UID, amount (+/-), reason, and generates an immutable audit reference.",
+                                    text = "Direct balance adjustment requires target UID, numeric amount (+/-), reason, and generates an immutable audit reference code.",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                                 )
-                                Spacer(modifier = Modifier.height(12.dp))
+                                Spacer(modifier = Modifier.height(16.dp))
                                 Button(
                                     onClick = { showAdjustDialog = true },
-                                    modifier = Modifier.fillMaxWidth()
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(48.dp),
+                                    shape = RoundedCornerShape(12.dp)
                                 ) {
                                     Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
-                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
                                     Text("Adjust User Balance")
                                 }
                             }
@@ -122,8 +138,8 @@ fun RewardsManagementScreen(
 
             if (showAdjustDialog) {
                 AlertDialog(
-                    onDismissRequest = { showAdjustDialog = false },
-                    title = { Text("Manual Balance Adjustment") },
+                    onDismissRequest = { if (!isSubmitting) showAdjustDialog = false },
+                    title = { Text("Manual Balance Adjustment", fontWeight = FontWeight.Bold) },
                     text = {
                         Column {
                             OutlinedTextField(
@@ -155,21 +171,36 @@ fun RewardsManagementScreen(
                         Button(
                             onClick = {
                                 val amount = coinAmountInput.toIntOrNull() ?: 0
-                                if (targetUidInput.isNotBlank() && amount != 0 && adjustReasonInput.isNotBlank()) {
-                                    showAdjustDialog = false
-                                    viewModel.adjustUserCoins(targetUidInput.trim(), amount, adjustReasonInput.trim()) { _, _ -> }
-                                    targetUidInput = ""
-                                    coinAmountInput = ""
-                                    adjustReasonInput = ""
+                                if (targetUidInput.isNotBlank() && amount != 0 && adjustReasonInput.isNotBlank() && !isSubmitting) {
+                                    isSubmitting = true
+                                    viewModel.adjustUserCoins(targetUidInput.trim(), amount, adjustReasonInput.trim()) { success, _ ->
+                                        isSubmitting = false
+                                        if (success) {
+                                            showAdjustDialog = false
+                                            targetUidInput = ""
+                                            coinAmountInput = ""
+                                            adjustReasonInput = ""
+                                        }
+                                    }
                                 }
                             },
-                            enabled = targetUidInput.isNotBlank() && coinAmountInput.toIntOrNull() != null && adjustReasonInput.isNotBlank()
+                            enabled = targetUidInput.isNotBlank() && coinAmountInput.toIntOrNull() != null && coinAmountInput.toIntOrNull() != 0 && adjustReasonInput.isNotBlank() && !isSubmitting
                         ) {
-                            Text("Execute Adjustment")
+                            if (isSubmitting) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(18.dp),
+                                    color = MaterialTheme.colorScheme.onPrimary
+                                )
+                            } else {
+                                Text("Execute Adjustment")
+                            }
                         }
                     },
                     dismissButton = {
-                        OutlinedButton(onClick = { showAdjustDialog = false }) {
+                        OutlinedButton(
+                            onClick = { showAdjustDialog = false },
+                            enabled = !isSubmitting
+                        ) {
                             Text("Cancel")
                         }
                     }
