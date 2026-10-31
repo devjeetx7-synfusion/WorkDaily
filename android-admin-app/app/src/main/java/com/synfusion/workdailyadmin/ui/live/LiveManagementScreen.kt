@@ -1,8 +1,12 @@
 package com.synfusion.workdailyadmin.ui.live
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -14,9 +18,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.synfusion.workdailyadmin.data.models.LiveRoomItem
-import com.synfusion.workdailyadmin.ui.components.StatusChip
-import com.synfusion.workdailyadmin.ui.components.TruncatedIdChip
+import com.synfusion.workdailyadmin.ui.components.*
+import java.text.SimpleDateFormat
+import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,15 +39,21 @@ fun LiveManagementScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Live Streams Oversight", fontWeight = FontWeight.Bold) },
+                title = {
+                    Column {
+                        Text("Live Streams Oversight", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
+                        Text("Real-time broadcast supervision & moderation", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                },
                 actions = {
                     IconButton(
                         onClick = { viewModel.loadLiveRooms() },
                         enabled = uiState !is LiveUiState.Loading
                     ) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                        Icon(Icons.Default.Refresh, contentDescription = "Refresh Rooms")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
             )
         }
     ) { padding ->
@@ -49,53 +61,38 @@ fun LiveManagementScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
             when (val state = uiState) {
                 is LiveUiState.Loading -> {
-                    Column(
-                        modifier = Modifier.align(Alignment.Center),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        CircularProgressIndicator()
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text("Fetching active broadcast rooms...")
-                    }
+                    AdminLoadingState(message = "Querying live broadcasting sessions...")
                 }
                 is LiveUiState.Error -> {
-                    Column(
-                        modifier = Modifier.align(Alignment.Center),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Icon(Icons.Default.ErrorOutline, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(48.dp))
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(text = state.message, color = MaterialTheme.colorScheme.error)
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Button(onClick = { viewModel.loadLiveRooms() }) {
-                            Text("Retry")
-                        }
-                    }
+                    AdminErrorState(
+                        message = state.message,
+                        onRetry = { viewModel.loadLiveRooms() }
+                    )
                 }
                 is LiveUiState.Success -> {
                     if (state.rooms.isEmpty()) {
-                        Column(
-                            modifier = Modifier.align(Alignment.Center),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Icon(Icons.Default.LiveTv, contentDescription = null, modifier = Modifier.size(56.dp), tint = Color.Gray)
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Text("No active live streams at present.", style = MaterialTheme.typography.bodyLarge)
-                        }
+                        AdminEmptyState(
+                            title = "No Live Broadcasts Found",
+                            description = "There are no active or recorded LiveKit broadcast rooms on the platform.",
+                            icon = Icons.Default.LiveTv,
+                            actionText = "Refresh",
+                            onActionClick = { viewModel.loadLiveRooms() }
+                        )
                     } else {
                         LazyColumn(
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
                             modifier = Modifier.fillMaxSize()
                         ) {
                             items(state.rooms, key = { it.roomId }) { room ->
                                 LiveRoomCard(
                                     room = room,
-                                    onEndRoom = {
+                                    onTerminate = {
                                         selectedRoomId = room.roomId
+                                        endReason = ""
                                         showEndDialog = true
                                     }
                                 )
@@ -108,15 +105,21 @@ fun LiveManagementScreen(
             if (showEndDialog) {
                 AlertDialog(
                     onDismissRequest = { if (!isSubmitting) showEndDialog = false },
-                    title = { Text("Terminate Live Stream", fontWeight = FontWeight.Bold) },
+                    title = { Text("Terminate Live Broadcast", fontWeight = FontWeight.Bold) },
                     text = {
                         Column {
-                            Text("Provide mandatory termination reason for audit logs:")
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Are you sure you want to forcibly terminate room \"$selectedRoomId\"?",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(10.dp))
                             OutlinedTextField(
                                 value = endReason,
                                 onValueChange = { endReason = it },
-                                placeholder = { Text("Violation reason...") },
+                                placeholder = { Text("Violation / termination reason...") },
+                                singleLine = true,
+                                shape = RoundedCornerShape(8.dp),
                                 modifier = Modifier.fillMaxWidth()
                             )
                         }
@@ -124,25 +127,22 @@ fun LiveManagementScreen(
                     confirmButton = {
                         Button(
                             onClick = {
-                                if (endReason.isNotBlank() && !isSubmitting) {
+                                if (endReason.isNotBlank()) {
                                     isSubmitting = true
-                                    viewModel.endRoom(selectedRoomId, endReason.trim()) { success, _ ->
+                                    viewModel.endRoom(selectedRoomId, endReason) { success, _ ->
                                         isSubmitting = false
                                         if (success) {
                                             showEndDialog = false
-                                            endReason = ""
                                         }
                                     }
                                 }
                             },
+                            enabled = endReason.isNotBlank() && !isSubmitting,
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-                            enabled = endReason.isNotBlank() && !isSubmitting
+                            shape = RoundedCornerShape(8.dp)
                         ) {
                             if (isSubmitting) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(18.dp),
-                                    color = MaterialTheme.colorScheme.onError
-                                )
+                                CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White)
                             } else {
                                 Text("Terminate Room")
                             }
@@ -151,11 +151,13 @@ fun LiveManagementScreen(
                     dismissButton = {
                         OutlinedButton(
                             onClick = { showEndDialog = false },
-                            enabled = !isSubmitting
+                            enabled = !isSubmitting,
+                            shape = RoundedCornerShape(8.dp)
                         ) {
                             Text("Cancel")
                         }
-                    }
+                    },
+                    shape = RoundedCornerShape(16.dp)
                 )
             }
         }
@@ -165,56 +167,105 @@ fun LiveManagementScreen(
 @Composable
 fun LiveRoomCard(
     room: LiveRoomItem,
-    onEndRoom: () -> Unit
+    onTerminate: () -> Unit
 ) {
+    val createdDateStr = remember(room.createdAtMillis) {
+        if (room.createdAtMillis > 0) {
+            SimpleDateFormat("MMM dd, HH:mm", Locale.getDefault()).format(Date(room.createdAtMillis))
+        } else "Unknown"
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
         shape = RoundedCornerShape(14.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = room.title.ifBlank { "Untitled Broadcast" },
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    TruncatedIdChip(id = room.hostUserId, prefix = "Host: ", maxLength = 16)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (room.isLive) {
+                        Box(
+                            modifier = Modifier
+                                .size(10.dp)
+                                .background(Color(0xFFEF4444), CircleShape)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        StatusChip(text = "LIVE NOW", color = Color(0xFFEF4444))
+                    } else {
+                        StatusChip(text = "ENDED", color = Color(0xFF6B7280))
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Box(
+                        modifier = Modifier
+                            .background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(6.dp))
+                            .padding(horizontal = 7.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = room.type,
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
-                Spacer(modifier = Modifier.width(8.dp))
-                StatusChip(text = room.type, color = Color(0xFFEC4899))
+
+                Text(
+                    text = createdDateStr,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
 
             Spacer(modifier = Modifier.height(12.dp))
-            HorizontalDivider()
-            Spacer(modifier = Modifier.height(12.dp))
+
+            Text(
+                text = room.title.ifBlank { "Untitled Broadcast Session" },
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                TruncatedIdChip(id = room.roomId, prefix = "Room: ", maxLength = 16)
-
-                Button(
-                    onClick = onEndRoom,
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-                    shape = RoundedCornerShape(10.dp),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                ) {
-                    Icon(Icons.Default.Stop, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("End Room")
+                Column {
+                    TruncatedIdChip(id = room.roomId, prefix = "Room: ", maxLength = 14)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    TruncatedIdChip(id = room.hostUserId, prefix = "Host UID: ", maxLength = 14)
                 }
+
+                if (room.isLive) {
+                    Button(
+                        onClick = onTerminate,
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
+                    ) {
+                        Icon(Icons.Default.Stop, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Terminate", style = MaterialTheme.typography.labelMedium)
+                    }
+                }
+            }
+
+            if (!room.endReason.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(10.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = "End Reason: ${room.endReason}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.error
+                )
             }
         }
     }

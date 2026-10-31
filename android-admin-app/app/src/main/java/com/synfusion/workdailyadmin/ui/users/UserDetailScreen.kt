@@ -1,7 +1,11 @@
 package com.synfusion.workdailyadmin.ui.users
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -14,9 +18,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.synfusion.workdailyadmin.ui.components.StatusChip
-import com.synfusion.workdailyadmin.ui.components.TruncatedIdChip
-import com.synfusion.workdailyadmin.ui.components.UserAvatar
+import androidx.compose.ui.unit.sp
+import com.synfusion.workdailyadmin.ui.components.*
+import java.text.SimpleDateFormat
+import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,6 +36,7 @@ fun UserDetailScreen(
     var actionType by remember { mutableStateOf("") }
     var reasonInput by remember { mutableStateOf("") }
     var noteInput by remember { mutableStateOf("") }
+    var isAddingNote by remember { mutableStateOf(false) }
 
     LaunchedEffect(targetUid) {
         viewModel.loadUserDetails(targetUid)
@@ -39,12 +45,23 @@ fun UserDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("User Profile Details", fontWeight = FontWeight.Bold) },
+                title = {
+                    Column {
+                        Text("User Details & Governance", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
+                        Text(targetUid, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
-                }
+                },
+                actions = {
+                    IconButton(onClick = { viewModel.loadUserDetails(targetUid) }) {
+                        Icon(Icons.Default.Refresh, contentDescription = "Refresh User")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
             )
         }
     ) { padding ->
@@ -54,44 +71,39 @@ fun UserDetailScreen(
                 .padding(padding)
         ) {
             when (val state = detailState) {
+                is UserDetailState.Idle -> {
+                    AdminLoadingState(message = "Initializing...")
+                }
                 is UserDetailState.Loading -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                    AdminLoadingState(message = "Retrieving complete profile and moderation records...")
                 }
                 is UserDetailState.Error -> {
-                    Column(
-                        modifier = Modifier
-                            .align(Alignment.Center)
-                            .padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Icon(Icons.Default.ErrorOutline, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(48.dp))
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(text = state.message, color = MaterialTheme.colorScheme.error)
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Button(onClick = { viewModel.loadUserDetails(targetUid) }) {
-                            Text("Retry")
-                        }
-                    }
+                    AdminErrorState(
+                        message = state.message,
+                        onRetry = { viewModel.loadUserDetails(targetUid) }
+                    )
                 }
                 is UserDetailState.Success -> {
                     val u = state.details
+                    val createdDateStr = remember(u.createdAt) {
+                        if (u.createdAt > 0) SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(Date(u.createdAt)) else "Unknown"
+                    }
+
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(16.dp)
                             .verticalScroll(rememberScrollState())
+                            .padding(horizontal = 16.dp, vertical = 12.dp)
                     ) {
-                        // User Header Card
+                        // User Profile Hero Card
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
                             shape = RoundedCornerShape(16.dp)
                         ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
+                            Column(modifier = Modifier.padding(18.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
                                     UserAvatar(
                                         photoUrl = u.photoUrl,
                                         name = u.displayName,
@@ -101,17 +113,16 @@ fun UserDetailScreen(
                                     Column(modifier = Modifier.weight(1f)) {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                             Text(
-                                                text = u.displayName,
-                                                style = MaterialTheme.typography.titleLarge,
-                                                fontWeight = FontWeight.Bold
+                                                text = u.displayName.ifBlank { "WorkDaily Member" },
+                                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
                                             )
                                             if (u.isVerified) {
                                                 Spacer(modifier = Modifier.width(6.dp))
                                                 Icon(
                                                     imageVector = Icons.Default.Verified,
-                                                    contentDescription = "Verified",
+                                                    contentDescription = "Verified Account",
                                                     tint = Color(0xFF3B82F6),
-                                                    modifier = Modifier.size(20.dp)
+                                                    modifier = Modifier.size(18.dp)
                                                 )
                                             }
                                         }
@@ -119,52 +130,137 @@ fun UserDetailScreen(
                                             Text(
                                                 text = "@${u.username}",
                                                 style = MaterialTheme.typography.bodyMedium,
-                                                color = MaterialTheme.colorScheme.primary
+                                                color = MaterialTheme.colorScheme.primary,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                        }
+                                        if (u.profession.isNotBlank()) {
+                                            Text(
+                                                text = u.profession,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
                                         }
                                     }
 
-                                    val statusColor = when (u.accountStatus) {
+                                    val statusColor = when (u.accountStatus.uppercase()) {
                                         "ACTIVE" -> Color(0xFF10B981)
                                         "SUSPENDED" -> Color(0xFFF59E0B)
                                         "BANNED" -> Color(0xFFEF4444)
-                                        else -> Color.Gray
+                                        else -> Color(0xFF6B7280)
                                     }
                                     StatusChip(text = u.accountStatus, color = statusColor)
                                 }
 
-                                Spacer(modifier = Modifier.height(16.dp))
-                                HorizontalDivider()
-                                Spacer(modifier = Modifier.height(16.dp))
+                                if (u.bio.isNotBlank()) {
+                                    Spacer(modifier = Modifier.height(14.dp))
+                                    Text(
+                                        text = u.bio,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.height(14.dp))
+                                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+                                Spacer(modifier = Modifier.height(12.dp))
 
                                 Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.padding(vertical = 2.dp)
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
-                                    Text(text = "User ID: ", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
-                                    TruncatedIdChip(id = u.uid, prefix = "", maxLength = 24)
-                                }
-                                Text(text = "Email: ${u.email.ifBlank { "N/A" }}", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(vertical = 2.dp))
-                                Text(text = "Phone: ${u.phoneNumber.ifBlank { "N/A" }}", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(vertical = 2.dp))
-                                Text(text = "Country & Currency: ${u.countryCode} (${u.currencyCode})", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(vertical = 2.dp))
-                                if (u.profession.isNotBlank()) {
-                                    Text(text = "Profession: ${u.profession}", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(vertical = 2.dp))
-                                }
-                                if (u.bio.isNotBlank()) {
-                                    Text(text = "Bio: ${u.bio}", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(vertical = 2.dp))
+                                    TruncatedIdChip(id = u.uid, prefix = "UID: ", maxLength = 16)
+                                    Text(
+                                        text = "Joined: $createdDateStr",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
                                 }
                             }
                         }
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        // Admin Action Controls
+                        // Account Metadata Grid
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
+                            shape = RoundedCornerShape(14.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text(
+                                    text = "Identity & Communication",
+                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                MetaInfoRow(label = "Email Address", value = u.email.ifBlank { "Not configured" })
+                                MetaInfoRow(label = "Phone Number", value = u.phoneNumber.ifBlank { "Not configured" })
+                                MetaInfoRow(label = "Country & Currency", value = "${u.countryCode} • ${u.currencyCode}")
+                                MetaInfoRow(label = "Gender", value = u.gender)
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Social & Rewards Summary
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
+                            shape = RoundedCornerShape(14.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text(
+                                    text = "Platform Activity & Economy",
+                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                Row(modifier = Modifier.fillMaxWidth()) {
+                                    MetricPill(
+                                        label = "Followers",
+                                        value = u.followerCount.toString(),
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    MetricPill(
+                                        label = "Following",
+                                        value = u.followingCount.toString(),
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Row(modifier = Modifier.fillMaxWidth()) {
+                                    MetricPill(
+                                        label = "Available Coins",
+                                        value = u.availableCoins.toString(),
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    MetricPill(
+                                        label = "Current Streak",
+                                        value = "${u.currentStreak} Days",
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
+                                if (u.referralCode.isNotBlank()) {
+                                    Spacer(modifier = Modifier.height(10.dp))
+                                    MetaInfoRow(label = "Referral Code", value = u.referralCode)
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(20.dp))
+
+                        // Moderation Action Controls
                         Text(
-                            text = "Moderation Actions",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(bottom = 8.dp)
+                            text = "Administrative Moderation",
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurface
                         )
+                        Spacer(modifier = Modifier.height(10.dp))
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -177,6 +273,7 @@ fun UserDetailScreen(
                                         showActionDialog = true
                                     },
                                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF59E0B)),
+                                    shape = RoundedCornerShape(10.dp),
                                     modifier = Modifier.weight(1f)
                                 ) {
                                     Text("Suspend")
@@ -188,10 +285,11 @@ fun UserDetailScreen(
                                         actionType = "BAN"
                                         showActionDialog = true
                                     },
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444)),
+                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                                    shape = RoundedCornerShape(10.dp),
                                     modifier = Modifier.weight(1f)
                                 ) {
-                                    Text("Ban")
+                                    Text("Ban Account")
                                 }
                             }
                             if (u.accountStatus != "ACTIVE") {
@@ -201,9 +299,10 @@ fun UserDetailScreen(
                                         showActionDialog = true
                                     },
                                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981)),
+                                    shape = RoundedCornerShape(10.dp),
                                     modifier = Modifier.weight(1f)
                                 ) {
-                                    Text("Restore")
+                                    Text("Restore Active")
                                 }
                             }
                         }
@@ -219,6 +318,7 @@ fun UserDetailScreen(
                                     actionType = "REVOKE_SESSIONS"
                                     showActionDialog = true
                                 },
+                                shape = RoundedCornerShape(10.dp),
                                 modifier = Modifier.weight(1f)
                             ) {
                                 Text("Revoke Sessions")
@@ -228,99 +328,123 @@ fun UserDetailScreen(
                                     actionType = "TOGGLE_VERIFY"
                                     showActionDialog = true
                                 },
+                                shape = RoundedCornerShape(10.dp),
                                 modifier = Modifier.weight(1f)
                             ) {
-                                Text(if (u.isVerified) "Remove Verify" else "Verify User")
+                                Text(if (u.isVerified) "Remove Verified" else "Verify Account")
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        // Social & Rewards Summary
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                            shape = RoundedCornerShape(16.dp)
-                        ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                Text(
-                                    text = "Account Context & Activity",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(text = "Followers: ${u.followerCount} | Following: ${u.followingCount}")
-                                Text(text = "Available Coins: ${u.availableCoins} | Lifetime Earned: ${u.lifetimeEarned}")
-                                Text(text = "Check-in Streak: ${u.currentStreak} Days")
-                                if (u.referralCode.isNotBlank()) {
-                                    Text(text = "Referral Code: ${u.referralCode}")
-                                }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(24.dp))
 
                         // Internal Admin Notes Section
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                            shape = RoundedCornerShape(16.dp)
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
+                            shape = RoundedCornerShape(14.dp)
                         ) {
                             Column(modifier = Modifier.padding(16.dp)) {
-                                Text(
-                                    text = "Internal Admin Notes (${u.notes.size})",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        text = "Internal Admin Notes",
+                                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
+                                    )
+                                    StatusChip(text = "${u.notes.size} Notes", color = MaterialTheme.colorScheme.primary)
+                                }
+
+                                Spacer(modifier = Modifier.height(12.dp))
+
                                 OutlinedTextField(
                                     value = noteInput,
                                     onValueChange = { noteInput = it },
                                     placeholder = { Text("Add administrative note...") },
+                                    shape = RoundedCornerShape(10.dp),
                                     modifier = Modifier.fillMaxWidth()
                                 )
-                                Spacer(modifier = Modifier.height(8.dp))
+
+                                Spacer(modifier = Modifier.height(10.dp))
+
                                 Button(
                                     onClick = {
                                         if (noteInput.isNotBlank()) {
+                                            isAddingNote = true
                                             viewModel.addUserNote(u.uid, noteInput) { success, _ ->
+                                                isAddingNote = false
                                                 if (success) noteInput = ""
                                             }
                                         }
                                     },
-                                    enabled = noteInput.isNotBlank()
+                                    enabled = noteInput.isNotBlank() && !isAddingNote,
+                                    shape = RoundedCornerShape(8.dp),
+                                    modifier = Modifier.align(Alignment.End)
                                 ) {
-                                    Text("Add Note")
+                                    if (isAddingNote) {
+                                        CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White)
+                                    } else {
+                                        Text("Save Note")
+                                    }
                                 }
 
                                 if (u.notes.isNotEmpty()) {
-                                    Spacer(modifier = Modifier.height(12.dp))
-                                    u.notes.forEach { note ->
-                                        Text(
-                                            text = "• ${note.text} (${note.adminEmail})",
-                                            style = MaterialTheme.typography.bodySmall
-                                        )
+                                    Spacer(modifier = Modifier.height(14.dp))
+                                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+                                    Spacer(modifier = Modifier.height(10.dp))
+
+                                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        u.notes.forEach { note ->
+                                            Surface(
+                                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                                shape = RoundedCornerShape(8.dp),
+                                                modifier = Modifier.fillMaxWidth()
+                                            ) {
+                                                Column(modifier = Modifier.padding(10.dp)) {
+                                                    Text(
+                                                        text = note.text,
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        color = MaterialTheme.colorScheme.onSurface
+                                                    )
+                                                    Spacer(modifier = Modifier.height(4.dp))
+                                                    Text(
+                                                        text = "By ${note.adminEmail}",
+                                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                    )
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }
                         }
+
+                        Spacer(modifier = Modifier.height(24.dp))
                     }
                 }
-                else -> {}
             }
 
             if (showActionDialog) {
                 AlertDialog(
                     onDismissRequest = { showActionDialog = false },
-                    title = { Text("Confirm Action: $actionType") },
+                    title = { Text("Execute: $actionType", fontWeight = FontWeight.Bold) },
                     text = {
                         Column {
-                            Text("Please enter mandatory administrative reason:")
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Please enter an administrative audit reason to execute this action:",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(10.dp))
                             OutlinedTextField(
                                 value = reasonInput,
                                 onValueChange = { reasonInput = it },
-                                placeholder = { Text("Reason...") },
+                                placeholder = { Text("Reason for audit trail...") },
+                                singleLine = true,
+                                shape = RoundedCornerShape(8.dp),
                                 modifier = Modifier.fillMaxWidth()
                             )
                         }
@@ -343,18 +467,52 @@ fun UserDetailScreen(
                                     reasonInput = ""
                                 }
                             },
-                            enabled = reasonInput.isNotBlank()
+                            enabled = reasonInput.isNotBlank(),
+                            shape = RoundedCornerShape(8.dp)
                         ) {
-                            Text("Execute")
+                            Text("Confirm & Execute")
                         }
                     },
                     dismissButton = {
-                        OutlinedButton(onClick = { showActionDialog = false }) {
+                        OutlinedButton(
+                            onClick = { showActionDialog = false },
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
                             Text("Cancel")
                         }
-                    }
+                    },
+                    shape = RoundedCornerShape(16.dp)
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun MetaInfoRow(label: String, value: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(text = label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(text = value, style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold))
+    }
+}
+
+@Composable
+private fun MetricPill(label: String, value: String, modifier: Modifier = Modifier) {
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        shape = RoundedCornerShape(10.dp),
+        modifier = modifier
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Text(text = label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(text = value, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
         }
     }
 }
