@@ -42,7 +42,7 @@ fun SystemHealthScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp)
+                .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
             when (val state = uiState) {
                 is HealthUiState.Loading -> {
@@ -54,8 +54,10 @@ fun SystemHealthScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(text = state.message, color = MaterialTheme.colorScheme.error)
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Button(onClick = { viewModel.loadHealth() }) { Text("Retry") }
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Button(onClick = { viewModel.loadHealth() }) {
+                            Text("Retry")
+                        }
                     }
                 }
                 is HealthUiState.Success -> {
@@ -67,36 +69,28 @@ fun SystemHealthScreen(
                     ) {
                         Card(
                             modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                            shape = RoundedCornerShape(12.dp)
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+                            shape = RoundedCornerShape(16.dp)
                         ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text("Firebase Cloud Functions", fontWeight = FontWeight.Bold)
-                                    StatusChip(text = h.firebaseFunctionsStatus, color = Color(0xFF10B981))
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = "Cloud Infrastructure Status",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text(
+                                        text = "WorkDaily Global Backend & Firebase Managed Cluster",
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
                                 }
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text("Cloud Firestore Engine", fontWeight = FontWeight.Bold)
-                                    StatusChip(text = h.firestoreStatus, color = Color(0xFF10B981))
-                                }
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text("LiveKit Managed SFU", fontWeight = FontWeight.Bold)
-                                    StatusChip(text = h.liveKitStatus, color = Color(0xFF10B981))
-                                }
+                                StatusChip(text = "MONITORED", color = Color(0xFF10B981))
                             }
                         }
 
@@ -104,11 +98,36 @@ fun SystemHealthScreen(
 
                         Row(modifier = Modifier.fillMaxWidth()) {
                             KpiCard(
-                                title = "FCM Delivery Rate",
-                                value = h.fcmDeliveryRate,
-                                subtitle = "Push Success",
+                                title = "Firestore DB",
+                                value = h.firestoreStatus,
                                 icon = Icons.Default.CloudDone,
                                 accentColor = Color(0xFF10B981),
+                                modifier = Modifier.weight(1f)
+                            )
+                            KpiCard(
+                                title = "Cloud Functions",
+                                value = h.firebaseFunctionsStatus,
+                                icon = Icons.Default.CloudDone,
+                                accentColor = Color(0xFF3B82F6),
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Row(modifier = Modifier.fillMaxWidth()) {
+                            KpiCard(
+                                title = "LiveKit SFU Nodes",
+                                value = h.liveKitStatus,
+                                icon = Icons.Default.CloudDone,
+                                accentColor = Color(0xFFEC4899),
+                                modifier = Modifier.weight(1f)
+                            )
+                            KpiCard(
+                                title = "FCM Delivery Rate",
+                                value = h.fcmDeliveryRate,
+                                icon = Icons.Default.CloudDone,
+                                accentColor = Color(0xFFF59E0B),
                                 modifier = Modifier.weight(1f)
                             )
                         }

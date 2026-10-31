@@ -1,9 +1,11 @@
 package com.synfusion.workdailyadmin.ui.users
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -13,10 +15,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.synfusion.workdailyadmin.data.models.UserSummary
 import com.synfusion.workdailyadmin.ui.components.AdminSearchBar
 import com.synfusion.workdailyadmin.ui.components.StatusChip
+import com.synfusion.workdailyadmin.ui.components.TruncatedIdChip
+import com.synfusion.workdailyadmin.ui.components.UserAvatar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,10 +36,10 @@ fun UserManagementScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("User Management", fontWeight = FontWeight.Bold) },
+                title = { Text("User Directory", fontWeight = FontWeight.Bold) },
                 actions = {
                     IconButton(onClick = { viewModel.loadUsers() }) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                        Icon(Icons.Default.Refresh, contentDescription = "Refresh Users")
                     }
                 }
             )
@@ -44,54 +49,44 @@ fun UserManagementScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp)
+                .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
             AdminSearchBar(
                 query = searchQuery,
-                onQueryChange = {
-                    viewModel.searchQuery.value = it
-                    viewModel.loadUsers()
-                },
-                placeholderText = "Search UID, name, @username, or email..."
+                onQueryChange = { viewModel.onSearchQueryChanged(it) },
+                placeholderText = "Search UID, name, or @username..."
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Filter Chips
+            // Horizontally scrollable Filter Chips row ensuring clean fit on all screens
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 FilterChip(
                     selected = statusFilter == null,
-                    onClick = {
-                        viewModel.statusFilter.value = null
-                        viewModel.loadUsers()
-                    },
-                    label = { Text("All") }
+                    onClick = { viewModel.onStatusFilterChanged(null) },
+                    label = { Text("All Users") }
                 )
                 FilterChip(
                     selected = statusFilter == "ACTIVE",
-                    onClick = {
-                        viewModel.statusFilter.value = "ACTIVE"
-                        viewModel.loadUsers()
-                    },
-                    label = { Text("Active") }
+                    onClick = { viewModel.onStatusFilterChanged("ACTIVE") },
+                    label = { Text("Active") },
+                    leadingIcon = if (statusFilter == "ACTIVE") {
+                        { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                    } else null
                 )
                 FilterChip(
                     selected = statusFilter == "SUSPENDED",
-                    onClick = {
-                        viewModel.statusFilter.value = "SUSPENDED"
-                        viewModel.loadUsers()
-                    },
+                    onClick = { viewModel.onStatusFilterChanged("SUSPENDED") },
                     label = { Text("Suspended") }
                 )
                 FilterChip(
                     selected = statusFilter == "BANNED",
-                    onClick = {
-                        viewModel.statusFilter.value = "BANNED"
-                        viewModel.loadUsers()
-                    },
+                    onClick = { viewModel.onStatusFilterChanged("BANNED") },
                     label = { Text("Banned") }
                 )
             }
@@ -101,14 +96,23 @@ fun UserManagementScreen(
             when (val state = listState) {
                 is UserListState.Loading -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            CircularProgressIndicator()
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text("Loading users...", style = MaterialTheme.typography.bodyMedium)
+                        }
                     }
                 }
                 is UserListState.Error -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(text = state.message, color = MaterialTheme.colorScheme.error)
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.padding(24.dp)
+                        ) {
+                            Icon(Icons.Default.ErrorOutline, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(48.dp))
                             Spacer(modifier = Modifier.height(8.dp))
+                            Text(text = state.message, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
+                            Spacer(modifier = Modifier.height(16.dp))
                             Button(onClick = { viewModel.loadUsers() }) {
                                 Text("Retry")
                             }
@@ -118,14 +122,18 @@ fun UserManagementScreen(
                 is UserListState.Success -> {
                     if (state.users.isEmpty()) {
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text("No users found matching query.")
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(Icons.Default.PersonSearch, contentDescription = null, modifier = Modifier.size(56.dp), tint = Color.Gray)
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text("No users found matching query.", style = MaterialTheme.typography.bodyLarge)
+                            }
                         }
                     } else {
                         LazyColumn(
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
                             modifier = Modifier.fillMaxSize()
                         ) {
-                            items(state.users) { user ->
+                            items(state.users, key = { it.uid }) { user ->
                                 UserListItemCard(user = user, onClick = { onSelectUser(user.uid) })
                             }
                         }
@@ -146,23 +154,40 @@ fun UserListItemCard(
             .fillMaxWidth()
             .clickable { onClick() },
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = RoundedCornerShape(12.dp)
+        shape = RoundedCornerShape(14.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+                .padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+            UserAvatar(
+                photoUrl = user.photoUrl,
+                name = user.displayName,
+                size = 46
+            )
+
+            Spacer(modifier = Modifier.width(14.dp))
+
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.Center
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
                     Text(
-                        text = user.displayName,
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                        text = user.displayName.ifBlank { "Worker" },
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
                     )
                     if (user.isVerified) {
-                        Spacer(modifier = Modifier.width(4.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
                         Icon(
                             imageVector = Icons.Default.Verified,
                             contentDescription = "Verified",
@@ -171,19 +196,23 @@ fun UserListItemCard(
                         )
                     }
                 }
+
                 if (user.username.isNotBlank()) {
                     Text(
                         text = "@${user.username}",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary
+                        color = MaterialTheme.colorScheme.primary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
-                Text(
-                    text = "UID: ${user.uid}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                TruncatedIdChip(id = user.uid, prefix = "UID: ", maxLength = 14)
             }
+
+            Spacer(modifier = Modifier.width(8.dp))
 
             val statusColor = when (user.accountStatus) {
                 "ACTIVE" -> Color(0xFF10B981)

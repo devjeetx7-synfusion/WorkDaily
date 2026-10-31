@@ -40,7 +40,7 @@ fun AppConfigScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp)
+                .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
             when (val state = uiState) {
                 is ConfigUiState.Loading -> {
@@ -52,114 +52,121 @@ fun AppConfigScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(text = state.message, color = MaterialTheme.colorScheme.error)
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Button(onClick = { viewModel.loadConfig() }) { Text("Retry") }
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Button(onClick = { viewModel.loadConfig() }) {
+                            Text("Retry")
+                        }
                     }
                 }
                 is ConfigUiState.Success -> {
-                    var minVer by remember { mutableStateOf(state.config.minSupportedVersionCode.toString()) }
-                    var latestVer by remember { mutableStateOf(state.config.latestVersionCode.toString()) }
-                    var maintMode by remember { mutableStateOf(state.config.maintenanceMode) }
-                    var liveActive by remember { mutableStateOf(state.config.liveEnabled) }
-                    var socialActive by remember { mutableStateOf(state.config.socialEnabled) }
-                    var rewardsActive by remember { mutableStateOf(state.config.rewardsEnabled) }
-                    var supportEmail by remember { mutableStateOf(state.config.supportEmail) }
+                    var config by remember(state.config) { mutableStateOf(state.config) }
+                    var isSaving by remember { mutableStateOf(false) }
 
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
                             .verticalScroll(rememberScrollState())
+                            .imePadding()
                     ) {
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                Text("Version Gating", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                                Spacer(modifier = Modifier.height(8.dp))
-                                OutlinedTextField(
-                                    value = minVer,
-                                    onValueChange = { minVer = it },
-                                    label = { Text("Minimum Supported Version Code") },
-                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                    modifier = Modifier.fillMaxWidth()
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                OutlinedTextField(
-                                    value = latestVer,
-                                    onValueChange = { latestVer = it },
-                                    label = { Text("Latest Version Code") },
-                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                    modifier = Modifier.fillMaxWidth()
-                                )
-                            }
+                        Text(
+                            text = "Release Version Gate",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedTextField(
+                                value = config.minSupportedVersionCode.toString(),
+                                onValueChange = {
+                                    val code = it.toIntOrNull() ?: config.minSupportedVersionCode
+                                    config = config.copy(minSupportedVersionCode = code)
+                                },
+                                label = { Text("Min Version") },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                modifier = Modifier.weight(1f)
+                            )
+                            OutlinedTextField(
+                                value = config.latestVersionCode.toString(),
+                                onValueChange = {
+                                    val code = it.toIntOrNull() ?: config.latestVersionCode
+                                    config = config.copy(latestVersionCode = code)
+                                },
+                                label = { Text("Latest Version") },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                modifier = Modifier.weight(1f)
+                            )
                         }
 
                         Spacer(modifier = Modifier.height(16.dp))
 
+                        Text(
+                            text = "Feature Toggles",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(14.dp)
                         ) {
                             Column(modifier = Modifier.padding(16.dp)) {
-                                Text("System Feature Flags", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("Force App Update")
+                                    Switch(
+                                        checked = config.forceUpdate,
+                                        onCheckedChange = { config = config.copy(forceUpdate = it) }
+                                    )
+                                }
+                                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text("Maintenance Mode")
-                                    Switch(checked = maintMode, onCheckedChange = { maintMode = it })
+                                    Switch(
+                                        checked = config.maintenanceMode,
+                                        onCheckedChange = { config = config.copy(maintenanceMode = it) }
+                                    )
                                 }
+                                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text("Live Streaming Access")
-                                    Switch(checked = liveActive, onCheckedChange = { liveActive = it })
-                                }
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text("Social Messaging Access")
-                                    Switch(checked = socialActive, onCheckedChange = { socialActive = it })
-                                }
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text("Rewards Hub Access")
-                                    Switch(checked = rewardsActive, onCheckedChange = { rewardsActive = it })
+                                    Text("Live Streaming Feature")
+                                    Switch(
+                                        checked = config.liveEnabled,
+                                        onCheckedChange = { config = config.copy(liveEnabled = it) }
+                                    )
                                 }
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(24.dp))
 
                         Button(
                             onClick = {
-                                val newCfg = AppConfigData(
-                                    minSupportedVersionCode = minVer.toIntOrNull() ?: 1,
-                                    latestVersionCode = latestVer.toIntOrNull() ?: 1,
-                                    maintenanceMode = maintMode,
-                                    liveEnabled = liveActive,
-                                    socialEnabled = socialActive,
-                                    rewardsEnabled = rewardsActive,
-                                    supportEmail = supportEmail
-                                )
-                                viewModel.updateConfig(newCfg) { _, _ -> }
+                                isSaving = true
+                                viewModel.updateConfig(config) { _, _ -> isSaving = false }
                             },
-                            modifier = Modifier.fillMaxWidth()
+                            enabled = !isSaving,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(10.dp)
                         ) {
-                            Icon(Icons.Default.Save, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Publish Configuration")
+                            if (isSaving) {
+                                CircularProgressIndicator(modifier = Modifier.size(18.dp), color = MaterialTheme.colorScheme.onPrimary)
+                            } else {
+                                Icon(Icons.Default.Save, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Save Configuration")
+                            }
                         }
                     }
                 }

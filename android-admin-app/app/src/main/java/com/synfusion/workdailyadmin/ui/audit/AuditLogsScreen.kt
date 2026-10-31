@@ -12,8 +12,11 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.synfusion.workdailyadmin.ui.components.StatusChip
+import com.synfusion.workdailyadmin.ui.components.TruncatedIdChip
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,7 +41,7 @@ fun AuditLogsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp)
+                .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
             when (val state = uiState) {
                 is AuditUiState.Loading -> {
@@ -50,32 +53,49 @@ fun AuditLogsScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(text = state.message, color = MaterialTheme.colorScheme.error)
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Button(onClick = { viewModel.loadAuditLogs() }) { Text("Retry") }
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Button(onClick = { viewModel.loadAuditLogs() }) {
+                            Text("Retry")
+                        }
                     }
                 }
                 is AuditUiState.Success -> {
                     if (state.logs.isEmpty()) {
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text("No audit log events recorded yet.")
+                            Text("No audit log events recorded yet.", style = MaterialTheme.typography.bodyLarge)
                         }
                     } else {
                         LazyColumn(
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
                             modifier = Modifier.fillMaxSize()
                         ) {
-                            items(state.logs) { log ->
+                            items(state.logs, key = { it.id }) { log ->
                                 Card(
                                     modifier = Modifier.fillMaxWidth(),
                                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                                    shape = RoundedCornerShape(12.dp)
+                                    shape = RoundedCornerShape(14.dp),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                                 ) {
-                                    Column(modifier = Modifier.padding(16.dp)) {
-                                        Text(text = log.action, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Text(text = "Target (${log.targetType}): ${log.targetId}", style = MaterialTheme.typography.bodySmall)
-                                        Text(text = "Reason: ${log.reason}", style = MaterialTheme.typography.bodySmall)
-                                        Text(text = "Admin: ${log.adminEmail} (${log.adminUid})", style = MaterialTheme.typography.labelSmall)
+                                    Column(modifier = Modifier.padding(14.dp)) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                text = log.action,
+                                                style = MaterialTheme.typography.titleSmall,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                            StatusChip(text = log.targetType, color = Color(0xFF6366F1))
+                                        }
+                                        Spacer(modifier = Modifier.height(6.dp))
+                                        Text(text = "Actor: ${log.adminEmail}", style = MaterialTheme.typography.bodySmall)
+                                        if (log.reason.isNotBlank()) {
+                                            Text(text = "Reason: ${log.reason}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
+                                        Spacer(modifier = Modifier.height(6.dp))
+                                        TruncatedIdChip(id = log.targetId, prefix = "Target ID: ", maxLength = 18)
                                     }
                                 }
                             }

@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.synfusion.workdailyadmin.ui.components.StatusChip
+import com.synfusion.workdailyadmin.ui.components.TruncatedIdChip
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,44 +53,45 @@ fun NotificationsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp)
+                .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
             when (val state = uiState) {
                 is NotificationsUiState.Loading -> {
-                    Column(
-                        modifier = Modifier.align(Alignment.Center),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator()
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text("Fetching notification campaigns...")
                     }
                 }
                 is NotificationsUiState.Error -> {
-                    Column(
-                        modifier = Modifier.align(Alignment.Center),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(text = state.message, color = MaterialTheme.colorScheme.error)
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Button(onClick = { viewModel.loadCampaigns() }) { Text("Retry") }
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(text = state.message, color = MaterialTheme.colorScheme.error)
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Button(onClick = { viewModel.loadCampaigns() }) {
+                                Text("Retry")
+                            }
+                        }
                     }
                 }
                 is NotificationsUiState.Success -> {
                     if (state.campaigns.isEmpty()) {
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text("No notification campaigns created yet.")
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(Icons.Default.NotificationsNone, contentDescription = null, modifier = Modifier.size(56.dp), tint = Color.Gray)
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text("No notification campaigns found.", style = MaterialTheme.typography.bodyLarge)
+                            }
                         }
                     } else {
                         LazyColumn(
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
                             modifier = Modifier.fillMaxSize()
                         ) {
-                            items(state.campaigns) { c ->
+                            items(state.campaigns, key = { it.id }) { campaign ->
                                 Card(
                                     modifier = Modifier.fillMaxWidth(),
                                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                                    shape = RoundedCornerShape(12.dp)
+                                    shape = RoundedCornerShape(14.dp),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                                 ) {
                                     Column(modifier = Modifier.padding(16.dp)) {
                                         Row(
@@ -97,13 +99,28 @@ fun NotificationsScreen(
                                             horizontalArrangement = Arrangement.SpaceBetween,
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
-                                            Text(text = c.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                                            StatusChip(text = c.status, color = Color(0xFF10B981))
+                                            Text(
+                                                text = campaign.title,
+                                                style = MaterialTheme.typography.titleMedium,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                            StatusChip(text = campaign.status, color = Color(0xFF10B981))
                                         }
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Text(text = c.body, style = MaterialTheme.typography.bodyMedium)
                                         Spacer(modifier = Modifier.height(8.dp))
-                                        Text(text = "Target: ${c.targetAudience}", style = MaterialTheme.typography.labelSmall)
+                                        Text(text = campaign.body, style = MaterialTheme.typography.bodyMedium)
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                text = "Audience: ${campaign.targetAudience}",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                            TruncatedIdChip(id = campaign.id, prefix = "ID: ", maxLength = 12)
+                                        }
                                     }
                                 }
                             }
@@ -115,21 +132,27 @@ fun NotificationsScreen(
             if (showCreateDialog) {
                 AlertDialog(
                     onDismissRequest = { if (!isSubmitting) showCreateDialog = false },
-                    title = { Text("New FCM Campaign Broadcast", fontWeight = FontWeight.Bold) },
+                    title = { Text("New Notification Campaign") },
                     text = {
                         Column {
                             OutlinedTextField(
                                 value = titleInput,
                                 onValueChange = { titleInput = it },
-                                label = { Text("Campaign Title") },
-                                singleLine = true,
+                                label = { Text("Title") },
                                 modifier = Modifier.fillMaxWidth()
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             OutlinedTextField(
                                 value = bodyInput,
                                 onValueChange = { bodyInput = it },
-                                label = { Text("Notification Body Message") },
+                                label = { Text("Message Body") },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            OutlinedTextField(
+                                value = audienceInput,
+                                onValueChange = { audienceInput = it },
+                                label = { Text("Target Audience (ALL)") },
                                 modifier = Modifier.fillMaxWidth()
                             )
                         }
@@ -139,7 +162,7 @@ fun NotificationsScreen(
                             onClick = {
                                 if (titleInput.isNotBlank() && bodyInput.isNotBlank() && !isSubmitting) {
                                     isSubmitting = true
-                                    viewModel.sendCampaign(titleInput.trim(), bodyInput.trim(), audienceInput) { success, _ ->
+                                    viewModel.sendCampaign(titleInput, bodyInput, audienceInput) { success, _ ->
                                         isSubmitting = false
                                         if (success) {
                                             showCreateDialog = false
@@ -151,21 +174,11 @@ fun NotificationsScreen(
                             },
                             enabled = titleInput.isNotBlank() && bodyInput.isNotBlank() && !isSubmitting
                         ) {
-                            if (isSubmitting) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(18.dp),
-                                    color = MaterialTheme.colorScheme.onPrimary
-                                )
-                            } else {
-                                Text("Broadcast Campaign")
-                            }
+                            Text("Send Push Broadcast")
                         }
                     },
                     dismissButton = {
-                        OutlinedButton(
-                            onClick = { showCreateDialog = false },
-                            enabled = !isSubmitting
-                        ) {
+                        OutlinedButton(onClick = { showCreateDialog = false }, enabled = !isSubmitting) {
                             Text("Cancel")
                         }
                     }

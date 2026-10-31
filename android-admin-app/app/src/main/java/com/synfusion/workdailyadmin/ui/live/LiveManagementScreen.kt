@@ -12,9 +12,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.synfusion.workdailyadmin.data.models.LiveRoomItem
 import com.synfusion.workdailyadmin.ui.components.StatusChip
+import com.synfusion.workdailyadmin.ui.components.TruncatedIdChip
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,7 +49,7 @@ fun LiveManagementScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp)
+                .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
             when (val state = uiState) {
                 is LiveUiState.Loading -> {
@@ -65,6 +67,8 @@ fun LiveManagementScreen(
                         modifier = Modifier.align(Alignment.Center),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
+                        Icon(Icons.Default.ErrorOutline, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(48.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
                         Text(text = state.message, color = MaterialTheme.colorScheme.error)
                         Spacer(modifier = Modifier.height(12.dp))
                         Button(onClick = { viewModel.loadLiveRooms() }) {
@@ -87,7 +91,7 @@ fun LiveManagementScreen(
                             verticalArrangement = Arrangement.spacedBy(12.dp),
                             modifier = Modifier.fillMaxSize()
                         ) {
-                            items(state.rooms) { room ->
+                            items(state.rooms, key = { it.roomId }) { room ->
                                 LiveRoomCard(
                                     room = room,
                                     onEndRoom = {
@@ -112,7 +116,7 @@ fun LiveManagementScreen(
                             OutlinedTextField(
                                 value = endReason,
                                 onValueChange = { endReason = it },
-                                placeholder = { Text("Reason...") },
+                                placeholder = { Text("Violation reason...") },
                                 modifier = Modifier.fillMaxWidth()
                             )
                         }
@@ -166,7 +170,8 @@ fun LiveRoomCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = RoundedCornerShape(12.dp)
+        shape = RoundedCornerShape(14.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -176,19 +181,21 @@ fun LiveRoomCard(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = room.title.ifBlank { "Untitled Stream" },
+                        text = room.title.ifBlank { "Untitled Broadcast" },
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
-                    Text(
-                        text = "Host UID: ${room.hostUserId}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    TruncatedIdChip(id = room.hostUserId, prefix = "Host: ", maxLength = 16)
                 }
+                Spacer(modifier = Modifier.width(8.dp))
                 StatusChip(text = room.type, color = Color(0xFFEC4899))
             }
 
+            Spacer(modifier = Modifier.height(12.dp))
+            HorizontalDivider()
             Spacer(modifier = Modifier.height(12.dp))
 
             Row(
@@ -196,14 +203,13 @@ fun LiveRoomCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "Room ID: ${room.roomId}",
-                    style = MaterialTheme.typography.labelSmall
-                )
+                TruncatedIdChip(id = room.roomId, prefix = "Room: ", maxLength = 16)
+
                 Button(
                     onClick = onEndRoom,
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(10.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
                 ) {
                     Icon(Icons.Default.Stop, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(4.dp))

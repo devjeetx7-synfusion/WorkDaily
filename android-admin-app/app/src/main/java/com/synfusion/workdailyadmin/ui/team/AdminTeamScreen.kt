@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.synfusion.workdailyadmin.ui.components.StatusChip
+import com.synfusion.workdailyadmin.ui.components.TruncatedIdChip
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,39 +53,36 @@ fun AdminTeamScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp)
+                .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
             when (val state = uiState) {
                 is TeamUiState.Loading -> {
-                    Column(
-                        modifier = Modifier.align(Alignment.Center),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator()
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text("Fetching admin team roster...")
                     }
                 }
                 is TeamUiState.Error -> {
-                    Column(
-                        modifier = Modifier.align(Alignment.Center),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(text = state.message, color = MaterialTheme.colorScheme.error)
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Button(onClick = { viewModel.loadTeam() }) { Text("Retry") }
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(text = state.message, color = MaterialTheme.colorScheme.error)
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Button(onClick = { viewModel.loadTeam() }) {
+                                Text("Retry")
+                            }
+                        }
                     }
                 }
                 is TeamUiState.Success -> {
                     LazyColumn(
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
                         modifier = Modifier.fillMaxSize()
                     ) {
-                        items(state.team) { member ->
+                        items(state.team, key = { it.uid }) { member ->
                             Card(
                                 modifier = Modifier.fillMaxWidth(),
                                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                                shape = RoundedCornerShape(12.dp)
+                                shape = RoundedCornerShape(14.dp),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                             ) {
                                 Row(
                                     modifier = Modifier
@@ -94,9 +92,15 @@ fun AdminTeamScreen(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Column(modifier = Modifier.weight(1f)) {
-                                        Text(text = member.email, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                                        Text(text = "UID: ${member.uid}", style = MaterialTheme.typography.bodySmall)
+                                        Text(
+                                            text = member.email,
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        TruncatedIdChip(id = member.uid, prefix = "UID: ", maxLength = 16)
                                     }
+                                    Spacer(modifier = Modifier.width(8.dp))
                                     StatusChip(text = member.role.name, color = Color(0xFF3B82F6))
                                 }
                             }
@@ -108,14 +112,13 @@ fun AdminTeamScreen(
             if (showAssignDialog) {
                 AlertDialog(
                     onDismissRequest = { if (!isSubmitting) showAssignDialog = false },
-                    title = { Text("Provision Admin Role", fontWeight = FontWeight.Bold) },
+                    title = { Text("Provision Administrator") },
                     text = {
                         Column {
                             OutlinedTextField(
                                 value = uidInput,
                                 onValueChange = { uidInput = it },
                                 label = { Text("Target User UID") },
-                                singleLine = true,
                                 modifier = Modifier.fillMaxWidth()
                             )
                             Spacer(modifier = Modifier.height(8.dp))
@@ -123,12 +126,12 @@ fun AdminTeamScreen(
                                 value = emailInput,
                                 onValueChange = { emailInput = it },
                                 label = { Text("Admin Email") },
-                                singleLine = true,
                                 modifier = Modifier.fillMaxWidth()
                             )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text("Select Role Level:")
-                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text("Select Role Level:", style = MaterialTheme.typography.bodySmall)
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 FilterChip(
                                     selected = selectedRole == "MODERATOR",
                                     onClick = { selectedRole = "MODERATOR" },
@@ -142,7 +145,7 @@ fun AdminTeamScreen(
                                 FilterChip(
                                     selected = selectedRole == "SUPER_ADMIN",
                                     onClick = { selectedRole = "SUPER_ADMIN" },
-                                    label = { Text("Super Admin") }
+                                    label = { Text("Super") }
                                 )
                             }
                         }
@@ -164,21 +167,11 @@ fun AdminTeamScreen(
                             },
                             enabled = uidInput.isNotBlank() && emailInput.isNotBlank() && !isSubmitting
                         ) {
-                            if (isSubmitting) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(18.dp),
-                                    color = MaterialTheme.colorScheme.onPrimary
-                                )
-                            } else {
-                                Text("Assign Custom Claim")
-                            }
+                            Text("Assign Role")
                         }
                     },
                     dismissButton = {
-                        OutlinedButton(
-                            onClick = { showAssignDialog = false },
-                            enabled = !isSubmitting
-                        ) {
+                        OutlinedButton(onClick = { showAssignDialog = false }, enabled = !isSubmitting) {
                             Text("Cancel")
                         }
                     }
