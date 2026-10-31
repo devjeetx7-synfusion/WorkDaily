@@ -8,7 +8,7 @@ class LiveKitTokenClientTest {
     private fun response(url: String = "wss://live.example.com", token: String = "test-token", room: String = "workdaily-abc") =
         mapOf("url" to url, "token" to token, "roomName" to room)
 
-    @Test fun acceptsCallableResponseForRequestedRoom() {
+    @Test fun acceptsMapResponseForRequestedRoom() {
         val credentials = parseLiveKitCredentials(response(), "abc")
         assertEquals("wss://live.example.com", credentials.url)
         assertEquals("test-token", credentials.token)
@@ -21,5 +21,9 @@ class LiveKitTokenClientTest {
         assertThrows(IllegalArgumentException::class.java) { parseLiveKitCredentials(response(url = "wss://user:secret@live.example.com"), "abc") }
         assertThrows(IllegalArgumentException::class.java) { parseLiveKitCredentials(response(token = ""), "abc") }
         assertThrows(IllegalStateException::class.java) { parseLiveKitCredentials(null, "abc") }
+    }
+
+    @Test fun verifiesDefaultWorkerUrl() {
+        assertEquals("https://workdaily-livekit-token.workdaily.workers.dev/liveKitToken", LiveKitTokenClient.DEFAULT_WORKER_URL)
     }
 }

@@ -11,3 +11,5 @@ android-offline-attendance-app/app/build/
 .DS_Store
 .idea/
 *.iml
+node_modules/
+.wrangler/
