@@ -1,5 +1,6 @@
 package com.synfusion.workdailyadmin.ui.users
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -8,6 +9,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -17,11 +19,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.synfusion.workdailyadmin.data.models.UserSummary
-import com.synfusion.workdailyadmin.ui.components.AdminSearchBar
-import com.synfusion.workdailyadmin.ui.components.StatusChip
-import com.synfusion.workdailyadmin.ui.components.TruncatedIdChip
-import com.synfusion.workdailyadmin.ui.components.UserAvatar
+import com.synfusion.workdailyadmin.ui.components.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,12 +36,18 @@ fun UserManagementScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("User Directory", fontWeight = FontWeight.Bold) },
+                title = {
+                    Column {
+                        Text("User Directory", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
+                        Text("Identity management & account status", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                },
                 actions = {
                     IconButton(onClick = { viewModel.loadUsers() }) {
                         Icon(Icons.Default.Refresh, contentDescription = "Refresh Users")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
             )
         }
     ) { padding ->
@@ -49,17 +55,17 @@ fun UserManagementScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
             AdminSearchBar(
                 query = searchQuery,
                 onQueryChange = { viewModel.onSearchQueryChanged(it) },
-                placeholderText = "Search UID, name, or @username..."
+                placeholderText = "Search UID, full name, or @username..."
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Horizontally scrollable Filter Chips row ensuring clean fit on all screens
+            // Horizontally scrollable Filter Chips
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -69,7 +75,7 @@ fun UserManagementScreen(
                 FilterChip(
                     selected = statusFilter == null,
                     onClick = { viewModel.onStatusFilterChanged(null) },
-                    label = { Text("All Users") }
+                    label = { Text("All Accounts") }
                 )
                 FilterChip(
                     selected = statusFilter == "ACTIVE",
@@ -91,46 +97,28 @@ fun UserManagementScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
             when (val state = listState) {
                 is UserListState.Loading -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            CircularProgressIndicator()
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text("Loading users...", style = MaterialTheme.typography.bodyMedium)
-                        }
-                    }
+                    AdminLoadingState(message = "Retrieving user directory...")
                 }
                 is UserListState.Error -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.padding(24.dp)
-                        ) {
-                            Icon(Icons.Default.ErrorOutline, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(48.dp))
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(text = state.message, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Button(onClick = { viewModel.loadUsers() }) {
-                                Text("Retry")
-                            }
-                        }
-                    }
+                    AdminErrorState(
+                        message = state.message,
+                        onRetry = { viewModel.loadUsers() }
+                    )
                 }
                 is UserListState.Success -> {
                     if (state.users.isEmpty()) {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Icon(Icons.Default.PersonSearch, contentDescription = null, modifier = Modifier.size(56.dp), tint = Color.Gray)
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text("No users found matching query.", style = MaterialTheme.typography.bodyLarge)
-                            }
-                        }
+                        AdminEmptyState(
+                            title = "No Users Found",
+                            description = if (searchQuery.isNotBlank()) "No users matching \"$searchQuery\"." else "No users currently registered under this filter.",
+                            icon = Icons.Default.PersonSearch
+                        )
                     } else {
                         LazyColumn(
-                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
                             modifier = Modifier.fillMaxSize()
                         ) {
                             items(state.users, key = { it.uid }) { user ->
@@ -154,8 +142,9 @@ fun UserListItemCard(
             .fillMaxWidth()
             .clickable { onClick() },
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = RoundedCornerShape(14.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp)
     ) {
         Row(
             modifier = Modifier
@@ -180,7 +169,7 @@ fun UserListItemCard(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
-                        text = user.displayName.ifBlank { "Worker" },
+                        text = user.displayName.ifBlank { "WorkDaily Member" },
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -190,7 +179,7 @@ fun UserListItemCard(
                         Spacer(modifier = Modifier.width(6.dp))
                         Icon(
                             imageVector = Icons.Default.Verified,
-                            contentDescription = "Verified",
+                            contentDescription = "Verified Account",
                             tint = Color(0xFF3B82F6),
                             modifier = Modifier.size(16.dp)
                         )
@@ -202,26 +191,39 @@ fun UserListItemCard(
                         text = "@${user.username}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Medium,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                 }
 
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(6.dp))
 
                 TruncatedIdChip(id = user.uid, prefix = "UID: ", maxLength = 14)
             }
 
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(10.dp))
 
-            val statusColor = when (user.accountStatus) {
-                "ACTIVE" -> Color(0xFF10B981)
-                "SUSPENDED" -> Color(0xFFF59E0B)
-                "BANNED" -> Color(0xFFEF4444)
-                else -> Color.Gray
+            Column(
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.Center
+            ) {
+                val statusColor = when (user.accountStatus.uppercase()) {
+                    "ACTIVE" -> Color(0xFF10B981)
+                    "SUSPENDED" -> Color(0xFFF59E0B)
+                    "BANNED" -> Color(0xFFEF4444)
+                    else -> Color(0xFF6B7280)
+                }
+
+                StatusChip(text = user.accountStatus, color = statusColor)
+                Spacer(modifier = Modifier.height(10.dp))
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowForwardIos,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                    modifier = Modifier.size(14.dp)
+                )
             }
-
-            StatusChip(text = user.accountStatus, color = statusColor)
         }
     }
 }

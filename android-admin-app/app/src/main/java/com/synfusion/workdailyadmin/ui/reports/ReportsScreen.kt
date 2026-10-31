@@ -1,5 +1,6 @@
 package com.synfusion.workdailyadmin.ui.reports
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -14,10 +15,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.synfusion.workdailyadmin.data.models.ReportItem
-import com.synfusion.workdailyadmin.ui.components.StatusChip
-import com.synfusion.workdailyadmin.ui.components.TruncatedIdChip
+import com.synfusion.workdailyadmin.ui.components.*
+import java.text.SimpleDateFormat
+import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,12 +40,18 @@ fun ReportsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Central Moderation Queue", fontWeight = FontWeight.Bold) },
+                title = {
+                    Column {
+                        Text("Central Moderation Queue", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
+                        Text("Abuse reports, user disputes & policy enforcement", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                },
                 actions = {
                     IconButton(onClick = { viewModel.loadReports() }) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                        Icon(Icons.Default.Refresh, contentDescription = "Refresh Reports")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
             )
         }
     ) { padding ->
@@ -49,9 +59,9 @@ fun ReportsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
-            // Horizontally scrollable status filter chips
+            // Horizontal Status Filter Chips
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -64,7 +74,10 @@ fun ReportsScreen(
                         viewModel.statusFilter.value = "PENDING"
                         viewModel.loadReports()
                     },
-                    label = { Text("Pending") }
+                    label = { Text("Pending Review") },
+                    leadingIcon = if (statusFilter == "PENDING") {
+                        { Icon(Icons.Default.Pending, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                    } else null
                 )
                 FilterChip(
                     selected = statusFilter == "RESOLVED",
@@ -72,46 +85,42 @@ fun ReportsScreen(
                         viewModel.statusFilter.value = "RESOLVED"
                         viewModel.loadReports()
                     },
-                    label = { Text("Resolved") }
+                    label = { Text("Resolved") },
+                    leadingIcon = if (statusFilter == "RESOLVED") {
+                        { Icon(Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                    } else null
                 )
                 FilterChip(
-                    selected = statusFilter == "IGNORED",
+                    selected = statusFilter == "DISMISSED",
                     onClick = {
-                        viewModel.statusFilter.value = "IGNORED"
+                        viewModel.statusFilter.value = "DISMISSED"
                         viewModel.loadReports()
                     },
                     label = { Text("Dismissed") }
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
             when (val state = uiState) {
                 is ReportsUiState.Loading -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
-                    }
+                    AdminLoadingState(message = "Fetching moderation queue records...")
                 }
                 is ReportsUiState.Error -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(text = state.message, color = MaterialTheme.colorScheme.error)
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Button(onClick = { viewModel.loadReports() }) {
-                                Text("Retry")
-                            }
-                        }
-                    }
+                    AdminErrorState(
+                        message = state.message,
+                        onRetry = { viewModel.loadReports() }
+                    )
                 }
                 is ReportsUiState.Success -> {
                     if (state.reports.isEmpty()) {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                Icon(Icons.Default.DoneAll, contentDescription = null, modifier = Modifier.size(56.dp), tint = Color.Gray)
-                                Spacer(modifier = Modifier.height(12.dp))
-                                Text("No reports in this category.", style = MaterialTheme.typography.bodyLarge)
-                            }
-                        }
+                        AdminEmptyState(
+                            title = "Moderation Queue Clear",
+                            description = "No reports found with status: $statusFilter.",
+                            icon = Icons.Default.Shield,
+                            actionText = "Refresh Queue",
+                            onActionClick = { viewModel.loadReports() }
+                        )
                     } else {
                         LazyColumn(
                             verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -120,8 +129,10 @@ fun ReportsScreen(
                             items(state.reports, key = { it.id }) { report ->
                                 ReportItemCard(
                                     report = report,
-                                    onTakeAction = {
+                                    onAction = { status ->
                                         selectedReport = report
+                                        actionStatus = status
+                                        resolutionReason = ""
                                         showResolveDialog = true
                                     }
                                 )
@@ -132,30 +143,29 @@ fun ReportsScreen(
             }
 
             if (showResolveDialog && selectedReport != null) {
+                val report = selectedReport!!
+
                 AlertDialog(
                     onDismissRequest = { if (!isSubmitting) showResolveDialog = false },
-                    title = { Text("Resolve Report") },
+                    title = {
+                        Text(
+                            text = if (actionStatus == "RESOLVED") "Mark Report as Resolved" else "Dismiss Report",
+                            fontWeight = FontWeight.Bold
+                        )
+                    },
                     text = {
                         Column {
-                            Text("Take moderation action on report #${selectedReport!!.id}:")
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                FilterChip(
-                                    selected = actionStatus == "RESOLVED",
-                                    onClick = { actionStatus = "RESOLVED" },
-                                    label = { Text("Resolve") }
-                                )
-                                FilterChip(
-                                    selected = actionStatus == "IGNORED",
-                                    onClick = { actionStatus = "IGNORED" },
-                                    label = { Text("Dismiss") }
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                text = "Please enter resolution notes and administrative disposition for report #${report.id.take(8)}:",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(10.dp))
                             OutlinedTextField(
                                 value = resolutionReason,
                                 onValueChange = { resolutionReason = it },
-                                placeholder = { Text("Action reason...") },
+                                placeholder = { Text("Resolution reason & audit notes...") },
+                                shape = RoundedCornerShape(8.dp),
                                 modifier = Modifier.fillMaxWidth()
                             )
                         }
@@ -163,27 +173,43 @@ fun ReportsScreen(
                     confirmButton = {
                         Button(
                             onClick = {
-                                if (resolutionReason.isNotBlank() && !isSubmitting) {
+                                if (resolutionReason.isNotBlank()) {
                                     isSubmitting = true
-                                    viewModel.updateReportStatus(selectedReport!!.id, actionStatus, resolutionReason) { success, _ ->
+                                    viewModel.updateReportStatus(
+                                        reportId = report.id,
+                                        status = actionStatus,
+                                        resolutionReason = resolutionReason.trim()
+                                    ) { success, _ ->
                                         isSubmitting = false
                                         if (success) {
                                             showResolveDialog = false
-                                            resolutionReason = ""
                                         }
                                     }
                                 }
                             },
-                            enabled = resolutionReason.isNotBlank() && !isSubmitting
+                            enabled = resolutionReason.isNotBlank() && !isSubmitting,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (actionStatus == "RESOLVED") Color(0xFF10B981) else Color(0xFF6B7280)
+                            ),
+                            shape = RoundedCornerShape(8.dp)
                         ) {
-                            Text("Submit Action")
+                            if (isSubmitting) {
+                                CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White)
+                            } else {
+                                Text(if (actionStatus == "RESOLVED") "Resolve Report" else "Dismiss Report")
+                            }
                         }
                     },
                     dismissButton = {
-                        OutlinedButton(onClick = { showResolveDialog = false }, enabled = !isSubmitting) {
+                        OutlinedButton(
+                            onClick = { showResolveDialog = false },
+                            enabled = !isSubmitting,
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
                             Text("Cancel")
                         }
-                    }
+                    },
+                    shape = RoundedCornerShape(16.dp)
                 )
             }
         }
@@ -193,62 +219,105 @@ fun ReportsScreen(
 @Composable
 fun ReportItemCard(
     report: ReportItem,
-    onTakeAction: () -> Unit
+    onAction: (String) -> Unit
 ) {
+    val dateStr = remember(report.timestamp) {
+        if (report.timestamp > 0) {
+            SimpleDateFormat("MMM dd, HH:mm", Locale.getDefault()).format(Date(report.timestamp))
+        } else "Unknown"
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
         shape = RoundedCornerShape(14.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(
-                    text = report.reason.ifBlank { "Unspecified Violation" },
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                val statusColor = when (report.status) {
-                    "PENDING" -> Color(0xFFEF4444)
-                    "RESOLVED" -> Color(0xFF10B981)
-                    else -> Color.Gray
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    val statusColor = when (report.status.uppercase()) {
+                        "PENDING" -> Color(0xFFEF4444)
+                        "RESOLVED" -> Color(0xFF10B981)
+                        else -> Color(0xFF6B7280)
+                    }
+                    StatusChip(text = report.status, color = statusColor)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    StatusChip(text = "Priority: ${report.priority}", color = Color(0xFF3B82F6))
                 }
-                StatusChip(text = report.status, color = statusColor)
+
+                Text(
+                    text = dateStr,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text(
+                text = "Reason: ${report.reason.ifBlank { "Unspecified violation" }}",
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onSurface
+            )
 
             if (report.details.isNotBlank()) {
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = report.details,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Spacer(modifier = Modifier.height(8.dp))
             }
+
+            Spacer(modifier = Modifier.height(10.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                TruncatedIdChip(id = report.reporterUid, prefix = "Reporter: ", maxLength = 14)
-                TruncatedIdChip(id = report.targetUid, prefix = "Target: ", maxLength = 14)
+                Column {
+                    TruncatedIdChip(id = report.targetUid, prefix = "Reported UID: ")
+                    Spacer(modifier = Modifier.height(4.dp))
+                    TruncatedIdChip(id = report.reporterUid, prefix = "Reporter UID: ")
+                }
+
+                if (report.status == "PENDING") {
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        OutlinedButton(
+                            onClick = { onAction("DISMISSED") },
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
+                        ) {
+                            Text("Dismiss", style = MaterialTheme.typography.labelSmall)
+                        }
+                        Button(
+                            onClick = { onAction("RESOLVED") },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981)),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Text("Resolve", style = MaterialTheme.typography.labelSmall)
+                        }
+                    }
+                }
             }
 
-            if (report.status == "PENDING") {
-                Spacer(modifier = Modifier.height(12.dp))
-                Button(
-                    onClick = onTakeAction,
-                    shape = RoundedCornerShape(10.dp),
-                    modifier = Modifier.align(Alignment.End)
-                ) {
-                    Text("Moderate Report")
-                }
+            if (report.resolutionReason.isNotBlank()) {
+                Spacer(modifier = Modifier.height(10.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = "Resolution Notes: ${report.resolutionReason}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
             }
         }
     }

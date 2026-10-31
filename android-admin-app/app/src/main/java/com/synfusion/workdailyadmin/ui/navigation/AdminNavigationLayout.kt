@@ -1,8 +1,11 @@
 package com.synfusion.workdailyadmin.ui.navigation
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -13,9 +16,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
@@ -97,7 +103,7 @@ fun AdminMainLayout(
     val adminEmail = (authState as? AdminAuthState.Authenticated)?.email ?: "admin@workdaily.com"
     val adminRole = (authState as? AdminAuthState.Authenticated)?.role?.name ?: "ADMIN"
 
-    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+    BoxWithConstraints(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         val isCompact = maxWidth < 700.dp
 
         if (isCompact) {
@@ -107,7 +113,7 @@ fun AdminMainLayout(
                 drawerContent = {
                     ModalDrawerSheet(
                         modifier = Modifier
-                            .width(280.dp)
+                            .width(290.dp)
                             .fillMaxHeight(),
                         windowInsets = WindowInsets.statusBars
                     ) {
@@ -123,33 +129,87 @@ fun AdminMainLayout(
                                     .background(MaterialTheme.colorScheme.primaryContainer)
                                     .padding(20.dp)
                             ) {
-                                Text(
-                                    text = "WorkDaily Admin",
-                                    style = MaterialTheme.typography.titleLarge,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = adminEmail,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
-                                )
-                                Text(
-                                    text = "Role: $adminRole",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(36.dp)
+                                            .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(8.dp)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            Icons.Default.AdminPanelSettings,
+                                            contentDescription = null,
+                                            tint = Color.White,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Column {
+                                        Text(
+                                            text = "WorkDaily",
+                                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                                        )
+                                        Text(
+                                            text = "Admin Control Center",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                                        )
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(16.dp))
+
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.7f), RoundedCornerShape(8.dp))
+                                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(8.dp)
+                                            .background(Color(0xFF10B981), CircleShape)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = adminEmail,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = FontWeight.Medium,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                        Text(
+                                            text = "Role: $adminRole",
+                                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                            color = MaterialTheme.colorScheme.primary,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
                             }
 
                             Spacer(modifier = Modifier.height(8.dp))
 
                             AdminNavItem.values().forEach { item ->
+                                val selected = currentRoute == item.route
                                 NavigationDrawerItem(
-                                    icon = { Icon(item.icon, contentDescription = item.label) },
-                                    label = { Text(item.label) },
-                                    selected = currentRoute == item.route,
+                                    icon = {
+                                        Icon(
+                                            item.icon,
+                                            contentDescription = item.label,
+                                            tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    },
+                                    label = {
+                                        Text(
+                                            item.label,
+                                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
+                                        )
+                                    },
+                                    selected = selected,
                                     onClick = {
                                         coroutineScope.launch { drawerState.close() }
                                         navController.navigate(item.route) {
@@ -165,11 +225,23 @@ fun AdminMainLayout(
 
                             Spacer(modifier = Modifier.weight(1f, fill = false))
                             Spacer(modifier = Modifier.height(16.dp))
-                            HorizontalDivider()
+                            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
 
                             NavigationDrawerItem(
-                                icon = { Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Sign Out") },
-                                label = { Text("Sign Out") },
+                                icon = {
+                                    Icon(
+                                        Icons.AutoMirrored.Filled.ExitToApp,
+                                        contentDescription = "Sign Out",
+                                        tint = MaterialTheme.colorScheme.error
+                                    )
+                                },
+                                label = {
+                                    Text(
+                                        "Sign Out",
+                                        color = MaterialTheme.colorScheme.error,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                },
                                 selected = false,
                                 onClick = {
                                     coroutineScope.launch { drawerState.close() }
@@ -187,10 +259,18 @@ fun AdminMainLayout(
                         val activeItem = AdminNavItem.values().find { it.route == currentRoute }
                         TopAppBar(
                             title = {
-                                Text(
-                                    text = activeItem?.label ?: "WorkDaily Admin",
-                                    fontWeight = FontWeight.Bold
-                                )
+                                Column {
+                                    Text(
+                                        text = activeItem?.label ?: "WorkDaily Admin",
+                                        fontWeight = FontWeight.Bold,
+                                        style = MaterialTheme.typography.titleMedium
+                                    )
+                                    Text(
+                                        text = "Administration & Oversight",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
                             },
                             navigationIcon = {
                                 IconButton(onClick = { coroutineScope.launch { drawerState.open() } }) {
@@ -199,9 +279,16 @@ fun AdminMainLayout(
                             },
                             actions = {
                                 IconButton(onClick = { authViewModel.logout() }) {
-                                    Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Sign Out")
+                                    Icon(
+                                        Icons.AutoMirrored.Filled.ExitToApp,
+                                        contentDescription = "Sign Out",
+                                        tint = MaterialTheme.colorScheme.error
+                                    )
                                 }
-                            }
+                            },
+                            colors = TopAppBarDefaults.topAppBarColors(
+                                containerColor = MaterialTheme.colorScheme.surface
+                            )
                         )
                     }
                 ) { innerPadding ->
@@ -233,9 +320,27 @@ fun AdminMainLayout(
             Row(modifier = Modifier.fillMaxSize()) {
                 NavigationRail(
                     modifier = Modifier.fillMaxHeight(),
+                    containerColor = MaterialTheme.colorScheme.surface,
                     header = {
-                        IconButton(onClick = { authViewModel.logout() }) {
-                            Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Sign Out")
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.padding(vertical = 12.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(10.dp)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    Icons.Default.AdminPanelSettings,
+                                    contentDescription = "Admin Brand",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(12.dp))
+                            HorizontalDivider(modifier = Modifier.width(36.dp))
                         }
                     }
                 ) {
@@ -246,8 +351,9 @@ fun AdminMainLayout(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         AdminNavItem.values().forEach { item ->
+                            val selected = currentRoute == item.route
                             NavigationRailItem(
-                                selected = currentRoute == item.route,
+                                selected = selected,
                                 onClick = {
                                     navController.navigate(item.route) {
                                         popUpTo(navController.graph.findStartDestination().id) { saveState = true }
@@ -255,14 +361,44 @@ fun AdminMainLayout(
                                         restoreState = true
                                     }
                                 },
-                                icon = { Icon(item.icon, contentDescription = item.label) },
-                                label = { Text(item.label) }
+                                icon = {
+                                    Icon(
+                                        item.icon,
+                                        contentDescription = item.label,
+                                        tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                },
+                                label = {
+                                    Text(
+                                        item.label,
+                                        style = MaterialTheme.typography.labelSmall.copy(
+                                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
+                                        )
+                                    )
+                                }
                             )
                         }
                     }
+
+                    // Bottom Sign Out Action
+                    IconButton(
+                        onClick = { authViewModel.logout() },
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ExitToApp,
+                            contentDescription = "Sign Out",
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    }
                 }
 
-                Box(modifier = Modifier.weight(1f)) {
+                VerticalDivider(
+                    thickness = 1.dp,
+                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+                )
+
+                Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
                     AdminNavHost(
                         navController = navController,
                         dashboardViewModel = dashboardViewModel,

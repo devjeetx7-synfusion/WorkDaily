@@ -1,5 +1,8 @@
 package com.synfusion.workdailyadmin.ui.social
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -15,10 +18,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.synfusion.workdailyadmin.data.models.UserSummary
-import com.synfusion.workdailyadmin.ui.components.AdminSearchBar
-import com.synfusion.workdailyadmin.ui.components.TruncatedIdChip
-import com.synfusion.workdailyadmin.ui.components.UserAvatar
+import com.synfusion.workdailyadmin.ui.components.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,15 +38,21 @@ fun SocialManagementScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Social & Profile Governance", fontWeight = FontWeight.Bold) },
+                title = {
+                    Column {
+                        Text("Social & Profile Governance", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
+                        Text("Public profiles, creator badge verification & discovery", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                },
                 actions = {
                     IconButton(
                         onClick = { viewModel.loadSocialProfiles() },
                         enabled = uiState !is SocialUiState.Loading
                     ) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                        Icon(Icons.Default.Refresh, contentDescription = "Refresh Profiles")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
             )
         }
     ) { padding ->
@@ -52,7 +60,7 @@ fun SocialManagementScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
             AdminSearchBar(
                 query = searchQuery,
@@ -60,33 +68,30 @@ fun SocialManagementScreen(
                     viewModel.searchQuery.value = it
                     viewModel.loadSocialProfiles()
                 },
-                placeholderText = "Search public profiles..."
+                placeholderText = "Search creator by username, UID, or display name..."
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
             when (val state = uiState) {
                 is SocialUiState.Loading -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
-                    }
+                    AdminLoadingState(message = "Retrieving creator public profiles...")
                 }
                 is SocialUiState.Error -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(text = state.message, color = MaterialTheme.colorScheme.error)
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Button(onClick = { viewModel.loadSocialProfiles() }) {
-                                Text("Retry")
-                            }
-                        }
-                    }
+                    AdminErrorState(
+                        message = state.message,
+                        onRetry = { viewModel.loadSocialProfiles() }
+                    )
                 }
                 is SocialUiState.Success -> {
                     if (state.users.isEmpty()) {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text("No profiles match criteria.", style = MaterialTheme.typography.bodyLarge)
-                        }
+                        AdminEmptyState(
+                            title = "No Creator Profiles Found",
+                            description = if (searchQuery.isNotBlank()) "No social profiles matching \"$searchQuery\"." else "No public profiles currently registered.",
+                            icon = Icons.Default.Public,
+                            actionText = "Refresh",
+                            onActionClick = { viewModel.loadSocialProfiles() }
+                        )
                     } else {
                         LazyColumn(
                             verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -95,8 +100,9 @@ fun SocialManagementScreen(
                             items(state.users, key = { it.uid }) { user ->
                                 SocialProfileCard(
                                     user = user,
-                                    onToggleVerify = {
+                                    onToggleVerification = {
                                         selectedUser = user
+                                        reasonInput = ""
                                         showVerifyDialog = true
                                     }
                                 )
@@ -107,18 +113,31 @@ fun SocialManagementScreen(
             }
 
             if (showVerifyDialog && selectedUser != null) {
-                val isVer = selectedUser!!.isVerified
+                val target = selectedUser!!
+                val willVerify = !target.isVerified
+
                 AlertDialog(
                     onDismissRequest = { if (!isSubmitting) showVerifyDialog = false },
-                    title = { Text(if (isVer) "Remove Verification Badge" else "Grant Verification Badge") },
+                    title = {
+                        Text(
+                            text = if (willVerify) "Grant Verification Badge" else "Revoke Verification Badge",
+                            fontWeight = FontWeight.Bold
+                        )
+                    },
                     text = {
                         Column {
-                            Text("Provide administrative justification:")
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Please enter an administrative audit reason to ${if (willVerify) "grant verified status to" else "revoke verified status from"} ${target.displayName}:",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(10.dp))
                             OutlinedTextField(
                                 value = reasonInput,
                                 onValueChange = { reasonInput = it },
-                                placeholder = { Text("Reason...") },
+                                placeholder = { Text("Audit reason...") },
+                                singleLine = true,
+                                shape = RoundedCornerShape(8.dp),
                                 modifier = Modifier.fillMaxWidth()
                             )
                         }
@@ -126,24 +145,33 @@ fun SocialManagementScreen(
                     confirmButton = {
                         Button(
                             onClick = {
-                                if (reasonInput.isNotBlank() && !isSubmitting) {
+                                if (reasonInput.isNotBlank()) {
                                     isSubmitting = true
-                                    viewModel.toggleVerification(selectedUser!!.uid, isVer, reasonInput)
+                                    viewModel.toggleVerification(target.uid, target.isVerified, reasonInput)
                                     isSubmitting = false
                                     showVerifyDialog = false
-                                    reasonInput = ""
                                 }
                             },
-                            enabled = reasonInput.isNotBlank() && !isSubmitting
+                            enabled = reasonInput.isNotBlank() && !isSubmitting,
+                            shape = RoundedCornerShape(8.dp)
                         ) {
-                            Text(if (isVer) "Remove Badge" else "Grant Badge")
+                            if (isSubmitting) {
+                                CircularProgressIndicator(modifier = Modifier.size(16.dp), color = Color.White)
+                            } else {
+                                Text(if (willVerify) "Grant Badge" else "Revoke Badge")
+                            }
                         }
                     },
                     dismissButton = {
-                        OutlinedButton(onClick = { showVerifyDialog = false }) {
+                        OutlinedButton(
+                            onClick = { showVerifyDialog = false },
+                            enabled = !isSubmitting,
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
                             Text("Cancel")
                         }
-                    }
+                    },
+                    shape = RoundedCornerShape(16.dp)
                 )
             }
         }
@@ -153,13 +181,14 @@ fun SocialManagementScreen(
 @Composable
 fun SocialProfileCard(
     user: UserSummary,
-    onToggleVerify: () -> Unit
+    onToggleVerification: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
         shape = RoundedCornerShape(14.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp)
     ) {
         Row(
             modifier = Modifier
@@ -170,17 +199,22 @@ fun SocialProfileCard(
             UserAvatar(
                 photoUrl = user.photoUrl,
                 name = user.displayName,
-                size = 46
+                size = 50
             )
 
             Spacer(modifier = Modifier.width(14.dp))
 
-            Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.Center
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
                     Text(
-                        text = user.displayName,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
+                        text = user.displayName.ifBlank { "WorkDaily Member" },
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f, fill = false)
@@ -189,7 +223,7 @@ fun SocialProfileCard(
                         Spacer(modifier = Modifier.width(6.dp))
                         Icon(
                             imageVector = Icons.Default.Verified,
-                            contentDescription = "Verified",
+                            contentDescription = "Verified Badge",
                             tint = Color(0xFF3B82F6),
                             modifier = Modifier.size(16.dp)
                         )
@@ -201,6 +235,7 @@ fun SocialProfileCard(
                         text = "@${user.username}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Medium,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -214,13 +249,20 @@ fun SocialProfileCard(
             Spacer(modifier = Modifier.width(8.dp))
 
             OutlinedButton(
-                onClick = onToggleVerify,
-                shape = RoundedCornerShape(10.dp),
+                onClick = onToggleVerification,
+                shape = RoundedCornerShape(8.dp),
                 contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
             ) {
+                Icon(
+                    imageVector = if (user.isVerified) Icons.Default.VerifiedUser else Icons.Default.AddModerator,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = if (user.isVerified) Color(0xFF3B82F6) else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = if (user.isVerified) "Unverify" else "Verify",
-                    style = MaterialTheme.typography.labelSmall
+                    text = if (user.isVerified) "Verified" else "Verify",
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold)
                 )
             }
         }
