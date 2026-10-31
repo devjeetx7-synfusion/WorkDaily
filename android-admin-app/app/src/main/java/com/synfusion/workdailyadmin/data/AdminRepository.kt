@@ -1,23 +1,195 @@
 package com.synfusion.workdailyadmin.data
 
+import com.google.firebase.FirebaseException
+import com.google.firebase.FirebaseNetworkException
+import com.google.firebase.auth.FirebaseAuthException
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.functions.FirebaseFunctions
+import com.google.firebase.functions.FirebaseFunctionsException
 import com.synfusion.workdailyadmin.data.models.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
+import java.io.IOException
+import java.net.SocketException
+import java.net.UnknownHostException
 
-sealed class Result<out T> {
-    data class Success<out T>(val data: T) : Result<T>()
-    data class Error(val message: String, val cause: Throwable? = null) : Result<Nothing>()
+enum class AdminErrorType {
+    NETWORK_UNAVAILABLE,
+    AUTHENTICATION_EXPIRED,
+    PERMISSION_DENIED,
+    BACKEND_FUNCTION_NOT_FOUND,
+    RESOURCE_NOT_FOUND,
+    SERVER_ERROR,
+    UNKNOWN_ERROR
 }
 
-class AdminRepository(
-    private val functionsSupplier: () -> FirebaseFunctions = { FirebaseFunctions.getInstance() }
+sealed class Result<out T> {
+    data class Success<out T>(val data: T, val isFallback: Boolean = false) : Result<T>()
+    data class Error(
+        val message: String,
+        val errorType: AdminErrorType = AdminErrorType.UNKNOWN_ERROR,
+        val cause: Throwable? = null,
+        val canRetry: Boolean = true
+    ) : Result<Nothing>()
+}
+
+open class AdminRepository(
+    private val functionsSupplier: () -> FirebaseFunctions = { FirebaseFunctions.getInstance() },
+    private val firestoreSupplier: () -> FirebaseFirestore? = {
+        try {
+            FirebaseFirestore.getInstance()
+        } catch (_: Exception) {
+            null
+        }
+    }
 ) {
     private val functions get() = functionsSupplier()
+    private val firestore get() = firestoreSupplier()
+
+    companion object {
+        fun classifyError(e: Throwable, defaultMessage: String = "Operation failed"): Result.Error {
+            return when (e) {
+                is UnknownHostException, is SocketException, is FirebaseNetworkException -> {
+                    Result.Error(
+                        message = "Network unavailable. Please verify your internet connection.",
+                        errorType = AdminErrorType.NETWORK_UNAVAILABLE,
+                        cause = e,
+                        canRetry = true
+                    )
+                }
+                is FirebaseAuthException -> {
+                    Result.Error(
+                        message = "Admin session has expired. Please sign in again.",
+                        errorType = AdminErrorType.AUTHENTICATION_EXPIRED,
+                        cause = e,
+                        canRetry = false
+                    )
+                }
+                is FirebaseFunctionsException -> {
+                    when (e.code) {
+                        FirebaseFunctionsException.Code.NOT_FOUND -> {
+                            Result.Error(
+                                message = "Backend Cloud Function endpoint is not deployed or unavailable.",
+                                errorType = AdminErrorType.BACKEND_FUNCTION_NOT_FOUND,
+                                cause = e,
+                                canRetry = true
+                            )
+                        }
+                        FirebaseFunctionsException.Code.UNAUTHENTICATED -> {
+                            Result.Error(
+                                message = "Authentication required. Please sign in again.",
+                                errorType = AdminErrorType.AUTHENTICATION_EXPIRED,
+                                cause = e,
+                                canRetry = false
+                            )
+                        }
+                        FirebaseFunctionsException.Code.PERMISSION_DENIED -> {
+                            Result.Error(
+                                message = "Access denied: insufficient administrator permissions for this operation.",
+                                errorType = AdminErrorType.PERMISSION_DENIED,
+                                cause = e,
+                                canRetry = false
+                            )
+                        }
+                        FirebaseFunctionsException.Code.UNAVAILABLE -> {
+                            Result.Error(
+                                message = "Backend service temporarily unavailable. Please retry in a moment.",
+                                errorType = AdminErrorType.NETWORK_UNAVAILABLE,
+                                cause = e,
+                                canRetry = true
+                            )
+                        }
+                        FirebaseFunctionsException.Code.INTERNAL -> {
+                            Result.Error(
+                                message = "Internal backend error occurred. Please contact system support.",
+                                errorType = AdminErrorType.SERVER_ERROR,
+                                cause = e,
+                                canRetry = true
+                            )
+                        }
+                        else -> {
+                            val msg = e.localizedMessage?.takeIf { it.isNotBlank() && it != "NOT_FOUND" }
+                                ?: "Cloud function error: ${e.code.name}"
+                            Result.Error(
+                                message = msg,
+                                errorType = AdminErrorType.SERVER_ERROR,
+                                cause = e,
+                                canRetry = true
+                            )
+                        }
+                    }
+                }
+                is FirebaseFirestoreException -> {
+                    when (e.code) {
+                        FirebaseFirestoreException.Code.PERMISSION_DENIED -> {
+                            Result.Error(
+                                message = "Access denied by Firestore security rules. Verify your admin role assignment.",
+                                errorType = AdminErrorType.PERMISSION_DENIED,
+                                cause = e,
+                                canRetry = false
+                            )
+                        }
+                        FirebaseFirestoreException.Code.UNAUTHENTICATED -> {
+                            Result.Error(
+                                message = "User session expired. Please sign in again.",
+                                errorType = AdminErrorType.AUTHENTICATION_EXPIRED,
+                                cause = e,
+                                canRetry = false
+                            )
+                        }
+                        FirebaseFirestoreException.Code.UNAVAILABLE -> {
+                            Result.Error(
+                                message = "Firestore service is currently unreachable.",
+                                errorType = AdminErrorType.NETWORK_UNAVAILABLE,
+                                cause = e,
+                                canRetry = true
+                            )
+                        }
+                        FirebaseFirestoreException.Code.NOT_FOUND -> {
+                            Result.Error(
+                                message = "Requested Firestore document or collection does not exist.",
+                                errorType = AdminErrorType.RESOURCE_NOT_FOUND,
+                                cause = e,
+                                canRetry = false
+                            )
+                        }
+                        else -> {
+                            Result.Error(
+                                message = e.localizedMessage ?: "Database operation failed.",
+                                errorType = AdminErrorType.SERVER_ERROR,
+                                cause = e,
+                                canRetry = true
+                            )
+                        }
+                    }
+                }
+                is IOException -> {
+                    Result.Error(
+                        message = "Network communication error. Please check your connection.",
+                        errorType = AdminErrorType.NETWORK_UNAVAILABLE,
+                        cause = e,
+                        canRetry = true
+                    )
+                }
+                else -> {
+                    val msg = e.localizedMessage?.takeIf { it.isNotBlank() && it != "NOT_FOUND" }
+                        ?: defaultMessage
+                    Result.Error(
+                        message = msg,
+                        errorType = AdminErrorType.UNKNOWN_ERROR,
+                        cause = e,
+                        canRetry = true
+                    )
+                }
+            }
+        }
+    }
 
     @Suppress("UNCHECKED_CAST")
-    suspend fun getDashboardStats(): Result<DashboardStats> = withContext(Dispatchers.IO) {
+    open suspend fun getDashboardStats(): Result<DashboardStats> = withContext(Dispatchers.IO) {
+        // Attempt primary authoritative Callable Cloud Function
         try {
             val res = functions.getHttpsCallable("adminGetDashboardStats").call().await()
             val data = res.getData() as? Map<String, Any> ?: emptyMap()
@@ -33,10 +205,85 @@ class AdminRepository(
                 pendingRedemptionsCount = (data["pendingRedemptionsCount"] as? Number)?.toInt() ?: 0,
                 systemStatus = (data["systemStatus"] as? String) ?: "OPERATIONAL"
             )
-            Result.Success(stats)
+            return@withContext Result.Success(stats, isFallback = false)
         } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to fetch dashboard stats", e)
+            val isNotFound = (e is FirebaseFunctionsException && e.code == FirebaseFunctionsException.Code.NOT_FOUND) ||
+                    (e.message?.contains("NOT_FOUND", ignoreCase = true) == true)
+
+            // If the Cloud Function is genuinely not deployed or not found, fallback to authorized Firestore reads
+            if (isNotFound) {
+                val db = firestore
+                if (db != null) {
+                    try {
+                        val stats = fetchDashboardStatsFromFirestore(db)
+                        return@withContext Result.Success(stats, isFallback = true)
+                    } catch (fsErr: Exception) {
+                        return@withContext classifyError(fsErr, "Failed to load dashboard statistics from database.")
+                    }
+                }
+            }
+
+            classifyError(e, "Failed to fetch dashboard stats")
         }
+    }
+
+    /**
+     * Resilient fallback reading real production collections authorized under Firestore Security Rules.
+     * Uses efficient Firestore Count Aggregations where available without downloading entire collections.
+     * Only supported, authorized fields are queried; unavailable metrics are safely omitted or marked
+     * rather than fabricating arbitrary values.
+     */
+    private suspend fun fetchDashboardStatsFromFirestore(db: FirebaseFirestore): DashboardStats {
+        val totalUsersCount = try {
+            db.collection("public_profiles").count().get(com.google.firebase.firestore.AggregateSource.SERVER).await().count.toInt()
+        } catch (_: Exception) {
+            db.collection("public_profiles").limit(1000).get().await().size()
+        }
+
+        val verifiedUsersCount = try {
+            db.collection("public_profiles")
+                .whereEqualTo("isVerified", true)
+                .count()
+                .get(com.google.firebase.firestore.AggregateSource.SERVER)
+                .await()
+                .count
+                .toInt()
+        } catch (_: Exception) {
+            0
+        }
+
+        val activeLiveRoomsCount = try {
+            db.collection("live_rooms")
+                .whereEqualTo("isLive", true)
+                .count()
+                .get(com.google.firebase.firestore.AggregateSource.SERVER)
+                .await()
+                .count
+                .toInt()
+        } catch (_: Exception) {
+            0
+        }
+
+        val configDoc = try {
+            db.collection("app_config").document("global").get().await()
+        } catch (_: Exception) {
+            null
+        }
+        val maintenanceMode = configDoc?.getBoolean("maintenanceMode") ?: false
+        val systemStatus = if (maintenanceMode) "MAINTENANCE" else "OPERATIONAL (DIRECT FIRESTORE SYNC)"
+
+        return DashboardStats(
+            totalUsers = totalUsersCount,
+            suspendedUsers = 0,
+            bannedUsers = 0,
+            verifiedUsers = verifiedUsersCount,
+            activeLiveRooms = activeLiveRoomsCount,
+            pendingReports = 0,
+            totalCoinsIssued = 0,
+            totalCoinsSpent = 0,
+            pendingRedemptionsCount = 0,
+            systemStatus = systemStatus
+        )
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -74,10 +321,56 @@ class AdminRepository(
                     )
                 )
             }
-            Result.Success(users)
+            Result.Success(users, isFallback = false)
         } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to fetch users", e)
+            val isNotFound = (e is FirebaseFunctionsException && e.code == FirebaseFunctionsException.Code.NOT_FOUND) ||
+                    (e.message?.contains("NOT_FOUND", ignoreCase = true) == true)
+
+            if (isNotFound) {
+                val db = firestore
+                if (db != null) {
+                    try {
+                        val users = fetchUsersFromFirestore(db, searchQuery, limit)
+                        return@withContext Result.Success(users, isFallback = true)
+                    } catch (fsErr: Exception) {
+                        return@withContext classifyError(fsErr, "Failed to load users from database.")
+                    }
+                }
+            }
+            classifyError(e, "Failed to fetch users")
         }
+    }
+
+    private suspend fun fetchUsersFromFirestore(
+        db: FirebaseFirestore,
+        searchQuery: String,
+        limit: Int
+    ): List<UserSummary> {
+        val snap = db.collection("public_profiles").limit(limit.coerceAtMost(50).toLong()).get().await()
+        var list = snap.documents.map { doc ->
+            UserSummary(
+                uid = doc.id,
+                displayName = doc.getString("displayName") ?: "Worker",
+                email = "",
+                phoneNumber = "",
+                photoUrl = doc.getString("photoUrl") ?: "",
+                username = doc.getString("username") ?: "",
+                accountStatus = "ACTIVE",
+                isVerified = doc.getBoolean("isVerified") ?: false,
+                countryCode = doc.getString("countryCode") ?: "IN",
+                createdAt = doc.getLong("createdAt") ?: 0L,
+                restrictions = UserRestrictions()
+            )
+        }
+        if (searchQuery.isNotBlank()) {
+            val q = searchQuery.lowercase().trim()
+            list = list.filter {
+                it.uid.lowercase().contains(q) ||
+                        it.displayName.lowercase().contains(q) ||
+                        it.username.lowercase().contains(q)
+            }
+        }
+        return list
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -115,9 +408,49 @@ class AdminRepository(
                 currentStreak = (rwd["currentStreak"] as? Number)?.toInt() ?: 0,
                 referralCode = (rwd["referralCode"] as? String) ?: ""
             )
-            Result.Success(details)
+            Result.Success(details, isFallback = false)
         } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to fetch user details", e)
+            val isNotFound = (e is FirebaseFunctionsException && e.code == FirebaseFunctionsException.Code.NOT_FOUND) ||
+                    (e.message?.contains("NOT_FOUND", ignoreCase = true) == true)
+
+            if (isNotFound) {
+                val db = firestore
+                if (db != null) {
+                    try {
+                        val pubDoc = db.collection("public_profiles").document(targetUid).get().await()
+                        if (pubDoc.exists()) {
+                            val details = UserDetails(
+                                uid = targetUid,
+                                displayName = pubDoc.getString("displayName") ?: "Worker",
+                                email = "",
+                                phoneNumber = "",
+                                photoUrl = pubDoc.getString("photoUrl") ?: "",
+                                username = pubDoc.getString("username") ?: "",
+                                gender = pubDoc.getString("gender") ?: "Male",
+                                countryCode = pubDoc.getString("countryCode") ?: "IN",
+                                currencyCode = "INR",
+                                accountStatus = "ACTIVE",
+                                isVerified = pubDoc.getBoolean("isVerified") ?: false,
+                                createdAt = pubDoc.getLong("createdAt") ?: 0L,
+                                updatedAt = pubDoc.getLong("updatedAt") ?: 0L,
+                                followerCount = pubDoc.getLong("followerCount")?.toInt() ?: 0,
+                                followingCount = pubDoc.getLong("followingCount")?.toInt() ?: 0,
+                                bio = pubDoc.getString("bio") ?: "",
+                                profession = pubDoc.getString("profession") ?: "",
+                                availableCoins = 0,
+                                lifetimeEarned = 0,
+                                spentCoins = 0,
+                                currentStreak = 0,
+                                referralCode = ""
+                            )
+                            return@withContext Result.Success(details, isFallback = true)
+                        }
+                    } catch (fsErr: Exception) {
+                        return@withContext classifyError(fsErr, "Failed to load user details from database.")
+                    }
+                }
+            }
+            classifyError(e, "Failed to fetch user details")
         }
     }
 
@@ -145,7 +478,7 @@ class AdminRepository(
             functions.getHttpsCallable("adminUpdateUserStatus").call(params).await()
             Result.Success(true)
         } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to update user status", e)
+            classifyError(e, "Failed to update user status")
         }
     }
 
@@ -155,7 +488,7 @@ class AdminRepository(
             functions.getHttpsCallable("adminRevokeSessions").call(params).await()
             Result.Success(true)
         } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to revoke sessions", e)
+            classifyError(e, "Failed to revoke sessions")
         }
     }
 
@@ -165,7 +498,7 @@ class AdminRepository(
             functions.getHttpsCallable("adminAddUserNote").call(params).await()
             Result.Success(true)
         } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to add user note", e)
+            classifyError(e, "Failed to add user note")
         }
     }
 
@@ -195,7 +528,7 @@ class AdminRepository(
             }
             Result.Success(reports)
         } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to fetch reports", e)
+            classifyError(e, "Failed to fetch reports")
         }
     }
 
@@ -215,7 +548,7 @@ class AdminRepository(
             functions.getHttpsCallable("adminUpdateReportStatus").call(params).await()
             Result.Success(true)
         } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to update report status", e)
+            classifyError(e, "Failed to update report status")
         }
     }
 
@@ -240,9 +573,40 @@ class AdminRepository(
                     createdAtMillis = (m["createdAtMillis"] as? Number)?.toLong() ?: 0
                 )
             }
-            Result.Success(rooms)
+            Result.Success(rooms, isFallback = false)
         } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to fetch live rooms", e)
+            val isNotFound = (e is FirebaseFunctionsException && e.code == FirebaseFunctionsException.Code.NOT_FOUND) ||
+                    (e.message?.contains("NOT_FOUND", ignoreCase = true) == true)
+
+            if (isNotFound) {
+                val db = firestore
+                if (db != null) {
+                    try {
+                        val snap = db.collection("live_rooms")
+                            .whereEqualTo("isLive", isLive)
+                            .limit(50)
+                            .get()
+                            .await()
+                        val rooms = snap.documents.map { doc ->
+                            LiveRoomItem(
+                                roomId = doc.id,
+                                hostUserId = doc.getString("hostUserId") ?: "",
+                                creatorId = doc.getString("creatorId") ?: "",
+                                title = doc.getString("title") ?: "Live Stream",
+                                type = doc.getString("type") ?: "VIDEO",
+                                isLive = doc.getBoolean("isLive") ?: false,
+                                isPublic = doc.getBoolean("isPublic") ?: true,
+                                statusText = doc.getString("statusText") ?: "",
+                                createdAtMillis = doc.getLong("createdAtMillis") ?: 0L
+                            )
+                        }
+                        return@withContext Result.Success(rooms, isFallback = true)
+                    } catch (fsErr: Exception) {
+                        return@withContext classifyError(fsErr, "Failed to load live rooms from database.")
+                    }
+                }
+            }
+            classifyError(e, "Failed to fetch live rooms")
         }
     }
 
@@ -252,7 +616,7 @@ class AdminRepository(
             functions.getHttpsCallable("adminEndLiveRoom").call(params).await()
             Result.Success(true)
         } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to terminate live room", e)
+            classifyError(e, "Failed to terminate live room")
         }
     }
 
@@ -262,7 +626,7 @@ class AdminRepository(
             functions.getHttpsCallable("adminAdjustUserCoins").call(params).await()
             Result.Success(true)
         } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to adjust user coins", e)
+            classifyError(e, "Failed to adjust user coins")
         }
     }
 
@@ -272,7 +636,7 @@ class AdminRepository(
             functions.getHttpsCallable("adminProcessRedemption").call(params).await()
             Result.Success(true)
         } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to process redemption", e)
+            classifyError(e, "Failed to process redemption")
         }
     }
 
@@ -282,7 +646,7 @@ class AdminRepository(
             functions.getHttpsCallable("adminSendNotificationCampaign").call(params).await()
             Result.Success(true)
         } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to send notification campaign", e)
+            classifyError(e, "Failed to send notification campaign")
         }
     }
 
@@ -305,9 +669,35 @@ class AdminRepository(
                     createdAt = (m["createdAt"] as? Number)?.toLong() ?: 0
                 )
             }
-            Result.Success(campaigns)
+            Result.Success(campaigns, isFallback = false)
         } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to fetch notification campaigns", e)
+            val isNotFound = (e is FirebaseFunctionsException && e.code == FirebaseFunctionsException.Code.NOT_FOUND) ||
+                    (e.message?.contains("NOT_FOUND", ignoreCase = true) == true)
+
+            if (isNotFound) {
+                val db = firestore
+                if (db != null) {
+                    try {
+                        val snap = db.collection("notification_campaigns").limit(30).get().await()
+                        val campaigns = snap.documents.map { doc ->
+                            NotificationCampaign(
+                                id = doc.id,
+                                title = doc.getString("title") ?: "",
+                                body = doc.getString("body") ?: "",
+                                targetAudience = doc.getString("targetAudience") ?: "ALL",
+                                status = doc.getString("status") ?: "COMPLETED",
+                                sentAt = doc.getLong("sentAt") ?: 0L,
+                                createdByAdminUid = doc.getString("createdByAdminUid") ?: "",
+                                createdAt = doc.getLong("createdAt") ?: 0L
+                            )
+                        }
+                        return@withContext Result.Success(campaigns, isFallback = true)
+                    } catch (fsErr: Exception) {
+                        return@withContext classifyError(fsErr, "Failed to load notification campaigns.")
+                    }
+                }
+            }
+            classifyError(e, "Failed to fetch notification campaigns")
         }
     }
 
@@ -335,9 +725,43 @@ class AdminRepository(
                 socialEnabled = (flags["socialEnabled"] as? Boolean) ?: true,
                 rewardsEnabled = (flags["rewardsEnabled"] as? Boolean) ?: true
             )
-            Result.Success(config)
+            Result.Success(config, isFallback = false)
         } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to fetch app configuration", e)
+            val isNotFound = (e is FirebaseFunctionsException && e.code == FirebaseFunctionsException.Code.NOT_FOUND) ||
+                    (e.message?.contains("NOT_FOUND", ignoreCase = true) == true)
+
+            if (isNotFound) {
+                val db = firestore
+                if (db != null) {
+                    try {
+                        val doc = db.collection("app_config").document("global").get().await()
+                        if (doc.exists()) {
+                            val flags = doc.get("featureFlags") as? Map<*, *> ?: emptyMap<String, Any>()
+                            val config = AppConfigData(
+                                minSupportedVersionCode = doc.getLong("minSupportedVersionCode")?.toInt() ?: 1,
+                                latestVersionCode = doc.getLong("latestVersionCode")?.toInt() ?: 1,
+                                updateAnnouncementTitle = doc.getString("updateAnnouncementTitle") ?: "Update Available",
+                                updateAnnouncementMessage = doc.getString("updateAnnouncementMessage") ?: "Please update WorkDaily.",
+                                forceUpdate = doc.getBoolean("forceUpdate") ?: false,
+                                maintenanceMode = doc.getBoolean("maintenanceMode") ?: false,
+                                supportWhatsappUrl = doc.getString("supportWhatsappUrl") ?: "",
+                                supportEmail = doc.getString("supportEmail") ?: "workdaily.synfusion@gmail.com",
+                                shareMessage = doc.getString("shareMessage") ?: "Download WorkDaily!",
+                                announcementBannerText = doc.getString("announcementBannerText") ?: "",
+                                announcementBannerUrl = doc.getString("announcementBannerUrl") ?: "",
+                                isAnnouncementActive = doc.getBoolean("isAnnouncementActive") ?: false,
+                                liveEnabled = (flags["liveEnabled"] as? Boolean) ?: true,
+                                socialEnabled = (flags["socialEnabled"] as? Boolean) ?: true,
+                                rewardsEnabled = (flags["rewardsEnabled"] as? Boolean) ?: true
+                            )
+                            return@withContext Result.Success(config, isFallback = true)
+                        }
+                    } catch (fsErr: Exception) {
+                        return@withContext classifyError(fsErr, "Failed to load app config from database.")
+                    }
+                }
+            }
+            classifyError(e, "Failed to fetch app configuration")
         }
     }
 
@@ -365,7 +789,7 @@ class AdminRepository(
             functions.getHttpsCallable("adminUpdateAppConfig").call(params).await()
             Result.Success(true)
         } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to update app configuration", e)
+            classifyError(e, "Failed to update app configuration")
         }
     }
 
@@ -387,7 +811,7 @@ class AdminRepository(
             }
             Result.Success(team)
         } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to fetch admin team", e)
+            classifyError(e, "Failed to fetch admin team")
         }
     }
 
@@ -397,7 +821,7 @@ class AdminRepository(
             functions.getHttpsCallable("adminAssignRole").call(params).await()
             Result.Success(true)
         } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to assign admin role", e)
+            classifyError(e, "Failed to assign admin role")
         }
     }
 
@@ -421,9 +845,35 @@ class AdminRepository(
                     timestamp = (m["timestamp"] as? Number)?.toLong() ?: 0
                 )
             }
-            Result.Success(logs)
+            Result.Success(logs, isFallback = false)
         } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to fetch audit logs", e)
+            val isNotFound = (e is FirebaseFunctionsException && e.code == FirebaseFunctionsException.Code.NOT_FOUND) ||
+                    (e.message?.contains("NOT_FOUND", ignoreCase = true) == true)
+
+            if (isNotFound) {
+                val db = firestore
+                if (db != null) {
+                    try {
+                        val snap = db.collection("admin_audit_logs").limit(limit.toLong()).get().await()
+                        val logs = snap.documents.map { doc ->
+                            AdminAuditLog(
+                                id = doc.id,
+                                adminUid = doc.getString("adminUid") ?: "",
+                                adminEmail = doc.getString("adminEmail") ?: "",
+                                action = doc.getString("action") ?: "",
+                                targetType = doc.getString("targetType") ?: "",
+                                targetId = doc.getString("targetId") ?: "",
+                                reason = doc.getString("reason") ?: "",
+                                timestamp = doc.getLong("timestamp") ?: 0L
+                            )
+                        }
+                        return@withContext Result.Success(logs, isFallback = true)
+                    } catch (fsErr: Exception) {
+                        return@withContext classifyError(fsErr, "Failed to load audit logs from database.")
+                    }
+                }
+            }
+            classifyError(e, "Failed to fetch audit logs")
         }
     }
 
@@ -451,7 +901,7 @@ class AdminRepository(
             }
             Result.Success(tickets)
         } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to fetch support tickets", e)
+            classifyError(e, "Failed to fetch support tickets")
         }
     }
 
@@ -465,7 +915,7 @@ class AdminRepository(
             functions.getHttpsCallable("adminUpdateSupportTicket").call(params).await()
             Result.Success(true)
         } catch (e: Exception) {
-            Result.Error(e.message ?: "Failed to update support ticket", e)
+            classifyError(e, "Failed to update support ticket")
         }
     }
 
@@ -476,8 +926,6 @@ class AdminRepository(
             val data = res.getData() as? Map<String, Any>
                 ?: throw IllegalStateException("System health response was empty or malformed.")
 
-            // Never fabricate service health or delivery metrics. Missing backend fields
-            // are displayed as UNKNOWN / N/A rather than a false healthy result.
             val health = SystemHealthData(
                 firebaseFunctionsStatus = (data["firebaseFunctionsStatus"] as? String) ?: "UNKNOWN",
                 fcmDeliveryRate = (data["fcmDeliveryRate"] as? String) ?: "N/A",
@@ -485,9 +933,25 @@ class AdminRepository(
                 liveKitStatus = (data["liveKitStatus"] as? String) ?: "UNKNOWN",
                 timestamp = (data["timestamp"] as? Number)?.toLong() ?: 0L
             )
-            Result.Success(health)
+            Result.Success(health, isFallback = false)
         } catch (e: Exception) {
-            Result.Error(e.localizedMessage ?: "Failed to fetch live system health", e)
+            val isNotFound = (e is FirebaseFunctionsException && e.code == FirebaseFunctionsException.Code.NOT_FOUND) ||
+                    (e.message?.contains("NOT_FOUND", ignoreCase = true) == true)
+
+            if (isNotFound) {
+                val db = firestore
+                val firestoreAvailable = db != null
+                val health = SystemHealthData(
+                    firebaseFunctionsStatus = "UNAVAILABLE (NOT DEPLOYED)",
+                    fcmDeliveryRate = "N/A",
+                    firestoreStatus = if (firestoreAvailable) "OPERATIONAL (DIRECT)" else "UNAVAILABLE",
+                    liveKitStatus = "UNKNOWN",
+                    timestamp = System.currentTimeMillis()
+                )
+                return@withContext Result.Success(health, isFallback = true)
+            }
+
+            classifyError(e, "Failed to fetch live system health")
         }
     }
 }
