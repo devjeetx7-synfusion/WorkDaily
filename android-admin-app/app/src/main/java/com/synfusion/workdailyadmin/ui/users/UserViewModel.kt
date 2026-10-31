@@ -7,6 +7,8 @@ import com.synfusion.workdailyadmin.data.Result
 import com.synfusion.workdailyadmin.data.models.UserDetails
 import com.synfusion.workdailyadmin.data.models.UserRestrictions
 import com.synfusion.workdailyadmin.data.models.UserSummary
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -35,10 +37,26 @@ class UserViewModel @JvmOverloads constructor(
     private val _userDetailState = MutableStateFlow<UserDetailState>(UserDetailState.Idle)
     val userDetailState: StateFlow<UserDetailState> = _userDetailState.asStateFlow()
 
-    var searchQuery = MutableStateFlow("")
-    var statusFilter = MutableStateFlow<String?>(null)
+    val searchQuery = MutableStateFlow("")
+    val statusFilter = MutableStateFlow<String?>(null)
+
+    private var searchJob: Job? = null
 
     init {
+        loadUsers()
+    }
+
+    fun onSearchQueryChanged(newQuery: String) {
+        searchQuery.value = newQuery
+        searchJob?.cancel()
+        searchJob = viewModelScope.launch {
+            delay(300) // Debounce rapid keystrokes by 300ms
+            loadUsers()
+        }
+    }
+
+    fun onStatusFilterChanged(newStatus: String?) {
+        statusFilter.value = newStatus
         loadUsers()
     }
 

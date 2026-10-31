@@ -1,8 +1,10 @@
 package com.synfusion.workdailyadmin.ui.reports
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -15,6 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.synfusion.workdailyadmin.data.models.ReportItem
 import com.synfusion.workdailyadmin.ui.components.StatusChip
+import com.synfusion.workdailyadmin.ui.components.TruncatedIdChip
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,6 +31,7 @@ fun ReportsScreen(
     var selectedReport by remember { mutableStateOf<ReportItem?>(null) }
     var actionStatus by remember { mutableStateOf("RESOLVED") }
     var resolutionReason by remember { mutableStateOf("") }
+    var isSubmitting by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -45,11 +49,13 @@ fun ReportsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp)
+                .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
-            // Status Tabs
+            // Horizontally scrollable status filter chips
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 FilterChip(
@@ -61,20 +67,20 @@ fun ReportsScreen(
                     label = { Text("Pending") }
                 )
                 FilterChip(
-                    selected = statusFilter == "REVIEWING",
-                    onClick = {
-                        viewModel.statusFilter.value = "REVIEWING"
-                        viewModel.loadReports()
-                    },
-                    label = { Text("Reviewing") }
-                )
-                FilterChip(
                     selected = statusFilter == "RESOLVED",
                     onClick = {
                         viewModel.statusFilter.value = "RESOLVED"
                         viewModel.loadReports()
                     },
                     label = { Text("Resolved") }
+                )
+                FilterChip(
+                    selected = statusFilter == "IGNORED",
+                    onClick = {
+                        viewModel.statusFilter.value = "IGNORED"
+                        viewModel.loadReports()
+                    },
+                    label = { Text("Dismissed") }
                 )
             }
 
@@ -90,89 +96,35 @@ fun ReportsScreen(
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(text = state.message, color = MaterialTheme.colorScheme.error)
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Button(onClick = { viewModel.loadReports() }) { Text("Retry") }
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Button(onClick = { viewModel.loadReports() }) {
+                                Text("Retry")
+                            }
                         }
                     }
                 }
                 is ReportsUiState.Success -> {
                     if (state.reports.isEmpty()) {
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text("No $statusFilter reports found in moderation queue.")
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(Icons.Default.DoneAll, contentDescription = null, modifier = Modifier.size(56.dp), tint = Color.Gray)
+                                Spacer(modifier = Modifier.height(12.dp))
+                                Text("No reports in this category.", style = MaterialTheme.typography.bodyLarge)
+                            }
                         }
                     } else {
                         LazyColumn(
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
                             modifier = Modifier.fillMaxSize()
                         ) {
-                            items(state.reports) { report ->
-                                Card(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                                    shape = RoundedCornerShape(12.dp)
-                                ) {
-                                    Column(modifier = Modifier.padding(16.dp)) {
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Text(
-                                                text = "Reason: ${report.reason}",
-                                                style = MaterialTheme.typography.titleMedium,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                            val pColor = when (report.priority) {
-                                                "CRITICAL" -> Color(0xFFEF4444)
-                                                "HIGH" -> Color(0xFFF59E0B)
-                                                else -> Color(0xFF3B82F6)
-                                            }
-                                            StatusChip(text = report.priority, color = pColor)
-                                        }
-
-                                        if (report.details.isNotBlank()) {
-                                            Spacer(modifier = Modifier.height(4.dp))
-                                            Text(
-                                                text = "Details: ${report.details}",
-                                                style = MaterialTheme.typography.bodyMedium
-                                            )
-                                        }
-
-                                        Spacer(modifier = Modifier.height(8.dp))
-                                        Text(text = "Target UID: ${report.targetUid}", style = MaterialTheme.typography.bodySmall)
-                                        Text(text = "Reporter UID: ${report.reporterUid}", style = MaterialTheme.typography.bodySmall)
-
-                                        if (report.status == "PENDING" || report.status == "REVIEWING") {
-                                            Spacer(modifier = Modifier.height(12.dp))
-                                            Row(
-                                                modifier = Modifier.fillMaxWidth(),
-                                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                            ) {
-                                                Button(
-                                                    onClick = {
-                                                        selectedReport = report
-                                                        actionStatus = "RESOLVED"
-                                                        showResolveDialog = true
-                                                    },
-                                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981)),
-                                                    modifier = Modifier.weight(1f)
-                                                ) {
-                                                    Text("Resolve")
-                                                }
-                                                OutlinedButton(
-                                                    onClick = {
-                                                        selectedReport = report
-                                                        actionStatus = "IGNORED"
-                                                        showResolveDialog = true
-                                                    },
-                                                    modifier = Modifier.weight(1f)
-                                                ) {
-                                                    Text("Dismiss")
-                                                }
-                                            }
-                                        }
+                            items(state.reports, key = { it.id }) { report ->
+                                ReportItemCard(
+                                    report = report,
+                                    onTakeAction = {
+                                        selectedReport = report
+                                        showResolveDialog = true
                                     }
-                                }
+                                )
                             }
                         }
                     }
@@ -180,18 +132,30 @@ fun ReportsScreen(
             }
 
             if (showResolveDialog && selectedReport != null) {
-                val rep = selectedReport!!
                 AlertDialog(
-                    onDismissRequest = { showResolveDialog = false },
-                    title = { Text("Report Decision: $actionStatus") },
+                    onDismissRequest = { if (!isSubmitting) showResolveDialog = false },
+                    title = { Text("Resolve Report") },
                     text = {
                         Column {
-                            Text("Resolution notes / reason:")
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Text("Take moderation action on report #${selectedReport!!.id}:")
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                FilterChip(
+                                    selected = actionStatus == "RESOLVED",
+                                    onClick = { actionStatus = "RESOLVED" },
+                                    label = { Text("Resolve") }
+                                )
+                                FilterChip(
+                                    selected = actionStatus == "IGNORED",
+                                    onClick = { actionStatus = "IGNORED" },
+                                    label = { Text("Dismiss") }
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(12.dp))
                             OutlinedTextField(
                                 value = resolutionReason,
                                 onValueChange = { resolutionReason = it },
-                                placeholder = { Text("Resolution reason...") },
+                                placeholder = { Text("Action reason...") },
                                 modifier = Modifier.fillMaxWidth()
                             )
                         }
@@ -199,23 +163,92 @@ fun ReportsScreen(
                     confirmButton = {
                         Button(
                             onClick = {
-                                if (resolutionReason.isNotBlank()) {
-                                    showResolveDialog = false
-                                    viewModel.updateReportStatus(rep.id, actionStatus, resolutionReason) { _, _ -> }
-                                    resolutionReason = ""
+                                if (resolutionReason.isNotBlank() && !isSubmitting) {
+                                    isSubmitting = true
+                                    viewModel.updateReportStatus(selectedReport!!.id, actionStatus, resolutionReason) { success, _ ->
+                                        isSubmitting = false
+                                        if (success) {
+                                            showResolveDialog = false
+                                            resolutionReason = ""
+                                        }
+                                    }
                                 }
                             },
-                            enabled = resolutionReason.isNotBlank()
+                            enabled = resolutionReason.isNotBlank() && !isSubmitting
                         ) {
-                            Text("Execute")
+                            Text("Submit Action")
                         }
                     },
                     dismissButton = {
-                        OutlinedButton(onClick = { showResolveDialog = false }) {
+                        OutlinedButton(onClick = { showResolveDialog = false }, enabled = !isSubmitting) {
                             Text("Cancel")
                         }
                     }
                 )
+            }
+        }
+    }
+}
+
+@Composable
+fun ReportItemCard(
+    report: ReportItem,
+    onTakeAction: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        shape = RoundedCornerShape(14.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = report.reason.ifBlank { "Unspecified Violation" },
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                val statusColor = when (report.status) {
+                    "PENDING" -> Color(0xFFEF4444)
+                    "RESOLVED" -> Color(0xFF10B981)
+                    else -> Color.Gray
+                }
+                StatusChip(text = report.status, color = statusColor)
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            if (report.details.isNotBlank()) {
+                Text(
+                    text = report.details,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                TruncatedIdChip(id = report.reporterUid, prefix = "Reporter: ", maxLength = 14)
+                TruncatedIdChip(id = report.targetUid, prefix = "Target: ", maxLength = 14)
+            }
+
+            if (report.status == "PENDING") {
+                Spacer(modifier = Modifier.height(12.dp))
+                Button(
+                    onClick = onTakeAction,
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier.align(Alignment.End)
+                ) {
+                    Text("Moderate Report")
+                }
             }
         }
     }

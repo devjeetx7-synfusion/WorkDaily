@@ -2,8 +2,10 @@ package com.synfusion.workdailyadmin.ui.users
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -12,8 +14,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.synfusion.workdailyadmin.ui.components.ConfirmationDialog
 import com.synfusion.workdailyadmin.ui.components.StatusChip
+import com.synfusion.workdailyadmin.ui.components.TruncatedIdChip
+import com.synfusion.workdailyadmin.ui.components.UserAvatar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,7 +42,7 @@ fun UserDetailScreen(
                 title = { Text("User Profile Details", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
             )
@@ -56,11 +59,15 @@ fun UserDetailScreen(
                 }
                 is UserDetailState.Error -> {
                     Column(
-                        modifier = Modifier.align(Alignment.Center),
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .padding(24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text(text = state.message, color = MaterialTheme.colorScheme.error)
+                        Icon(Icons.Default.ErrorOutline, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(48.dp))
                         Spacer(modifier = Modifier.height(8.dp))
+                        Text(text = state.message, color = MaterialTheme.colorScheme.error)
+                        Spacer(modifier = Modifier.height(16.dp))
                         Button(onClick = { viewModel.loadUserDetails(targetUid) }) {
                             Text("Retry")
                         }
@@ -77,15 +84,21 @@ fun UserDetailScreen(
                         // User Header Card
                         Card(
                             modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            shape = RoundedCornerShape(16.dp)
                         ) {
                             Column(modifier = Modifier.padding(16.dp)) {
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Column {
+                                    UserAvatar(
+                                        photoUrl = u.photoUrl,
+                                        name = u.displayName,
+                                        size = 64
+                                    )
+                                    Spacer(modifier = Modifier.width(16.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                             Text(
                                                 text = u.displayName,
@@ -110,6 +123,7 @@ fun UserDetailScreen(
                                             )
                                         }
                                     }
+
                                     val statusColor = when (u.accountStatus) {
                                         "ACTIVE" -> Color(0xFF10B981)
                                         "SUSPENDED" -> Color(0xFFF59E0B)
@@ -119,14 +133,26 @@ fun UserDetailScreen(
                                     StatusChip(text = u.accountStatus, color = statusColor)
                                 }
 
-                                Spacer(modifier = Modifier.height(12.dp))
-                                Divider()
-                                Spacer(modifier = Modifier.height(12.dp))
+                                Spacer(modifier = Modifier.height(16.dp))
+                                HorizontalDivider()
+                                Spacer(modifier = Modifier.height(16.dp))
 
-                                Text(text = "UID: ${u.uid}", style = MaterialTheme.typography.bodySmall)
-                                Text(text = "Email: ${u.email.ifBlank { "N/A" }}", style = MaterialTheme.typography.bodySmall)
-                                Text(text = "Phone: ${u.phoneNumber.ifBlank { "N/A" }}", style = MaterialTheme.typography.bodySmall)
-                                Text(text = "Country: ${u.countryCode} (${u.currencyCode})", style = MaterialTheme.typography.bodySmall)
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.padding(vertical = 2.dp)
+                                ) {
+                                    Text(text = "User ID: ", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold)
+                                    TruncatedIdChip(id = u.uid, prefix = "", maxLength = 24)
+                                }
+                                Text(text = "Email: ${u.email.ifBlank { "N/A" }}", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(vertical = 2.dp))
+                                Text(text = "Phone: ${u.phoneNumber.ifBlank { "N/A" }}", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(vertical = 2.dp))
+                                Text(text = "Country & Currency: ${u.countryCode} (${u.currencyCode})", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(vertical = 2.dp))
+                                if (u.profession.isNotBlank()) {
+                                    Text(text = "Profession: ${u.profession}", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(vertical = 2.dp))
+                                }
+                                if (u.bio.isNotBlank()) {
+                                    Text(text = "Bio: ${u.bio}", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(vertical = 2.dp))
+                                }
                             }
                         }
 
@@ -213,7 +239,8 @@ fun UserDetailScreen(
                         // Social & Rewards Summary
                         Card(
                             modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            shape = RoundedCornerShape(16.dp)
                         ) {
                             Column(modifier = Modifier.padding(16.dp)) {
                                 Text(
@@ -236,7 +263,8 @@ fun UserDetailScreen(
                         // Internal Admin Notes Section
                         Card(
                             modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            shape = RoundedCornerShape(16.dp)
                         ) {
                             Column(modifier = Modifier.padding(16.dp)) {
                                 Text(

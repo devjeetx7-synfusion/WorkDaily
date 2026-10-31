@@ -264,6 +264,30 @@ open class AdminRepository(
             0
         }
 
+        val pendingReportsCount = try {
+            db.collection("reports")
+                .whereEqualTo("status", "PENDING")
+                .count()
+                .get(com.google.firebase.firestore.AggregateSource.SERVER)
+                .await()
+                .count
+                .toInt()
+        } catch (_: Exception) {
+            0
+        }
+
+        val openTicketsCount = try {
+            db.collection("support_tickets")
+                .whereEqualTo("status", "OPEN")
+                .count()
+                .get(com.google.firebase.firestore.AggregateSource.SERVER)
+                .await()
+                .count
+                .toInt()
+        } catch (_: Exception) {
+            0
+        }
+
         val configDoc = try {
             db.collection("app_config").document("global").get().await()
         } catch (_: Exception) {
@@ -278,10 +302,10 @@ open class AdminRepository(
             bannedUsers = 0,
             verifiedUsers = verifiedUsersCount,
             activeLiveRooms = activeLiveRoomsCount,
-            pendingReports = 0,
+            pendingReports = pendingReportsCount,
             totalCoinsIssued = 0,
             totalCoinsSpent = 0,
-            pendingRedemptionsCount = 0,
+            pendingRedemptionsCount = openTicketsCount,
             systemStatus = systemStatus
         )
     }
