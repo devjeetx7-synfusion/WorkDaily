@@ -32,6 +32,10 @@ android {
         }
     }
 
+    testOptions {
+        unitTests.isReturnDefaultValues = true
+    }
+
     signingConfigs {
         val releaseKeystore = file("../keystore/admin-release.jks")
         if (releaseKeystore.exists()) {

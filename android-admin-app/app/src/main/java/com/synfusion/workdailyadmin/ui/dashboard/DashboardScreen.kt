@@ -12,7 +12,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.synfusion.workdailyadmin.data.AdminErrorType
 import com.synfusion.workdailyadmin.ui.components.KpiCard
 import com.synfusion.workdailyadmin.ui.components.StatusChip
 
@@ -33,7 +35,7 @@ fun DashboardScreen(
                 title = { Text("Admin Portal Dashboard", fontWeight = FontWeight.Bold) },
                 actions = {
                     IconButton(
-                        onClick = { viewModel.loadDashboardStats() },
+                        onClick = { viewModel.loadDashboardStats(force = true) },
                         enabled = uiState !is DashboardUiState.Loading
                     ) {
                         Icon(Icons.Default.Refresh, contentDescription = "Refresh Data")
@@ -59,21 +61,60 @@ fun DashboardScreen(
                     }
                 }
                 is DashboardUiState.Error -> {
+                    val icon = when (state.errorType) {
+                        AdminErrorType.NETWORK_UNAVAILABLE -> Icons.Default.WifiOff
+                        AdminErrorType.AUTHENTICATION_EXPIRED -> Icons.Default.Lock
+                        AdminErrorType.PERMISSION_DENIED -> Icons.Default.Security
+                        AdminErrorType.BACKEND_FUNCTION_NOT_FOUND -> Icons.Default.CloudQueue
+                        AdminErrorType.RESOURCE_NOT_FOUND -> Icons.Default.SearchOff
+                        else -> Icons.Default.CloudOff
+                    }
+
+                    val title = when (state.errorType) {
+                        AdminErrorType.NETWORK_UNAVAILABLE -> "Connection Unavailable"
+                        AdminErrorType.AUTHENTICATION_EXPIRED -> "Session Expired"
+                        AdminErrorType.PERMISSION_DENIED -> "Access Restricted"
+                        AdminErrorType.BACKEND_FUNCTION_NOT_FOUND -> "Backend Service Unavailable"
+                        AdminErrorType.RESOURCE_NOT_FOUND -> "Resource Not Found"
+                        else -> "Sync Failure"
+                    }
+
                     Column(
-                        modifier = Modifier.align(Alignment.Center),
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .padding(horizontal = 32.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Icon(
-                            imageVector = Icons.Default.CloudOff,
+                            imageVector = icon,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.size(48.dp)
+                            modifier = Modifier.size(56.dp)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = title,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.error
                         )
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text(text = state.message, color = MaterialTheme.colorScheme.error)
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Button(onClick = { viewModel.loadDashboardStats() }) {
-                            Text("Retry Network Sync")
+                        Text(
+                            text = state.message,
+                            style = MaterialTheme.typography.bodyMedium,
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(24.dp))
+                        if (state.canRetry) {
+                            Button(
+                                onClick = { viewModel.loadDashboardStats(force = true) },
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Retry Network Sync")
+                            }
                         }
                     }
                 }
@@ -98,20 +139,25 @@ fun DashboardScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Column {
+                                Column(modifier = Modifier.weight(1f)) {
                                     Text(
                                         text = "System Operational Health",
                                         style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.Bold
                                     )
+                                    val subText = if (state.isFallback) {
+                                        "Connected via Direct Firestore Resilient Sync"
+                                    } else {
+                                        "Firebase Services & LiveKit Managed Nodes"
+                                    }
                                     Text(
-                                        text = "Firebase Services & LiveKit Managed Nodes",
+                                        text = subText,
                                         style = MaterialTheme.typography.bodySmall
                                     )
                                 }
                                 StatusChip(
                                     text = stats.systemStatus,
-                                    color = Color(0xFF10B981)
+                                    color = if (state.isFallback) Color(0xFF3B82F6) else Color(0xFF10B981)
                                 )
                             }
                         }
