@@ -354,7 +354,7 @@ open class AdminRepository(
                 val db = firestore
                 if (db != null) {
                     try {
-                        val users = fetchUsersFromFirestore(db, searchQuery, limit)
+                        val users = fetchUsersFromFirestore(db, searchQuery, accountStatus, limit)
                         return@withContext Result.Success(users, isFallback = true)
                     } catch (fsErr: Exception) {
                         return@withContext classifyError(fsErr, "Failed to load users from database.")
@@ -368,6 +368,7 @@ open class AdminRepository(
     private suspend fun fetchUsersFromFirestore(
         db: FirebaseFirestore,
         searchQuery: String,
+        accountStatus: String?,
         limit: Int
     ): List<UserSummary> {
         val snap = db.collection("public_profiles").limit(limit.coerceAtMost(50).toLong()).get().await()
@@ -379,12 +380,15 @@ open class AdminRepository(
                 phoneNumber = "",
                 photoUrl = doc.getString("photoUrl") ?: "",
                 username = doc.getString("username") ?: "",
-                accountStatus = "ACTIVE",
+                accountStatus = doc.getString("accountStatus") ?: "ACTIVE",
                 isVerified = doc.getBoolean("isVerified") ?: false,
                 countryCode = doc.getString("countryCode") ?: "IN",
                 createdAt = doc.getLong("createdAt") ?: 0L,
                 restrictions = UserRestrictions()
             )
+        }
+        if (!accountStatus.isNullOrBlank()) {
+            list = list.filter { it.accountStatus.equals(accountStatus, ignoreCase = true) }
         }
         if (searchQuery.isNotBlank()) {
             val q = searchQuery.lowercase().trim()

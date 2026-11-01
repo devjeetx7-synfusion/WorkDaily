@@ -443,7 +443,12 @@ private fun AdminNavHost(
         composable("dashboard") {
             DashboardScreen(
                 viewModel = dashboardViewModel,
-                onNavigateUsers = { navController.navigate("users") },
+                onNavigateUsers = { statusFilter ->
+                    if (statusFilter != null) {
+                        userViewModel.onStatusFilterChanged(statusFilter)
+                    }
+                    navController.navigate("users")
+                },
                 onNavigateReports = { navController.navigate("reports") },
                 onNavigateLive = { navController.navigate("live") },
                 onNavigateRewards = { navController.navigate("rewards") }

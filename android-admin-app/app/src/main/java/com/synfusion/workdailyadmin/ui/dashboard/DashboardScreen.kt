@@ -26,362 +26,347 @@ import com.synfusion.workdailyadmin.ui.components.*
 import java.text.SimpleDateFormat
 import java.util.*
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
     viewModel: DashboardViewModel,
-    onNavigateUsers: () -> Unit,
+    onNavigateUsers: (statusFilter: String?) -> Unit,
     onNavigateReports: () -> Unit,
     onNavigateLive: () -> Unit,
     onNavigateRewards: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-                        Text(
-                            text = "Executive Dashboard",
-                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
-                        )
-                        Text(
-                            text = "Platform metrics, activity and system status",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(
-                        onClick = { viewModel.loadDashboardStats() },
-                        enabled = uiState !is DashboardUiState.Loading
-                    ) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Refresh Data")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
+        when (val state = uiState) {
+            is DashboardUiState.Loading -> {
+                AdminLoadingState(message = "Synchronizing platform metrics...")
+            }
+            is DashboardUiState.Error -> {
+                AdminErrorState(
+                    message = state.message,
+                    onRetry = { viewModel.loadDashboardStats(force = true) }
                 )
-            )
-        }
-    ) { padding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-        ) {
-            when (val state = uiState) {
-                is DashboardUiState.Loading -> {
-                    AdminLoadingState(message = "Synchronizing platform metrics...")
+            }
+            is DashboardUiState.Success -> {
+                val stats = state.stats
+                val formattedDate = remember(stats.timestamp) {
+                    SimpleDateFormat("EEE, MMM dd, yyyy • HH:mm", Locale.getDefault()).format(Date(stats.timestamp))
                 }
-                is DashboardUiState.Error -> {
-                    AdminErrorState(
-                        message = state.message,
-                        onRetry = { viewModel.loadDashboardStats() }
-                    )
-                }
-                is DashboardUiState.Success -> {
-                    val stats = state.stats
-                    val formattedDate = remember(stats.timestamp) {
-                        SimpleDateFormat("EEE, MMM dd, yyyy • HH:mm", Locale.getDefault()).format(Date(stats.timestamp))
-                    }
 
-                    Column(
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                ) {
+                    // Top Context & Sync Bar
+                    Row(
                         modifier = Modifier
-                            .fillMaxSize()
-                            .verticalScroll(rememberScrollState())
-                            .padding(horizontal = 16.dp, vertical = 12.dp)
+                            .fillMaxWidth()
+                            .background(
+                                MaterialTheme.colorScheme.surface,
+                                RoundedCornerShape(12.dp)
+                            )
+                            .border(
+                                BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)),
+                                RoundedCornerShape(12.dp)
+                            )
+                            .padding(horizontal = 14.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        // Top Context Bar
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(8.dp)
+                                    .background(
+                                        if (stats.maintenanceMode) Color(0xFFF59E0B) else Color(0xFF10B981),
+                                        CircleShape
+                                    )
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = if (stats.maintenanceMode) "Maintenance Mode Active" else "Platform Operational",
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                                color = if (stats.maintenanceMode) Color(0xFFF59E0B) else Color(0xFF10B981)
+                            )
+                        }
+
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(
-                                    MaterialTheme.colorScheme.surface,
-                                    RoundedCornerShape(12.dp)
-                                )
-                                .border(
-                                    BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)),
-                                    RoundedCornerShape(12.dp)
-                                )
-                                .padding(horizontal = 14.dp, vertical = 10.dp),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(8.dp)
-                                        .background(
-                                            if (stats.maintenanceMode) Color(0xFFF59E0B) else Color(0xFF10B981),
-                                            CircleShape
-                                        )
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = if (stats.maintenanceMode) "Maintenance Mode Active" else "Platform Operational",
-                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
-                                    color = if (stats.maintenanceMode) Color(0xFFF59E0B) else Color(0xFF10B981)
-                                )
-                            }
                             Text(
                                 text = "Synced: $formattedDate",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        // Responsive KPI Cards Grid
-                        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-                            val isWide = maxWidth >= 760.dp
-
-                            if (isWide) {
-                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    Row(modifier = Modifier.fillMaxWidth()) {
-                                        KpiCard(
-                                            title = "Total Registered Users",
-                                            value = stats.totalUsers.toString(),
-                                            subtitle = "${stats.verifiedUsers} Verified Accounts",
-                                            icon = Icons.Default.People,
-                                            accentColor = MaterialTheme.colorScheme.primary,
-                                            onClick = onNavigateUsers,
-                                            modifier = Modifier.weight(1f)
-                                        )
-                                        KpiCard(
-                                            title = "Active Live Rooms",
-                                            value = stats.activeLiveRooms.toString(),
-                                            subtitle = "Broadcasting Now",
-                                            icon = Icons.Default.LiveTv,
-                                            accentColor = Color(0xFFEC4899),
-                                            onClick = onNavigateLive,
-                                            modifier = Modifier.weight(1f)
-                                        )
-                                        KpiCard(
-                                            title = "Pending Reports",
-                                            value = stats.pendingReports.toString(),
-                                            subtitle = "Awaiting Moderation",
-                                            icon = Icons.Default.ReportProblem,
-                                            accentColor = Color(0xFFEF4444),
-                                            onClick = onNavigateReports,
-                                            modifier = Modifier.weight(1f)
-                                        )
-                                    }
-                                    Row(modifier = Modifier.fillMaxWidth()) {
-                                        KpiCard(
-                                            title = "Pending Redemptions",
-                                            value = stats.pendingRedemptionsCount.toString(),
-                                            subtitle = "Requires Disbursement",
-                                            icon = Icons.Default.SupportAgent,
-                                            accentColor = Color(0xFFF59E0B),
-                                            onClick = onNavigateRewards,
-                                            modifier = Modifier.weight(1f)
-                                        )
-                                        KpiCard(
-                                            title = "Total Coins Issued",
-                                            value = stats.totalCoinsIssued.toString(),
-                                            subtitle = "${stats.totalCoinsSpent} Coins Redeemed",
-                                            icon = Icons.Default.MonetizationOn,
-                                            accentColor = Color(0xFF10B981),
-                                            onClick = onNavigateRewards,
-                                            modifier = Modifier.weight(1f)
-                                        )
-                                        KpiCard(
-                                            title = "Moderated Accounts",
-                                            value = "${stats.bannedUsers} Banned",
-                                            subtitle = "${stats.suspendedUsers} Suspended Accounts",
-                                            icon = Icons.Default.Block,
-                                            accentColor = Color(0xFF6B7280),
-                                            onClick = onNavigateUsers,
-                                            modifier = Modifier.weight(1f)
-                                        )
-                                    }
-                                }
-                            } else {
-                                // 2-column grid for mobile
-                                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                    Row(modifier = Modifier.fillMaxWidth()) {
-                                        KpiCard(
-                                            title = "Total Users",
-                                            value = stats.totalUsers.toString(),
-                                            subtitle = "${stats.verifiedUsers} Verified",
-                                            icon = Icons.Default.People,
-                                            accentColor = MaterialTheme.colorScheme.primary,
-                                            onClick = onNavigateUsers,
-                                            modifier = Modifier.weight(1f)
-                                        )
-                                        KpiCard(
-                                            title = "Active Live",
-                                            value = stats.activeLiveRooms.toString(),
-                                            subtitle = "Broadcasting",
-                                            icon = Icons.Default.LiveTv,
-                                            accentColor = Color(0xFFEC4899),
-                                            onClick = onNavigateLive,
-                                            modifier = Modifier.weight(1f)
-                                        )
-                                    }
-                                    Row(modifier = Modifier.fillMaxWidth()) {
-                                        KpiCard(
-                                            title = "Pending Reports",
-                                            value = stats.pendingReports.toString(),
-                                            subtitle = "Queue Action",
-                                            icon = Icons.Default.ReportProblem,
-                                            accentColor = Color(0xFFEF4444),
-                                            onClick = onNavigateReports,
-                                            modifier = Modifier.weight(1f)
-                                        )
-                                        KpiCard(
-                                            title = "Redemptions",
-                                            value = stats.pendingRedemptionsCount.toString(),
-                                            subtitle = "Pending Payout",
-                                            icon = Icons.Default.SupportAgent,
-                                            accentColor = Color(0xFFF59E0B),
-                                            onClick = onNavigateRewards,
-                                            modifier = Modifier.weight(1f)
-                                        )
-                                    }
-                                    Row(modifier = Modifier.fillMaxWidth()) {
-                                        KpiCard(
-                                            title = "Coins Issued",
-                                            value = stats.totalCoinsIssued.toString(),
-                                            subtitle = "Lifetime Minted",
-                                            icon = Icons.Default.MonetizationOn,
-                                            accentColor = Color(0xFF10B981),
-                                            onClick = onNavigateRewards,
-                                            modifier = Modifier.weight(1f)
-                                        )
-                                        KpiCard(
-                                            title = "Banned Users",
-                                            value = stats.bannedUsers.toString(),
-                                            subtitle = "${stats.suspendedUsers} Suspended",
-                                            icon = Icons.Default.Block,
-                                            accentColor = Color(0xFF6B7280),
-                                            onClick = onNavigateUsers,
-                                            modifier = Modifier.weight(1f)
-                                        )
-                                    }
-                                }
+                            IconButton(
+                                onClick = { viewModel.loadDashboardStats(force = true) },
+                                modifier = Modifier.size(28.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.Refresh,
+                                    contentDescription = "Refresh Data",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(18.dp)
+                                )
                             }
                         }
-
-                        Spacer(modifier = Modifier.height(24.dp))
-
-                        // Quick Navigation Shortcuts
-                        Text(
-                            text = "Administrative Workflows",
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            WorkflowActionCard(
-                                title = "User Directory",
-                                description = "Search, filter & moderate members",
-                                icon = Icons.Default.People,
-                                color = MaterialTheme.colorScheme.primary,
-                                onClick = onNavigateUsers,
-                                modifier = Modifier.weight(1f)
-                            )
-                            WorkflowActionCard(
-                                title = "Moderation Queue",
-                                description = "Resolve flags & safety reports",
-                                icon = Icons.Default.ReportProblem,
-                                color = Color(0xFFEF4444),
-                                onClick = onNavigateReports,
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            WorkflowActionCard(
-                                title = "Live Monitoring",
-                                description = "Inspect & supervise broadcast rooms",
-                                icon = Icons.Default.LiveTv,
-                                color = Color(0xFFEC4899),
-                                onClick = onNavigateLive,
-                                modifier = Modifier.weight(1f)
-                            )
-                            WorkflowActionCard(
-                                title = "Rewards & Economy",
-                                description = "Balance adjustments & payouts",
-                                icon = Icons.Default.MonetizationOn,
-                                color = Color(0xFF10B981),
-                                onClick = onNavigateRewards,
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(24.dp))
-
-                        // Version & App Status Card
-                        Card(
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
-                            shape = RoundedCornerShape(14.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Text(
-                                        text = "Client Configuration Sync",
-                                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
-                                    )
-                                    StatusChip(
-                                        text = stats.systemStatus,
-                                        color = if (stats.systemStatus == "OPERATIONAL") Color(0xFF10B981) else Color(0xFFF59E0B)
-                                    )
-                                }
-                                Spacer(modifier = Modifier.height(10.dp))
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Text(
-                                        text = "Minimum Supported Client:",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    Text(
-                                        text = "v${stats.minSupportedVersionCode}",
-                                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold)
-                                    )
-                                }
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Text(
-                                        text = "Latest Published Release:",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    Text(
-                                        text = "v${stats.latestVersionCode}",
-                                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold)
-                                    )
-                                }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
                     }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // Responsive KPI Cards Grid
+                    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                        val isWide = maxWidth >= 760.dp
+
+                        if (isWide) {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Row(modifier = Modifier.fillMaxWidth()) {
+                                    KpiCard(
+                                        title = "Total Registered Users",
+                                        value = stats.totalUsers.toString(),
+                                        subtitle = "${stats.verifiedUsers} Verified Accounts",
+                                        icon = Icons.Default.People,
+                                        accentColor = MaterialTheme.colorScheme.primary,
+                                        onClick = { onNavigateUsers(null) },
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    KpiCard(
+                                        title = "Active Live Rooms",
+                                        value = stats.activeLiveRooms.toString(),
+                                        subtitle = "Broadcasting Now",
+                                        icon = Icons.Default.LiveTv,
+                                        accentColor = Color(0xFFEC4899),
+                                        onClick = onNavigateLive,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    KpiCard(
+                                        title = "Pending Reports",
+                                        value = stats.pendingReports.toString(),
+                                        subtitle = "Awaiting Moderation",
+                                        icon = Icons.Default.ReportProblem,
+                                        accentColor = Color(0xFFEF4444),
+                                        onClick = onNavigateReports,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
+                                Row(modifier = Modifier.fillMaxWidth()) {
+                                    KpiCard(
+                                        title = "Pending Redemptions",
+                                        value = stats.pendingRedemptionsCount.toString(),
+                                        subtitle = "Requires Disbursement",
+                                        icon = Icons.Default.SupportAgent,
+                                        accentColor = Color(0xFFF59E0B),
+                                        onClick = onNavigateRewards,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    KpiCard(
+                                        title = "Total Coins Issued",
+                                        value = stats.totalCoinsIssued.toString(),
+                                        subtitle = "${stats.totalCoinsSpent} Coins Redeemed",
+                                        icon = Icons.Default.MonetizationOn,
+                                        accentColor = Color(0xFF10B981),
+                                        onClick = onNavigateRewards,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    KpiCard(
+                                        title = "Moderated Accounts",
+                                        value = "${stats.bannedUsers} Banned",
+                                        subtitle = "${stats.suspendedUsers} Suspended Accounts",
+                                        icon = Icons.Default.Block,
+                                        accentColor = Color(0xFF6B7280),
+                                        onClick = { onNavigateUsers("BANNED") },
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
+                            }
+                        } else {
+                            // 2-column grid for mobile
+                            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Row(modifier = Modifier.fillMaxWidth()) {
+                                    KpiCard(
+                                        title = "Total Users",
+                                        value = stats.totalUsers.toString(),
+                                        subtitle = "${stats.verifiedUsers} Verified",
+                                        icon = Icons.Default.People,
+                                        accentColor = MaterialTheme.colorScheme.primary,
+                                        onClick = { onNavigateUsers(null) },
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    KpiCard(
+                                        title = "Active Live",
+                                        value = stats.activeLiveRooms.toString(),
+                                        subtitle = "Broadcasting",
+                                        icon = Icons.Default.LiveTv,
+                                        accentColor = Color(0xFFEC4899),
+                                        onClick = onNavigateLive,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
+                                Row(modifier = Modifier.fillMaxWidth()) {
+                                    KpiCard(
+                                        title = "Pending Reports",
+                                        value = stats.pendingReports.toString(),
+                                        subtitle = "Queue Action",
+                                        icon = Icons.Default.ReportProblem,
+                                        accentColor = Color(0xFFEF4444),
+                                        onClick = onNavigateReports,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    KpiCard(
+                                        title = "Redemptions",
+                                        value = stats.pendingRedemptionsCount.toString(),
+                                        subtitle = "Pending Payout",
+                                        icon = Icons.Default.SupportAgent,
+                                        accentColor = Color(0xFFF59E0B),
+                                        onClick = onNavigateRewards,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
+                                Row(modifier = Modifier.fillMaxWidth()) {
+                                    KpiCard(
+                                        title = "Coins Issued",
+                                        value = stats.totalCoinsIssued.toString(),
+                                        subtitle = "Lifetime Minted",
+                                        icon = Icons.Default.MonetizationOn,
+                                        accentColor = Color(0xFF10B981),
+                                        onClick = onNavigateRewards,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    KpiCard(
+                                        title = "Banned Users",
+                                        value = stats.bannedUsers.toString(),
+                                        subtitle = "${stats.suspendedUsers} Suspended",
+                                        icon = Icons.Default.Block,
+                                        accentColor = Color(0xFF6B7280),
+                                        onClick = { onNavigateUsers("BANNED") },
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    // Quick Navigation Shortcuts
+                    Text(
+                        text = "Administrative Workflows",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        WorkflowActionCard(
+                            title = "User Directory",
+                            description = "Search, filter & moderate members",
+                            icon = Icons.Default.People,
+                            color = MaterialTheme.colorScheme.primary,
+                            onClick = { onNavigateUsers(null) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        WorkflowActionCard(
+                            title = "Moderation Queue",
+                            description = "Resolve flags & safety reports",
+                            icon = Icons.Default.ReportProblem,
+                            color = Color(0xFFEF4444),
+                            onClick = onNavigateReports,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        WorkflowActionCard(
+                            title = "Live Monitoring",
+                            description = "Inspect & supervise broadcast rooms",
+                            icon = Icons.Default.LiveTv,
+                            color = Color(0xFFEC4899),
+                            onClick = onNavigateLive,
+                            modifier = Modifier.weight(1f)
+                        )
+                        WorkflowActionCard(
+                            title = "Rewards & Economy",
+                            description = "Balance adjustments & payouts",
+                            icon = Icons.Default.MonetizationOn,
+                            color = Color(0xFF10B981),
+                            onClick = onNavigateRewards,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    // Version & App Status Card
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
+                        shape = RoundedCornerShape(14.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = "Client Configuration Sync",
+                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
+                                )
+                                StatusChip(
+                                    text = stats.systemStatus,
+                                    color = if (stats.systemStatus.startsWith("OPERATIONAL")) Color(0xFF10B981) else Color(0xFFF59E0B)
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = "Minimum Supported Client:",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = "v${stats.minSupportedVersionCode}",
+                                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold)
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = "Latest Published Release:",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = "v${stats.latestVersionCode}",
+                                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold)
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
                 }
             }
         }
