@@ -265,6 +265,21 @@ class OfflineAuthViewModel(
                 val onlineProfile = (onlineRes as? ProfileSyncResult.Success)?.profile
                 val isRegisteredInCloud = publicProfile != null && publicProfile.username.isNotBlank()
 
+                // Check for account suspension or ban
+                val status = onlineProfile?.accountStatus?.uppercase() ?: "ACTIVE"
+                if (status == "BANNED") {
+                    _accountResolutionState.value = AccountResolutionState.Error(
+                        message = "Your WorkDaily account has been banned due to violations of terms of service."
+                    )
+                    return@launch
+                }
+                if (status == "SUSPENDED") {
+                    _accountResolutionState.value = AccountResolutionState.Error(
+                        message = "Your WorkDaily account is currently suspended. Please contact support."
+                    )
+                    return@launch
+                }
+
                 // 2. Same account returning to its already-linked local workspace
                 if (linkedUid == account.uid) {
                     if (onlineProfile != null &&
@@ -496,6 +511,21 @@ class OfflineAuthViewModel(
                 val onlineRes = onlineProfileRepository.getOnlineProfile(account.uid)
                 val publicProfile = (publicRes as? ProfileOperationResult.Success)?.data
                 val onlineProfile = (onlineRes as? ProfileSyncResult.Success)?.profile
+
+                val status = onlineProfile?.accountStatus?.uppercase() ?: "ACTIVE"
+                if (status == "BANNED") {
+                    _accountResolutionState.value = AccountResolutionState.Error(
+                        message = "Your WorkDaily account has been banned due to violations of terms of service."
+                    )
+                    return@launch
+                }
+                if (status == "SUSPENDED") {
+                    _accountResolutionState.value = AccountResolutionState.Error(
+                        message = "Your WorkDaily account is currently suspended. Please contact support."
+                    )
+                    return@launch
+                }
+
                 val userB = localAttendanceRepository.getUser()
 
                 val resolvedUser = mergeOrCreateUserForAccount(
